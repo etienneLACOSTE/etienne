@@ -1,41 +1,182 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infinite Chess Runner</title>
+    <title>Ches'spell</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="game-container">
-        <div id="ui-layer">
-            <div id="score">Score: <span id="score-val">0</span></div>
-            <div id="power-indicator">Pouvoir: <span id="power-val" class="power-icon">♔</span></div>
-            <div id="lives">Vies: <span id="lives-val">❤️❤️❤️</span></div>
-            <div id="timer-bar-container">
-                <div id="timer-bar"></div>
-            </div>
-        </div>
+    <div id="app">
+        <!-- Background decorative elements -->
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
         
-        <div id="board">
-            <div id="scroll-layer">
-                <div id="squares-layer"></div>
-                <div id="pieces-layer">
-                    <div id="king-piece" class="piece white">♔</div>
+        <!-- Main Menu -->
+        <section id="main-menu" class="screen active">
+            <h1 class="game-title">Ches'spell</h1>
+            <div class="menu-buttons">
+                <button class="btn btn-primary" onclick="app.showScreen('player-select-screen')">Play Game</button>
+                <button class="btn" onclick="app.showScreen('deck-builder')">Deck Builder</button>
+                <button class="btn" onclick="app.showScreen('profiles-screen')">Manage Profiles</button>
+                <button class="btn" onclick="app.showScreen('card-index')">Card Index</button>
+                <button class="btn btn-secondary" style="border-color: #c084fc; color: #c084fc;" onclick="app.toggleTabletopMode()">⛶ Toggle Tabletop Mode</button>
+            </div>
+            <div class="deck-status" id="deck-status-display">
+                Deck: 0/3 cards selected
+            </div>
+        </section>
+
+        <!-- Deck Builder -->
+        <section id="deck-builder" class="screen">
+            <header>
+                <h2>Deck Builder</h2>
+                <div class="header-controls">
+                    <span class="selection-count" id="selection-count">0/3 Cards Selected</span>
+                    <button class="btn btn-small" id="save-deck-btn" style="display: none;" onclick="app.saveDeckForProfile()">Save Deck</button>
+                    <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+                </div>
+            </header>
+            <div class="cards-grid" id="deck-grid">
+                <!-- Cards injected via JS -->
+            </div>
+        </section>
+
+        <!-- Card Index -->
+        <section id="card-index" class="screen">
+            <header>
+                <h2>Card Index</h2>
+                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back to Menu</button>
+            </header>
+            <div class="cards-grid" id="index-grid">
+                <!-- Cards injected via JS -->
+            </div>
+        </section>
+        <section id="draft-phase" class="screen">
+            <header>
+                <h2>Card Draft</h2>
+                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+            </header>
+            <div id="draft-turn-indicator" class="player-banner">
+                <!-- Injected via JS -->
+            </div>
+            <div class="draft-container" id="draft-grid">
+                <!-- Draft cards injected here -->
+            </div>
+        </section>
+
+        <!-- Game Board -->
+        <section id="game-board" class="screen">
+            <header>
+                <h2>Ches'spell</h2>
+                <div class="header-controls">
+                    <button class="btn btn-small" onclick="app.showScreen('main-menu')">Quit Game</button>
+                </div>
+            </header>
+            
+            <div class="game-container">
+                <!-- Player 2 Zone (Top) -->
+                <div class="player-zone" id="player2-zone">
+                    <div id="player2-banner" class="player-banner"></div>
+                    <div class="in-game-cards" id="player2-cards"></div>
+                </div>
+
+                <!-- Chessboard -->
+                <div class="chessboard-container">
+                    <div class="graveyard" id="player2-graveyard"></div>
+                    <div id="spell-instruction" class="hidden"></div>
+                    <div class="chessboard" id="chessboard"></div>
+                    <div class="graveyard" id="player1-graveyard"></div>
+                </div>
+
+                <!-- Player 1 Zone (Bottom) -->
+                <div class="player-zone" id="player1-zone">
+                    <div class="in-game-cards" id="player1-cards"></div>
+                    <div id="player1-banner" class="player-banner"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Profiles Screen -->
+        <section id="profiles-screen" class="screen">
+            <header>
+                <h2>Manage Profiles</h2>
+                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+            </header>
+            <div class="profiles-container">
+                <div class="create-profile">
+                    <h3 id="profile-form-title">Create New Profile</h3>
+                    <input type="text" id="new-profile-name" placeholder="Enter Username..." maxlength="15">
+                    <input type="file" id="new-profile-avatar" accept="image/*">
+                    <button class="btn btn-primary" id="profile-submit-btn" onclick="ProfileManager.submitProfile()">Create</button>
+                    <button class="btn" id="profile-cancel-btn" style="display: none;" onclick="ProfileManager.cancelEdit()">Cancel</button>
+                </div>
+                <div class="profiles-list" id="profiles-list">
+                    <!-- Profiles injected here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Player Select Screen -->
+        <section id="player-select-screen" class="screen">
+            <header>
+                <h2>Select Players</h2>
+                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+            </header>
+            <div class="player-select-container">
+                <div class="player-select-box">
+                    <h3>Player 1 (White)</h3>
+                    <select id="p1-select"></select>
+                </div>
+                <div class="player-select-box">
+                    <h3>Player 2 (Black)</h3>
+                    <select id="p2-select"></select>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button class="btn btn-primary" onclick="app.startGame(false)">Play Draft Mode</button>
+                    <button class="btn btn-secondary" onclick="app.startGame(true)">Play Campaign Mode</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Card Activation Modal -->
+        <div id="card-modal" class="modal hidden">
+            <div class="modal-content">
+                <div id="modal-icon" class="modal-icon"></div>
+                <h3 id="modal-title"></h3>
+                <p id="modal-effect"></p>
+                <div class="modal-buttons">
+                    <button id="modal-cancel" class="btn">Cancel</button>
+                    <button id="modal-confirm" class="btn btn-primary">Use Spell</button>
                 </div>
             </div>
         </div>
-        
-        <div id="game-over-screen" class="hidden">
-            <h1>Game Over</h1>
-            <p>Score Final: <span id="final-score">0</span></p>
-            <div style="display:flex; gap:15px; margin-top:20px;">
-                <button id="restart-btn" class="action-btn primary">Rejouer</button>
-                <button id="analyse-btn" class="action-btn secondary">Analyser le chemin</button>
+
+        <!-- Info Modal -->
+        <div id="info-modal" class="modal hidden">
+            <div class="modal-content info-modal-content">
+                <h3 id="info-modal-title"></h3>
+                <p id="info-modal-effect" class="info-effect"></p>
+                <div class="info-section">
+                    <h4>Timing</h4>
+                    <p id="info-modal-timing"></p>
+                </div>
+                <div class="info-section">
+                    <h4>Conditions</h4>
+                    <p id="info-modal-conditions"></p>
+                </div>
+                <div class="info-section">
+                    <h4>Inputs</h4>
+                    <p id="info-modal-inputs"></p>
+                </div>
+                <div class="modal-buttons">
+                    <button id="info-modal-close" class="btn btn-primary">Close</button>
+                </div>
             </div>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 </html>
