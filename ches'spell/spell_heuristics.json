@@ -1,0 +1,268 @@
+{
+  "generations": [
+    {
+      "generation": 1,
+      "bestBot": {
+        "id": 47,
+        "fitness": 458,
+        "wins": 109,
+        "losses": 65,
+        "draws": 131,
+        "genes": {
+          "meta": {
+            "patience": 0.5469325868409955,
+            "aggressiveness": 0.9585247356215165,
+            "desperation": 0.1340433783819932
+          },
+          "sniper": {
+            "earlyProb": 0.337140024406712,
+            "lateProb": 0.5405647747614659,
+            "minVal": 627
+          },
+          "freeze": {
+            "prob": 0.13744843461853606,
+            "minVal": 940
+          },
+          "shield": {
+            "prob": 0.6649505467879055,
+            "minVal": 593
+          },
+          "sacrifice": {
+            "minVal": 475,
+            "desperationProb": 0.36162766196776963
+          },
+          "ghost": {
+            "offensiveProb": 0.29357772247130853,
+            "defensiveProb": 0.9579923015748597
+          },
+          "leapFrog": {
+            "prob": 0.03618201210785266
+          },
+          "doubleTrouble": {
+            "earlyProb": 0.7403213092912755,
+            "lateProb": 0.8000672422784114
+          },
+          "tornado": {
+            "disruptionProb": 0.747299767149737
+          },
+          "swap": {
+            "savePieceProb": 0.15205887958893616,
+            "attackProb": 0.2681375186458841
+          },
+          "revive": {
+            "prob": 0.3521025978088066
+          },
+          "cannibalism": {
+            "prob": 0.5613105973276205
+          },
+          "sidestep": {
+            "prob": 0.41769596910874807
+          },
+          "mirror": {
+            "prob": 0.5536848795057538
+          },
+          "trap": {
+            "prob": 0.23665724497862728
+          },
+          "teleport": {
+            "defensiveProb": 0.07997246334446606,
+            "offensiveProb": 0.027152082940850253
+          },
+          "assassin": {
+            "earlyProb": 0.30478136080691987,
+            "lateProb": 0.9775390265468638
+          },
+          "promotion": {
+            "prob": 0.8913842812330681
+          },
+          "domiReversi": {
+            "minValEarly": 376,
+            "minValLate": 502,
+            "urgencyProb": 0.25243254027361584
+          },
+          "kamikaze": {
+            "minValDiff": 785,
+            "desperationMultiplier": 1.5224443941419359
+          }
+        }
+      },
+      "avgFitness": 379.39
+    },
+    {
+      "generation": 2,
+      "bestBot": {
+        "id": 258,
+        "fitness": 476,
+        "wins": 114,
+        "losses": 58,
+        "draws": 134,
+        "genes": {
+          "meta": {
+            "patience": 0.8670657405427264,
+            "aggressiveness": 0.22503422897824343,
+            "desperation": 0.06367457310835145
+          },
+          "sniper": {
+            "earlyProb": 0.6065390474202583,
+            "lateProb": 0.17036934224558142,
+            "minVal": 705
+          },
+          "freeze": {
+            "prob": 0.15639174279076706,
+            "minVal": 779
+          },
+          "shield": {
+            "prob": 0.2149611452458795,
+            "minVal": 940
+          },
+          "sacrifice": {
+            "minVal": 148,
+            "desperationProb": 0.5047826212581447
+          },
+          "ghost": {
+            "offensiveProb": 0.6039327535645502,
+            "defensiveProb": 0.3336064186060794
+          },
+          "leapFrog": {
+            "prob": 0.05510435501098687
+          },
+          "doubleTrouble": {
+            "earlyProb": 0.30093890342732543,
+            "lateProb": 0.8565824646776363
+          },
+          "tornado": {
+            "disruptionProb": 0.6316434348251678
+          },
+          "swap": {
+            "savePieceProb": 0.7646968003980601,
+            "attackProb": 0.6925579499904522
+          },
+          "revive": {
+            "prob": 0.36673507773573416
+          },
+          "cannibalism": {
+            "prob": 0.7336643481441814
+          },
+          "sidestep": {
+            "prob": 0.4106491452251295
+          },
+          "mirror": {
+            "prob": 0.39206262989226803
+          },
+          "trap": {
+            "prob": 0.9803969820590572
+          },
+          "teleport": {
+            "defensiveProb": 0.37980891059272803,
+            "offensiveProb": 0.46736349136692135
+          },
+          "assassin": {
+            "earlyProb": 0.8646068231872447,
+            "lateProb": 0.4570274866694084
+          },
+          "promotion": {
+            "prob": 0.5693109617132464
+          },
+          "domiReversi": {
+            "minValEarly": 687,
+            "minValLate": 105,
+            "urgencyProb": 0.43462221912194476
+          },
+          "kamikaze": {
+            "minValDiff": 215,
+            "desperationMultiplier": 1.0544936911499099
+          }
+        }
+      },
+      "avgFitness": 384.47
+    },
+    {
+      "generation": 3,
+      "bestBot": {
+        "id": 404,
+        "fitness": 478,
+        "wins": 121,
+        "losses": 80,
+        "draws": 115,
+        "genes": {
+          "meta": {
+            "patience": 0.22912023217208066,
+            "aggressiveness": 0.03693654728827678,
+            "desperation": 0.6500248833386875
+          },
+          "sniper": {
+            "earlyProb": 0.4983209898916692,
+            "lateProb": 0.6040971120422296,
+            "minVal": 550
+          },
+          "freeze": {
+            "prob": 1,
+            "minVal": 695
+          },
+          "shield": {
+            "prob": 0.4560246813422131,
+            "minVal": 844
+          },
+          "sacrifice": {
+            "minVal": 589,
+            "desperationProb": 0.730096764029807
+          },
+          "ghost": {
+            "offensiveProb": 0.807703955533863,
+            "defensiveProb": 0.5793487863447626
+          },
+          "leapFrog": {
+            "prob": 0.005456411727788435
+          },
+          "doubleTrouble": {
+            "earlyProb": 0.07662887947480312,
+            "lateProb": 0.13274235900346132
+          },
+          "tornado": {
+            "disruptionProb": 0.9663038638121411
+          },
+          "swap": {
+            "savePieceProb": 0.648363163428286,
+            "attackProb": 0.5630467697233419
+          },
+          "revive": {
+            "prob": 0.08920199013222474
+          },
+          "cannibalism": {
+            "prob": 0.5133714513863452
+          },
+          "sidestep": {
+            "prob": 0.6094602274554111
+          },
+          "mirror": {
+            "prob": 0.18508510500778952
+          },
+          "trap": {
+            "prob": 0.6679052339013027
+          },
+          "teleport": {
+            "defensiveProb": 0.1401604612433769,
+            "offensiveProb": 0.9134127653970603
+          },
+          "assassin": {
+            "earlyProb": 0.46457782772352196,
+            "lateProb": 0.5503572753213994
+          },
+          "promotion": {
+            "prob": 0.7621157935738099
+          },
+          "domiReversi": {
+            "minValEarly": 865,
+            "minValLate": 469,
+            "urgencyProb": 0.830686194091333
+          },
+          "kamikaze": {
+            "minValDiff": 656,
+            "desperationMultiplier": 1.3748981244562406
+          }
+        }
+      },
+      "avgFitness": 389.86
+    }
+  ]
+}

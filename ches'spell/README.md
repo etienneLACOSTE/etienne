@@ -1,32 +1,35 @@
-# Infinite Chess Runner
+# Ches'spell
 
-An infinite, procedurally generated chess survival game. Move your King forward, capture enemy pieces to gain their movement abilities, and survive as long as you can while the board constantly scrolls upward!
+Ches'spell est un jeu d'échecs magique moderne. En plus des pièces d'échecs classiques, chaque joueur possède un deck de sorts magiques qui permettent d'altérer le plateau, d'invoquer des murs, de téléporter des pièces, ou d'inverser le cours du temps !
 
-## 🎮 How to Play
+## 🎮 Comment Jouer
 
-- **Goal**: Survive and go as far as possible. The board automatically scrolls up. If you fall behind or get captured, you lose a life.
-- **Movement**: You control the White King. Click on valid squares or use your keyboard (Z/Q/S/D, Arrows, or Numpad) to move.
-- **Powers**: Capturing an enemy piece grants you its movement ability! For example, capture a Knight to move in an L-shape. Capturing nothing makes you revert to a normal King.
-- **Danger Zones**: Squares highlighted in red are attacked by active enemies. Stepping on them will cost you a life.
-- **Time Limit**: You have a limited time to make each move. Moving quickly and capturing enemies gives you more time.
+Le jeu inclut plusieurs modes de jeu :
+- **Online Multiplayer** : Jouez avec vos amis à distance avec des codes de salon.
+- **Local Game** : Jouez à deux joueurs sur le même ordinateur.
+- **Campaign Mode** : Affrontez l'Intelligence Artificielle (AlphaZero) en difficulté croissante !
 
-## 🧠 Features
+## 🚀 Installation & Lancement
 
-- **Procedural Level Generation**: The board is generated infinitely as you progress.
-- **Mathematical Solvability**: The game engine uses an advanced Backtracking Pathfinder to generate the board, guaranteeing that there is **always** at least one valid path to survive.
-- **Softlock Detection**: If you manage to get yourself stuck with 0 valid moves (e.g., getting a Pawn power while blocked by an enemy), the game immediately detects it.
-- **Animated Analysis Mode**: When you lose all your lives, click the **Analyse** button. The game will visually rewind time and animate the exact sequence of moves you should have taken to survive!
+Ches'spell nécessite deux serveurs pour fonctionner correctement en mode Solo/Campagne (un serveur web pour le jeu, et un serveur d'Intelligence Artificielle en Python).
 
-## 🚀 Running Locally
+### 1. Démarrer le serveur Web (Interface & Multijoueur)
+Ouvrez un terminal dans ce dossier et lancez :
+```bash
+node server.js
+```
+*Le jeu sera accessible sur http://localhost:3000 dans votre navigateur.*
 
-To play the game on your own machine:
+### 2. Démarrer le serveur d'Intelligence Artificielle (AlphaZero)
+Ouvrez un DEUXIÈME terminal, allez dans le sous-dossier `backend-ai`, activez l'environnement virtuel, puis lancez l'API :
+```bash
+cd backend-ai
+source venv/bin/activate
+python3 api.py
+```
+*L'IA écoutera sur le port 5000 et sera prête à affronter les joueurs en mode Campagne.*
 
-1. Clone this repository.
-2. Open `index.html` in your web browser.
-3. Enjoy!
-
-## 🛠️ Built With
-
-- HTML5
-- CSS3 (Vanilla)
-- JavaScript (Vanilla)
+## 🛠️ Technologies
+- **Frontend** : Vanilla JS, HTML5, CSS3, Socket.io
+- **Backend Web** : Node.js, Express
+- **Backend IA** : Python 3, PyTorch, Flask, Algorithme Monte Carlo Tree Search (AlphaZero)
