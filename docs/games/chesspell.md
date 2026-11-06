@@ -11,23 +11,29 @@ Le jeu inclut plusieurs modes de jeu :
 
 ## 🚀 Installation & Lancement
 
-Ches'spell nécessite deux serveurs pour fonctionner correctement en mode Solo/Campagne (un serveur web pour le jeu, et un serveur d'Intelligence Artificielle en Python).
+Le mode Campagne utilise l'IA Python si elle tourne, sinon un bot JavaScript intégré prend le relais.
 
-### 1. Démarrer le serveur Web (Interface & Multijoueur)
-Ouvrez un terminal dans ce dossier et lancez :
+### 1. Démarrer le serveur web (interface et multijoueur)
+Depuis la racine du projet :
 ```bash
-node server.js
+npm install
+npm start
 ```
-*Le jeu sera accessible sur http://localhost:3000 dans votre navigateur.*
+*Le jeu est accessible sur http://localhost:3000/chesspell/.*
 
-### 2. Démarrer le serveur d'Intelligence Artificielle (AlphaZero)
-Ouvrez un DEUXIÈME terminal, allez dans le sous-dossier `backend-ai`, activez l'environnement virtuel, puis lancez l'API :
+### 2. (Optionnel) Démarrer l'IA (AlphaZero)
+Dans un deuxième terminal :
 ```bash
-cd backend-ai
+cd ai/chesspell
 source venv/bin/activate
 python3 api.py
 ```
-*L'IA écoutera sur le port 5000 et sera prête à affronter les joueurs en mode Campagne.*
+*L'IA écoute sur le port 5000. Le modèle `chesspell_model.pth` n'est pas versionné (trop lourd) : il doit être présent dans `ai/chesspell/`.*
+
+### Fichiers
+- `games/chesspell/` : client du jeu
+- `ai/chesspell/` : IA Python (MCTS + réseau de neurones, entraînement par self-play)
+- `tools/chesspell/train_spells.js` : algorithme génétique pour les heuristiques de sorts du bot JS
 
 ## 🛠️ Technologies
 - **Frontend** : Vanilla JS, HTML5, CSS3, Socket.io

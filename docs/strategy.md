@@ -32,10 +32,12 @@ Commandes :
 - `npm run test:update` : régénère les captures après un changement visuel voulu (les relire ensuite).
 - `npx playwright test chessdown --project=desktop` : un sous-ensemble.
 
-### Phase 2 — Ranger sans changer le comportement
-- Supprimer les doublons (anciens `server.js`, `node_modules` multiples, scripts jetables — liste validée avant suppression).
-- Arborescence cible : `apps/hub/`, `games/chessdown/`, `games/chesspell/`, `server/`, `ai/chesspell/`, `tools/`, `docs/`.
-- Ne servir publiquement que les fichiers nécessaires.
+### Phase 2 — Ranger sans changer le comportement ✅ (2026-11-07)
+- Failles `body-parser` / `qs` corrigées (`npm audit fix`, lockfile seul).
+- Supprimés (toujours dans l'historique git) : anciens serveurs et `package.json` des sous-dossiers, 12 scripts `test_*` de Chessdown, scripts jetables de Ches'spell (`test*.js`, `benchmark*.js`, `update_script.js`, `test.png`), sondes Python `test_*.py`, `node_modules` commité par l'ancien dépôt Chessdown.
+- Arborescence : `hub/`, `games/chessdown/`, `games/chesspell/`, `server/` (un module par jeu), `ai/chesspell/`, `tools/<jeu>/`, `docs/games/`.
+- Les dossiers servis ne contiennent plus que des fichiers publics ; un test vérifie que le code, le modèle et la config ne sont pas téléchargeables.
+- venv Python réparé : ses chemins pointaient encore vers l'ancien emplacement `~/Documents/etienne`.
 
 ### Phase 3 — Un moteur de règles par jeu
 - Extraire les règles pures dans `engine.js` (copie sans changement de logique), Chessdown d'abord.
@@ -59,6 +61,7 @@ Commandes :
 | Sujet | Décision |
 |---|---|
 | Langage | JavaScript, modules ES + `@ts-check` ; TypeScript plus tard si besoin |
+| Arborescence | `hub/` plutôt que `apps/hub/` (une seule app hors jeux) |
 | Historique git | Conservé ; rien n'est poussé sans demande |
 | IA Python | Conservée, hors du parcours critique ; hébergement décidé en phase 5 |
 | Dépendances | Demander avant chaque ajout |

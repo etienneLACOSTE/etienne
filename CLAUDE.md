@@ -7,26 +7,28 @@ Développeur : seul sur le projet, Ubuntu 24.04, Node via nvm.
 Communication : réponds en français ; code, noms de variables et commits en anglais.
 
 ## Stack
-<!-- À compléter. Si cette section est encore vide, analyse le projet (package.json, configs)
-et propose-moi de la remplir avant toute autre tâche. -->
-- Langage / framework : [ex. TypeScript + Next.js]
-- Style : [ex. Tailwind CSS] — toute interface suit DESIGN.md
-- Base de données : [ex. PostgreSQL via Prisma / aucune]
-- Authentification : [ex. Auth.js / aucune]
-- Hébergement : [ex. Vercel / VPS]
+- Langage / framework : JavaScript vanilla (navigateur, scripts classiques) ; serveur Node + Express 5 + Socket.io 4
+- IA Ches'spell : Python 3 + PyTorch + Flask (`ai/chesspell/`, venv local, port 5000)
+- Style : CSS vanilla par jeu — toute interface suit DESIGN.md (à créer)
+- Base de données : aucune (profils Ches'spell dans le localStorage du navigateur)
+- Authentification : aucune
+- Hébergement : non décidé (local uniquement pour l'instant)
 
 ## Commandes
-- Installer : `[npm install]`
-- Lancer en local : `[npm run dev]` (port [3000])
-- Tests : `[npm test]`
-- Lint / format : `[npm run lint]`
-- Build de production : `[npm run build]`
+- Installer : `npm install` (puis `npx playwright install chromium` pour les tests)
+- Lancer en local : `npm start` (port 3000) ; IA optionnelle : `cd ai/chesspell && source venv/bin/activate && python3 api.py`
+- Tests : `npm test` (Playwright, desktop + mobile 375 px) ; `npm run test:update` après un changement visuel voulu
+- Lint / format : pas encore configuré
+- Build de production : aucun (fichiers servis tels quels)
 
 ## Structure
-- `[src/app/]` : pages et routes
-- `[src/components/]` : composants réutilisables
-- `[src/lib/]` : logique métier, accès aux données
-- `docs/` : specs, décisions, rapports de revue (Tribunal écrit dans `docs/reviews/`)
+- `hub/` : page d'accueil
+- `games/chessdown/`, `games/chesspell/` : clients des jeux (tout ce qui est ici est public)
+- `server/` : serveur HTTP + un module Socket.io par jeu
+- `ai/chesspell/` : IA Python (modèles `.pth`, venv et logs non versionnés)
+- `tools/<jeu>/` : scripts d'entraînement des bots JS
+- `tests/e2e/` : tests Playwright et captures de référence
+- `docs/` : specs, décisions, rapports de revue (Tribunal écrit dans `docs/reviews/`) ; plan de refonte : `docs/strategy.md`
 
 ## Façon de travailler
 - Une demande = un objectif vérifiable. Pour une tâche de plus de 3 fichiers, propose d'abord un plan et attends mon accord.
@@ -64,5 +66,10 @@ et propose-moi de la remplir avant toute autre tâche. -->
   il faudra mettre à jour la politique de confidentialité et le bandeau cookies.
 
 ## À savoir
-- [Décisions d'architecture, pièges connus, fichiers à ne pas toucher — à compléter au fil du projet.]
+- Refonte en cours, par phases : suivre `docs/strategy.md` (déplacer avant de modifier, `npm test` à chaque étape).
+- Les règles du jeu sont dupliquées entre le client, `tools/` et `ai/chesspell/chess_env.py` : un changement de règle doit être reporté partout (jusqu'à la phase 3).
+- Les tests lisent les variables globales des jeux (`board`, `currentPlayer`, `engine`…) : les garder accessibles ou adapter les tests en même temps.
+- Bugs connus épinglés par `test.fail()` dans `tests/e2e/chesspell.spec.js` : retirer la marque quand ils sont corrigés.
+- Le venv Python contient des chemins absolus : s'il est déplacé, il faut réécrire ses chemins (ou le recréer).
+- Ne jamais versionner `*.pth` (200 Mo chacun), `venv/`, `self_play_logs/`.
 - Quand je te corrige deux fois sur le même point, propose d'ajouter la règle ici.
