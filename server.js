@@ -24,6 +24,31 @@ function generateRoomCode() {
     return code;
 }
 
+// A handler that throws would stop the whole server, so every handler is guarded.
+function safeOn(socket, event, handler) {
+    socket.on(event, (...args) => {
+        try {
+            handler(...args);
+        } catch (err) {
+            console.error(`Ignored malformed "${event}" message: ${err.message}`);
+        }
+    });
+}
+
+// Own keys only: a code like "__proto__" must not resolve to Object.prototype.
+function getRoom(rooms, code) {
+    return typeof code === 'string' && Object.hasOwn(rooms, code) ? rooms[code] : null;
+}
+
+function isSquare(pos, rows, cols) {
+    return typeof pos === 'object' && pos !== null
+        && Number.isInteger(pos.r) && Number.isInteger(pos.c)
+        && pos.r >= 0 && pos.r < rows && pos.c >= 0 && pos.c < cols;
+}
+
+const CHESSDOWN_ROWS = 12;
+const CHESSDOWN_COLS = 8;
+
 // -----------------------------------------------------
 // CHES'SPELL SOCKET LOGIC (Namespace /chesspell)
 // -----------------------------------------------------
@@ -43,7 +68,7 @@ const ioChesspell = io.of('/chesspell');
 ioChesspell.on('connection', (socket) => {
     console.log('Chesspell User connected:', socket.id);
 
-    socket.on('createRoom', (data) => {
+    safeOn(socket, 'createRoom', (data) => {
         let roomCode = generateRoomCode();
         while (chesspellRooms[roomCode]) {
             roomCode = generateRoomCode();
@@ -62,9 +87,9 @@ ioChesspell.on('connection', (socket) => {
         socket.emit('roomCreated', roomCode);
     });
 
-    socket.on('joinRoom', (data) => {
+    safeOn(socket, 'joinRoom', (data) => {
         const roomCode = data.roomCode;
-        const room = chesspellRooms[roomCode];
+        const room = getRoom(chesspellRooms, roomCode);
         if (room) {
             if (room.players[2] === null) {
                 room.players[2] = socket.id;
@@ -86,8 +111,8 @@ ioChesspell.on('connection', (socket) => {
         }
     });
 
-    socket.on('makeMove', (data) => {
-        const room = chesspellRooms[data.roomCode];
+    safeOn(socket, 'makeMove', (data) => {
+        const room = getRoom(chesspellRooms, data.roomCode);
         if (!room) return;
 
         // Switch turn
@@ -100,22 +125,22 @@ ioChesspell.on('connection', (socket) => {
         });
     });
 
-    socket.on('spellActivated', (data) => {
-        const room = chesspellRooms[data.roomCode];
+    safeOn(socket, 'spellActivated', (data) => {
+        const room = getRoom(chesspellRooms, data.roomCode);
         if (!room) return;
         
         ioChesspell.to(data.roomCode).emit('spellActivated', data);
     });
 
-    socket.on('spellSquareClicked', (data) => {
-        const room = chesspellRooms[data.roomCode];
+    safeOn(socket, 'spellSquareClicked', (data) => {
+        const room = getRoom(chesspellRooms, data.roomCode);
         if (!room) return;
         
         ioChesspell.to(data.roomCode).emit('spellSquareClicked', data);
     });
 
-    socket.on('leaveRoom', (data) => {
-        const room = chesspellRooms[data.roomCode];
+    safeOn(socket, 'leaveRoom', (data) => {
+        const room = getRoom(chesspellRooms, data.roomCode);
         if (room) {
             socket.leave(data.roomCode);
             socket.to(data.roomCode).emit('opponentLeft');
@@ -123,7 +148,7 @@ ioChesspell.on('connection', (socket) => {
         }
     });
 
-    socket.on('disconnect', () => {
+    safeOn(socket, 'disconnect', () => {
         for (const [code, room] of Object.entries(chesspellRooms)) {
             if (room.players[1] === socket.id || room.players[2] === socket.id) {
                 ioChesspell.to(code).emit('opponentLeft');
@@ -155,7 +180,7 @@ const ioChessdown = io.of('/chessdown');
 ioChessdown.on('connection', (socket) => {
     console.log('Chessdown User connected:', socket.id);
 
-    socket.on('createRoom', () => {
+    safeOn(socket, 'createRoom', () => {
         let roomCode = generateRoomCode();
         while (chessdownRooms[roomCode]) {
             roomCode = generateRoomCode();
@@ -178,8 +203,8 @@ ioChessdown.on('connection', (socket) => {
         socket.emit('roomCreated', roomCode);
     });
 
-    socket.on('joinRoom', (roomCode) => {
-        const room = chessdownRooms[roomCode];
+    safeOn(socket, 'joinRoom', (roomCode) => {
+        const room = getRoom(chessdownRooms, roomCode);
         if (room) {
             if (room.players[2] === null) {
                 room.players[2] = socket.id;
@@ -198,9 +223,13 @@ ioChessdown.on('connection', (socket) => {
         }
     });
 
-    socket.on('draftComplete', (data) => {
-        const room = chessdownRooms[data.roomCode];
+    safeOn(socket, 'draftComplete', (data) => {
+        const room = getRoom(chessdownRooms, data.roomCode);
         if (!room) return;
+        // Validate everything first so a bad payload never half-updates the board.
+        if (data.player !== 1 && data.player !== 2) return;
+        if (!Array.isArray(data.pieces)
+            || !data.pieces.every(p => isSquare(p, CHESSDOWN_ROWS, CHESSDOWN_COLS) && typeof p.type === 'string')) return;
 
         room.playerColors[data.player] = data.color;
         
@@ -220,9 +249,11 @@ ioChessdown.on('connection', (socket) => {
         }
     });
 
-    socket.on('makeMove', (data) => {
-        const room = chessdownRooms[data.roomCode];
+    safeOn(socket, 'makeMove', (data) => {
+        const room = getRoom(chessdownRooms, data.roomCode);
         if (!room) return;
+        if (!isSquare(data.from, CHESSDOWN_ROWS, CHESSDOWN_COLS)
+            || !isSquare(data.to, CHESSDOWN_ROWS, CHESSDOWN_COLS)) return;
 
         const piece = room.board[data.from.r][data.from.c];
         room.board[data.to.r][data.to.c] = piece;
@@ -238,8 +269,8 @@ ioChessdown.on('connection', (socket) => {
         });
     });
 
-    socket.on('playAgainRequest', (data) => {
-        const room = chessdownRooms[data.roomCode];
+    safeOn(socket, 'playAgainRequest', (data) => {
+        const room = getRoom(chessdownRooms, data.roomCode);
         if (!room) return;
         
         room.playAgainReady = (room.playAgainReady || 0) + 1;
@@ -258,8 +289,8 @@ ioChessdown.on('connection', (socket) => {
         }
     });
 
-    socket.on('leaveRoom', (data) => {
-        const room = chessdownRooms[data.roomCode];
+    safeOn(socket, 'leaveRoom', (data) => {
+        const room = getRoom(chessdownRooms, data.roomCode);
         if (room) {
             socket.leave(data.roomCode);
             socket.to(data.roomCode).emit('opponentLeft');
@@ -267,15 +298,15 @@ ioChessdown.on('connection', (socket) => {
         }
     });
 
-    socket.on('colorSelected', (data) => {
-        const room = chessdownRooms[data.roomCode];
+    safeOn(socket, 'colorSelected', (data) => {
+        const room = getRoom(chessdownRooms, data.roomCode);
         if (room) {
             room.playerColors[data.player] = data.color;
             socket.to(data.roomCode).emit('opponentColorChanged', data.color);
         }
     });
 
-    socket.on('disconnect', () => {
+    safeOn(socket, 'disconnect', () => {
         for (const [code, room] of Object.entries(chessdownRooms)) {
             if (room.players[1] === socket.id || room.players[2] === socket.id) {
                 ioChessdown.to(code).emit('opponentLeft');
