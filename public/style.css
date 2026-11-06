@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background: linear-gradient(135deg, #0f1115 0%, #1a2235 100%);
+    color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+}
+
+/* Background Animated Orbs */
+.bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: 0;
+    animation: float 10s infinite ease-in-out alternate;
+}
+
+.orb-1 {
+    width: 400px;
+    height: 400px;
+    background: rgba(88, 101, 242, 0.15);
+    top: -100px;
+    left: -100px;
+}
+
+.orb-2 {
+    width: 350px;
+    height: 350px;
+    background: rgba(235, 69, 158, 0.15);
+    bottom: -50px;
+    right: -50px;
+    animation-delay: -5s;
+}
+
+@keyframes float {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(30px) scale(1.1); }
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-top: 80px;
+    margin-bottom: 60px;
+    z-index: 1;
+}
+
+header h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #fff, #a5b4fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+    margin-bottom: 15px;
+}
+
+header p {
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: #94a3b8;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Game Grid */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 40px;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 40px;
+    z-index: 1;
+    margin-bottom: 80px;
+}
+
+/* Glassmorphism Card */
+.game-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 30px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+
+.game-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.game-card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.game-card:hover::before {
+    opacity: 1;
+}
+
+/* Card Content */
+.card-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: transform 0.4s ease;
+}
+
+.game-card:hover .card-icon {
+    transform: rotate(-10deg) scale(1.1);
+}
+
+.card-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #f8fafc;
+}
+
+.card-desc {
+    font-size: 1rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    flex-grow: 1;
+}
+
+/* Buttons */
+.play-btn-new, .demo-btn-new {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    width: 100%;
+    position: relative;
+    z-index: 10;
+}
+
+.play-btn-new {
+    background: rgba(96, 165, 250, 0.2);
+    color: #93c5fd;
+    border: 1px solid rgba(96, 165, 250, 0.4);
+}
+.play-btn-new:hover {
+    background: rgba(96, 165, 250, 0.4);
+    transform: scale(1.02);
+}
+
+.demo-btn-new {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.demo-btn-new:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.02);
+}
+
+/* Specific Card Accents */
+.card-chesspell:hover { box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3); }
+.card-chesspell .card-icon { color: #8b5cf6; }
+
+.card-chessdown:hover { box-shadow: 0 20px 40px rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); }
+.card-chessdown .card-icon { color: #ef4444; }
+
+.card-local:hover { box-shadow: 0 20px 40px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); }
+.card-local .card-icon { color: #10b981; }
+
+@media (max-width: 768px) {
+    header h1 { font-size: 2.5rem; }
+    .game-grid { grid-template-columns: 1fr; padding: 0 20px; }
+}

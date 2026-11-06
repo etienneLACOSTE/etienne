@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etienne's Portfolio | Advanced Chess Variants</title>
+    <meta name="description" content="A portfolio of advanced, real-time multiplayer chess variants developed by Etienne.">
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Background Animated Orbs -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <header>
+        <h1>Chess Variants Portfolio</h1>
+        <p>A collection of advanced, real-time multiplayer chess engines featuring custom neural networks, unique game mechanics, and modern web architectures.</p>
+    </header>
+
+    <main class="game-grid">
+        
+        <!-- Ches'spell -->
+        <div class="game-card card-chesspell">
+            <div class="card-icon">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <h2 class="card-title">Ches'spell</h2>
+            <p class="card-desc">A magical twist on classical chess. Play with a deck of spells that manipulate the board, freeze pieces, or grant extra turns. Features an integrated AlphaZero-style AI trained via self-play MCTS.</p>
+            <div class="card-actions" style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
+                <a href="/chesspell/" class="play-btn-new">
+                    <i class="fa-solid fa-gamepad"></i> Play Game
+                </a>
+                <a href="/chesspell/?demo=true&v=2" class="demo-btn-new">
+                    <i class="fa-solid fa-eye"></i> Watch Demo
+                </a>
+            </div>
+        </div>
+
+        <!-- Chessdown (Online) -->
+        <div class="game-card card-chessdown">
+            <div class="card-icon">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <h2 class="card-title">Chessdown (Online)</h2>
+            <p class="card-desc">A hyper-fast, action-packed chess variant where you build your own army via a drafting phase. Play online against friends with 10-second turn timers. Built on Socket.io.</p>
+            <div class="card-actions" style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
+                <a href="/chessdown/" class="play-btn-new">
+                    <i class="fa-solid fa-gamepad"></i> Play Game
+                </a>
+                <a href="/chessdown/?demo=true" class="demo-btn-new">
+                    <i class="fa-solid fa-eye"></i> Watch Demo
+                </a>
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>

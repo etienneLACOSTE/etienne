@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+.env.*
+
+# Runtime artifacts
+*.log
+*.pid
+
+# AI models and generated training data (too large for git, kept on disk)
+*.pth
+self_play_logs/
+training_data_tmp/
+
+# Tooling output
+graphify-out/
+test-results/
+playwright-report/
