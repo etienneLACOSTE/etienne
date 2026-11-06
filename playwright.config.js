@@ -28,7 +28,7 @@ module.exports = defineConfig({
     },
   ],
   webServer: {
-    command: 'node server.js',
+    command: 'node server/index.js',
     url: `http://127.0.0.1:${PORT}`,
     env: { PORT: String(PORT) },
     reuseExistingServer: false,
