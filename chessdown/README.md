@@ -23,5 +23,24 @@ Forget the standard chess setup! Before the match begins, both players enter the
 
 ## 📱 Tech Stack
 - Pure HTML, CSS (Vanilla), and JavaScript.
+- Node.js and Socket.io for the Online Multiplayer mode.
 - Mobile and tablet responsive, utilizing `dvh` and Fullscreen API for a seamless app-like experience.
-- No external dependencies. Just open `index.html` in your browser and play!
+
+## 🚀 How to Run
+
+### Play Locally (Offline)
+No installation required. Just open `index.html` in any modern web browser to play the Pass & Play mode or the Campaign Mode against bots!
+
+### Play Online (Server)
+To play with a friend over the internet, you need to start the multiplayer server:
+1. Ensure you have [Node.js](https://nodejs.org/) installed.
+2. Open your terminal in the game folder.
+3. Install the dependencies:
+   ```bash
+   npm install
+   ```
+4. Start the server:
+   ```bash
+   node server.js
+   ```
+5. Open your browser and go to `http://localhost:3000`.
