@@ -8,11 +8,11 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 // Serve the portfolio hub
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'hub')));
 
 // Serve the games statically
-app.use('/chesspell', express.static(path.join(__dirname, "ches'spell")));
-app.use('/chessdown', express.static(path.join(__dirname, 'chessdown')));
+app.use('/chesspell', express.static(path.join(__dirname, 'games', 'chesspell')));
+app.use('/chessdown', express.static(path.join(__dirname, 'games', 'chessdown')));
 
 // Helper
 function generateRoomCode() {

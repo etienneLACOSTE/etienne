@@ -1,4 +1,8 @@
 const fs = require('fs');
+const path = require('path');
+
+// Output read by the game client at startup.
+const OUTPUT_PATH = path.join(__dirname, '..', '..', 'games', 'chessdown', 'training_data.json');
 
 const ROWS = 12;
 const COLS = 8;
@@ -447,7 +451,7 @@ for (let gen = 1; gen <= GENERATIONS; gen++) {
         avgFitness: population.reduce((sum, p) => sum + p.fitness, 0) / population.length
     });
 
-    fs.writeFileSync('training_data.json', JSON.stringify(trainingData, null, 2));
+    fs.writeFileSync(OUTPUT_PATH, JSON.stringify(trainingData, null, 2));
 
     if (gen === GENERATIONS) break; // Don't breed on last generation
 

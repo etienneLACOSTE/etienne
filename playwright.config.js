@@ -24,7 +24,7 @@ module.exports = defineConfig({
     {
       name: 'mobile',
       use: { ...devices['Desktop Chrome'], viewport: { width: 375, height: 812 }, hasTouch: true },
-      testIgnore: /server-robustness/, // Server-only checks, no layout involved
+      testIgnore: /server-robustness|static-files/, // Server-only checks, no layout involved
     },
   ],
   webServer: {

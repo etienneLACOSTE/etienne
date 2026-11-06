@@ -1,4 +1,7 @@
 const fs = require('fs');
+const path = require('path');
+
+const OUTPUT_PATH = path.join(__dirname, 'spell_heuristics.json');
 
 // --- GAME CONSTANTS ---
 const ROWS = 8;
@@ -919,7 +922,7 @@ for (let gen = 1; gen <= GENERATIONS; gen++) {
         avgFitness: population.reduce((sum, p) => sum + p.fitness, 0) / population.length
     });
 
-    fs.writeFileSync('spell_heuristics.json', JSON.stringify(trainingData, null, 2));
+    fs.writeFileSync(OUTPUT_PATH, JSON.stringify(trainingData, null, 2));
 
     if (gen === GENERATIONS) break;
 
