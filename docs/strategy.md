@@ -17,11 +17,20 @@ Objectif : remettre le projet à niveau sans jamais casser les jeux.
 - Anciens `.git` archivés dans `../etienne-archive/` ; sauvegarde complète dans `../etienne-backup-2026-11-07.tar.gz`.
 - Branches `online` et `mobile-responsiveness` non importées : entièrement contenues dans `main`.
 
-### Phase 1 — Filet de sécurité
-- Tests Playwright de bout en bout : draft + coups + touchdown (Chessdown) ; partie locale, sort, bot (Ches'spell) ; partie en ligne à deux onglets.
-- Captures de référence desktop et mobile 375 px.
-- Correctif minimal : le serveur ignore les messages invalides au lieu de planter.
-- Dépendance à valider : `@playwright/test`.
+### Phase 1 — Filet de sécurité ✅ (2026-11-07)
+- `@playwright/test` 1.64.1 (version fixée), lancé par `npm test` sur desktop (1280 px) et mobile (375 px).
+- Tests de bout en bout (`tests/e2e/`) :
+  - Chessdown : partie locale jusqu'à la prise du roi, touchdown, bot, partie en ligne à deux joueurs.
+  - Ches'spell : draft + sort Mur + prise du roi, bot via l'API IA (simulée), repli sur le bot JS, partie en ligne.
+  - Serveur : 21 messages Socket.io invalides ne le font plus planter.
+- Captures de référence des 5 écrans principaux (`tests/e2e/__screenshots__/`).
+- Correctif : gestionnaires Socket.io protégés, codes de salle vérifiés, coordonnées validées (`server.js`).
+- Bugs connus documentés par des tests `test.fail()` (voir l'audit) : retirer la marque quand ils sont corrigés.
+
+Commandes :
+- `npm test` : toute la suite.
+- `npm run test:update` : régénère les captures après un changement visuel voulu (les relire ensuite).
+- `npx playwright test chessdown --project=desktop` : un sous-ensemble.
 
 ### Phase 2 — Ranger sans changer le comportement
 - Supprimer les doublons (anciens `server.js`, `node_modules` multiples, scripts jetables — liste validée avant suppression).
