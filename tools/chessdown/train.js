@@ -4,9 +4,9 @@ const path = require('path');
 // Output read by the game client at startup.
 const OUTPUT_PATH = path.join(__dirname, '..', '..', 'games', 'chessdown', 'training_data.json');
 
-const ROWS = 12;
-const COLS = 8;
-const MAX_POINTS = 39;
+// Same rules as the game: the headless engine below delegates to it.
+const engine = require('../../games/chessdown/engine.js');
+const { ROWS, COLS, MAX_POINTS } = engine;
 
 const PIECES = {
     'p': { value: 100 },
@@ -79,7 +79,7 @@ class GameEngine {
     constructor(profile1, profile2) {
         this.p1Profile = profile1;
         this.p2Profile = profile2;
-        this.board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+        this.board = engine.createBoard();
         this.currentPlayer = 1;
         this.lastMove = null;
         this.turnCount = 0;
@@ -119,118 +119,19 @@ class GameEngine {
     }
 
     getValidMoves(r, c) {
-        const piece = this.board[r][c];
-        if (!piece) return [];
-        const moves = [];
-        const dir = piece.player === 1 ? -1 : 1;
-
-        const addIfValid = (tr, tc, canCapture = true, mustCapture = false) => {
-            if (tr < 0 || tr >= ROWS || tc < 0 || tc >= COLS) return false;
-            const target = this.board[tr][tc];
-            if (!target) {
-                if (!mustCapture) {
-                    moves.push({ r: tr, c: tc });
-                    return true;
-                }
-                return false;
-            } else {
-                if (canCapture && target.player !== piece.player) {
-                    moves.push({ r: tr, c: tc });
-                }
-                return false;
-            }
-        };
-
-        const slide = (dr, dc) => {
-            let tr = r + dr;
-            let tc = c + dc;
-            while (addIfValid(tr, tc)) {
-                tr += dr;
-                tc += dc;
-            }
-        };
-
-        switch (piece.type) {
-            case 'p':
-                if (addIfValid(r + dir, c, false)) {
-                    if (!piece.hasMoved) addIfValid(r + dir * 2, c, false);
-                }
-                addIfValid(r + dir, c - 1, true, true);
-                addIfValid(r + dir, c + 1, true, true);
-                if (this.lastMove && this.lastMove.piece.type === 'p' && this.lastMove.isDoubleStep) {
-                    if (this.lastMove.toR === r && Math.abs(this.lastMove.toC - c) === 1) {
-                        moves.push({ r: r + dir, c: this.lastMove.toC, isEnPassant: true });
-                    }
-                }
-                break;
-            case 'n':
-                [[-2, -1], [-2, 1], [2, -1], [2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2]].forEach(m => addIfValid(r + m[0], c + m[1]));
-                break;
-            case 'b':
-                slide(1, 1); slide(1, -1); slide(-1, 1); slide(-1, -1);
-                break;
-            case 'r':
-                slide(1, 0); slide(-1, 0); slide(0, 1); slide(0, -1);
-                break;
-            case 'q':
-                slide(1, 0); slide(-1, 0); slide(0, 1); slide(0, -1);
-                slide(1, 1); slide(1, -1); slide(-1, 1); slide(-1, -1);
-                break;
-            case 'k':
-                [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]].forEach(m => addIfValid(r + m[0], c + m[1]));
-                break;
-        }
-        return moves;
+        return engine.getValidMoves(this, r, c);
     }
 
     makeVirtualMove(move) {
-        const piece = this.board[move.fromR][move.fromC];
-        const targetPiece = this.board[move.toR][move.toC];
-        let isEnPassant = piece.type === 'p' && move.fromC !== move.toC && targetPiece === null;
-        let isDoubleStep = piece.type === 'p' && Math.abs(move.fromR - move.toR) === 2;
-
-        let enPassantCapturedPiece = null;
-        if (isEnPassant) {
-            enPassantCapturedPiece = this.board[move.fromR][move.toC];
-            this.board[move.fromR][move.toC] = null;
-        }
-
-        this.board[move.toR][move.toC] = piece;
-        this.board[move.fromR][move.fromC] = null;
-
-        let oldHasMoved = piece.hasMoved;
-        piece.hasMoved = true;
-
-        let oldLastMove = this.lastMove;
-        this.lastMove = { piece, fromR: move.fromR, fromC: move.fromC, toR: move.toR, toC: move.toC, isDoubleStep };
-
-        return { targetPiece, isEnPassant, enPassantCapturedPiece, oldHasMoved, oldLastMove };
+        return engine.applyMove(this, move);
     }
 
     undoVirtualMove(move, undoData) {
-        const piece = this.board[move.toR][move.toC];
-        this.board[move.fromR][move.fromC] = piece;
-        this.board[move.toR][move.toC] = undoData.targetPiece;
-        piece.hasMoved = undoData.oldHasMoved;
-        if (undoData.isEnPassant) {
-            this.board[move.fromR][move.toC] = undoData.enPassantCapturedPiece;
-        }
-        this.lastMove = undoData.oldLastMove;
+        engine.undoMove(this, move, undoData);
     }
 
     generateAllMoves(player) {
-        let allMoves = [];
-        for (let r = 0; r < ROWS; r++) {
-            for (let c = 0; c < COLS; c++) {
-                if (this.board[r][c] && this.board[r][c].player === player) {
-                    let moves = this.getValidMoves(r, c);
-                    for (let m of moves) {
-                        allMoves.push({ fromR: r, fromC: c, toR: m.r, toC: m.c, isEnPassant: m.isEnPassant });
-                    }
-                }
-            }
-        }
-        return allMoves;
+        return engine.generateAllMoves(this, player);
     }
 
     evaluateBoard(rootPlayer) {
@@ -352,11 +253,7 @@ class GameEngine {
     }
 
     checkTouchdown(player) {
-        let row = player === 1 ? 0 : ROWS - 1;
-        for (let c = 0; c < COLS; c++) {
-            if (this.board[row][c] && this.board[row][c].player === player) return true;
-        }
-        return false;
+        return engine.hasPieceInEndzone(this.board, player);
     }
 
     playGame() {
