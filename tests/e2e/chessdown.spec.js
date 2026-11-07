@@ -186,4 +186,54 @@ test.describe('Chessdown', () => {
     await ctx1.close();
     await ctx2.close();
   });
+
+  test('online: en passant works between two players', async ({ browser }) => {
+    const ctx1 = await browser.newContext();
+    const ctx2 = await browser.newContext();
+    await blockExternalRequests(ctx1);
+    await blockExternalRequests(ctx2);
+    const p1 = await ctx1.newPage();
+    const p2 = await ctx2.newPage();
+    const errors = [p1, p2].map(trackPageErrors);
+
+    await p1.goto('/chessdown/');
+    await p2.goto('/chessdown/');
+    await p1.locator('#btn-create-room').click();
+    const codeEl = p1.locator('#waiting-room-code');
+    await expect(codeEl).not.toHaveText('ABCD');
+    await p2.locator('#room-code-input').fill((await codeEl.textContent()) ?? '');
+    await p2.locator('#btn-join-room').click();
+    for (const page of [p1, p2]) {
+      await place(page, 'k', 5, 4);
+      await page.locator('#btn-validate-draft').click();
+    }
+    const starter = await waitForGameplay(p1);
+    await waitForGameplay(p2);
+
+    // Same test position on both clients: kings far apart, a white pawn on row 4
+    // next to the file where the black pawn will double-step.
+    for (const page of [p1, p2]) {
+      await page.evaluate(() => {
+        board = ChessdownEngine.createBoard();
+        board[11][4] = { type: 'k', player: 1, hasMoved: true };
+        board[0][3] = { type: 'k', player: 2, hasMoved: true };
+        board[4][3] = { type: 'p', player: 1, hasMoved: true };
+        board[2][4] = { type: 'p', player: 2, hasMoved: false };
+        lastMove = null;
+        renderBoard();
+      });
+    }
+    if (starter === 1) await move(p1, [11, 4], [10, 4]);
+    await expect.poll(() => readGlobal(p2, 'currentPlayer')).toBe(2);
+    await move(p2, [2, 4], [4, 4], true); // Double step lands next to the white pawn
+    await expect.poll(() => readGlobal(p1, 'currentPlayer')).toBe(1);
+    await move(p1, [4, 3], [3, 4]); // En passant
+
+    for (const page of [p1, p2]) {
+      await expect.poll(() => page.evaluate(() => [board[3][4]?.player, board[4][4]])).toEqual([1, null]);
+    }
+    expect(errors.flat()).toEqual([]);
+    await ctx1.close();
+    await ctx2.close();
+  });
 });

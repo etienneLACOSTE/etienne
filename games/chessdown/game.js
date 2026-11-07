@@ -539,10 +539,9 @@ function setupEventListeners() {
             return;
         }
 
-        board[to.r][to.c] = piece;
-        board[from.r][from.c] = null;
-        if (piece) piece.hasMoved = true;
-        
+        // Same resolution as local play: handles en passant and records lastMove.
+        if (piece) makeVirtualMove({ fromR: from.r, fromC: from.c, toR: to.r, toC: to.c });
+
         currentPlayer = nextPlayer;
         selectedBoardPiece = null;
         clearHighlights();
