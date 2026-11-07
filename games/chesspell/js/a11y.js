@@ -183,6 +183,7 @@ function focusScreen(screen) {
 
 function setupAccessibility() {
     document.getElementById('spell-instruction').setAttribute('role', 'status');
+    setupAnnouncer();
     DIALOGS.forEach(setupDialog);
     document.getElementById('chessboard').addEventListener('keydown', onBoardKeydown);
 
@@ -206,6 +207,106 @@ function setupAccessibility() {
         const result = clear.apply(this, args);
         selectedSquareCleanup();
         refreshSquareLabels();
+        return result;
+    };
+}
+
+// --- Announcements: after each turn, screen readers hear the spell cast, the move or
+// board change, and whose turn it is. The board is compared with the one seen at the
+// previous turn, so local, bot and online moves are all covered.
+
+let announcer = null;
+let previousBoard = null;
+let pendingSpell = '';
+
+function announce(text) {
+    // Emptied first so that the same sentence twice in a row is read again.
+    announcer.textContent = '';
+    requestAnimationFrame(() => { announcer.textContent = text; });
+}
+
+const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+
+function describePiece(p) {
+    return p === 'W' ? 'wall' : `${ChesspellRules.getColor(p)} ${PIECE_NAMES[p.toLowerCase()]}`;
+}
+
+function whoseTurn() {
+    if (isOnline) return engine.turn === myPlayerColor ? 'Your turn.' : "Opponent's turn.";
+    if (app.isBotGame) return engine.turn === 'white' ? 'Your turn.' : "Bot's turn.";
+    return `${capitalize(engine.turn)} to move.`;
+}
+
+/** "white pawn e2 to e4, takes black knight", or the list of changed squares after a spell. */
+function describeBoardChange(before) {
+    const after = engine.board;
+    const emptied = [];
+    const filled = [];
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (before[r][c] === after[r][c]) continue;
+            (after[r][c] ? filled : emptied).push({ r, c });
+        }
+    }
+    const name = ({ r, c }) => `${FILES[c]}${8 - r}`;
+    if (filled.length === 1 && emptied.length <= 2) {
+        const to = filled[0];
+        const from = emptied.find(e => before[e.r][e.c] === after[to.r][to.c])
+            || emptied.find(e => before[e.r][e.c] && ChesspellRules.getColor(before[e.r][e.c]) === ChesspellRules.getColor(after[to.r][to.c]));
+        if (from) {
+            const taken = before[to.r][to.c] || emptied.filter(e => e !== from).map(e => before[e.r][e.c])[0];
+            let text = `${capitalize(describePiece(after[to.r][to.c]))} ${name(from)} to ${name(to)}`;
+            if (taken) text += `, takes ${describePiece(taken)}`;
+            return text + '.';
+        }
+    }
+    const changes = [...filled, ...emptied].map(sq => `${name(sq)} ${after[sq.r][sq.c] ? describePiece(after[sq.r][sq.c]) : 'empty'}`);
+    if (!changes.length) return '';
+    if (changes.length > 6) return `${changes.length} squares changed.`;
+    return `Board: ${changes.join(', ')}.`;
+}
+
+const snapshot = () => engine.board.map(row => [...row]);
+
+function announceTurn() {
+    const parts = [pendingSpell, previousBoard ? describeBoardChange(previousBoard) : '', whoseTurn()];
+    announce(parts.filter(Boolean).join(' '));
+    pendingSpell = '';
+    previousBoard = snapshot();
+}
+
+function setupAnnouncer() {
+    announcer = document.createElement('div');
+    announcer.id = 'announcer';
+    announcer.className = 'visually-hidden';
+    announcer.setAttribute('role', 'status');
+    announcer.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(announcer);
+
+    const init = engine.init;
+    engine.init = function (...args) {
+        const result = init.apply(this, args);
+        previousBoard = snapshot();
+        pendingSpell = '';
+        return result;
+    };
+    const activate = engine.activateSpell;
+    engine.activateSpell = function (cardId, ...rest) {
+        const card = cardsData.find(c => c.id === cardId);
+        if (card) pendingSpell = `${capitalize(this.turn)} casts ${card.name}.`;
+        return activate.call(this, cardId, ...rest);
+    };
+    const endTurn = engine.endTurn;
+    engine.endTurn = function (...args) {
+        const result = endTurn.apply(this, args);
+        announceTurn();
+        return result;
+    };
+    // The first turn (local games): announced once the board is on screen.
+    const initGame = app.initGame;
+    app.initGame = function (...args) {
+        const result = initGame.apply(this, args);
+        announce(`Match starts. ${whoseTurn()}`);
         return result;
     };
 }

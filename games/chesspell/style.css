@@ -1015,6 +1015,17 @@ select:focus-visible,
 .square.kbd-selected {
     background-color: var(--lime);
 }
+/* Read by screen readers only (the move announcer in js/a11y.js). */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
 /* Headings get the focus on screen changes only so that screen readers announce them. */
 h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outline: none; }
 

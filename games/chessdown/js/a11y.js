@@ -72,6 +72,8 @@ function setupAccessibility() {
     ui.chessboard.setAttribute('aria-label', 'Board');
     ui.chessboard.addEventListener('keydown', onBoardKeydown);
 
+    setupAnnouncer();
+
     const show = showScreen;
     showScreen = function (screen) {
         show(screen);
@@ -132,6 +134,7 @@ function onBoardKeydown(e) {
 function describePiece(piece) {
     const name = PIECE_NAMES[piece.type];
     if (currentRoomCode) return `${piece.player === myPlayerNumber ? 'your' : "opponent's"} ${name}`;
+    if (isBotMatch) return `${piece.player === 1 ? 'your' : "bot's"} ${name}`;
     return `player ${piece.player} ${name}`;
 }
 
@@ -150,4 +153,76 @@ function refreshSquareLabels() {
         if (sq.classList.contains('highlight')) label += ', can move here';
         sq.setAttribute('aria-label', label);
     }
+}
+
+// --- Announcements: each turn, screen readers hear the move just played (local, bot
+// or online opponent) and whose turn it is. The board is compared with the one seen
+// at the previous turn, so nothing in the game logic has to report its moves.
+
+let announcer = null;
+let previousTurn = null; // { lastMove, pieces } at the start of the previous turn
+
+function announce(text) {
+    // Emptied first so that the same sentence twice in a row is read again.
+    announcer.textContent = '';
+    requestAnimationFrame(() => { announcer.textContent = text; });
+}
+
+function squareName(r, c) {
+    const { viewR, viewC } = getViewCoords(r, c);
+    return `${COLUMN_LETTERS[viewC]}${ROWS - viewR}`;
+}
+
+function capitalize(text) {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function whoseTurn(player) {
+    if (currentRoomCode) return player === myPlayerNumber ? 'Your turn.' : "Opponent's turn.";
+    if (isBotMatch) return player === 1 ? 'Your turn.' : "Bot's turn.";
+    return `Player ${player}'s turn.`;
+}
+
+function describeLastMove(before) {
+    const m = lastMove;
+    const piece = board[m.toR][m.toC];
+    if (!piece) return '';
+    // En passant: the captured pawn was beside the start square, not on the target.
+    const captured = before[m.toR][m.toC]
+        || (piece.type === 'p' && m.fromC !== m.toC && before[m.fromR][m.toC]) || null;
+    let text = `${capitalize(describePiece(piece))} ${squareName(m.fromR, m.fromC)} to ${squareName(m.toR, m.toC)}`;
+    if (captured) text += `, takes ${describePiece(captured)}`;
+    if (m.toR === ChessdownEngine.endzoneRow(piece.player)) text += ', in the end zone';
+    return text + '.';
+}
+
+function announceTurn() {
+    let text;
+    if (!previousTurn) text = 'Match starts.';
+    else if (lastMove && lastMove !== previousTurn.lastMove) text = describeLastMove(previousTurn.pieces);
+    else text = "Time's up, turn skipped.";
+    announce(`${text} ${whoseTurn(currentPlayer)}`);
+    previousTurn = { lastMove, pieces: board.map(row => row.map(p => p && { type: p.type, player: p.player })) };
+}
+
+function setupAnnouncer() {
+    announcer = document.createElement('div');
+    announcer.id = 'announcer';
+    announcer.className = 'visually-hidden';
+    announcer.setAttribute('role', 'status');
+    announcer.setAttribute('aria-atomic', 'true');
+    document.body.appendChild(announcer);
+
+    const startMatch = startGameplay;
+    startGameplay = function (...args) {
+        previousTurn = null;
+        return startMatch.apply(this, args);
+    };
+    const start = startTurn;
+    startTurn = function (...args) {
+        const result = start.apply(this, args);
+        // A touchdown ends the match inside startTurn: the victory screen speaks then.
+        if (gameState === 'gameplay') announceTurn();
+        return result;
+    };
 }
