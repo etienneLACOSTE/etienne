@@ -115,8 +115,8 @@
             <div class="profiles-container">
                 <div class="create-profile">
                     <h3 id="profile-form-title">Create New Profile</h3>
-                    <input type="text" id="new-profile-name" placeholder="Enter Username..." maxlength="15">
-                    <input type="file" id="new-profile-avatar" accept="image/*">
+                    <input type="text" id="new-profile-name" placeholder="Enter Username..." aria-label="Username" maxlength="15">
+                    <input type="file" id="new-profile-avatar" accept="image/*" aria-label="Avatar picture (optional)">
                     <button class="btn btn-primary" id="profile-submit-btn" data-action="submitProfile">Create</button>
                     <button class="btn" id="profile-cancel-btn" style="display: none;" data-action="cancelProfileEdit">Cancel</button>
                 </div>
@@ -134,12 +134,12 @@
             </header>
             <div class="player-select-container">
                 <div class="player-select-box">
-                    <h3>Player 1 (White)</h3>
-                    <select id="p1-select"></select>
+                    <h3 id="p1-select-label">Player 1 (White)</h3>
+                    <select id="p1-select" aria-labelledby="p1-select-label"></select>
                 </div>
                 <div class="player-select-box">
-                    <h3>Player 2 (Black)</h3>
-                    <select id="p2-select"></select>
+                    <h3 id="p2-select-label">Player 2 (Black)</h3>
+                    <select id="p2-select" aria-labelledby="p2-select-label"></select>
                 </div>
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
                     <button class="btn btn-primary" data-action="startDraftGame">Play Draft Mode</button>
@@ -156,8 +156,8 @@
             </header>
             <div class="player-select-container">
                 <div class="player-select-box" style="width: 100%;">
-                    <h3>Select Your Profile (White)</h3>
-                    <select id="online-p1-select"></select>
+                    <h3 id="online-p1-select-label">Select Your Profile (White)</h3>
+                    <select id="online-p1-select" aria-labelledby="online-p1-select-label"></select>
                 </div>
                 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
@@ -179,7 +179,7 @@
             </header>
             <div style="text-align: center; margin-top: 4rem;">
                 <h3>Room Code:</h3>
-                <h1 id="waiting-room-code" style="font-size: clamp(2rem, 11vw, 4rem); letter-spacing: clamp(0.3rem, 2vw, 1rem); color: var(--accent-color);">XXXX</h1>
+                <p id="waiting-room-code" style="font-size: clamp(2rem, 11vw, 4rem); letter-spacing: clamp(0.3rem, 2vw, 1rem); color: var(--accent-color); font-weight: 800; margin: 0.5rem 0;">XXXX</p>
                 <p>Share this code with your opponent.</p>
             </div>
         </section>
@@ -238,12 +238,12 @@
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 30px;">
                     <div style="display: flex; flex-direction: column; align-items: center;">
                         <input type="number" id="timer-min" style="font-size: 2rem; width: 80px; text-align: center; border-radius: 10px; padding: 10px; background: #2c3e50; color: white; border: none;" min="0" max="99" value="0">
-                        <span style="color: #aaa; margin-top: 5px;">Minutes</span>
+                        <label for="timer-min" style="color: #aaa; margin-top: 5px;">Minutes</label>
                     </div>
                     <span style="font-size: 2em; font-weight: bold;">:</span>
                     <div style="display: flex; flex-direction: column; align-items: center;">
                         <input type="number" id="timer-sec" style="font-size: 2rem; width: 80px; text-align: center; border-radius: 10px; padding: 10px; background: #2c3e50; color: white; border: none;" min="0" max="59" value="10">
-                        <span style="color: #aaa; margin-top: 5px;">Seconds</span>
+                        <label for="timer-sec" style="color: #aaa; margin-top: 5px;">Seconds</label>
                     </div>
                 </div>
 
@@ -266,7 +266,7 @@
                         <span id="elo-display" style="font-weight: bold; color: var(--accent-color); font-size: 1.2rem;">1500 ELO</span>
                         <span>Grandmaster (3000)</span>
                     </div>
-                    <input type="range" id="bot-elo-slider" min="400" max="3000" step="50" value="1500" style="width: 100%; margin-bottom: 10px;">
+                    <input type="range" id="bot-elo-slider" aria-label="Bot strength (ELO)" aria-describedby="elo-display" min="400" max="3000" step="50" value="1500" style="width: 100%; margin-bottom: 10px;">
                 </div>
 
                 <h3 style="color: white; margin-bottom: 10px;">2. Select Bot Deck</h3>
