@@ -7,18 +7,12 @@ let currentRoomCode = null;
 let myPlayerNumber = 1;
 
 // Constants
-const ROWS = 12;
-const COLS = 8;
-const MAX_POINTS = 39;
+// Rules live in engine.js (loaded first); this file is the UI and the bot.
+const { ROWS, COLS, MAX_POINTS } = ChessdownEngine;
 
-const PIECES = {
-    'p': { value: 1, icon: '♙' },
-    'n': { value: 3, icon: '♘' },
-    'b': { value: 3, icon: '♗' },
-    'r': { value: 5, icon: '♖' },
-    'q': { value: 9, icon: '♕' },
-    'k': { value: 0, icon: '♔' }
-};
+const PIECE_ICONS = { p: '♙', n: '♘', b: '♗', r: '♖', q: '♕', k: '♔' };
+const PIECES = Object.fromEntries(Object.entries(ChessdownEngine.PIECE_VALUES)
+    .map(([type, value]) => [type, { value, icon: PIECE_ICONS[type] }]));
 
 const COLOR_HEX = {
     'red': '#e74c3c',
@@ -121,14 +115,7 @@ const ui = {
 };
 
 function serializeBoard() {
-    let str = "";
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            const p = board[r][c];
-            str += p ? `${p.player}${p.type}` : ".";
-        }
-    }
-    return str + currentPlayer;
+    return ChessdownEngine.serializeBoard(board, currentPlayer);
 }
 
 // Initialization
@@ -1248,14 +1235,7 @@ function finalizeGameplayStart() {
 }
 
 function checkTouchdownWin() {
-    const targetRow = currentPlayer === 1 ? 0 : ROWS - 1;
-    for (let c = 0; c < COLS; c++) {
-        const piece = board[targetRow][c];
-        if (piece && piece.player === currentPlayer) {
-            return true;
-        }
-    }
-    return false;
+    return ChessdownEngine.hasPieceInEndzone(board, currentPlayer);
 }
 
 function startTurn() {
@@ -1468,88 +1448,7 @@ function highlightValidMoves(r, c) {
 }
 
 function getValidMoves(r, c) {
-    const piece = board[r][c];
-    if (!piece) return [];
-    
-    const moves = [];
-    const dir = piece.player === 1 ? -1 : 1; // P1 starts bottom (row 15), moves UP (-1). P2 starts top (row 0), moves DOWN (+1)
-
-    function addIfValid(tr, tc, canCapture = true, mustCapture = false) {
-        if (tr < 0 || tr >= ROWS || tc < 0 || tc >= COLS) return false;
-        const target = board[tr][tc];
-        
-        if (!target) {
-            if (!mustCapture) {
-                moves.push({ r: tr, c: tc });
-                return true;
-            }
-            return false;
-        } else {
-            if (canCapture && target.player !== piece.player) {
-                moves.push({ r: tr, c: tc });
-            }
-            return false;
-        }
-    }
-
-    function slide(dr, dc) {
-        let tr = r + dr;
-        let tc = c + dc;
-        while (addIfValid(tr, tc)) {
-            tr += dr;
-            tc += dc;
-        }
-    }
-
-    switch (piece.type) {
-        case 'p':
-            if (addIfValid(r + dir, c, false)) {
-                if (!piece.hasMoved) {
-                    addIfValid(r + dir * 2, c, false);
-                }
-            }
-            addIfValid(r + dir, c - 1, true, true);
-            addIfValid(r + dir, c + 1, true, true);
-            
-            if (lastMove && lastMove.piece.type === 'p' && lastMove.isDoubleStep) {
-                if (lastMove.toR === r && Math.abs(lastMove.toC - c) === 1) {
-                    moves.push({ r: r + dir, c: lastMove.toC, isEnPassant: true });
-                }
-            }
-            break;
-
-        case 'n':
-            const knightMoves = [
-                [-2,-1], [-2,1], [2,-1], [2,1],
-                [-1,-2], [-1,2], [1,-2], [1,2]
-            ];
-            knightMoves.forEach(m => addIfValid(r + m[0], c + m[1]));
-            break;
-
-        case 'b':
-            slide(1, 1); slide(1, -1); slide(-1, 1); slide(-1, -1);
-            break;
-
-        case 'r':
-            slide(1, 0); slide(-1, 0); slide(0, 1); slide(0, -1);
-            break;
-
-        case 'q':
-            slide(1, 0); slide(-1, 0); slide(0, 1); slide(0, -1);
-            slide(1, 1); slide(1, -1); slide(-1, 1); slide(-1, -1);
-            break;
-
-        case 'k':
-            const kingMoves = [
-                [-1,-1], [-1,0], [-1,1],
-                [0,-1],          [0,1],
-                [1,-1],  [1,0],  [1,1]
-            ];
-            kingMoves.forEach(m => addIfValid(r + m[0], c + m[1]));
-            break;
-    }
-
-    return moves;
+    return ChessdownEngine.getValidMoves({ board, lastMove }, r, c);
 }
 
 function movePiece(fromR, fromC, toR, toC) {
@@ -1558,9 +1457,6 @@ function movePiece(fromR, fromC, toR, toC) {
     const piece = board[fromR][fromC];
     const targetPiece = board[toR][toC];
     
-    let isEnPassant = piece.type === 'p' && fromC !== toC && targetPiece === null;
-    let isDoubleStep = piece.type === 'p' && Math.abs(fromR - toR) === 2;
-
     clearHighlights();
     selectedBoardPiece = null;
 
@@ -1596,15 +1492,7 @@ function movePiece(fromR, fromC, toR, toC) {
 
     // --- Resolution Phase (After 300ms) ---
     setTimeout(() => {
-        board[toR][toC] = piece;
-        board[fromR][fromC] = null;
-        piece.hasMoved = true;
-
-        if (isEnPassant) {
-            board[fromR][toC] = null; 
-        }
-
-        lastMove = { piece, fromR, fromC, toR, toC, isDoubleStep };
+        makeVirtualMove({ fromR, fromC, toR, toC }); // Also handles en passant and lastMove
         
         isAnimating = false;
         renderBoard();
@@ -1620,12 +1508,6 @@ function movePiece(fromR, fromC, toR, toC) {
         currentPlayer = currentPlayer === 1 ? 2 : 1;
         startTurn();
     }, 300);
-}
-
-function isTouchdown(piece, r) {
-    if (piece.player === 1 && r === 0) return true; // P1 starts bottom(15), ends top(0)
-    if (piece.player === 2 && r === ROWS - 1) return true; // P2 starts top(0), ends bottom(15)
-    return false;
 }
 
 function endGame(title, reason, winner) {
@@ -1665,12 +1547,7 @@ function resetGame() {
 // --- Minimax AI ---
 
 function checkTouchdownForPlayer(player) {
-    const targetRow = player === 1 ? 0 : ROWS - 1;
-    for (let c = 0; c < COLS; c++) {
-        const piece = board[targetRow][c];
-        if (piece && piece.player === player) return true;
-    }
-    return false;
+    return ChessdownEngine.hasPieceInEndzone(board, player);
 }
 
 function playBotTurn() {
@@ -1723,67 +1600,22 @@ function evaluateBoard() {
     return score;
 }
 
+// Plays a move on the global board and keeps `lastMove` in sync.
 function makeVirtualMove(move) {
-    const piece = board[move.fromR][move.fromC];
-    const targetPiece = board[move.toR][move.toC];
-    
-    let isEnPassant = piece.type === 'p' && move.fromC !== move.toC && targetPiece === null;
-    let isDoubleStep = piece.type === 'p' && Math.abs(move.fromR - move.toR) === 2;
-
-    let enPassantCapturedPiece = null;
-    if (isEnPassant) {
-        enPassantCapturedPiece = board[move.fromR][move.toC];
-        board[move.fromR][move.toC] = null;
-    }
-
-    board[move.toR][move.toC] = piece;
-    board[move.fromR][move.fromC] = null;
-    
-    let oldHasMoved = piece.hasMoved;
-    piece.hasMoved = true;
-
-    let oldLastMove = lastMove;
-    lastMove = { piece, fromR: move.fromR, fromC: move.fromC, toR: move.toR, toC: move.toC, isDoubleStep };
-
-    return {
-        targetPiece,
-        isEnPassant,
-        enPassantCapturedPiece,
-        oldHasMoved,
-        oldLastMove
-    };
+    const state = { board, lastMove };
+    const undoData = ChessdownEngine.applyMove(state, move);
+    lastMove = state.lastMove;
+    return undoData;
 }
 
 function undoVirtualMove(move, undoData) {
-    const piece = board[move.toR][move.toC];
-    
-    board[move.fromR][move.fromC] = piece;
-    board[move.toR][move.toC] = undoData.targetPiece;
-    piece.hasMoved = undoData.oldHasMoved;
-
-    if (undoData.isEnPassant) {
-        board[move.fromR][move.toC] = undoData.enPassantCapturedPiece;
-    }
-
-    lastMove = undoData.oldLastMove;
+    const state = { board, lastMove };
+    ChessdownEngine.undoMove(state, move, undoData);
+    lastMove = state.lastMove;
 }
 
 function generateAllMoves(player) {
-    let allMoves = [];
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            const piece = board[r][c];
-            if (piece && piece.player === player) {
-                let moves = getValidMoves(r, c);
-                for (let m of moves) {
-                    allMoves.push({
-                        fromR: r, fromC: c, toR: m.r, toC: m.c, isEnPassant: m.isEnPassant
-                    });
-                }
-            }
-        }
-    }
-    return allMoves;
+    return ChessdownEngine.generateAllMoves({ board, lastMove }, player);
 }
 
 function minimax(depth, alpha, beta, isMaximizing) {
