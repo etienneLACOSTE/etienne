@@ -2,14 +2,10 @@
 Object.assign(app, {
     setupPlayerBanner(containerId, profile) {
         const container = document.getElementById(containerId);
-        const imgHtml = profile.avatar ? `<img src="${profile.avatar}" class="player-avatar">` : `<div class="player-avatar" style="background:#333"></div>`;
-        container.innerHTML = `
-            ${imgHtml}
-            <div class="player-info">
-                <span class="player-name">${profile.name}</span>
-                <span class="player-stats">Games: ${profile.stats.played} | Wins: ${profile.stats.wins}</span>
-            </div>
-        `;
+        container.replaceChildren(
+            createAvatarElement(profile.avatar),
+            createPlayerInfoElement(profile.name, `Games: ${profile.stats.played} | Wins: ${profile.stats.wins}`),
+        );
     },
 
     renderDraftCards() {
@@ -112,7 +108,10 @@ Object.assign(app, {
         this.setupPlayerBanner('draft-turn-indicator', profile);
         
         // Add a visual cue about drafting
-        indicator.innerHTML += `<div style="margin-left: auto; color: var(--accent-color); font-weight: bold;">Your Turn to Pick!</div>`;
+        const cue = document.createElement('div');
+        cue.style.cssText = 'margin-left: auto; color: var(--accent-color); font-weight: bold;';
+        cue.textContent = 'Your Turn to Pick!';
+        indicator.appendChild(cue);
         
         if (playerTurn === 2 && document.body.classList.contains('tabletop-mode')) {
             draftPhase.classList.add('rotated-180');

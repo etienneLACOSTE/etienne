@@ -1,5 +1,36 @@
 // Player profiles stored in localStorage.
 
+// Player data (names, avatars) may come from another player: it is only ever
+// written with textContent or as an image src, never as HTML.
+const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,/;
+
+function createAvatarElement(avatar) {
+    if (typeof avatar === 'string' && AVATAR_DATA_URL.test(avatar)) {
+        const img = document.createElement('img');
+        img.src = avatar;
+        img.alt = '';
+        img.className = 'player-avatar';
+        return img;
+    }
+    const placeholder = document.createElement('div');
+    placeholder.className = 'player-avatar';
+    placeholder.style.background = '#333';
+    return placeholder;
+}
+
+function createPlayerInfoElement(name, statsText) {
+    const info = document.createElement('div');
+    info.className = 'player-info';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'player-name';
+    nameEl.textContent = name;
+    const statsEl = document.createElement('span');
+    statsEl.className = 'player-stats';
+    statsEl.textContent = statsText;
+    info.append(nameEl, statsEl);
+    return info;
+}
+
 const ProfileManager = {
     profiles: [],
     editingProfileId: null,
@@ -118,24 +149,30 @@ const ProfileManager = {
     
     renderProfilesList() {
         const container = document.getElementById('profiles-list');
-        container.innerHTML = '';
+        container.replaceChildren();
         this.profiles.forEach(p => {
             const el = document.createElement('div');
             el.className = 'profile-card';
-            const imgHtml = p.avatar ? `<img src="${p.avatar}" class="player-avatar">` : `<div class="player-avatar" style="background:#333"></div>`;
             const isDeckValid = p.deck && p.deck.length === 3;
-            el.innerHTML = `
-                ${imgHtml}
-                <div class="player-info">
-                    <span class="player-name">${p.name}</span>
-                    <span class="player-stats">Games: ${p.stats.played} | Wins: ${p.stats.wins} | Deck: ${isDeckValid ? 'Ready' : 'Incomplete'}</span>
-                </div>
-                <div class="profile-actions">
-                    <button class="btn btn-secondary" onclick="app.buildDeckForProfile('${p.id}')">Build Deck</button>
-                    <button class="btn" onclick="ProfileManager.editProfile('${p.id}')">Edit</button>
-                    <button class="btn" style="border-color: #ef4444; color: #ef4444;" onclick="ProfileManager.deleteProfile('${p.id}')">Delete</button>
-                </div>
-            `;
+            const statsText = `Games: ${p.stats.played} | Wins: ${p.stats.wins} | Deck: ${isDeckValid ? 'Ready' : 'Incomplete'}`;
+
+            const actions = document.createElement('div');
+            actions.className = 'profile-actions';
+            const addButton = (label, className, onClick) => {
+                const btn = document.createElement('button');
+                btn.className = className;
+                btn.textContent = label;
+                btn.addEventListener('click', onClick);
+                actions.appendChild(btn);
+                return btn;
+            };
+            addButton('Build Deck', 'btn btn-secondary', () => app.buildDeckForProfile(p.id));
+            addButton('Edit', 'btn', () => ProfileManager.editProfile(p.id));
+            const del = addButton('Delete', 'btn', () => ProfileManager.deleteProfile(p.id));
+            del.style.borderColor = '#ef4444';
+            del.style.color = '#ef4444';
+
+            el.append(createAvatarElement(p.avatar), createPlayerInfoElement(p.name, statsText), actions);
             container.appendChild(el);
         });
     }
