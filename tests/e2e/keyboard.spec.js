@@ -77,3 +77,57 @@ test.describe('Keyboard: Chessdown', () => {
     await expect(page.locator('#victory-title')).toHaveText('Victory!');
   });
 });
+
+test.describe("Keyboard: Ches'spell", () => {
+  test.beforeEach(async ({ page }) => {
+    await blockExternalRequests(page);
+    await page.goto('/chesspell/');
+  });
+
+  /** Board square by board coordinates (r = 0 is rank 8). */
+  const cell = (page, r, c) => page.locator(`#chessboard .square[data-r="${r}"][data-c="${c}"]`);
+
+  /** Select a piece then its destination, keyboard only. */
+  async function keyMove(page, from, to) {
+    await activate(cell(page, ...from));
+    await expect(cell(page, ...to)).toHaveAttribute('aria-label', /can (move here|capture)/);
+    await activate(cell(page, ...to));
+  }
+
+  test('draft, a spell and a king capture, without a mouse', async ({ page }) => {
+    await activate(page.getByRole('button', { name: 'Local Game' }));
+    await activate(page.getByRole('button', { name: 'Play Draft Mode' }));
+    for (const id of [8, 1, 2, 12, 5, 15]) {
+      await activate(page.locator(`#draft-grid .spell-card[data-id="${id}"]`));
+      await activate(page.locator('#modal-confirm'));
+    }
+    await expect(page.locator('#game-board')).toHaveClass(/active/);
+    await expect(cell(page, 7, 4)).toHaveAttribute('aria-label', 'e1: white king');
+
+    // Board navigation: one tab stop, arrows move the focus.
+    expect(await page.locator('#chessboard .square[tabindex="0"]').count()).toBe(1);
+    await cell(page, 7, 0).focus();
+    await page.keyboard.press('ArrowUp');
+    await expect(cell(page, 6, 0)).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(cell(page, 6, 1)).toBeFocused();
+
+    // Wall on a4 with the keyboard.
+    await activate(page.locator('#player1-cards .in-game-card[data-card-id="8"]'));
+    await activate(page.locator('#modal-confirm'));
+    await activate(cell(page, 4, 0));
+    await expect(cell(page, 4, 0)).toHaveAttribute('aria-label', 'a4: wall');
+
+    await keyMove(page, [1, 4], [3, 4]); // e5
+    await keyMove(page, [6, 5], [5, 5]); // f3
+    await keyMove(page, [1, 0], [2, 0]); // a6
+    await keyMove(page, [6, 6], [4, 6]); // g4
+    await keyMove(page, [0, 3], [4, 7]); // Qh4
+    await keyMove(page, [6, 1], [5, 1]); // b3
+    const gameOver = page.waitForEvent('dialog');
+    await keyMove(page, [4, 7], [7, 4]); // Qxe1
+    const dialog = await gameOver;
+    expect(dialog.message()).toBe('Game Over! Black wins!');
+    await dialog.accept();
+  });
+});

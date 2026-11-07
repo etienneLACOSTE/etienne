@@ -20,6 +20,7 @@ document.addEventListener('click', (e) => {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    setupAccessibility(); // a11y.js
     app.init();
 
     const eloSlider = document.getElementById('bot-elo-slider');

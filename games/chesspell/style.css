@@ -919,3 +919,22 @@ body.tabletop-mode .chessboard {
     .in-game-card .card-icon-large { font-size: 1.4rem; }
     .in-game-card .btn-info { position: absolute; top: 0.2rem; right: 0.2rem; }
 }
+
+/* Keyboard support (js/a11y.js): visible focus (WCAG 2.4.7) and the selected square. */
+.btn:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+.spell-card:focus-visible,
+.in-game-card:focus-visible {
+    outline: 3px solid #fbbf24;
+    outline-offset: 3px;
+}
+.square:focus-visible {
+    outline: 3px solid #fbbf24;
+    outline-offset: -3px;
+    z-index: 3;
+}
+.square.kbd-selected {
+    box-shadow: inset 0 0 0 4px var(--accent-color);
+}
