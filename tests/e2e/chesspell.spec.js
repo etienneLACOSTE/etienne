@@ -231,11 +231,9 @@ test.describe("Ches'spell", () => {
     expect(box.x + box.width).toBeLessThanOrEqual(frame.x + frame.width);
   });
 
-  // Known bug: for the online black player, pieces are drawn rotated but the
-  // clickable squares are not, so click-to-move onto an empty square targets
-  // the mirrored square. Drag-and-drop works. Remove test.fail() once fixed.
-  test('online: black can move by clicking (known bug)', async ({ browser }) => {
-    test.fail();
+  // Regression test: squares used to stay unrotated for the online black player,
+  // so clicking an empty square targeted the mirrored one.
+  test('online: black can move by clicking', async ({ browser }) => {
     const ctx1 = await browser.newContext();
     const ctx2 = await browser.newContext();
     for (const ctx of [ctx1, ctx2]) {

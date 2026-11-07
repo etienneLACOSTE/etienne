@@ -240,6 +240,10 @@ Object.assign(app, {
                 }
                 const isLight = (r + c) % 2 === 0;
                 square.className = `square ${isLight ? 'light' : 'dark'}`;
+                // Place the square explicitly: for the online black player the view is
+                // rotated, and the square must sit where its piece is drawn.
+                square.style.gridRow = String(renderR + 1);
+                square.style.gridColumn = String(renderC + 1);
                 square.dataset.r = r;
                 square.dataset.c = c;
                 
@@ -396,14 +400,8 @@ Object.assign(app, {
             const board = document.getElementById('chessboard');
             app.clearHighlights();
             validMoves.forEach(m => {
-                let mR = m.r;
-                let mC = m.c;
-                if (isOnline && myPlayerColor === 'black') {
-                    mR = 7 - m.r;
-                    mC = 7 - m.c;
-                }
-                const sqIndex = mR * 8 + mC;
-                const sqEl = board.children[sqIndex];
+                // Squares are created in board order (r, c); the view rotation is CSS placement.
+                const sqEl = board.children[m.r * 8 + m.c];
                 sqEl.classList.add(m.capture ? 'valid-capture' : 'valid-move');
                 highlightSquares.push(sqEl);
             });
