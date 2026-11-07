@@ -2,13 +2,13 @@
 
 // Scripts only from this origin: no inline or injected scripts can run.
 // Inline styles are still allowed (the pages use style attributes).
-// Fonts and icons: Google Fonts and Font Awesome (cdnjs).
+// Fonts are self-hosted (assets/fonts): no third-party style or font origin.
 // connect-src allows the optional local Ches'spell AI (ai/chesspell/api.py).
 const CONTENT_SECURITY_POLICY = [
     "default-src 'self'",
     "script-src 'self'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
-    "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     "img-src 'self' data:",
     "connect-src 'self' http://127.0.0.1:5000",
     "object-src 'none'",

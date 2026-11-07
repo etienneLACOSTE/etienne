@@ -35,4 +35,19 @@ test.describe('Security headers', () => {
     }
     expect(violations).toEqual([]);
   });
+
+  test('pages contact no third party and load the self-hosted fonts', async ({ page, baseURL }) => {
+    const origin = new URL(String(baseURL)).origin;
+    const external = [];
+    page.on('request', (r) => {
+      if (!/^(data|blob):/.test(r.url()) && new URL(r.url()).origin !== origin) external.push(r.url());
+    });
+    for (const url of PAGES) {
+      await page.goto(url);
+      await page.evaluate(() => document.fonts.ready);
+      const loaded = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family));
+      expect(loaded.length, url).toBeGreaterThan(0);
+    }
+    expect(external).toEqual([]);
+  });
 });
