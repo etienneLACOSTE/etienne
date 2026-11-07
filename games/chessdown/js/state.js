@@ -7,6 +7,8 @@ export const socket = typeof io !== 'undefined' ? io('/chessdown') : null;
 // Rules live in engine.js (a classic script loaded first, shared with the server).
 export const Engine = globalThis.ChessdownEngine;
 export const { ROWS, COLS, MAX_POINTS } = Engine;
+// Bot draft and search (bot-search.js, a classic script shared with the trainer).
+export const Bot = globalThis.ChessdownBot;
 
 // Filled glyphs for both sides: CSS colours them with the jersey and an outline.
 export const PIECE_ICONS = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' };
@@ -48,14 +50,8 @@ export const state = {
 
     // Bot
     isBotMatch: false,
-    botProfile: {
-        depth: 5,
-        pieceWeights: { 'p': 100, 'n': 300, 'b': 300, 'r': 500, 'q': 900, 'k': 10000 },
-        centerBonusCols: 10,
-        centerBonusRows: 20,
-        pawnForwardBonus: 10,
-        touchdownBonus: 2000
-    },
+    /** @type {any} */
+    botProfile: { ...Bot.DEFAULT_PROFILE, pieceWeights: { ...Bot.DEFAULT_PROFILE.pieceWeights } },
     botDifficultyLevel: 'master', // novice, apprentice, expert, master
     botArchetype: 'normal', // normal, ecuries, citadelle, chapiteau, chair, sorcieres
     /** @type {any} */

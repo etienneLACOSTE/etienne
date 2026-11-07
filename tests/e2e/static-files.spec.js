@@ -4,7 +4,7 @@ const { test, expect } = require('@playwright/test');
 // Only the hub and the game clients are public. Source, tooling, AI code,
 // model weights and project files must never be downloadable.
 
-const PUBLIC = ['/', '/style.css', '/chessdown/', '/chessdown/js/main.js', '/chessdown/js/state.js', '/chessdown/engine.js', '/chessdown/training_data.json',
+const PUBLIC = ['/', '/style.css', '/chessdown/', '/chessdown/js/main.js', '/chessdown/js/state.js', '/chessdown/engine.js', '/chessdown/bot-search.js', '/chessdown/training_data.json',
   '/chesspell/', '/chesspell/js/app.js', '/chesspell/rules.js',
   '/assets/fonts/fonts.css', '/assets/fonts/bagel-fat-one.woff2', '/assets/fonts/noto-sans-symbols-2-chess.woff2'];
 
