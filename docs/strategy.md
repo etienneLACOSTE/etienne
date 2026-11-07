@@ -64,7 +64,8 @@ Commandes :
 - XSS corrigée (noms et avatars sans `innerHTML`) ; codes de salle à 6 lettres (crypto) ; messages limités à 300 Ko.
 - CSP stricte (`script-src 'self'`) + `nosniff`, `no-referrer`, `DENY`.
 - API Python : debug coupé, CORS restreint, entrées validées (+ tests Python dans `npm test`).
-- Limites restantes listées dans l'audit (triche possible en Ches'spell, minuteur serveur, HTTPS, débit).
+- ✅ Minuteur Chessdown tenu par le serveur (réglage commun aux deux joueurs, saut de tour et défaite au temps décidés par le serveur).
+- Limites restantes listées dans l'audit (triche possible en Ches'spell, HTTPS, débit).
 
 **5b. Interface (en cours)**
 - ✅ Bugs d'affichage connus corrigés : clic des noirs en ligne, plateau et cartes à 375 px, menu Timer (`.hidden`), débordement horizontal de l'accueil, titre Ches'spell rogné, panneau `#game-logger` vide sur le plateau. Tests `layout.spec.js` ajoutés.
@@ -72,7 +73,7 @@ Commandes :
 - ✅ Noms accessibles : champs étiquetés, icônes décoratives masquées, un seul h1 par page (`a11y.spec.js`).
 - ✅ Design : `DESIGN.md` écrit. Accueil et Ches'spell en « Boîte de jeu », Chessdown en « Stade ». Polices auto-hébergées (`assets/fonts/`), CSP sans origine tierce, contrastes AA vérifiés pour toutes les paires de texte. Styles en ligne déplacés dans le CSS.
 - ✅ Audit axe (`@axe-core/playwright`, WCAG 2.2 A/AA) sur chaque écran : `tests/e2e/axe.spec.js`. Corrigé : zoom autorisé (WCAG 1.4.4), cartes de sorts sans contrôles imbriqués (le titre est le bouton), cibles tactiles ≥ 24 px.
-- À faire : annonces vocales des tours et des coups (axe ne les vérifie pas).
+- ✅ Annonces vocales : coups, sorts, tours sautés et joueur au trait lus par les lecteurs d'écran (zone `#announcer`, `a11y.spec.js`).
 - Modules ES + `@ts-check` en réécrivant l'interface.
 
 **5c. Avant production**

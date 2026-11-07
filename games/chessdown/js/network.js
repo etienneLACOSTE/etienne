@@ -15,6 +15,12 @@ function setupNetwork() {
     });
 
     socket.on('gameStarted', (data) => {
+        // Both players use the room's timer (chosen by its creator).
+        const timer = data && data.roomState && data.roomState.timer;
+        if (timer) {
+            timerMode = timer.mode;
+            timerBaseSeconds = timer.seconds;
+        }
         startDraftPhase(myPlayerNumber);
     });
 
@@ -71,7 +77,19 @@ function setupNetwork() {
         startTurn();
     });
 
-    socket.on('turnSkipped', (data) => {
+    // Overall timer: the server declares who ran out of time.
+    socket.on('timeOut', (data) => {
+        if (gameState === 'over') return;
+        const winner = data.loser === 1 ? 2 : 1;
+        if (myPlayerNumber === winner) {
+            fireConfetti([COLOR_HEX[playerColors[winner]], '#f1c40f']);
+            endGame('Time Out!', 'Your opponent ran out of time!', winner);
+        } else {
+            endGame('Time Out!', 'You ran out of time.', winner);
+        }
+    });
+
+        socket.on('turnSkipped', (data) => {
         currentPlayer = data.nextPlayer;
         selectedBoardPiece = null;
         clearHighlights();

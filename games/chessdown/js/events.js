@@ -107,7 +107,8 @@ function setupEventListeners() {
         btnCreateRoom.addEventListener('pointerdown', () => {
             if (!socket) return alert("Online mode is not available right now. Please launch the server.");
             enterFullscreen();
-            socket.emit('createRoom');
+            // The creator's timer applies to both players; the server keeps the clock.
+            socket.emit('createRoom', { timerMode, timerSeconds: timerBaseSeconds });
         });
     }
 

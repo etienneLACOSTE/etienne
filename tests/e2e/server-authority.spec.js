@@ -22,19 +22,19 @@ test.describe('Server authority', () => {
           s.once(event, (data) => { clearTimeout(t); resolve(data === undefined ? true : data); });
         }),
         // Two Chessdown players in a drafted room: P1 king (11,4) + rook (9,3); P2 king (0,3).
-        async chessdownRoom() {
+        async chessdownRoom(timer) {
           const p1 = await T.connect('/chessdown');
           const p2 = await T.connect('/chessdown');
-          const code = await new Promise((r) => { p1.once('roomCreated', r); p1.emit('createRoom'); });
-          const started = T.once(p1, 'gameStarted');
+          const code = await new Promise((r) => { p1.once('roomCreated', r); p1.emit('createRoom', timer); });
+          const started = T.once(p2, 'gameStarted');
           p2.emit('joinRoom', code);
-          await started;
+          const joined = await started;
           const ended = T.once(p1, 'draftPhaseEnded', 2000);
           p1.emit('draftComplete', { roomCode: code, player: 1, color: 'blue', pieces: [{ r: 11, c: 4, type: 'k' }, { r: 9, c: 3, type: 'r' }] });
           p2.emit('draftComplete', { roomCode: code, player: 2, color: 'red', pieces: [{ r: 0, c: 3, type: 'k' }] });
           const state = (await ended).roomState;
           const sockets = { 1: p1, 2: p2 };
-          return { code, p1, p2, starter: state.currentPlayer, mover: sockets[state.currentPlayer], waiter: sockets[3 - state.currentPlayer], state };
+          return { code, p1, p2, starter: state.currentPlayer, mover: sockets[state.currentPlayer], waiter: sockets[3 - state.currentPlayer], state, joined };
         },
         // A legal first move for whoever starts.
         firstMove(starter) {
@@ -75,6 +75,35 @@ test.describe('Server authority', () => {
       return { moved: await seen };
     });
     expect(result.moved).toBeUndefined();
+  });
+
+  test("chessdown: the creator's timer reaches the other player; bad settings fall back to 10 s", async ({ page }) => {
+    const timers = await page.evaluate(async () => [
+      (await T.chessdownRoom({ timerMode: 'overall', timerSeconds: 90 })).joined.roomState.timer,
+      (await T.chessdownRoom({ timerMode: 'forever', timerSeconds: -5 })).joined.roomState.timer,
+      (await T.chessdownRoom()).joined.roomState.timer,
+    ]);
+    expect(timers).toEqual([{ mode: 'overall', seconds: 90 }, { mode: 'turn', seconds: 10 }, { mode: 'turn', seconds: 10 }]);
+  });
+
+  // 1 s timer: coin flip (3 s) + 1 s + grace (1.5 s) before the server steps in.
+  test('chessdown: a player who never gives up the turn loses it to the server clock', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const g = await T.chessdownRoom({ timerMode: 'turn', timerSeconds: 1 });
+      const early = await T.once(g.waiter, 'turnSkipped', 3_000); // Not before the time is over
+      const skipped = await T.once(g.waiter, 'turnSkipped', 4_000);
+      return { early, skipped, starter: g.starter };
+    });
+    expect(result.early).toBeUndefined();
+    expect(result.skipped).toEqual({ nextPlayer: 3 - result.starter });
+  });
+
+  test('chessdown: with an overall timer, the server declares the time out', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const g = await T.chessdownRoom({ timerMode: 'overall', timerSeconds: 1 });
+      return { timeOut: await T.once(g.waiter, 'timeOut', 7_000), starter: g.starter };
+    });
+    expect(result.timeOut).toEqual({ loser: result.starter });
   });
 
   test('chessdown: invalid or impersonated drafts are rejected', async ({ page }) => {
