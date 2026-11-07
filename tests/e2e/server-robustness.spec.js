@@ -90,4 +90,38 @@ test.describe('Server robustness', () => {
       expect(code).toMatch(/^[A-Z]{6}$/);
     });
   }
+
+  test('a message flood is cut off, other players are not affected', async ({ page }) => {
+    await blockExternalRequests(page);
+    await page.goto('/chessdown/');
+    const result = await page.evaluate(async () => {
+      const connect = () => new Promise((resolve) => { const s = io('/chessdown', { forceNew: true }); s.on('connect', () => resolve(s)); });
+      const flooder = await connect();
+      const cut = new Promise((resolve) => flooder.on('disconnect', () => resolve(true)));
+      for (let i = 0; i < 500; i++) flooder.emit('colorSelected', { roomCode: 'NOROOM', player: 1, color: 'red' });
+      const wasCut = await Promise.race([cut, new Promise((r) => setTimeout(() => r(false), 3000))]);
+      const player = await connect();
+      const code = await new Promise((r) => { player.once('roomCreated', r); player.emit('createRoom'); });
+      return { wasCut, code };
+    });
+    expect(result.wasCut).toBe(true);
+    expect(result.code).toMatch(/^[A-Z]{6}$/);
+  });
+
+  test('a player has one waiting room at a time', async ({ page }) => {
+    await blockExternalRequests(page);
+    await page.goto('/chessdown/');
+    const result = await page.evaluate(async () => {
+      const connect = () => new Promise((resolve) => { const s = io('/chessdown', { forceNew: true }); s.on('connect', () => resolve(s)); });
+      const create = (s) => new Promise((r) => { s.once('roomCreated', r); s.emit('createRoom'); });
+      const host = await connect();
+      const first = await create(host);
+      await create(host);
+      const guest = await connect();
+      const error = new Promise((r) => guest.once('errorMsg', r));
+      guest.emit('joinRoom', first);
+      return error;
+    });
+    expect(result).toBe('Room not found.');
+  });
 });

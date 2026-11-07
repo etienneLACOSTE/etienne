@@ -65,7 +65,8 @@ Commandes :
 - CSP stricte (`script-src 'self'`) + `nosniff`, `no-referrer`, `DENY`.
 - API Python : debug coupé, CORS restreint, entrées validées (+ tests Python dans `npm test`).
 - ✅ Minuteur Chessdown tenu par le serveur (réglage commun aux deux joueurs, saut de tour et défaite au temps décidés par le serveur).
-- Limites restantes listées dans l'audit (triche possible en Ches'spell, HTTPS, débit).
+- ✅ Limite de débit Socket.io par connexion et plafond de salles.
+- Limites restantes listées dans l'audit (triche possible en Ches'spell, HTTPS, connexions par IP).
 
 **5b. Interface (en cours)**
 - ✅ Bugs d'affichage connus corrigés : clic des noirs en ligne, plateau et cartes à 375 px, menu Timer (`.hidden`), débordement horizontal de l'accueil, titre Ches'spell rogné, panneau `#game-logger` vide sur le plateau. Tests `layout.spec.js` ajoutés.

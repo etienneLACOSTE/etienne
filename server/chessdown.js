@@ -1,4 +1,4 @@
-const { generateRoomCode, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
+const { generateRoomCode, makeRoomFor, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
 
 const { ROWS, COLS, MAX_POINTS, PIECE_VALUES } = engine;
@@ -120,6 +120,7 @@ function registerChessdown(io) {
         console.log('Chessdown User connected:', socket.id);
 
         safeOn(socket, 'createRoom', (data) => {
+            if (!makeRoomFor(chessdownRooms, socket)) return socket.emit('errorMsg', 'Too many games in progress. Try again later.');
             let roomCode = generateRoomCode();
             while (chessdownRooms[roomCode]) {
                 roomCode = generateRoomCode();

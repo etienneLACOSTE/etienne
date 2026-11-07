@@ -1,4 +1,4 @@
-const { generateRoomCode, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
+const { generateRoomCode, makeRoomFor, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
 
 // -----------------------------------------------------
 // CHES'SPELL SOCKET LOGIC (Namespace /chesspell)
@@ -57,6 +57,7 @@ function registerChesspell(io) {
         safeOn(socket, 'createRoom', (data) => {
             const deck = sanitizeDeck(data.deck);
             if (!deck) return socket.emit('errorMsg', 'Invalid deck.');
+            if (!makeRoomFor(chesspellRooms, socket)) return socket.emit('errorMsg', 'Too many games in progress. Try again later.');
 
             let roomCode = generateRoomCode();
             while (chesspellRooms[roomCode]) {
