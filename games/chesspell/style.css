@@ -143,10 +143,10 @@ body.tabletop-mode #player2-cards {
 }
 
 .game-title {
-    font-size: 5rem;
+    font-size: clamp(2.5rem, 12vw, 5rem);
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 4px;
+    letter-spacing: clamp(1px, 0.8vw, 4px);
     background: linear-gradient(to right, #60a5fa, #c084fc);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -409,7 +409,8 @@ header h2 {
 .in-game-cards {
     display: flex;
     gap: 0.5rem;
-    justify-content: center;
+    /* `safe`: when the row overflows, keep its start reachable instead of cut off. */
+    justify-content: safe center;
     flex-wrap: nowrap;
     width: 100%;
     overflow-x: auto;
@@ -907,26 +908,14 @@ body.tabletop-mode .chessboard {
 }
 
 
-.game-logger {
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    width: 150px;
-    max-height: 400px;
-    background: rgba(10, 10, 20, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 10px;
-    color: #a0a0b0;
-    font-family: monospace;
-    font-size: 0.9em;
-    overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    z-index: 10;
-}
-.game-logger div {
-    margin-bottom: 4px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    padding-bottom: 2px;
+
+
+/* Phones: the three cards share the width instead of overflowing. */
+@media (max-width: 600px) {
+    .in-game-cards { padding: 0; }
+    .in-game-card { position: relative; width: auto; flex: 1 1 0; min-width: 0; padding: 0.5rem 0.4rem; gap: 0.2rem; flex-direction: column; text-align: center; }
+    .in-game-card .card-info { min-width: 0; }
+    .in-game-card .card-title { font-size: 0.8rem; line-height: 1.2; }
+    .in-game-card .card-icon-large { font-size: 1.4rem; }
+    .in-game-card .btn-info { position: absolute; top: 0.2rem; right: 0.2rem; }
 }

@@ -19,7 +19,8 @@ body {
 
 /* Background Animated Orbs */
 .bg-orb {
-    position: absolute;
+    /* Fixed: decorative halos stay behind the page without widening it. */
+    position: fixed;
     border-radius: 50%;
     filter: blur(80px);
     z-index: 0;
@@ -53,6 +54,7 @@ header {
     text-align: center;
     margin-top: 80px;
     margin-bottom: 60px;
+    padding: 0 16px;
     z-index: 1;
 }
 
@@ -208,4 +210,8 @@ header p {
 @media (max-width: 768px) {
     header h1 { font-size: 2.5rem; }
     .game-grid { grid-template-columns: 1fr; padding: 0 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bg-orb { animation: none; }
 }
