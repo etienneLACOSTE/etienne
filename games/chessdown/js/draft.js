@@ -1,32 +1,37 @@
+// @ts-check
 // Draft phase: buying and placing pieces, colours, validation.
+import { COLS, MAX_POINTS, PIECES, socket, state, ui } from './state.js';
+import { createBoardDOM, getBoardCoords, getDraftZoneView, renderBoard, showScreen } from './board-view.js';
+import { handleGameplaySquareClick, startGameplay } from './gameplay.js';
+import { autoDraftBot } from './bot.js';
 
 // --- Draft Logic ---
 
-function toggleRemoveMode() {
-    removeMode = !removeMode;
-    ui.btnRemoveMode.textContent = removeMode ? "Remove Mode: ON" : "Remove Mode: OFF";
-    ui.btnRemoveMode.classList.toggle('btn-danger', removeMode);
-    ui.btnRemoveMode.classList.toggle('btn-secondary', !removeMode);
-    if (removeMode) {
-        selectedDraftPiece = null;
+export function toggleRemoveMode() {
+    state.removeMode = !state.removeMode;
+    ui.btnRemoveMode.textContent = state.removeMode ? "Remove Mode: ON" : "Remove Mode: OFF";
+    ui.btnRemoveMode.classList.toggle('btn-danger', state.removeMode);
+    ui.btnRemoveMode.classList.toggle('btn-secondary', !state.removeMode);
+    if (state.removeMode) {
+        state.selectedDraftPiece = null;
         ui.shopItems.forEach(i => i.classList.remove('selected'));
     }
 }
 
-function showTransitionScreen() {
+export function showTransitionScreen() {
     ui.gameLayout.classList.add('hidden');
     ui.draftHeader.classList.add('hidden');
     ui.draftFooter.classList.add('hidden');
-    ui.transitionTitle.textContent = `Player ${currentPlayer}'s Turn`;
-    ui.statusBar.textContent = `Waiting for Player ${currentPlayer}`;
+    ui.transitionTitle.textContent = `Player ${state.currentPlayer}'s Turn`;
+    ui.statusBar.textContent = `Waiting for Player ${state.currentPlayer}`;
     showScreen(ui.transitionScreen);
 }
 
-function startDraftPhase(player) {
-    currentPlayer = player;
-    gameState = `draft${player}`;
+export function startDraftPhase(player) {
+    state.currentPlayer = player;
+    state.gameState = `draft${player}`;
     
-    if (!currentRoomCode) {
+    if (!state.currentRoomCode) {
         if (player === 2) {
             ui.gameContainer.classList.add('rotate-180');
         } else {
@@ -36,7 +41,7 @@ function startDraftPhase(player) {
     
     ui.statusBar.classList.remove('hidden'); // Ensure visible
     
-    if (!currentRoomCode && player === 2) {
+    if (!state.currentRoomCode && player === 2) {
         showTransitionScreen();
     } else {
         // Bypass the old transition screen, go straight to drafting!
@@ -53,7 +58,7 @@ function startDraftPhase(player) {
     }
 }
 
-function handleTransitionReady() {
+export function handleTransitionReady() {
     showScreen(ui.draftHeader);
     ui.draftFooter.classList.remove('hidden'); // Also show footer
     ui.gameLayout.classList.remove('hidden');
@@ -63,84 +68,87 @@ function handleTransitionReady() {
     updateShopColors();
     updateDraftUI();
     renderBoard();
-    ui.statusBar.textContent = `Draft Phase: Player ${currentPlayer}`;
+    ui.statusBar.textContent = `Draft Phase: Player ${state.currentPlayer}`;
 }
 
-function updateShopColors() {
+export function updateShopColors() {
     ui.shopItems.forEach(item => {
         item.className = item.className.replace(/jersey-\w+/g, '');
-        item.classList.add(`jersey-${playerColors[currentPlayer]}`);
+        item.classList.add(`jersey-${state.playerColors[state.currentPlayer]}`);
     });
 }
 
-function setupColorPicker() {
+export function setupColorPicker() {
     ui.colorSwatches.forEach(s => s.classList.remove('disabled', 'selected'));
 
-    const opponentPlayer = currentRoomCode ? (myPlayerNumber === 1 ? 2 : 1) : (currentPlayer === 1 ? 2 : 1);
-    const opponentColor = playerColors[opponentPlayer];
+    const opponentPlayer = state.currentRoomCode ? (state.myPlayerNumber === 1 ? 2 : 1) : (state.currentPlayer === 1 ? 2 : 1);
+    const opponentColor = state.playerColors[opponentPlayer];
     
     // Disable opponent's color
     const disabledSwatch = document.querySelector(`.color-swatch[data-color="${opponentColor}"]`);
     if (disabledSwatch) disabledSwatch.classList.add('disabled');
 
     // Auto select a different default color if current is disabled
-    if (playerColors[currentPlayer] === opponentColor) {
-        const available = document.querySelector(`.color-swatch:not(.disabled)`);
+    if (state.playerColors[state.currentPlayer] === opponentColor) {
+        const available = /** @type {HTMLElement|null} */ (document.querySelector(`.color-swatch:not(.disabled)`));
         if (available) {
-            playerColors[currentPlayer] = available.dataset.color;
+            state.playerColors[state.currentPlayer] = available.dataset.color;
             updateShopColors();
             renderBoard();
-            if (currentRoomCode) {
-                socket.emit('colorSelected', { roomCode: currentRoomCode, player: myPlayerNumber, color: playerColors[currentPlayer] });
+            if (state.currentRoomCode) {
+                socket.emit('colorSelected', { roomCode: state.currentRoomCode, player: state.myPlayerNumber, color: state.playerColors[state.currentPlayer] });
             }
         }
     }
 
     // Select current player's color
-    const activeSwatch = document.querySelector(`.color-swatch[data-color="${playerColors[currentPlayer]}"]`);
+    const activeSwatch = document.querySelector(`.color-swatch[data-color="${state.playerColors[state.currentPlayer]}"]`);
     if (activeSwatch) activeSwatch.classList.add('selected');
 }
 
-function updateDraftUI() {
-    ui.draftPointsSpan.textContent = draftPoints[currentPlayer];
+export function updateDraftUI() {
+    ui.draftPointsSpan.textContent = state.draftPoints[state.currentPlayer];
     
     ui.shopItems.forEach(item => {
         const cost = parseInt(item.dataset.cost);
         const type = item.dataset.type;
         
-        if (cost > draftPoints[currentPlayer] && type !== 'k') {
+        if (cost > state.draftPoints[state.currentPlayer] && type !== 'k') {
             item.classList.add('disabled');
-        } else if (type === 'k' && kingsPlaced[currentPlayer]) {
+        } else if (type === 'k' && state.kingsPlaced[state.currentPlayer]) {
             item.classList.add('disabled');
         } else {
             item.classList.remove('disabled');
         }
     });
 
-    if (selectedDraftPiece) {
-        const activeShopItem = document.querySelector(`.shop-item[data-type="${selectedDraftPiece.type}"]`);
+    if (state.selectedDraftPiece) {
+        const activeShopItem = document.querySelector(`.shop-item[data-type="${state.selectedDraftPiece.type}"]`);
         if (activeShopItem && activeShopItem.classList.contains('disabled')) {
             activeShopItem.classList.remove('selected');
-            selectedDraftPiece = null;
+            state.selectedDraftPiece = null;
         }
     }
 
-    ui.btnValidateDraft.disabled = !kingsPlaced[currentPlayer];
+    ui.btnValidateDraft.disabled = !state.kingsPlaced[state.currentPlayer];
 }
 
-function handleSquareClick(viewR, viewC) {
-    if (gameState.startsWith('draft')) {
-        handleDraftSquareClick(viewR, viewC);
-    } else if (gameState === 'gameplay') {
+export function handleSquareClick(viewR, viewC) {
+    if (state.gameState.startsWith('draft')) {
+        (draftHooks.squareClick || handleDraftSquareClick)(viewR, viewC);
+    } else if (state.gameState === 'gameplay') {
         handleGameplaySquareClick(viewR, viewC);
     }
 }
 
-function handleDraftSquareClick(viewR, viewC) {
+/** The tutorial (demo.js) can take over the draft square clicks. */
+export const draftHooks = { /** @type {((viewR: number, viewC: number) => void) | null} */ squareClick: null };
+
+export function handleDraftSquareClick(viewR, viewC) {
     const zone = getDraftZoneView();
     if (viewR < zone.min || viewR > zone.max) {
         // Blink row or square in red
-        const squares = ui.chessboard.children;
+        const squares = /** @type {HTMLCollectionOf<HTMLElement>} */ (ui.chessboard.children);
         for (let c = 0; c < COLS; c++) {
             const sq = squares[viewR * COLS + c];
             sq.classList.remove('error-blink');
@@ -151,82 +159,82 @@ function handleDraftSquareClick(viewR, viewC) {
     }
 
     const { r, c } = getBoardCoords(viewR, viewC);
-    const currentPiece = board[r][c];
+    const currentPiece = state.board[r][c];
 
-    if (removeMode) {
-        if (currentPiece && currentPiece.player === currentPlayer) {
-            draftPoints[currentPlayer] += PIECES[currentPiece.type].value;
-            if (currentPiece.type === 'k') kingsPlaced[currentPlayer] = false;
-            board[r][c] = null;
+    if (state.removeMode) {
+        if (currentPiece && currentPiece.player === state.currentPlayer) {
+            state.draftPoints[state.currentPlayer] += PIECES[currentPiece.type].value;
+            if (currentPiece.type === 'k') state.kingsPlaced[state.currentPlayer] = false;
+            state.board[r][c] = null;
             updateDraftUI();
             renderBoard();
         }
         return;
     }
 
-    if (!selectedDraftPiece) return;
+    if (!state.selectedDraftPiece) return;
 
     if (currentPiece) {
-        if (currentPiece.player === currentPlayer) {
-            draftPoints[currentPlayer] += PIECES[currentPiece.type].value;
-            if (currentPiece.type === 'k') kingsPlaced[currentPlayer] = false;
-            board[r][c] = null;
+        if (currentPiece.player === state.currentPlayer) {
+            state.draftPoints[state.currentPlayer] += PIECES[currentPiece.type].value;
+            if (currentPiece.type === 'k') state.kingsPlaced[state.currentPlayer] = false;
+            state.board[r][c] = null;
         } else {
             return;
         }
     }
 
-    if (selectedDraftPiece.type === 'k' && kingsPlaced[currentPlayer]) return;
-    if (draftPoints[currentPlayer] >= selectedDraftPiece.cost) {
-        board[r][c] = {
-            type: selectedDraftPiece.type,
-            player: currentPlayer,
+    if (state.selectedDraftPiece.type === 'k' && state.kingsPlaced[state.currentPlayer]) return;
+    if (state.draftPoints[state.currentPlayer] >= state.selectedDraftPiece.cost) {
+        state.board[r][c] = {
+            type: state.selectedDraftPiece.type,
+            player: state.currentPlayer,
             hasMoved: false
         };
-        draftPoints[currentPlayer] -= selectedDraftPiece.cost;
-        if (selectedDraftPiece.type === 'k') kingsPlaced[currentPlayer] = true;
+        state.draftPoints[state.currentPlayer] -= state.selectedDraftPiece.cost;
+        if (state.selectedDraftPiece.type === 'k') state.kingsPlaced[state.currentPlayer] = true;
         
         updateDraftUI();
         renderBoard();
     }
 }
 
-function clearCurrentDraft() {
+export function clearCurrentDraft() {
     const zone = getDraftZoneView();
     for (let viewR = zone.min; viewR <= zone.max; viewR++) {
         for (let viewC = 0; viewC < COLS; viewC++) {
             const { r, c } = getBoardCoords(viewR, viewC);
-            if (board[r][c] && board[r][c].player === currentPlayer) {
-                board[r][c] = null;
+            if (state.board[r][c] && state.board[r][c].player === state.currentPlayer) {
+                state.board[r][c] = null;
             }
         }
     }
-    draftPoints[currentPlayer] = MAX_POINTS;
-    kingsPlaced[currentPlayer] = false;
+    state.draftPoints[state.currentPlayer] = MAX_POINTS;
+    state.kingsPlaced[state.currentPlayer] = false;
     updateDraftUI();
     renderBoard();
 }
 
-function validateDraft() {
-    if (!kingsPlaced[currentPlayer]) return; // Extra safeguard against disabled buttons bypassing via pointerdown
+export function validateDraft() {
+    if (!state.kingsPlaced[state.currentPlayer]) return; // Extra safeguard against disabled buttons bypassing via pointerdown
 
-    if (currentRoomCode) {
+    if (state.currentRoomCode) {
         // Extract pieces for myPlayerNumber
         const myPieces = [];
         const zone = getDraftZoneView();
         for (let viewR = zone.min; viewR <= zone.max; viewR++) {
             for (let viewC = 0; viewC < COLS; viewC++) {
                 const { r, c } = getBoardCoords(viewR, viewC);
-                if (board[r][c] && board[r][c].player === myPlayerNumber) {
-                    myPieces.push({ r, c, type: board[r][c].type });
+                if (state.board[r][c] && state.board[r][c].player === state.myPlayerNumber) {
+                    myPieces.push({ r, c, type: state.board[r][c].type });
                 }
             }
         }
         
         socket.emit('draftComplete', {
-            roomCode: currentRoomCode,
-            player: myPlayerNumber,
-            color: playerColors[myPlayerNumber],
+            roomCode: state.currentRoomCode,
+            player: state.myPlayerNumber,
+            color: state.playerColors[state.myPlayerNumber],
             pieces: myPieces
         });
 
@@ -236,8 +244,8 @@ function validateDraft() {
         ui.statusBar.textContent = "Waiting for opponent to finish drafting...";
         ui.btnValidateDraft.disabled = true;
     } else {
-        if (currentPlayer === 1) {
-            if (isBotMatch) {
+        if (state.currentPlayer === 1) {
+            if (state.isBotMatch) {
                 autoDraftBot();
                 ui.draftHeader.classList.add('hidden');
                 ui.draftFooter.classList.add('hidden');

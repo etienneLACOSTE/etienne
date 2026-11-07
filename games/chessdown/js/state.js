@@ -1,23 +1,19 @@
+// @ts-check
 // Chessdown client state: socket, constants, game state and DOM references.
+// Every module imports `state` and reads or changes its fields (state.board, ...).
+// Socket.io client (absent when the page is opened without the server).
+export const socket = typeof io !== 'undefined' ? io('/chessdown') : null;
 
-// Socket.io Client
-let socket = null;
-if (typeof io !== 'undefined') {
-    socket = io('/chessdown');
-}
-let currentRoomCode = null;
-let myPlayerNumber = 1;
-
-// Constants
-// Rules live in engine.js (loaded first); this file is the UI and the bot.
-const { ROWS, COLS, MAX_POINTS } = ChessdownEngine;
+// Rules live in engine.js (a classic script loaded first, shared with the server).
+export const Engine = globalThis.ChessdownEngine;
+export const { ROWS, COLS, MAX_POINTS } = Engine;
 
 // Filled glyphs for both sides: CSS colours them with the jersey and an outline.
-const PIECE_ICONS = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' };
-const PIECES = Object.fromEntries(Object.entries(ChessdownEngine.PIECE_VALUES)
+export const PIECE_ICONS = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' };
+export const PIECES = Object.fromEntries(Object.entries(Engine.PIECE_VALUES)
     .map(([type, value]) => [type, { value, icon: PIECE_ICONS[type] }]));
 
-const COLOR_HEX = {
+export const COLOR_HEX = {
     'red': '#e74c3c',
     'blue': '#3498db',
     'green': '#2ecc71',
@@ -28,91 +24,106 @@ const COLOR_HEX = {
     'black': '#2c3e50'
 };
 
-// Game State
-let board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
-let gameState = 'mainMenu'; // mainMenu, draft, gameplay, over
-let currentPlayer = 1;
-let draftOrder = [1, 2];
-let currentDraftIndex = 0;
-let draftPoints = { 1: MAX_POINTS, 2: MAX_POINTS };
-let kingsPlaced = { 1: false, 2: false };
-let playerColors = { 1: 'blue', 2: 'red' };
-let selectedDraftPiece = null;
-let removeMode = false;
-let positionHistory = {};
-let isBotMatch = false;
-let botProfile = {
-    depth: 5,
-    pieceWeights: { 'p': 100, 'n': 300, 'b': 300, 'r': 500, 'q': 900, 'k': 10000 },
-    centerBonusCols: 10,
-    centerBonusRows: 20,
-    pawnForwardBonus: 10,
-    touchdownBonus: 2000
+export const state = {
+    // Online
+    /** @type {string|null} */
+    currentRoomCode: null,
+    myPlayerNumber: 1,
+
+    // Game
+    /** @type {Array<Array<{type: string, player: number, hasMoved?: boolean}|null>>} */
+    board: Array(ROWS).fill(null).map(() => Array(COLS).fill(null)),
+    gameState: 'mainMenu', // mainMenu, draft1, draft2, gameplay, over
+    currentPlayer: 1,
+    draftOrder: [1, 2],
+    currentDraftIndex: 0,
+    draftPoints: { 1: MAX_POINTS, 2: MAX_POINTS },
+    kingsPlaced: { 1: false, 2: false },
+    playerColors: { 1: 'blue', 2: 'red' },
+    /** @type {{type: string, cost: number}|null} */
+    selectedDraftPiece: null,
+    removeMode: false,
+    /** @type {Record<string, number>} */
+    positionHistory: {},
+
+    // Bot
+    isBotMatch: false,
+    botProfile: {
+        depth: 5,
+        pieceWeights: { 'p': 100, 'n': 300, 'b': 300, 'r': 500, 'q': 900, 'k': 10000 },
+        centerBonusCols: 10,
+        centerBonusRows: 20,
+        pawnForwardBonus: 10,
+        touchdownBonus: 2000
+    },
+    botDifficultyLevel: 'master', // novice, apprentice, expert, master
+    botArchetype: 'normal', // normal, ecuries, citadelle, chapiteau, chair, sorcieres
+    /** @type {any} */
+    botTrainingData: null, // training_data.json
+
+    // Play
+    /** @type {any} */
+    selectedBoardPiece: null,
+    /** @type {any} */
+    lastMove: null, // { piece, fromR, fromC, toR, toC, isDoubleStep }
+    touchdownTimer: { player: null, row: null, col: null },
+    isAnimating: false,
+
+    // Timer
+    timerMode: 'turn', // 'turn' or 'overall'
+    timerBaseSeconds: 10,
+    playerTimeRemaining: { 1: 10000, 2: 10000 }, // In ms
+    timeLeft: 10_000,
+    /** @type {any} */
+    timerInterval: null,
 };
-let botDifficultyLevel = 'master'; // novice, apprentice, expert, master
-let botArchetype = 'normal'; // normal, ecuries, citadelle, chapiteau, chair, sorcieres
-let botTrainingData = null; // Store the JSON data
-// Gameplay state
-let selectedBoardPiece = null;
-let lastMove = null; // { piece, fromR, fromC, toR, toC, isDoubleStep }
-let touchdownTimer = { player: null, row: null, col: null };
-let isAnimating = false;
-
-// Timer state
-let timerMode = 'turn'; // 'turn' or 'overall'
-let timerBaseSeconds = 10;
-let playerTimeRemaining = { 1: 10000, 2: 10000 }; // In ms
-
-let timeLeft = timerBaseSeconds * 1000;
-let timerInterval = null;
 
 // DOM Elements
-const ui = {
-    gameContainer: document.getElementById('game-container'),
-    gameLayout: document.getElementById('game-layout'),
-    sideStatus: document.getElementById('side-status'),
-    timerBarContainer: document.getElementById('timer-bar-container'),
-    timerBar: document.getElementById('timer-bar'),
-    statusBar: document.getElementById('status-bar'),
-    mainMenu: document.getElementById('main-menu'),
-    coinFlipScreen: document.getElementById('coin-flip-screen'),
-    coin: document.getElementById('coin'),
-    coinFront: document.getElementById('coin-front'),
-    coinBack: document.getElementById('coin-back'),
-    coinText: document.getElementById('coin-text'),
-    transitionScreen: document.getElementById('transition-screen'),
-    transitionTitle: document.getElementById('transition-title'),
-    draftHeader: document.getElementById('draft-header'),
-    draftFooter: document.getElementById('draft-footer'),
-    pointsLeft: document.getElementById('draft-points'),
-    colorPicker: document.querySelector('.color-picker'),
-    shopItems: document.querySelectorAll('.shop-item'),
-    boardContainer: document.getElementById('board-container'),
-    difficultyModal: document.getElementById('difficulty-modal'),
-    chessboard: document.getElementById('chessboard'),
-    endzoneTop: document.getElementById('endzone-top'),
-    endzoneBottom: document.getElementById('endzone-bottom'),
-    victoryScreen: document.getElementById('victory-screen'),
-    victoryTitle: document.getElementById('victory-title'),
-    victoryReason: document.getElementById('victory-reason'),
+export const ui = {
+    gameContainer: /** @type {HTMLElement} */ (document.getElementById('game-container')),
+    gameLayout: /** @type {HTMLElement} */ (document.getElementById('game-layout')),
+    sideStatus: /** @type {HTMLElement} */ (document.getElementById('side-status')),
+    timerBarContainer: /** @type {HTMLElement} */ (document.getElementById('timer-bar-container')),
+    timerBar: /** @type {HTMLElement} */ (document.getElementById('timer-bar')),
+    statusBar: /** @type {HTMLElement} */ (document.getElementById('status-bar')),
+    mainMenu: /** @type {HTMLElement} */ (document.getElementById('main-menu')),
+    coinFlipScreen: /** @type {HTMLElement} */ (document.getElementById('coin-flip-screen')),
+    coin: /** @type {HTMLElement} */ (document.getElementById('coin')),
+    coinFront: /** @type {HTMLElement} */ (document.getElementById('coin-front')),
+    coinBack: /** @type {HTMLElement} */ (document.getElementById('coin-back')),
+    coinText: /** @type {HTMLElement} */ (document.getElementById('coin-text')),
+    transitionScreen: /** @type {HTMLElement} */ (document.getElementById('transition-screen')),
+    transitionTitle: /** @type {HTMLElement} */ (document.getElementById('transition-title')),
+    draftHeader: /** @type {HTMLElement} */ (document.getElementById('draft-header')),
+    draftFooter: /** @type {HTMLElement} */ (document.getElementById('draft-footer')),
+    pointsLeft: /** @type {HTMLElement} */ (document.getElementById('draft-points')),
+    colorPicker: /** @type {HTMLElement} */ (document.querySelector('.color-picker')),
+    shopItems: /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.shop-item')),
+    boardContainer: /** @type {HTMLElement} */ (document.getElementById('board-container')),
+    difficultyModal: /** @type {HTMLElement} */ (document.getElementById('difficulty-modal')),
+    chessboard: /** @type {HTMLElement} */ (document.getElementById('chessboard')),
+    endzoneTop: /** @type {HTMLElement} */ (document.getElementById('endzone-top')),
+    endzoneBottom: /** @type {HTMLElement} */ (document.getElementById('endzone-bottom')),
+    victoryScreen: /** @type {HTMLElement} */ (document.getElementById('victory-screen')),
+    victoryTitle: /** @type {HTMLElement} */ (document.getElementById('victory-title')),
+    victoryReason: /** @type {HTMLElement} */ (document.getElementById('victory-reason')),
     
     // Draft UI
-    draftPointsSpan: document.getElementById('draft-points'),
-    shopItems: document.querySelectorAll('.shop-item'),
-    colorSwatches: document.querySelectorAll('.color-swatch'),
-    btnValidateDraft: document.getElementById('btn-validate-draft'),
-    btnClearDraft: document.getElementById('btn-clear-draft'),
-    btnRemoveMode: document.getElementById('btn-remove-mode'),
-    btnMainMenu: document.getElementById('btn-main-menu'),
-    btnHowToPlay: document.getElementById('btn-how-to-play'),
-    rulesModal: document.getElementById('rules-modal'),
-    btnCloseRules: document.getElementById('btn-close-rules'),
+    draftPointsSpan: /** @type {HTMLElement} */ (document.getElementById('draft-points')),
+    colorSwatches: /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.color-swatch')),
+    btnValidateDraft: /** @type {HTMLButtonElement} */ (document.getElementById('btn-validate-draft')),
+    btnClearDraft: /** @type {HTMLButtonElement} */ (document.getElementById('btn-clear-draft')),
+    btnRemoveMode: /** @type {HTMLButtonElement} */ (document.getElementById('btn-remove-mode')),
+    btnMainMenu: /** @type {HTMLButtonElement} */ (document.getElementById('btn-main-menu')),
+    btnHowToPlay: /** @type {HTMLButtonElement} */ (document.getElementById('btn-how-to-play')),
+    rulesModal: /** @type {HTMLElement} */ (document.getElementById('rules-modal')),
+    btnCloseRules: /** @type {HTMLButtonElement} */ (document.getElementById('btn-close-rules')),
     
     // Timer UI
-    btnShowTimer: document.getElementById('btn-show-timer'),
-    timerModal: document.getElementById('timer-modal'),
-    btnSaveTimer: document.getElementById('btn-save-timer'),
-    timerMinInput: document.getElementById('timer-min'),
-    timerSecInput: document.getElementById('timer-sec'),
-    timerTextOverlay: document.getElementById('timer-text-overlay')
+    btnShowTimer: /** @type {HTMLButtonElement} */ (document.getElementById('btn-show-timer')),
+    timerModal: /** @type {HTMLElement} */ (document.getElementById('timer-modal')),
+    btnSaveTimer: /** @type {HTMLButtonElement} */ (document.getElementById('btn-save-timer')),
+    timerMinInput: /** @type {HTMLInputElement} */ (document.getElementById('timer-min')),
+    timerSecInput: /** @type {HTMLInputElement} */ (document.getElementById('timer-sec')),
+    timerTextOverlay: /** @type {HTMLElement} */ (document.getElementById('timer-text-overlay'))
 };

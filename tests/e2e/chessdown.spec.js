@@ -126,6 +126,8 @@ test.describe('Chessdown', () => {
     await waitForGlobal(page, 'currentPlayer', 1); // Let the bot open if it won the flip
     // The bot may have taken a piece, so pick any legal non-king move that is still available.
     const playable = await page.evaluate(() => {
+      const { board } = chessdown.state;
+      const { getValidMoves } = chessdown;
       for (let r = 0; r < board.length; r++) {
         for (let c = 0; c < board[r].length; c++) {
           const piece = board[r][c];
@@ -140,7 +142,7 @@ test.describe('Chessdown', () => {
     await move(page, playable.from, playable.to);
     // The bot must reply with its own move.
     await expect
-      .poll(() => page.evaluate(() => lastMove && lastMove.piece.player), { timeout: 20_000 })
+      .poll(() => page.evaluate(() => chessdown.state.lastMove && chessdown.state.lastMove.piece.player), { timeout: 20_000 })
       .toBe(2);
     expect(errors).toEqual([]);
   });
@@ -267,7 +269,7 @@ test.describe('Chessdown', () => {
     await move(p1, [4, 3], [3, 4]); // En passant
 
     for (const page of [p1, p2]) {
-      await expect.poll(() => page.evaluate(() => [board[3][4]?.player, board[4][4]])).toEqual([1, null]);
+      await expect.poll(() => page.evaluate(() => [chessdown.state.board[3][4]?.player, chessdown.state.board[4][4]])).toEqual([1, null]);
     }
     expect(errors.flat()).toEqual([]);
     await ctx1.close();

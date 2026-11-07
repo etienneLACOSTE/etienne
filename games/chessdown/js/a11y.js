@@ -1,18 +1,22 @@
+// @ts-check
 // Keyboard and screen-reader support.
 // The game reacts to `pointerdown`, which a keyboard never sends: Enter or Space on a
 // button produces a `click` instead. This file bridges the two, makes the draft shop,
 // the colour swatches and the board operable from the keyboard, and labels the board.
+import { COLS, ROWS, state, ui } from './state.js';
+import { getBoardCoords, getViewCoords } from './board-view.js';
+import { handleSquareClick } from './draft.js';
 
-const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
-const COLUMN_LETTERS = 'abcdefgh';
+export const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
+export const COLUMN_LETTERS = 'abcdefgh';
 
 /** Replay the game's pointerdown handlers on an element. */
-function activateWithPointerdown(el) {
+export function activateWithPointerdown(el) {
     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
 }
 
 /** Give a non-button element the keyboard behaviour of a button. */
-function makeKeyboardButton(el, label) {
+export function makeKeyboardButton(el, label) {
     el.setAttribute('role', 'button');
     el.tabIndex = 0;
     if (label) el.setAttribute('aria-label', label);
@@ -25,7 +29,7 @@ function makeKeyboardButton(el, label) {
 }
 
 /** Mirror the `selected` / `disabled` classes as ARIA states. */
-function syncPressedState(el) {
+export function syncPressedState(el) {
     const update = () => {
         el.setAttribute('aria-pressed', String(el.classList.contains('selected')));
         el.setAttribute('aria-disabled', String(el.classList.contains('disabled')));
@@ -37,12 +41,12 @@ function syncPressedState(el) {
 
 // --- Screen changes: when the focus is lost (its screen was hidden), move it to the
 // new screen's heading, so screen readers announce it and Tab continues from there.
-function focusLost() {
+export function focusLost() {
     const el = document.activeElement;
     return !el || el === document.body || !el.getClientRects().length;
 }
 
-function focusScreen(screen) {
+export function focusScreen(screen) {
     if (!screen || !focusLost()) return;
     const target = screen.querySelector('h1, h2, h3')
         || screen.querySelector('button, [href], input, select, [tabindex]:not([tabindex="-1"])');
@@ -51,10 +55,10 @@ function focusScreen(screen) {
     target.focus();
 }
 
-function setupAccessibility() {
+export function setupAccessibility() {
     // Keyboard-made clicks (detail === 0) on buttons run the pointerdown handlers.
     document.addEventListener('click', (e) => {
-        const button = e.target.closest('button');
+        const button = /** @type {HTMLButtonElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('button'));
         if (button && e.detail === 0 && !button.disabled) activateWithPointerdown(button);
     }, true);
 
@@ -73,23 +77,17 @@ function setupAccessibility() {
     ui.chessboard.addEventListener('keydown', onBoardKeydown);
 
     setupAnnouncer();
-
-    const show = showScreen;
-    showScreen = function (screen) {
-        show(screen);
-        focusScreen(screen);
-    };
 }
 
 // --- Board: one tab stop, arrow keys between squares, Enter/Space to act ---
 
-function boardRows() {
+export function boardRows() {
     return ui.chessboard.children.length / COLS;
 }
 
 /** Called after createBoardDOM(): squares become focusable buttons, one in the tab order. */
-function enhanceBoardSquares() {
-    const squares = [...ui.chessboard.children];
+export function enhanceBoardSquares() {
+    const squares = /** @type {HTMLElement[]} */ ([...ui.chessboard.children]);
     const start = (boardRows() - 1) * COLS; // bottom-left square of the view
     squares.forEach((sq, i) => {
         sq.setAttribute('role', 'button');
@@ -98,16 +96,16 @@ function enhanceBoardSquares() {
     refreshSquareLabels();
 }
 
-function focusSquare(index) {
-    const squares = ui.chessboard.children;
+export function focusSquare(index) {
+    const squares = /** @type {HTMLCollectionOf<HTMLElement>} */ (ui.chessboard.children);
     if (index < 0 || index >= squares.length) return;
     for (const sq of squares) sq.tabIndex = -1;
     squares[index].tabIndex = 0;
     squares[index].focus();
 }
 
-function onBoardKeydown(e) {
-    const sq = e.target.closest('.square');
+export function onBoardKeydown(e) {
+    const sq = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('.square'));
     if (!sq) return;
     const index = [...ui.chessboard.children].indexOf(sq);
     const col = index % COLS;
@@ -131,23 +129,23 @@ function onBoardKeydown(e) {
     }
 }
 
-function describePiece(piece) {
+export function describePiece(piece) {
     const name = PIECE_NAMES[piece.type];
-    if (currentRoomCode) return `${piece.player === myPlayerNumber ? 'your' : "opponent's"} ${name}`;
-    if (isBotMatch) return `${piece.player === 1 ? 'your' : "bot's"} ${name}`;
+    if (state.currentRoomCode) return `${piece.player === state.myPlayerNumber ? 'your' : "opponent's"} ${name}`;
+    if (state.isBotMatch) return `${piece.player === 1 ? 'your' : "bot's"} ${name}`;
     return `player ${piece.player} ${name}`;
 }
 
 /** Each square says where it is, what it holds and whether it is selected or a legal target. */
-function refreshSquareLabels() {
+export function refreshSquareLabels() {
     const rows = boardRows();
-    for (const sq of ui.chessboard.children) {
+    for (const sq of /** @type {HTMLCollectionOf<HTMLElement>} */ (ui.chessboard.children)) {
         const vr = Number(sq.dataset.vr);
         const vc = Number(sq.dataset.vc);
         const { r, c } = getBoardCoords(vr, vc);
-        const piece = board[r] && board[r][c];
+        const piece = state.board[r] && state.board[r][c];
         // During the draft only the current player's pieces are shown.
-        const visible = piece && (gameState === 'gameplay' || piece.player === currentPlayer);
+        const visible = piece && (state.gameState === 'gameplay' || piece.player === state.currentPlayer);
         let label = `${COLUMN_LETTERS[vc]}${rows - vr}: ${visible ? describePiece(piece) : 'empty'}`;
         if (sq.classList.contains('selected')) label += ', selected';
         if (sq.classList.contains('highlight')) label += ', can move here';
@@ -159,33 +157,33 @@ function refreshSquareLabels() {
 // or online opponent) and whose turn it is. The board is compared with the one seen
 // at the previous turn, so nothing in the game logic has to report its moves.
 
-let announcer = null;
-let previousTurn = null; // { lastMove, pieces } at the start of the previous turn
+export let announcer = null;
+export let previousTurn = null; // { lastMove, pieces } at the start of the previous turn
 
-function announce(text) {
+export function announce(text) {
     // Emptied first so that the same sentence twice in a row is read again.
     announcer.textContent = '';
     requestAnimationFrame(() => { announcer.textContent = text; });
 }
 
-function squareName(r, c) {
+export function squareName(r, c) {
     const { viewR, viewC } = getViewCoords(r, c);
     return `${COLUMN_LETTERS[viewC]}${ROWS - viewR}`;
 }
 
-function capitalize(text) {
+export function capitalize(text) {
     return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function whoseTurn(player) {
-    if (currentRoomCode) return player === myPlayerNumber ? 'Your turn.' : "Opponent's turn.";
-    if (isBotMatch) return player === 1 ? 'Your turn.' : "Bot's turn.";
+export function whoseTurn(player) {
+    if (state.currentRoomCode) return player === state.myPlayerNumber ? 'Your turn.' : "Opponent's turn.";
+    if (state.isBotMatch) return player === 1 ? 'Your turn.' : "Bot's turn.";
     return `Player ${player}'s turn.`;
 }
 
-function describeLastMove(before) {
-    const m = lastMove;
-    const piece = board[m.toR][m.toC];
+export function describeLastMove(before) {
+    const m = state.lastMove;
+    const piece = state.board[m.toR][m.toC];
     if (!piece) return '';
     // En passant: the captured pawn was beside the start square, not on the target.
     const captured = before[m.toR][m.toC]
@@ -196,33 +194,25 @@ function describeLastMove(before) {
     return text + '.';
 }
 
-function announceTurn() {
+export function announceTurn() {
     let text;
     if (!previousTurn) text = 'Match starts.';
-    else if (lastMove && lastMove !== previousTurn.lastMove) text = describeLastMove(previousTurn.pieces);
+    else if (state.lastMove && state.lastMove !== previousTurn.lastMove) text = describeLastMove(previousTurn.pieces);
     else text = "Time's up, turn skipped.";
-    announce(`${text} ${whoseTurn(currentPlayer)}`);
-    previousTurn = { lastMove, pieces: board.map(row => row.map(p => p && { type: p.type, player: p.player })) };
+    announce(`${text} ${whoseTurn(state.currentPlayer)}`);
+    previousTurn = { lastMove: state.lastMove, pieces: state.board.map(row => row.map(p => p && { type: p.type, player: p.player })) };
 }
 
-function setupAnnouncer() {
+export function setupAnnouncer() {
     announcer = document.createElement('div');
     announcer.id = 'announcer';
     announcer.className = 'visually-hidden';
     announcer.setAttribute('role', 'status');
     announcer.setAttribute('aria-atomic', 'true');
     document.body.appendChild(announcer);
+}
 
-    const startMatch = startGameplay;
-    startGameplay = function (...args) {
-        previousTurn = null;
-        return startMatch.apply(this, args);
-    };
-    const start = startTurn;
-    startTurn = function (...args) {
-        const result = start.apply(this, args);
-        // A touchdown ends the match inside startTurn: the victory screen speaks then.
-        if (gameState === 'gameplay') announceTurn();
-        return result;
-    };
+/** A new match: the next turn is announced as its start. */
+export function resetAnnouncements() {
+    previousTurn = null;
 }

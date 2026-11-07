@@ -22,12 +22,16 @@ function trackPageErrors(page) {
 }
 
 /**
- * Read a top-level `let`/`const` binding of a classic page script.
+ * Read a field of the game state (`window.chessdown.state`), or else a global of a
+ * classic page script.
  * @param {import('@playwright/test').Page} page
  * @param {string} name
  */
 function readGlobal(page, name) {
-  return page.evaluate((n) => (0, eval)(n), name);
+  return page.evaluate((n) => {
+    const game = /** @type {any} */ (window).chessdown;
+    return game && n in game.state ? game.state[n] : (0, eval)(n);
+  }, name);
 }
 
 /**

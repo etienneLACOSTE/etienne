@@ -1,11 +1,18 @@
+// @ts-check
 // UI event wiring for menus, modals, draft shop and buttons.
+import { socket, state, ui } from './state.js';
+import { enterFullscreen, renderBoard, showScreen } from './board-view.js';
+import { clearCurrentDraft, handleTransitionReady, startDraftPhase, toggleRemoveMode, updateShopColors, validateDraft } from './draft.js';
+import { resetGame } from './gameplay.js';
+import { loadBotProfileForDifficulty } from './bot.js';
+import { setupNetwork } from './network.js';
 
-function setupEventListeners() {
+export function setupEventListeners() {
     const btnStartLocal = document.getElementById('btn-start-local');
     if (btnStartLocal) {
         btnStartLocal.addEventListener('pointerdown', () => {
-            currentRoomCode = null;
-            isBotMatch = false;
+            state.currentRoomCode = null;
+            state.isBotMatch = false;
             enterFullscreen();
             startDraftPhase(1);
         });
@@ -31,8 +38,8 @@ function setupEventListeners() {
     diffButtons.forEach(btn => {
         btn.addEventListener('pointerdown', (e) => {
             diffButtons.forEach(b => b.classList.remove('selected'));
-            e.target.classList.add('selected');
-            botDifficultyLevel = e.target.getAttribute('data-level');
+            btn.classList.add('selected');
+            state.botDifficultyLevel = btn.getAttribute('data-level');
         });
     });
 
@@ -40,19 +47,19 @@ function setupEventListeners() {
     archButtons.forEach(btn => {
         btn.addEventListener('pointerdown', (e) => {
             archButtons.forEach(b => b.classList.remove('selected'));
-            e.target.classList.add('selected');
-            botArchetype = e.target.getAttribute('data-arch');
+            btn.classList.add('selected');
+            state.botArchetype = btn.getAttribute('data-arch');
         });
     });
 
     const btnConfirmCampaign = document.getElementById('btn-confirm-campaign');
     if (btnConfirmCampaign) {
         btnConfirmCampaign.addEventListener('pointerdown', () => {
-            loadBotProfileForDifficulty(botDifficultyLevel);
+            loadBotProfileForDifficulty(state.botDifficultyLevel);
             ui.difficultyModal.classList.add('hidden');
             
-            currentRoomCode = null;
-            isBotMatch = true;
+            state.currentRoomCode = null;
+            state.isBotMatch = true;
             enterFullscreen();
             startDraftPhase(1);
         });
@@ -69,10 +76,10 @@ function setupEventListeners() {
     timerToggleBtns.forEach(btn => {
         btn.addEventListener('pointerdown', (e) => {
             timerToggleBtns.forEach(b => b.classList.remove('selected'));
-            e.target.classList.add('selected');
-            timerMode = e.target.getAttribute('data-mode');
+            btn.classList.add('selected');
+            state.timerMode = btn.getAttribute('data-mode');
             
-            if (timerMode === 'turn') {
+            if (state.timerMode === 'turn') {
                 document.getElementById('timer-desc-turn').classList.remove('hidden');
                 document.getElementById('timer-desc-overall').classList.add('hidden');
             } else {
@@ -86,8 +93,8 @@ function setupEventListeners() {
         ui.btnSaveTimer.addEventListener('pointerdown', () => {
             const m = parseInt(ui.timerMinInput.value) || 0;
             const s = parseInt(ui.timerSecInput.value) || 0;
-            timerBaseSeconds = (m * 60) + s;
-            if (timerBaseSeconds <= 0) timerBaseSeconds = 10; // Fallback
+            state.timerBaseSeconds = (m * 60) + s;
+            if (state.timerBaseSeconds <= 0) state.timerBaseSeconds = 10; // Fallback
             
             ui.timerModal.classList.add('hidden');
             ui.mainMenu.classList.remove('hidden');
@@ -101,14 +108,14 @@ function setupEventListeners() {
 
     const btnCreateRoom = document.getElementById('btn-create-room');
     const btnJoinRoom = document.getElementById('btn-join-room');
-    const inputRoomCode = document.getElementById('room-code-input');
+    const inputRoomCode = /** @type {HTMLInputElement} */ (document.getElementById('room-code-input'));
 
     if (btnCreateRoom) {
         btnCreateRoom.addEventListener('pointerdown', () => {
             if (!socket) return alert("Online mode is not available right now. Please launch the server.");
             enterFullscreen();
             // The creator's timer applies to both players; the server keeps the clock.
-            socket.emit('createRoom', { timerMode, timerSeconds: timerBaseSeconds });
+            socket.emit('createRoom', { timerMode: state.timerMode, timerSeconds: state.timerBaseSeconds });
         });
     }
 
@@ -128,20 +135,20 @@ function setupEventListeners() {
     setupNetwork(); // Socket.io handlers, see network.js
     
     ui.btnMainMenu.addEventListener('pointerdown', () => {
-        if (currentRoomCode) {
-            socket.emit('leaveRoom', { roomCode: currentRoomCode });
-            currentRoomCode = null;
+        if (state.currentRoomCode) {
+            socket.emit('leaveRoom', { roomCode: state.currentRoomCode });
+            state.currentRoomCode = null;
         }
         resetGame();
         showScreen(ui.mainMenu);
         ui.statusBar.textContent = "Welcome to Chessdown";
     });
 
-    const btnRestart = document.getElementById('btn-restart');
+    const btnRestart = /** @type {HTMLButtonElement} */ (document.getElementById('btn-restart'));
     if (btnRestart) {
         btnRestart.addEventListener('pointerdown', () => {
-            if (currentRoomCode) {
-                socket.emit('playAgainRequest', { roomCode: currentRoomCode });
+            if (state.currentRoomCode) {
+                socket.emit('playAgainRequest', { roomCode: state.currentRoomCode });
                 btnRestart.textContent = "Waiting... (1/2)";
                 btnRestart.disabled = true;
             } else {
@@ -162,10 +169,10 @@ function setupEventListeners() {
     
     ui.shopItems.forEach(item => {
         item.addEventListener('pointerdown', () => {
-            if (removeMode) toggleRemoveMode();
+            if (state.removeMode) toggleRemoveMode();
             ui.shopItems.forEach(i => i.classList.remove('selected'));
             item.classList.add('selected');
-            selectedDraftPiece = {
+            state.selectedDraftPiece = {
                 type: item.dataset.type,
                 cost: parseInt(item.dataset.cost)
             };
@@ -177,12 +184,12 @@ function setupEventListeners() {
             if (swatch.classList.contains('disabled')) return;
             ui.colorSwatches.forEach(s => s.classList.remove('selected'));
             swatch.classList.add('selected');
-            playerColors[currentPlayer] = swatch.dataset.color;
+            state.playerColors[state.currentPlayer] = swatch.dataset.color;
             updateShopColors();
             renderBoard(); // Update piece colors dynamically
             
-            if (currentRoomCode) {
-                socket.emit('colorSelected', { roomCode: currentRoomCode, player: myPlayerNumber, color: swatch.dataset.color });
+            if (state.currentRoomCode) {
+                socket.emit('colorSelected', { roomCode: state.currentRoomCode, player: state.myPlayerNumber, color: swatch.dataset.color });
             }
         });
     });

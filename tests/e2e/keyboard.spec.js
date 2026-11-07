@@ -60,7 +60,7 @@ test.describe('Keyboard: Chessdown', () => {
     await place(page, 'k', 5, 4);
     await place(page, 'r', 3, 3);
     await activate(page.locator('.color-swatch[data-color="green"]'));
-    await expect.poll(() => page.evaluate(() => playerColors[1])).toBe('green');
+    await expect.poll(() => page.evaluate(() => chessdown.state.playerColors[1])).toBe('green');
     await activate(page.locator('#btn-validate-draft'));
 
     await activate(page.locator('#btn-ready'));

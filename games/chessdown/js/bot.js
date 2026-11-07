@@ -1,10 +1,14 @@
+// @ts-check
 // Campaign bot: difficulty profiles, automatic draft and minimax search.
+import { COLOR_HEX, COLS, MAX_POINTS, PIECES, ROWS, state } from './state.js';
+import { movePiece, skipTurn } from './gameplay.js';
+import { checkTouchdownForPlayer, generateAllMoves, makeVirtualMove, undoVirtualMove } from './rules-bridge.js';
 
-function loadBotProfileForDifficulty(level) {
-    botDifficultyLevel = level;
-    if (!botTrainingData) return;
+export function loadBotProfileForDifficulty(level) {
+    state.botDifficultyLevel = level;
+    if (!state.botTrainingData) return;
 
-    const generations = botTrainingData.generations;
+    const generations = state.botTrainingData.generations;
     let targetGenIndex = generations.length - 1; // Default to last
     let depth = 5;
 
@@ -24,34 +28,34 @@ function loadBotProfileForDifficulty(level) {
 
     const selectedBot = generations[targetGenIndex].bestBot;
     console.log(`Loading AI Profile [${level.toUpperCase()}]: Gen ${targetGenIndex + 1}, Depth ${depth}`);
-    botProfile = selectedBot;
-    botProfile.depth = depth;
+    state.botProfile = selectedBot;
+    state.botProfile.depth = depth;
 }
 
-function autoDraftBot() {
-    currentPlayer = 2;
-    draftPoints[2] = MAX_POINTS;
-    kingsPlaced[2] = false;
+export function autoDraftBot() {
+    state.currentPlayer = 2;
+    state.draftPoints[2] = MAX_POINTS;
+    state.kingsPlaced[2] = false;
 
     // Pick a color different from P1
-    const availableColors = Object.keys(COLOR_HEX).filter(c => c !== playerColors[1]);
-    playerColors[2] = availableColors[Math.floor(Math.random() * availableColors.length)];
+    const availableColors = Object.keys(COLOR_HEX).filter(c => c !== state.playerColors[1]);
+    state.playerColors[2] = availableColors[Math.floor(Math.random() * availableColors.length)];
 
     // King Placement Logic
     let kR = 0;
     let kC = 2 + Math.floor(Math.random() * 4); // Safe central columns
     
-    if (botDifficultyLevel === 'novice') {
+    if (state.botDifficultyLevel === 'novice') {
         // Novice puts King anywhere in the top 3 rows
         kR = Math.floor(Math.random() * 3);
         kC = Math.floor(Math.random() * COLS);
-    } else if (botDifficultyLevel === 'apprentice') {
+    } else if (state.botDifficultyLevel === 'apprentice') {
         // Apprentice puts King in top 2 rows, mostly safe but sometimes exposed
         kR = Math.floor(Math.random() * 2);
     }
     
-    board[kR][kC] = { type: 'k', player: 2, hasMoved: false };
-    kingsPlaced[2] = true;
+    state.board[kR][kC] = { type: 'k', player: 2, hasMoved: false };
+    state.kingsPlaced[2] = true;
 
     const piecesPool = ['p', 'n', 'b', 'r', 'q'];
     
@@ -59,46 +63,46 @@ function autoDraftBot() {
     let army = [];
 
     // 0. Archétypes : Forcer l'achat de pièces spécifiques (50% du budget ~ 19 points)
-    if (botArchetype !== 'normal') {
+    if (state.botArchetype !== 'normal') {
         let archPiece = '';
         let targetCount = 0;
-        if (botArchetype === 'ecuries') { archPiece = 'n'; targetCount = 6; } // 18 pts
-        else if (botArchetype === 'citadelle') { archPiece = 'r'; targetCount = 3; } // 15 pts
-        else if (botArchetype === 'chapiteau') { archPiece = 'b'; targetCount = 6; } // 18 pts
-        else if (botArchetype === 'chair') { archPiece = 'p'; targetCount = 19; } // 19 pts
-        else if (botArchetype === 'sorcieres') { archPiece = 'q'; targetCount = 2; } // 18 pts
+        if (state.botArchetype === 'ecuries') { archPiece = 'n'; targetCount = 6; } // 18 pts
+        else if (state.botArchetype === 'citadelle') { archPiece = 'r'; targetCount = 3; } // 15 pts
+        else if (state.botArchetype === 'chapiteau') { archPiece = 'b'; targetCount = 6; } // 18 pts
+        else if (state.botArchetype === 'chair') { archPiece = 'p'; targetCount = 19; } // 19 pts
+        else if (state.botArchetype === 'sorcieres') { archPiece = 'q'; targetCount = 2; } // 18 pts
 
         for (let i = 0; i < targetCount; i++) {
-            if (draftPoints[2] >= PIECES[archPiece].value) {
+            if (state.draftPoints[2] >= PIECES[archPiece].value) {
                 pieceCounts[archPiece]++;
                 army.push(archPiece);
-                draftPoints[2] -= PIECES[archPiece].value;
+                state.draftPoints[2] -= PIECES[archPiece].value;
             }
         }
     }
 
     // 1. Déterminer le reste de l'armée en fonction du budget et de l'ADN
-    while (draftPoints[2] > 0) {
-        let affordable = piecesPool.filter(p => PIECES[p].value <= draftPoints[2]);
+    while (state.draftPoints[2] > 0) {
+        let affordable = piecesPool.filter(p => PIECES[p].value <= state.draftPoints[2]);
         if (affordable.length === 0) break;
 
         let selectedPiece;
 
-        if (botDifficultyLevel === 'novice') {
+        if (state.botDifficultyLevel === 'novice') {
             // Pure random
             selectedPiece = affordable[Math.floor(Math.random() * affordable.length)];
         } else {
             // Draft intelligent avec rendements décroissants
             affordable.sort((a, b) => {
-                let roiA = (botProfile.pieceWeights[a] / PIECES[a].value) / (pieceCounts[a] + 1);
-                let roiB = (botProfile.pieceWeights[b] / PIECES[b].value) / (pieceCounts[b] + 1);
+                let roiA = (state.botProfile.pieceWeights[a] / PIECES[a].value) / (pieceCounts[a] + 1);
+                let roiB = (state.botProfile.pieceWeights[b] / PIECES[b].value) / (pieceCounts[b] + 1);
                 return roiB - roiA;
             });
 
             selectedPiece = affordable[0];
             let subOptimalChance = 0.05; // Master
-            if (botDifficultyLevel === 'expert') subOptimalChance = 0.15;
-            if (botDifficultyLevel === 'apprentice') subOptimalChance = 0.50;
+            if (state.botDifficultyLevel === 'expert') subOptimalChance = 0.15;
+            if (state.botDifficultyLevel === 'apprentice') subOptimalChance = 0.50;
 
             if (affordable.length > 1 && Math.random() < subOptimalChance) {
                 selectedPiece = affordable[1];
@@ -107,14 +111,14 @@ function autoDraftBot() {
         
         pieceCounts[selectedPiece]++;
         army.push(selectedPiece);
-        draftPoints[2] -= PIECES[selectedPiece].value;
+        state.draftPoints[2] -= PIECES[selectedPiece].value;
     }
 
     // 2. Assigner des cases structurées (Phalange)
     let availableSlots = [];
     for(let r = 2; r >= 0; r--) {
         for(let c = 0; c < 8; c++) {
-            if (board[r][c] === null) availableSlots.push({r, c});
+            if (state.board[r][c] === null) availableSlots.push({r, c});
         }
     }
     
@@ -151,7 +155,7 @@ function autoDraftBot() {
         
         if (bestSlotIdx !== -1) {
             let slot = availableSlots.splice(bestSlotIdx, 1)[0];
-            board[slot.r][slot.c] = { type: pieceType, player: 2, hasMoved: false };
+            state.board[slot.r][slot.c] = { type: pieceType, player: 2, hasMoved: false };
         }
     }
 
@@ -177,9 +181,9 @@ function autoDraftBot() {
     pawns.forEach(p => placePiece('p', [2, 1, 0], false));
 }
 
-function playBotTurn() {
-    if (gameState === 'over') return;
-    let bestMove = getBestMoveFromAI(botProfile.depth);
+export function playBotTurn() {
+    if (state.gameState === 'over') return;
+    let bestMove = getBestMoveFromAI(state.botProfile.depth);
     if (bestMove) {
         movePiece(bestMove.fromR, bestMove.fromC, bestMove.toR, bestMove.toC);
     } else {
@@ -187,19 +191,19 @@ function playBotTurn() {
     }
 }
 
-function evaluateBoard() {
+export function evaluateBoard() {
     let score = 0;
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-            const piece = board[r][c];
+            const piece = state.board[r][c];
             if (piece) {
-                let val = piece.type === 'k' ? 10000 : (botProfile.pieceWeights[piece.type] || PIECES[piece.type].value * 100);
+                let val = piece.type === 'k' ? 10000 : (state.botProfile.pieceWeights[piece.type] || PIECES[piece.type].value * 100);
                 let positionBonus = 0;
 
                 // Contrôle du centre (dynamique basé sur l'entraînement)
                 let centerBonus = 0;
-                let bonusCols = botProfile.centerBonusCols !== undefined ? botProfile.centerBonusCols : 10;
-                let bonusRows = botProfile.centerBonusRows !== undefined ? botProfile.centerBonusRows : 20;
+                let bonusCols = state.botProfile.centerBonusCols !== undefined ? state.botProfile.centerBonusCols : 10;
+                let bonusRows = state.botProfile.centerBonusRows !== undefined ? state.botProfile.centerBonusRows : 20;
                 
                 if (c >= 2 && c <= 5) centerBonus += bonusCols;
                 if (r >= 4 && r <= 7) centerBonus += bonusRows;
@@ -209,8 +213,8 @@ function evaluateBoard() {
                 }
 
                 // Incitation au Touchdown (dynamique basé sur l'entraînement)
-                let pawnForward = botProfile.pawnForwardBonus !== undefined ? botProfile.pawnForwardBonus : 10;
-                let tdBonus = botProfile.touchdownBonus !== undefined ? botProfile.touchdownBonus : 2000;
+                let pawnForward = state.botProfile.pawnForwardBonus !== undefined ? state.botProfile.pawnForwardBonus : 10;
+                let tdBonus = state.botProfile.touchdownBonus !== undefined ? state.botProfile.touchdownBonus : 2000;
 
                 if (piece.player === 2) {
                     if (piece.type === 'p') positionBonus += r * pawnForward;
@@ -227,14 +231,14 @@ function evaluateBoard() {
     return score;
 }
 
-function minimax(depth, alpha, beta, isMaximizing) {
+export function minimax(depth, alpha, beta, isMaximizing) {
     // Check if game over (King captured) BEFORE checking depth === 0
     let p1King = false, p2King = false;
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
-            if (board[r][c] && board[r][c].type === 'k') {
-                if (board[r][c].player === 1) p1King = true;
-                if (board[r][c].player === 2) p2King = true;
+            if (state.board[r][c] && state.board[r][c].type === 'k') {
+                if (state.board[r][c].player === 1) p1King = true;
+                if (state.board[r][c].player === 2) p2King = true;
             }
         }
     }
@@ -256,8 +260,8 @@ function minimax(depth, alpha, beta, isMaximizing) {
 
     // Trier les coups pour optimiser l'élagage (absolument crucial pour que le Roi soit vu avant d'élaguer)
     moves.sort((a, b) => {
-        let targetA = board[a.toR][a.toC];
-        let targetB = board[b.toR][b.toC];
+        let targetA = state.board[a.toR][a.toC];
+        let targetB = state.board[b.toR][b.toC];
         let valA = targetA ? (targetA.type === 'k' ? 10000 : PIECES[targetA.type].value) : 0;
         let valB = targetB ? (targetB.type === 'k' ? 10000 : PIECES[targetB.type].value) : 0;
         return valB - valA;
@@ -288,7 +292,7 @@ function minimax(depth, alpha, beta, isMaximizing) {
     }
 }
 
-function getBestMoveFromAI(depth) {
+export function getBestMoveFromAI(depth) {
     let bestMove = null;
     let maxEval = -Infinity;
     let alpha = -Infinity;
@@ -298,8 +302,8 @@ function getBestMoveFromAI(depth) {
     
     // Sort moves to improve alpha-beta pruning (King must be highest priority)
     moves.sort((a, b) => {
-        let targetA = board[a.toR][a.toC];
-        let targetB = board[b.toR][b.toC];
+        let targetA = state.board[a.toR][a.toC];
+        let targetB = state.board[b.toR][b.toC];
         let valA = targetA ? (targetA.type === 'k' ? 10000 : PIECES[targetA.type].value) : 0;
         let valB = targetB ? (targetB.type === 'k' ? 10000 : PIECES[targetB.type].value) : 0;
         return valB - valA;

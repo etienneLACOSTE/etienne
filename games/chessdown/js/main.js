@@ -1,7 +1,16 @@
+// @ts-check
 // Entry point.
+import { state, ui } from './state.js';
+import { showScreen } from './board-view.js';
+import { loadBotProfileForDifficulty } from './bot.js';
+import { setupEventListeners } from './events.js';
+import { startDemo } from './demo.js';
+import { setupAccessibility } from './a11y.js';
+import { movePiece, skipTurn } from './gameplay.js';
+import { generateAllMoves, getValidMoves } from './rules-bridge.js';
 
 // Initialization
-function init() {
+export function init() {
     setupEventListeners();
     setupAccessibility(); // a11y.js
     
@@ -19,7 +28,7 @@ function init() {
         .then(response => response.json())
         .then(data => {
             if (data && data.generations && data.generations.length > 0) {
-                botTrainingData = data;
+                state.botTrainingData = data;
                 console.log(`Loaded training data with ${data.generations.length} generations.`);
                 if (urlParams.get('demo') !== 'true') {
                     loadBotProfileForDifficulty('master');
@@ -32,6 +41,10 @@ function init() {
             console.log("No trained AI found, using default bot profile.", err);
         });
 }
+
+// The live game state and a few actions, for the console and the end-to-end tests.
+// Nothing secret: online games are refereed by the server.
+Object.assign(window, { chessdown: { state, movePiece, skipTurn, generateAllMoves, getValidMoves } });
 
 // Start
 init();

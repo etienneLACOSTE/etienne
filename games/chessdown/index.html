@@ -220,18 +220,8 @@
     <canvas id="confetti-canvas"></canvas>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="confetti.js"></script>
+    <!-- Rules shared with the server (classic script), then the game (ES modules). -->
     <script src="engine.js"></script>
-    <script src="js/state.js"></script>
-    <script src="js/rules-bridge.js"></script>
-    <script src="js/board-view.js"></script>
-    <script src="js/draft.js"></script>
-    <script src="js/gameplay.js"></script>
-    <script src="js/bot.js"></script>
-    <script src="js/network.js"></script>
-    <script src="js/events.js"></script>
-    <script src="js/demo.js"></script>
-    <script src="js/a11y.js"></script>
-    <script src="js/main.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

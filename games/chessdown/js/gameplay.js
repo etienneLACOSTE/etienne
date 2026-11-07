@@ -1,12 +1,20 @@
+// @ts-check
 // Gameplay: turns, timer, moves, end of game.
+import { fireConfetti } from '../confetti.js';
+import { COLOR_HEX, COLS, MAX_POINTS, ROWS, socket, state, ui } from './state.js';
+import { clearHighlights, createBoardDOM, getBoardCoords, getSquareElement, getViewCoords, highlightValidMoves, renderBoard, showScreen, startCoinFlip } from './board-view.js';
+import { playBotTurn } from './bot.js';
+import { announceTurn, resetAnnouncements } from './a11y.js';
+import { checkTouchdownWin, makeVirtualMove, serializeBoard } from './rules-bridge.js';
 
 // --- Gameplay Logic ---
 
-function startGameplay(winner) {
-    gameState = 'gameplay';
-    positionHistory = {}; // Reset repetition history
-    playerTimeRemaining[1] = timerBaseSeconds * 1000;
-    playerTimeRemaining[2] = timerBaseSeconds * 1000;
+export function startGameplay(winner) {
+    resetAnnouncements(); // a11y.js
+    state.gameState = 'gameplay';
+    state.positionHistory = {}; // Reset repetition history
+    state.playerTimeRemaining[1] = state.timerBaseSeconds * 1000;
+    state.playerTimeRemaining[2] = state.timerBaseSeconds * 1000;
     
     ui.statusBar.classList.add('hidden'); // Hide status bar during match
     
@@ -19,26 +27,26 @@ function startGameplay(winner) {
     startCoinFlip(winner);
 }
 
-function finalizeGameplayStart() {
+export function finalizeGameplayStart() {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
     ui.sideStatus.classList.remove('hidden'); // Show timer
     
-    selectedBoardPiece = null;
+    state.selectedBoardPiece = null;
     clearHighlights();
     renderBoard();
     startTurn();
 }
 
-function startTurn() {
+export function startTurn() {
     if (checkTouchdownWin()) {
-        const winner = currentPlayer;
-        const winnerColorHex = COLOR_HEX[playerColors[winner]];
+        const winner = state.currentPlayer;
+        const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
         
-        if (myPlayerNumber === winner) {
+        if (state.myPlayerNumber === winner) {
             fireConfetti([winnerColorHex, '#f1c40f']);
             endGame('Victory!', `TOUCHDOWN! You survived in the endzone!`, winner);
         } else {
-            if (!currentRoomCode) {
+            if (!state.currentRoomCode) {
                 fireConfetti([winnerColorHex, '#f1c40f']);
                 endGame('Victory!', `TOUCHDOWN! Player ${winner} survived in the endzone!`, winner);
             } else {
@@ -48,11 +56,11 @@ function startTurn() {
         return;
     }
     
-    const state = serializeBoard();
-    positionHistory[state] = (positionHistory[state] || 0) + 1;
-    if (positionHistory[state] >= 3) {
-        const p1Color = COLOR_HEX[playerColors[1]];
-        const p2Color = COLOR_HEX[playerColors[2]];
+    const position = serializeBoard();
+    state.positionHistory[position] = (state.positionHistory[position] || 0) + 1;
+    if (state.positionHistory[position] >= 3) {
+        const p1Color = COLOR_HEX[state.playerColors[1]];
+        const p2Color = COLOR_HEX[state.playerColors[2]];
         fireConfetti([p1Color, p2Color], 30);
         endGame('DRAW', "by 3 repetitions", 0);
         return;
@@ -60,129 +68,132 @@ function startTurn() {
     
     startTimer();
 
-    if (isBotMatch && currentPlayer === 2 && gameState !== 'over') {
+    if (state.isBotMatch && state.currentPlayer === 2 && state.gameState !== 'over') {
         setTimeout(playBotTurn, 500);
     }
+
+    // Screen readers hear the move just played and whose turn it is (a11y.js).
+    if (state.gameState === 'gameplay') announceTurn();
 }
 
-function formatTime(ms) {
+export function formatTime(ms) {
     const totalSecs = Math.ceil(ms / 1000);
     const m = Math.floor(totalSecs / 60);
     const s = totalSecs % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-function startTimer() {
-    if (timerInterval) clearInterval(timerInterval);
+export function startTimer() {
+    if (state.timerInterval) clearInterval(state.timerInterval);
     
-    if (timerMode === 'turn') {
-        timeLeft = timerBaseSeconds * 1000;
+    if (state.timerMode === 'turn') {
+        state.timeLeft = state.timerBaseSeconds * 1000;
     }
     
     // Set hourglass flow direction
     // P1 (bottom) = flex-end (shrinks downwards)
     // P2 (top) = flex-start (shrinks upwards)
-    ui.timerBarContainer.style.justifyContent = currentPlayer === 1 ? 'flex-end' : 'flex-start';
+    ui.timerBarContainer.style.justifyContent = state.currentPlayer === 1 ? 'flex-end' : 'flex-start';
 
     // Setup initial bar color
-    const hex = COLOR_HEX[playerColors[currentPlayer]];
+    const hex = COLOR_HEX[state.playerColors[state.currentPlayer]];
     ui.timerBar.style.backgroundColor = hex;
     
     // Initial display
-    const currentMs = timerMode === 'turn' ? timeLeft : playerTimeRemaining[currentPlayer];
-    ui.timerBar.style.height = `${(currentMs / (timerBaseSeconds * 1000)) * 100}%`;
+    const currentMs = state.timerMode === 'turn' ? state.timeLeft : state.playerTimeRemaining[state.currentPlayer];
+    ui.timerBar.style.height = `${(currentMs / (state.timerBaseSeconds * 1000)) * 100}%`;
     ui.timerTextOverlay.textContent = formatTime(currentMs);
 
-    timerInterval = setInterval(() => {
-        if (timerMode === 'turn') {
-            timeLeft -= 100;
-            const percent = (timeLeft / (timerBaseSeconds * 1000)) * 100;
+    state.timerInterval = setInterval(() => {
+        if (state.timerMode === 'turn') {
+            state.timeLeft -= 100;
+            const percent = (state.timeLeft / (state.timerBaseSeconds * 1000)) * 100;
             ui.timerBar.style.height = `${percent}%`;
-            ui.timerTextOverlay.textContent = formatTime(timeLeft);
+            ui.timerTextOverlay.textContent = formatTime(state.timeLeft);
 
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
+            if (state.timeLeft <= 0) {
+                clearInterval(state.timerInterval);
                 skipTurn();
             }
         } else {
             // Overall Mode
-            playerTimeRemaining[currentPlayer] -= 100;
-            const percent = (playerTimeRemaining[currentPlayer] / (timerBaseSeconds * 1000)) * 100;
+            state.playerTimeRemaining[state.currentPlayer] -= 100;
+            const percent = (state.playerTimeRemaining[state.currentPlayer] / (state.timerBaseSeconds * 1000)) * 100;
             ui.timerBar.style.height = `${percent}%`;
-            ui.timerTextOverlay.textContent = formatTime(playerTimeRemaining[currentPlayer]);
+            ui.timerTextOverlay.textContent = formatTime(state.playerTimeRemaining[state.currentPlayer]);
 
-            if (playerTimeRemaining[currentPlayer] <= 0) {
-                clearInterval(timerInterval);
-                const winner = currentPlayer === 1 ? 2 : 1;
-                const winnerColorHex = COLOR_HEX[playerColors[winner]];
+            if (state.playerTimeRemaining[state.currentPlayer] <= 0) {
+                clearInterval(state.timerInterval);
+                const winner = state.currentPlayer === 1 ? 2 : 1;
+                const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
                 fireConfetti([winnerColorHex, '#f1c40f']);
-                endGame('Time Out!', `Player ${currentPlayer} ran out of time!`, winner);
+                endGame('Time Out!', `Player ${state.currentPlayer} ran out of time!`, winner);
             }
         }
     }, 100);
 }
 
-function skipTurn() {
+export function skipTurn() {
     clearHighlights();
-    selectedBoardPiece = null;
-    if (currentRoomCode) {
+    state.selectedBoardPiece = null;
+    if (state.currentRoomCode) {
         // Online, the server decides: the player whose time ran out gives up the turn,
         // and both clients switch when the server announces it ('turnSkipped').
-        if (currentPlayer === myPlayerNumber) socket.emit('skipTurn', { roomCode: currentRoomCode });
+        if (state.currentPlayer === state.myPlayerNumber) socket.emit('skipTurn', { roomCode: state.currentRoomCode });
         return;
     }
-    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
     startTurn();
 }
 
-function handleGameplaySquareClick(viewR, viewC) {
-    if (isAnimating) return;
-    if (currentRoomCode && currentPlayer !== myPlayerNumber) return; // Ignore if not our turn in online mode
-    if (isBotMatch && currentPlayer === 2) return; // Block human clicks when bot is playing
+export function handleGameplaySquareClick(viewR, viewC) {
+    if (state.isAnimating) return;
+    if (state.currentRoomCode && state.currentPlayer !== state.myPlayerNumber) return; // Ignore if not our turn in online mode
+    if (state.isBotMatch && state.currentPlayer === 2) return; // Block human clicks when bot is playing
 
     const { r, c } = getBoardCoords(viewR, viewC);
-    const clickedPiece = board[r][c];
+    const clickedPiece = state.board[r][c];
     const squareEl = getSquareElement(viewR, viewC);
 
-    if (selectedBoardPiece && squareEl.classList.contains('highlight')) {
-        if (currentRoomCode) {
+    if (state.selectedBoardPiece && squareEl.classList.contains('highlight')) {
+        if (state.currentRoomCode) {
             // Send move to server
             socket.emit('makeMove', {
-                roomCode: currentRoomCode,
-                from: { r: selectedBoardPiece.r, c: selectedBoardPiece.c },
+                roomCode: state.currentRoomCode,
+                from: { r: state.selectedBoardPiece.r, c: state.selectedBoardPiece.c },
                 to: { r, c }
             });
-            selectedBoardPiece = null;
+            state.selectedBoardPiece = null;
             clearHighlights();
         } else {
             // Local mode
-            movePiece(selectedBoardPiece.r, selectedBoardPiece.c, r, c);
+            movePiece(state.selectedBoardPiece.r, state.selectedBoardPiece.c, r, c);
         }
         return;
     }
 
-    const activePlayer = currentRoomCode ? myPlayerNumber : currentPlayer;
+    const activePlayer = state.currentRoomCode ? state.myPlayerNumber : state.currentPlayer;
     if (clickedPiece && clickedPiece.player === activePlayer) {
-        selectedBoardPiece = { r, c, piece: clickedPiece };
+        state.selectedBoardPiece = { r, c, piece: clickedPiece };
         highlightValidMoves(r, c);
     } else {
-        selectedBoardPiece = null;
+        state.selectedBoardPiece = null;
         clearHighlights();
     }
 }
 
-function movePiece(fromR, fromC, toR, toC) {
-    if (isAnimating) return;
+export function movePiece(fromR, fromC, toR, toC) {
+    if (state.isAnimating) return;
     
-    const piece = board[fromR][fromC];
-    const targetPiece = board[toR][toC];
+    const piece = state.board[fromR][fromC];
+    const targetPiece = state.board[toR][toC];
     
     clearHighlights();
-    selectedBoardPiece = null;
+    state.selectedBoardPiece = null;
 
     // --- Animation Phase ---
-    isAnimating = true;
-    clearInterval(timerInterval); // Pause timer
+    state.isAnimating = true;
+    clearInterval(state.timerInterval); // Pause timer
 
     const { viewR: fVR, viewC: fVC } = getViewCoords(fromR, fromC);
     const { viewR: tVR, viewC: tVC } = getViewCoords(toR, toC);
@@ -190,7 +201,7 @@ function movePiece(fromR, fromC, toR, toC) {
     const toSq = getSquareElement(tVR, tVC);
 
     if (fromSq && toSq) {
-        const pieceIcon = fromSq.querySelector('.piece-icon');
+        const pieceIcon = /** @type {HTMLElement|null} */ (fromSq.querySelector('.piece-icon'));
         if (pieceIcon) {
             // Find target center
             const rectFrom = fromSq.getBoundingClientRect();
@@ -214,30 +225,30 @@ function movePiece(fromR, fromC, toR, toC) {
     setTimeout(() => {
         makeVirtualMove({ fromR, fromC, toR, toC }); // Also handles en passant and lastMove
         
-        isAnimating = false;
+        state.isAnimating = false;
         renderBoard();
 
         if (targetPiece && targetPiece.type === 'k') {
-            const winner = currentPlayer;
-            const winnerColorHex = COLOR_HEX[playerColors[winner]];
+            const winner = state.currentPlayer;
+            const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
             fireConfetti([winnerColorHex, '#f1c40f']);
             endGame('Victory!', `Player ${winner} captured the King!`, winner);
             return;
         }
 
-        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
         startTurn();
     }, 300);
 }
 
-function endGame(title, reason, winner) {
-    gameState = 'over';
-    clearInterval(timerInterval);
+export function endGame(title, reason, winner) {
+    state.gameState = 'over';
+    clearInterval(state.timerInterval);
     ui.victoryTitle.textContent = title;
     ui.victoryReason.textContent = reason;
     
     const canvas = document.getElementById('confetti-canvas');
-    if (!currentRoomCode && winner === 2 && !isBotMatch) {
+    if (!state.currentRoomCode && winner === 2 && !state.isBotMatch) {
         ui.victoryScreen.classList.add('rotate-180');
         if (canvas) canvas.classList.add('rotate-180');
     } else {
@@ -248,18 +259,18 @@ function endGame(title, reason, winner) {
     showScreen(ui.victoryScreen);
 }
 
-function resetGame() {
-    clearInterval(timerInterval);
+export function resetGame() {
+    clearInterval(state.timerInterval);
     ui.sideStatus.classList.add('hidden');
     ui.gameContainer.classList.remove('rotate-180');
     ui.victoryScreen.classList.remove('rotate-180');
     const canvas = document.getElementById('confetti-canvas');
     if (canvas) canvas.classList.remove('rotate-180');
-    board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
-    draftPoints = { 1: MAX_POINTS, 2: MAX_POINTS };
-    kingsPlaced = { 1: false, 2: false };
-    selectedDraftPiece = null;
-    lastMove = null;
-    currentDraftIndex = 0;
-    positionHistory = {};
+    state.board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+    state.draftPoints = { 1: MAX_POINTS, 2: MAX_POINTS };
+    state.kingsPlaced = { 1: false, 2: false };
+    state.selectedDraftPiece = null;
+    state.lastMove = null;
+    state.currentDraftIndex = 0;
+    state.positionHistory = {};
 }

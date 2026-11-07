@@ -1,4 +1,5 @@
-const confettiCanvas = document.getElementById('confetti-canvas');
+// @ts-check
+const confettiCanvas = /** @type {HTMLCanvasElement} */ (document.getElementById('confetti-canvas'));
 const ctx = confettiCanvas.getContext('2d');
 
 let confettis = [];
@@ -64,7 +65,7 @@ function animateConfetti() {
     requestAnimationFrame(animateConfetti);
 }
 
-function fireConfetti(customColors = null, amount = 150) {
+export function fireConfetti(customColors = null, amount = 150) {
     confettis = [];
     for (let i = 0; i < amount; i++) {
         confettis.push(new Confetti(customColors));

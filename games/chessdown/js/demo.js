@@ -1,10 +1,14 @@
+// @ts-check
 // Scripted tutorial shown with ?demo=true.
+import { state, ui } from './state.js';
+import { draftHooks, handleDraftSquareClick, startDraftPhase, validateDraft } from './draft.js';
+import { loadBotProfileForDifficulty } from './bot.js';
 
-function startDemo() {
-    currentRoomCode = null;
-    isBotMatch = true;
-    botDifficultyLevel = 'novice';
-    if(botTrainingData) loadBotProfileForDifficulty('novice');
+export function startDemo() {
+    state.currentRoomCode = null;
+    state.isBotMatch = true;
+    state.botDifficultyLevel = 'novice';
+    if(state.botTrainingData) loadBotProfileForDifficulty('novice');
     startDraftPhase(1);
 
     const overlay = document.createElement('div');
@@ -23,11 +27,11 @@ function startDemo() {
     // Position the bubble relative to the board dynamically to avoid overflow: hidden clipping
     setTimeout(() => {
         document.body.appendChild(overlay);
-        const board = document.getElementById('chessboard');
+        const boardEl = document.getElementById('chessboard');
         
         function updatePosition() {
             if (!document.getElementById('demo-overlay-bubble')) return;
-            const r = board.getBoundingClientRect();
+            const r = boardEl.getBoundingClientRect();
             // If there's enough space on the right (320px width + 40px margin)
             if (window.innerWidth > r.right + 360) {
                 overlay.style.top = Math.max(20, r.top) + 'px';
@@ -55,7 +59,7 @@ function startDemo() {
         const kingItem = document.querySelector('.shop-item[data-type="k"]');
         if(kingItem) kingItem.classList.add('demo-highlight');
         
-        const shopItems = document.querySelectorAll('.shop-item');
+        const shopItems = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.shop-item'));
         shopItems.forEach(item => {
             item.addEventListener('pointerdown', (e) => {
                 if (demoStep === 0 && item.dataset.type === 'k') {
@@ -85,7 +89,7 @@ function startDemo() {
         });
         
         const originalHandleDraftSquareClick = handleDraftSquareClick;
-        window.handleDraftSquareClick = function(viewR, viewC) {
+        draftHooks.squareClick = function(viewR, viewC) {
             if (demoStep === 1) {
                 if (viewR !== 5) {
                     pText.innerHTML = "<span class='demo-error'>Please place the King on the highlighted bottom row!</span>";
@@ -130,7 +134,7 @@ function startDemo() {
                 pText.innerHTML = "Well done! Now you are on your own. <b>Spend ALL your remaining points</b> (try Queens or Knights). When points reach 0, click <b>Validate Draft</b>.";
                 
                 const checkPoints = setInterval(() => {
-                    if (draftPoints[1] <= 1 && demoStep === 8) {
+                    if (state.draftPoints[1] <= 1 && demoStep === 8) {
                         demoStep = 9;
                         const validateBtn = document.getElementById('btn-validate-draft');
                         if(validateBtn) validateBtn.classList.add('demo-highlight');
@@ -144,7 +148,7 @@ function startDemo() {
         };
 
         const oldBtn = ui.btnValidateDraft;
-        const newBtn = oldBtn.cloneNode(true);
+        const newBtn = /** @type {HTMLButtonElement} */ (oldBtn.cloneNode(true));
         oldBtn.parentNode.replaceChild(newBtn, oldBtn);
         ui.btnValidateDraft = newBtn;
         

@@ -65,12 +65,14 @@ test.describe('Announcements', () => {
 
     // A rook move, chosen among the legal moves of the player to move.
     await page.evaluate(() => {
+      const { board, currentPlayer } = chessdown.state;
+      const { generateAllMoves, movePiece } = chessdown;
       const move = generateAllMoves(currentPlayer).find((m) => board[m.fromR][m.fromC].type === 'r' && !board[m.toR][m.toC]);
       movePiece(move.fromR, move.fromC, move.toR, move.toC);
     });
     await expect(announcer).toHaveText(/^Player [12] rook [a-h]\d+ to [a-h]\d+\. Player [12]'s turn\.$/);
 
-    await page.evaluate(() => skipTurn());
+    await page.evaluate(() => chessdown.skipTurn());
     await expect(announcer).toHaveText(/^Time's up, turn skipped\. Player [12]'s turn\.$/);
   });
 
