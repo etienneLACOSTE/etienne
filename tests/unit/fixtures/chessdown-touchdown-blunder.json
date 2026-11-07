@@ -1,0 +1,237 @@
+{
+ "note": "Real game position: the bot (player 2) used to play d8-b9 here, letting White score a touchdown at once.",
+ "state": {
+  "board": [
+   [
+    {
+     "type": "p",
+     "player": 2,
+     "hasMoved": false
+    },
+    null,
+    {
+     "type": "n",
+     "player": 2,
+     "hasMoved": true
+    },
+    {
+     "type": "k",
+     "player": 2,
+     "hasMoved": false
+    },
+    null,
+    null,
+    null,
+    {
+     "type": "q",
+     "player": 2,
+     "hasMoved": true
+    }
+   ],
+   [
+    null,
+    null,
+    null,
+    null,
+    {
+     "type": "r",
+     "player": 2,
+     "hasMoved": true
+    },
+    null,
+    null,
+    null
+   ],
+   [
+    {
+     "type": "p",
+     "player": 2,
+     "hasMoved": false
+    },
+    null,
+    null,
+    {
+     "type": "n",
+     "player": 2,
+     "hasMoved": true
+    },
+    null,
+    null,
+    {
+     "type": "p",
+     "player": 2,
+     "hasMoved": false
+    },
+    {
+     "type": "n",
+     "player": 2,
+     "hasMoved": true
+    }
+   ],
+   [
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "type": "q",
+     "player": 1,
+     "hasMoved": true
+    },
+    null,
+    null
+   ],
+   [
+    null,
+    null,
+    null,
+    {
+     "type": "n",
+     "player": 2,
+     "hasMoved": true
+    },
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    {
+     "type": "p",
+     "player": 2,
+     "hasMoved": true
+    },
+    null,
+    null,
+    null,
+    null,
+    {
+     "type": "q",
+     "player": 1,
+     "hasMoved": true
+    },
+    null
+   ],
+   [
+    null,
+    null,
+    null,
+    {
+     "type": "p",
+     "player": 1,
+     "hasMoved": true
+    },
+    null,
+    {
+     "type": "n",
+     "player": 1,
+     "hasMoved": true
+    },
+    {
+     "type": "p",
+     "player": 1,
+     "hasMoved": true
+    },
+    null
+   ],
+   [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    {
+     "type": "p",
+     "player": 1,
+     "hasMoved": false
+    },
+    null,
+    null,
+    {
+     "type": "r",
+     "player": 1,
+     "hasMoved": true
+    },
+    {
+     "type": "p",
+     "player": 1,
+     "hasMoved": false
+    },
+    null,
+    null
+   ],
+   [
+    {
+     "type": "b",
+     "player": 1,
+     "hasMoved": false
+    },
+    null,
+    null,
+    null,
+    {
+     "type": "b",
+     "player": 1,
+     "hasMoved": true
+    },
+    null,
+    null,
+    null
+   ],
+   [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "type": "k",
+     "player": 1,
+     "hasMoved": true
+    },
+    {
+     "type": "n",
+     "player": 1,
+     "hasMoved": true
+    }
+   ]
+  ],
+  "lastMove": {
+   "piece": {
+    "type": "q",
+    "player": 1,
+    "hasMoved": true
+   },
+   "fromR": 6,
+   "fromC": 3,
+   "toR": 6,
+   "toC": 6,
+   "isDoubleStep": false
+  }
+ },
+ "blunder": {
+  "fromR": 4,
+  "fromC": 3,
+  "toR": 3,
+  "toC": 1
+ }
+}

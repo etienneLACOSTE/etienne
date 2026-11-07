@@ -207,28 +207,49 @@
     }
 
     /**
-     * At the end of the search, keep playing captures only, so the score is not taken
-     * in the middle of an exchange (a piece left hanging just past the horizon).
-     * The side to move may also stop capturing ("stand pat").
+     * At the end of the search, keep playing the moves that change the game at once, so
+     * the score is not taken in the middle of an exchange or a touchdown:
+     * - captures (a piece left hanging just past the horizon);
+     * - moves into the opposite end zone (a "quiet" touchdown attempt, that scores at
+     *   the start of the next turn unless the piece is taken back).
+     * The side to move may stop there ("stand pat"), except when an enemy piece stands
+     * in its back rank: then it must take it back, or the touchdown scores.
      */
     function quiescence(state, profile, me, alpha, beta, maximizing, plies) {
         checkTime();
         const end = terminalScore(state, me, 0, maximizing);
         if (end !== null) return end;
-        const standPat = evaluate(state.board, profile, me);
-        if (plies === 0) return standPat;
-        if (maximizing) {
-            if (standPat >= beta) return standPat;
-            alpha = Math.max(alpha, standPat);
+        const side = maximizing ? me : other(me);
+        const enemy = other(side);
+        const lost = maximizing ? -WIN : WIN;
+        const moves = Engine.generateAllMoves(state, side);
+        const threatened = Engine.hasPieceInEndzone(state.board, enemy);
+        const zone = Engine.endzoneRow(side);
+        let candidates;
+        if (threatened) {
+            // Only taking the intruder back saves the game.
+            const enemyZone = Engine.endzoneRow(enemy);
+            candidates = moves.filter((m) => {
+                const t = state.board[m.toR][m.toC];
+                return t && t.player === enemy && m.toR === enemyZone;
+            });
+            if (candidates.length === 0) return lost;
+            if (plies === 0) return evaluate(state.board, profile, me);
         } else {
-            if (standPat <= alpha) return standPat;
-            beta = Math.min(beta, standPat);
+            const standPat = evaluate(state.board, profile, me);
+            if (plies === 0) return standPat;
+            if (maximizing) {
+                if (standPat >= beta) return standPat;
+                alpha = Math.max(alpha, standPat);
+            } else {
+                if (standPat <= alpha) return standPat;
+                beta = Math.min(beta, standPat);
+            }
+            candidates = moves.filter((m) => state.board[m.toR][m.toC] || m.toR === zone);
         }
-        const captures = Engine.generateAllMoves(state, maximizing ? me : other(me))
-            .filter((m) => state.board[m.toR][m.toC]);
-        orderMoves(state.board, captures);
-        let best = standPat;
-        for (const move of captures) {
+        orderMoves(state.board, candidates);
+        let best = threatened ? (maximizing ? -Infinity : Infinity) : evaluate(state.board, profile, me);
+        for (const move of candidates) {
             const undo = Engine.applyMove(state, move);
             let ev;
             try {
@@ -281,32 +302,49 @@
         return best;
     }
 
-    /** One full search at `depth` plies from the root. */
+    /** Random noise added to vary equal moves (the score of a pawn is 100). */
+    const NOISE = 0.1;
+
+    /**
+     * One full search at `depth` plies from the root.
+     * Alpha-beta only gives exact scores to moves that may beat the best so far; the
+     * others come back as upper bounds. The noise must never lift a bound above an exact
+     * score (a losing move would then pass for a good one), so the window stays open
+     * NOISE below the best: moves within NOISE get exact scores, the others are skipped.
+     */
     function searchRoot(state, me, depth, profile, random) {
         const moves = orderMoves(state.board, Engine.generateAllMoves(state, me));
         let best = null;
-        let maxEval = -Infinity;
-        let alpha = -Infinity;
+        let bestRaw = -Infinity; // Best exact score so far
+        let maxEval = -Infinity; // Best score with noise (decides the move)
         const beta = Infinity;
         for (const move of moves) {
             const undo = Engine.applyMove(state, move);
+            const floor = bestRaw - NOISE - 0.01;
             let ev;
+            let exact;
             try {
-                ev = minimax(state, profile, me, depth - 1, alpha, beta, false);
-                // A lost position: every move scores as a loss. Prefer the one that keeps the
-                // most material, so the bot keeps resisting instead of giving pieces away.
-                // (A later loss already scores higher; this breaks ties between equal losses.)
-                if (ev <= -WIN) ev = minimax(state, profile, me, depth - 1, -Infinity, Infinity, false)
-                    + Math.max(-0.9, Math.min(0.9, material(state.board, profile, me) / 100000));
-                else ev += random() * 0.1;
+                const raw = minimax(state, profile, me, depth - 1, floor, beta, false);
+                exact = raw > floor;
+                if (raw <= -WIN) {
+                    // A lost position: prefer the move that keeps the most material, so the
+                    // bot keeps resisting. (A later loss already scores higher; this only
+                    // breaks ties between equal losses.)
+                    const full = minimax(state, profile, me, depth - 1, -Infinity, Infinity, false);
+                    ev = full + Math.max(-0.9, Math.min(0.9, material(state.board, profile, me) / 100000));
+                    exact = true;
+                    bestRaw = Math.max(bestRaw, full);
+                } else if (exact) {
+                    bestRaw = Math.max(bestRaw, raw);
+                    ev = raw + random() * NOISE;
+                }
             } finally {
                 Engine.undoMove(state, move, undo);
             }
-            if (ev > maxEval) {
+            if (exact && ev > maxEval) {
                 maxEval = ev;
                 best = move;
             }
-            alpha = Math.max(alpha, ev);
         }
         return best;
     }

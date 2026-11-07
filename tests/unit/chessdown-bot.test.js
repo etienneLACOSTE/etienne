@@ -152,6 +152,17 @@ test('with a time budget the bot answers in time and leaves the board untouched'
     assert.equal(JSON.stringify(state), before, 'every move tried was undone');
 });
 
+test('a real game blunder: random noise no longer lifts a losing move above a good one', () => {
+    // Alpha-beta returns bounds for moves that cannot beat the best; noise used to be
+    // added to those bounds, so a move losing to a touchdown could win the draw.
+    const fixture = require('./fixtures/chessdown-touchdown-blunder.json');
+    const same = (m, b) => m.fromR === b.fromR && m.fromC === b.fromC && m.toR === b.toR && m.toC === b.toC;
+    for (let i = 0; i < 10; i++) { // Depth 4: the old search chose the blunder 3 times out of 10
+        const move = Bot.bestMove(JSON.parse(JSON.stringify(fixture.state)), 2, 4, Bot.DEFAULT_PROFILE, seededRandom(i));
+        assert.ok(!same(move, fixture.blunder), `run ${i}`);
+    }
+});
+
 test('a training game ends with a result, and the same seed replays it', () => {
     const a = playGame(Bot.DEFAULT_PROFILE, Bot.DEFAULT_PROFILE, 2, seededRandom(3));
     const b = playGame(Bot.DEFAULT_PROFILE, Bot.DEFAULT_PROFILE, 2, seededRandom(3));
