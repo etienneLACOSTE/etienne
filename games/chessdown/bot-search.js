@@ -26,8 +26,14 @@
         centerBonusCols: 10,
         centerBonusRows: 20,
         pawnForwardBonus: 10,
-        touchdownBonus: 2000,
+        // A piece standing in the opposite end zone has not scored yet (it must survive a
+        // turn, which the search checks): the bonus stays below a rook, so a speculative
+        // run never outweighs real material.
+        touchdownBonus: 400,
     };
+
+    /** Extra plies of captures only, after the main search (see quiescence). */
+    const QUIESCENCE_PLIES = 4;
 
     const other = (player) => (player === 1 ? 2 : 1);
 
@@ -36,7 +42,7 @@
         const bonusCols = profile.centerBonusCols !== undefined ? profile.centerBonusCols : 10;
         const bonusRows = profile.centerBonusRows !== undefined ? profile.centerBonusRows : 20;
         const pawnForward = profile.pawnForwardBonus !== undefined ? profile.pawnForwardBonus : 10;
-        const tdBonus = profile.touchdownBonus !== undefined ? profile.touchdownBonus : 2000;
+        const tdBonus = profile.touchdownBonus !== undefined ? profile.touchdownBonus : 400;
         let score = 0; // From player 2's side, then turned to `me`
         for (let r = 0; r < ROWS; r++) {
             for (let c = 0; c < COLS; c++) {
@@ -63,6 +69,19 @@
         return me === 2 ? score : -score;
     }
 
+    /** Material only (piece weights), from `me`'s side: to choose between lost positions. */
+    function material(board, profile, me) {
+        let score = 0;
+        for (const row of board) {
+            for (const p of row) {
+                if (!p || p.type === 'k') continue;
+                const val = profile.pieceWeights[p.type] || PIECE_VALUES[p.type] * 100;
+                score += p.player === me ? val : -val;
+            }
+        }
+        return score;
+    }
+
     /** Captures first (king first), for better alpha-beta pruning. */
     function orderMoves(board, moves) {
         const gain = (m) => {
@@ -72,8 +91,11 @@
         return moves.sort((a, b) => gain(b) - gain(a));
     }
 
-    /** Minimax with alpha-beta; `maximizing` means it is `me` to play. */
-    function minimax(state, profile, me, depth, alpha, beta, maximizing) {
+    /**
+     * Score of a finished game (a king taken, or a touchdown scored at the start of the
+     * player's turn), or null. Earlier results score more: `depth` is the plies left.
+     */
+    function terminalScore(state, me, depth, maximizing) {
         let myKing = false;
         let theirKing = false;
         for (let r = 0; r < ROWS; r++) {
@@ -87,12 +109,54 @@
         }
         if (!myKing) return -WIN - depth;
         if (!theirKing) return WIN + depth;
-
-        // A touchdown wins if the piece survived until the start of its player's turn.
         if (maximizing && Engine.hasPieceInEndzone(state.board, me)) return WIN + depth;
         if (!maximizing && Engine.hasPieceInEndzone(state.board, other(me))) return -WIN - depth;
+        return null;
+    }
 
-        if (depth === 0) return evaluate(state.board, profile, me);
+    /**
+     * At the end of the search, keep playing captures only, so the score is not taken
+     * in the middle of an exchange (a piece left hanging just past the horizon).
+     * The side to move may also stop capturing ("stand pat").
+     */
+    function quiescence(state, profile, me, alpha, beta, maximizing, plies) {
+        const end = terminalScore(state, me, 0, maximizing);
+        if (end !== null) return end;
+        const standPat = evaluate(state.board, profile, me);
+        if (plies === 0) return standPat;
+        if (maximizing) {
+            if (standPat >= beta) return standPat;
+            alpha = Math.max(alpha, standPat);
+        } else {
+            if (standPat <= alpha) return standPat;
+            beta = Math.min(beta, standPat);
+        }
+        const captures = Engine.generateAllMoves(state, maximizing ? me : other(me))
+            .filter((m) => state.board[m.toR][m.toC]);
+        orderMoves(state.board, captures);
+        let best = standPat;
+        for (const move of captures) {
+            const undo = Engine.applyMove(state, move);
+            const ev = quiescence(state, profile, me, alpha, beta, !maximizing, plies - 1);
+            Engine.undoMove(state, move, undo);
+            if (maximizing) {
+                best = Math.max(best, ev);
+                alpha = Math.max(alpha, ev);
+            } else {
+                best = Math.min(best, ev);
+                beta = Math.min(beta, ev);
+            }
+            if (beta <= alpha) break;
+        }
+        return best;
+    }
+
+    /** Minimax with alpha-beta; `maximizing` means it is `me` to play. */
+    function minimax(state, profile, me, depth, alpha, beta, maximizing) {
+        const end = terminalScore(state, me, depth, maximizing);
+        if (end !== null) return end;
+
+        if (depth === 0) return quiescence(state, profile, me, alpha, beta, maximizing, QUIESCENCE_PLIES);
 
         const moves = Engine.generateAllMoves(state, maximizing ? me : other(me));
         if (moves.length === 0) return maximizing ? -WIN : WIN;
@@ -128,8 +192,13 @@
         for (const move of moves) {
             const undo = Engine.applyMove(state, move);
             let ev = minimax(state, profile, me, depth - 1, alpha, beta, false);
+            // A lost position: every move scores as a loss. Prefer the one that keeps the
+            // most material, so the bot keeps resisting instead of giving pieces away.
+            // (A later loss already scores higher; this breaks ties between equal losses.)
+            if (ev <= -WIN) ev = minimax(state, profile, me, depth - 1, -Infinity, Infinity, false)
+                + Math.max(-0.9, Math.min(0.9, material(state.board, profile, me) / 100000));
+            else ev += random() * 0.1;
             Engine.undoMove(state, move, undo);
-            ev += random() * 0.1;
             if (ev > maxEval) {
                 maxEval = ev;
                 best = move;
