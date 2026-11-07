@@ -89,36 +89,11 @@ const engine = {
     capturedByBlack: [],
     
     generateFEN() {
-        let fen = '';
-        for (let r = 0; r < 8; r++) {
-            let empty = 0;
-            for (let c = 0; c < 8; c++) {
-                let piece = this.board[r][c];
-                if (piece && piece !== 'W' && piece.toLowerCase() !== 'w') {
-                    if (empty > 0) { fen += empty; empty = 0; }
-                    fen += piece;
-                } else {
-                    empty++;
-                }
-            }
-            if (empty > 0) fen += empty;
-            if (r < 7) fen += '/';
-        }
-        fen += ' ' + (this.turn === 'white' ? 'w' : 'b') + ' - - 0 1';
-        return fen;
+        return ChesspellRules.toFEN(this.board, this.turn);
     },
 
     init() {
-        this.board = [
-            ['r','n','b','q','k','b','n','r'],
-            ['p','p','p','p','p','p','p','p'],
-            [null,null,null,null,null,null,null,null],
-            [null,null,null,null,null,null,null,null],
-            [null,null,null,null,null,null,null,null],
-            [null,null,null,null,null,null,null,null],
-            ['P','P','P','P','P','P','P','P'],
-            ['R','N','B','Q','K','B','N','R']
-        ];
+        this.board = ChesspellRules.initialBoard();
         this.turn = 'white';
         this.frozenPieces = [];
         this.shieldedPieces = [];
@@ -157,125 +132,15 @@ const engine = {
     },
     
     getColor(p) {
-        if (!p || p === 'W') return null;
-        return p === p.toUpperCase() ? 'white' : 'black';
+        return ChesspellRules.getColor(p);
     },
     
     getValidMoves(r, c) {
-        if (this.frozenPieces.some(fp => fp.r === r && fp.c === c)) return [];
-        
-        const p = this.board[r][c];
-        if (!p) return [];
-        const color = this.getColor(p);
-        const type = p.toLowerCase();
-        const moves = [];
-        let ghostsPassed = 0;
-        
-        const addIfValid = (nr, nc, captureOnly = false, moveOnly = false) => {
-            if (nr < 0 || nr > 7 || nc < 0 || nc > 7) return false;
-            const target = this.board[nr][nc];
-            
-            const isRestrictedState = (this.doubleTroubleState && this.doubleTroubleState.active) || 
-                                      this.ghostActive || 
-                                      this.leapFrogActive || 
-                                      this.assassinActive;
-            
-            if (this.ghostActive) {
-                if (target) {
-                    if (this.getColor(target) !== color && target !== 'W' && !moveOnly) {
-                        if (target.toLowerCase() === 'k' && isRestrictedState) return true;
-                        // Check Shield
-                        if (type !== 'k' && this.shieldedPieces.some(sp => sp.r === nr && sp.c === nc)) return true;
-                        moves.push({r: nr, c: nc, capture: true});
-                    }
-                    ghostsPassed++;
-                    if (ghostsPassed > 1) return false;
-                    return true;
-                } else {
-                    if (!captureOnly) moves.push({r: nr, c: nc, capture: false});
-                    return true;
-                }
-            } else {
-                if (target) {
-                    if (moveOnly) return false;
-                    if ((this.getColor(target) !== color || this.cannibalismActive) && target !== 'W') {
-                        if (target.toLowerCase() === 'k' && isRestrictedState) return false;
-                        if (target.toLowerCase() === 'k' && this.getColor(target) === color) return false; // Cannot eat own king
-                        
-                        // Domi Reversi cannot capture King
-                        if (target.toLowerCase() === 'k' && this.domiReversiPiece && r === this.domiReversiPiece.r && c === this.domiReversiPiece.c) return false;
-                        
-                        if (type === 'k' || !this.shieldedPieces.some(sp => sp.r === nr && sp.c === nc)) {
-                            moves.push({r: nr, c: nc, capture: true});
-                        }
-                    }
-                    return false;
-                } else {
-                    if (!captureOnly) moves.push({r: nr, c: nc, capture: false});
-                    return true;
-                }
-            }
-        };
-
-        if (this.leapFrogActive && this.getColor(p) === this.turn) {
-            const jumps = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
-            jumps.forEach(j => addIfValid(r + j[0], c + j[1]));
-        }
-
-        if (type === 'p') {
-            const dir = color === 'white' ? -1 : 1;
-            const startRow = color === 'white' ? 6 : 1;
-            if (addIfValid(r + dir, c, false, true) && r === startRow) {
-                addIfValid(r + dir * 2, c, false, true);
-            }
-            addIfValid(r + dir, c - 1, true, false);
-            addIfValid(r + dir, c + 1, true, false);
-        } else if (type === 'n') {
-            const jumps = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
-            jumps.forEach(j => addIfValid(r + j[0], c + j[1]));
-        } else if (type === 'b' || type === 'r' || type === 'q') {
-            const dirs = [];
-            if (type === 'b' || type === 'q') dirs.push([-1,-1],[-1,1],[1,-1],[1,1]);
-            if (type === 'r' || type === 'q') dirs.push([-1,0],[1,0],[0,-1],[0,1]);
-            dirs.forEach(d => {
-                let nr = r + d[0], nc = c + d[1];
-                ghostsPassed = 0;
-                while(addIfValid(nr, nc)) { nr += d[0]; nc += d[1]; }
-            });
-        } else if (type === 'k') {
-            const dirs = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
-            dirs.forEach(d => addIfValid(r + d[0], c + d[1]));
-            
-            // Castling
-            if (!this.ghostActive && !this.assassinActive) {
-                const isWhite = color === 'white';
-                const kingKey = isWhite ? 'whiteKing' : 'blackKing';
-                const rookAKey = isWhite ? 'whiteRookA' : 'blackRookA';
-                const rookHKey = isWhite ? 'whiteRookH' : 'blackRookH';
-                
-                if (this.hasMoved && !this.hasMoved[kingKey]) {
-                    // Kingside
-                    const targetRookH = this.board[r][7];
-                    if (!this.hasMoved[rookHKey] && !this.board[r][c+1] && !this.board[r][c+2] && 
-                        targetRookH && targetRookH.toLowerCase() === 'r' && this.getColor(targetRookH) === color) {
-                        moves.push({r: r, c: c+2, capture: false, castle: 'kingside'});
-                    }
-                    // Queenside
-                    const targetRookA = this.board[r][0];
-                    if (!this.hasMoved[rookAKey] && !this.board[r][c-1] && !this.board[r][c-2] && !this.board[r][c-3] && 
-                        targetRookA && targetRookA.toLowerCase() === 'r' && this.getColor(targetRookA) === color) {
-                        moves.push({r: r, c: c-2, capture: false, castle: 'queenside'});
-                    }
-                }
-            }
-        }
-        return moves;
+        // The engine object itself is the rules state.
+        return ChesspellRules.getValidMoves(this, r, c);
     },
     checkPawnPromotions() {
-        for (let c = 0; c < 8; c++) {
-            if (this.board[0][c] === 'P') this.board[0][c] = 'Q';
-            if (this.board[7][c] === 'p') this.board[7][c] = 'q';
-        }
+        ChesspellRules.promotePawns(this.board);
     },
     
     endTurn() {
