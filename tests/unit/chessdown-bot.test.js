@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const Engine = require('../../games/chessdown/engine.js');
 const Bot = require('../../games/chessdown/bot-search.js');
-const { playGame, seededRandom, parseArgs } = require('../../tools/chessdown/train.js');
+const { playGame, seededRandom, parseArgs, randomProfile, crossover, BOUNDS } = require('../../tools/chessdown/train.js');
 
 const { ROWS, MAX_POINTS, PIECE_VALUES } = Engine;
 
@@ -115,6 +115,20 @@ test('a training game ends with a result, and the same seed replays it', () => {
     const b = playGame(Bot.DEFAULT_PROFILE, Bot.DEFAULT_PROFILE, 2, seededRandom(3));
     assert.ok([0, 1, 2].includes(a));
     assert.equal(a, b);
+});
+
+test('trained profiles stay sensible: genes in range, queen > rook > minor pieces > pawn', () => {
+    const random = seededRandom(11);
+    let population = Array.from({ length: 20 }, (_, i) => randomProfile(i, random));
+    for (let gen = 0; gen < 50; gen++) {
+        population = population.map((p, i) => crossover(p, population[(i + 7) % population.length], i, random));
+    }
+    for (const p of population) {
+        const w = p.pieceWeights;
+        assert.ok(w.q > w.r && w.r > Math.max(w.n, w.b) && Math.min(w.n, w.b) > w.p, JSON.stringify(w));
+        for (const k of ['p', 'n', 'b', 'r', 'q']) assert.ok(w[k] >= BOUNDS[k][0] && w[k] <= BOUNDS[k][1] + 300, `${k} ${w[k]}`);
+        assert.ok(p.touchdownBonus < w.r);
+    }
 });
 
 test('trainer options', () => {
