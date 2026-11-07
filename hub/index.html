@@ -3,58 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Etienne's Portfolio | Advanced Chess Variants</title>
-    <meta name="description" content="A portfolio of advanced, real-time multiplayer chess variants developed by Etienne.">
+    <title>Etienne's chess variants</title>
+    <meta name="description" content="Two board games built on the chessboard: Chessdown, chess meets American football, and Ches'spell, chess with spell cards. Play locally, online or against the bot.">
+    <link rel="stylesheet" href="/assets/fonts/fonts.css">
     <link rel="stylesheet" href="style.css">
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Background Animated Orbs -->
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-
-    <header>
-        <h1>Chess Variants Portfolio</h1>
-        <p>A collection of advanced, real-time multiplayer chess engines featuring custom neural networks, unique game mechanics, and modern web architectures.</p>
+    <header class="topbar">
+        <a class="wordmark" href="/">Etienne's chess variants</a>
+        <nav aria-label="Games">
+            <a class="pill" href="#chessdown">Chessdown</a>
+            <a class="pill" href="#chesspell">Ches'spell</a>
+        </nav>
     </header>
 
-    <main class="game-grid">
-        
-        <!-- Ches'spell -->
-        <div class="game-card card-chesspell">
-            <div class="card-icon">
-                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+    <main>
+        <section class="hero">
+            <div>
+                <h1>Chess, with house rules.</h1>
+                <p>Two board games built on the chessboard you know. Draft a team, hold a hand of spells, and play a friend across the table or across the internet.</p>
             </div>
-            <h2 class="card-title">Ches'spell</h2>
-            <p class="card-desc">A magical twist on classical chess. Play with a deck of spells that manipulate the board, freeze pieces, or grant extra turns. Features an integrated AlphaZero-style AI trained via self-play MCTS.</p>
-            <div class="card-actions" style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
-                <a href="/chesspell/" class="play-btn-new">
-                    <i class="fa-solid fa-gamepad" aria-hidden="true"></i> Play Game
-                </a>
-                <a href="/chesspell/?demo=true&v=2" class="demo-btn-new">
-                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Watch Demo
-                </a>
+            <div class="tokens" aria-hidden="true">
+                <div class="token token-turf">♞</div>
+                <div class="token token-lilac">♛</div>
+                <div class="token token-coral">♟</div>
             </div>
-        </div>
+        </section>
 
-        <!-- Chessdown (Online) -->
-        <div class="game-card card-chessdown">
-            <div class="card-icon">
-                <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+        <!-- Each game is a box in its own style: Chessdown is "Stade", Ches'spell is "Boîte de jeu". -->
+        <section class="box box-chessdown" id="chessdown" aria-labelledby="chessdown-title">
+            <div>
+                <h2 id="chessdown-title">Chessdown</h2>
+                <p class="lede">Chess meets American football on a 12-row field. Spend your budget, line up your team, run for the end zone.</p>
+                <div class="actions">
+                    <a class="pill pill-black" href="/chessdown/">Play Chessdown</a>
+                    <a class="pill pill-outline" href="/chessdown/?demo=true">Learn the rules</a>
+                </div>
             </div>
-            <h2 class="card-title">Chessdown (Online)</h2>
-            <p class="card-desc">A hyper-fast, action-packed chess variant where you build your own army via a drafting phase. Play online against friends with 10-second turn timers. Built on Socket.io.</p>
-            <div class="card-actions" style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
-                <a href="/chessdown/" class="play-btn-new">
-                    <i class="fa-solid fa-gamepad" aria-hidden="true"></i> Play Game
-                </a>
-                <a href="/chessdown/?demo=true" class="demo-btn-new">
-                    <i class="fa-solid fa-eye" aria-hidden="true"></i> Watch Demo
-                </a>
-            </div>
-        </div>
+            <dl class="scoreboard">
+                <div><dt>39</dt><dd>points to draft your team, king included</dd></div>
+                <div><dt>TD</dt><dd>reach the end zone and hold it one turn</dd></div>
+                <div><dt>10s</dt><dd>per move, or your turn is skipped</dd></div>
+                <div><dt>3</dt><dd>ways to play: same screen, online, against the bot</dd></div>
+            </dl>
+        </section>
 
+        <section class="box box-chesspell" id="chesspell" aria-labelledby="chesspell-title">
+            <div>
+                <h2 id="chesspell-title">Ches'spell</h2>
+                <p class="lede">A full chess set plus three spell cards. Pick them from twenty, play them at the right moment.</p>
+                <p class="note">No check here: capture the king to win.</p>
+                <div class="actions">
+                    <a class="pill pill-ink" href="/chesspell/">Play Ches'spell</a>
+                    <a class="pill" href="/chesspell/?demo=true&amp;v=2">Learn the rules</a>
+                </div>
+            </div>
+            <ul class="cards" aria-label="Three of the twenty spell cards">
+                <li class="card"><span class="card-name">Freeze</span><span class="card-art art-lilac" aria-hidden="true">🧊</span><span class="card-text">Freeze an enemy piece for one turn.</span></li>
+                <li class="card"><span class="card-name">Ghost</span><span class="card-art art-lime" aria-hidden="true">👻</span><span class="card-text">Your moved piece passes through other pieces.</span></li>
+                <li class="card"><span class="card-name">Wall</span><span class="card-art art-coral" aria-hidden="true">🧱</span><span class="card-text">Block an empty square for two turns.</span></li>
+            </ul>
+        </section>
     </main>
+
+    <footer>Made by Etienne. <span>Two games, one board.</span></footer>
 </body>
 </html>

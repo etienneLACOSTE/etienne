@@ -1,0 +1,9 @@
+/* Self-hosted fonts (SIL Open Font License), latin subset. See DESIGN.md.
+   A face only downloads when a page uses it. */
+@font-face { font-family: 'Bagel Fat One'; font-weight: 400; font-display: swap; src: url(bagel-fat-one.woff2) format('woff2'); }
+@font-face { font-family: 'Atkinson Hyperlegible'; font-weight: 400; font-display: swap; src: url(atkinson-hyperlegible-400.woff2) format('woff2'); }
+@font-face { font-family: 'Atkinson Hyperlegible'; font-weight: 700; font-display: swap; src: url(atkinson-hyperlegible-700.woff2) format('woff2'); }
+@font-face { font-family: 'Big Shoulders Display'; font-weight: 100 900; font-display: swap; src: url(big-shoulders-display.woff2) format('woff2'); }
+@font-face { font-family: 'Archivo'; font-weight: 100 900; font-display: swap; src: url(archivo.woff2) format('woff2'); }
+/* Chess glyphs only (U+2654-265F): same pieces on every system, never emoji. */
+@font-face { font-family: 'Chess Pieces'; font-weight: 400; font-display: block; src: url(noto-sans-symbols-2-chess.woff2) format('woff2'); unicode-range: U+2654-265F; }

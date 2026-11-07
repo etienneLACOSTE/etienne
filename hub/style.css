@@ -1,217 +1,225 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+/* Hub: a shelf of game boxes. House style "Boîte de jeu"; the Chessdown box wears
+   its own "Stade" style. Tokens and contrasts: DESIGN.md. */
+:root {
+    /* Boîte de jeu */
+    --paper: #FFFFFF;
+    --ink: #000000;
+    --lilac: #C9B6F2;
+    --lime: #D7EE9C;
+    --coral: #F6B9A3;
+    --navy: #1F1D3D;
+    --muted-on-lilac: #2F2A3D;
+    /* Stade */
+    --turf: #0B6E3F;
+    --turf-light: #0E7A47;
+    --amber: #FFB81C;
+    --muted-on-dark: #BDBDBD;
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+    --display: 'Bagel Fat One', 'Arial Rounded MT Bold', sans-serif;
+    --text: 'Atkinson Hyperlegible', Arial, sans-serif;
+    --stade-display: 'Big Shoulders Display', Impact, sans-serif;
+    --stade-text: 'Archivo', Arial, sans-serif;
+    --pieces: 'Chess Pieces', 'DejaVu Sans', serif;
+    --gutter: clamp(1rem, 4vw, 3rem);
 }
+
+* { box-sizing: border-box; }
 
 body {
-    font-family: 'Outfit', sans-serif;
-    background: linear-gradient(135deg, #0f1115 0%, #1a2235 100%);
-    color: #ffffff;
-    min-height: 100vh;
+    margin: 0;
+    font-family: var(--text);
+    font-size: 1.125rem;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--paper);
+}
+
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+h1, h2 { text-wrap: balance; }
+
+/* --- Top bar --- */
+.topbar {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    overflow-x: hidden;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    padding: 1.25rem var(--gutter);
 }
+.wordmark { font-family: var(--display); font-size: 1.4rem; line-height: 1.1; text-decoration: none; }
+.topbar nav { display: flex; gap: 0.5rem; }
 
-/* Background Animated Orbs */
-.bg-orb {
-    /* Fixed: decorative halos stay behind the page without widening it. */
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(80px);
-    z-index: 0;
-    animation: float 10s infinite ease-in-out alternate;
+.pill {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: 999px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+.pill:hover { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--ink); }
+.pill-ink { background: var(--ink); color: var(--paper); }
 
-.orb-1 {
-    width: 400px;
-    height: 400px;
-    background: rgba(88, 101, 242, 0.15);
-    top: -100px;
-    left: -100px;
-}
-
-.orb-2 {
-    width: 350px;
-    height: 350px;
-    background: rgba(235, 69, 158, 0.15);
-    bottom: -50px;
-    right: -50px;
-    animation-delay: -5s;
-}
-
-@keyframes float {
-    0% { transform: translateY(0) scale(1); }
-    100% { transform: translateY(30px) scale(1.1); }
-}
-
-/* Header */
-header {
-    text-align: center;
-    margin-top: 80px;
-    margin-bottom: 60px;
-    padding: 0 16px;
-    z-index: 1;
-}
-
-header h1 {
-    font-size: 3.5rem;
-    font-weight: 800;
-    background: linear-gradient(90deg, #fff, #a5b4fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -1px;
-    margin-bottom: 15px;
-}
-
-header p {
-    font-size: 1.2rem;
-    font-weight: 300;
-    color: #94a3b8;
-    max-width: 600px;
-    margin: 0 auto;
-    line-height: 1.6;
-}
-
-/* Game Grid */
-.game-grid {
+/* --- Hero with die-cut tokens --- */
+.hero {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 40px;
-    width: 100%;
-    max-width: 1200px;
-    padding: 0 40px;
-    z-index: 1;
-    margin-bottom: 80px;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: center;
+    padding: clamp(1.5rem, 5vw, 4rem) var(--gutter) clamp(3rem, 7vw, 6rem);
 }
+.hero h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(3.25rem, 9vw, 7.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+.hero p { font-size: 1.3rem; max-width: 32ch; margin: 1.5rem 0 0; }
 
-/* Glassmorphism Card */
-.game-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    padding: 30px;
-    text-decoration: none;
-    color: inherit;
+.tokens { position: relative; height: clamp(260px, 34vw, 420px); }
+.token {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 4px solid var(--ink);
+    box-shadow: 8px 8px 0 var(--ink);
+    font-family: var(--pieces);
+    line-height: 1;
+}
+.token-turf {
+    width: 62%; left: 0; top: 4%;
+    background: repeating-linear-gradient(90deg, var(--turf) 0 12.5%, var(--turf-light) 12.5% 25%);
+    color: var(--paper);
+    -webkit-text-stroke: 3px var(--ink);
+    paint-order: stroke fill;
+    font-size: clamp(5rem, 13vw, 10rem);
+    transform: rotate(-8deg);
+}
+.token-lilac { width: 50%; right: 2%; top: 30%; background: var(--lilac); font-size: clamp(4rem, 10vw, 8rem); transform: rotate(10deg); }
+.token-coral { width: 26%; left: 44%; top: 0; background: var(--coral); font-size: clamp(2rem, 5vw, 4rem); }
+
+/* --- Game boxes --- */
+.box {
+    margin: 0 var(--gutter) 2rem;
+    border-radius: 40px;
+    padding: clamp(2rem, 5vw, 4rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2rem 3rem;
+    align-items: center;
+}
+.box h2 { margin: 0; font-weight: 400; line-height: 1; }
+.box .lede { font-size: 1.25rem; max-width: 34ch; margin: 1rem 0 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.75rem; }
+.actions .pill { padding: 0.85rem 1.5rem; }
+
+/* Chessdown box: "Stade" (turf, stadium type, scoreboard). */
+.box-chessdown {
+    font-family: var(--stade-text);
+    color: var(--paper);
+    background:
+        repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), rgba(255, 255, 255, 0.16) calc(10% - 2px) 10%),
+        repeating-linear-gradient(90deg, var(--turf) 0 10%, var(--turf-light) 10% 20%);
+    border: 4px solid var(--ink);
+}
+.box-chessdown h2 {
+    font-family: var(--stade-display);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: clamp(3.25rem, 9vw, 7rem);
+    line-height: 0.88;
+}
+.box-chessdown .pill { font-weight: 600; }
+.pill-black { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pill-outline { background: transparent; color: var(--paper); border-color: var(--paper); }
+.box-chessdown .pill:hover { box-shadow: 3px 3px 0 var(--ink); }
+
+.scoreboard {
+    margin: 0;
+    background: var(--ink);
+    border-radius: 6px;
+    padding: 0.5rem 1.5rem;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.35);
+}
+.scoreboard div {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: baseline;
+    padding: 0.85rem 0;
+}
+.scoreboard div + div { border-top: 1px solid rgba(255, 255, 255, 0.2); }
+.scoreboard dt {
+    font-family: var(--stade-display);
+    font-weight: 900;
+    font-size: 2.25rem;
+    line-height: 1;
+    color: var(--amber);
+    font-variant-numeric: tabular-nums;
+}
+.scoreboard dd { margin: 0; color: var(--muted-on-dark); }
+
+/* Ches'spell box: "Boîte de jeu" (lilac, spell cards). */
+.box-chesspell { background: var(--lilac); }
+.box-chesspell h2 { font-family: var(--display); font-size: clamp(2.75rem, 7vw, 5.5rem); }
+.box-chesspell .note { color: var(--muted-on-lilac); margin: 1rem 0 0; }
+
+.cards { list-style: none; margin: 0; padding: 0; display: flex; gap: 1rem; justify-content: center; }
+.card {
+    width: 10.5rem;
+    min-height: 14rem;
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    padding: 1rem;
+    box-shadow: 6px 6px 0 var(--ink);
     display: flex;
     flex-direction: column;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    overflow: hidden;
+    gap: 0.5rem;
 }
+.card:nth-child(1) { transform: rotate(-6deg) translateY(10px); }
+.card:nth-child(3) { transform: rotate(6deg) translateY(10px); }
+.card-name { font-family: var(--display); font-size: 1.5rem; line-height: 1.05; }
+.card-art { flex: 1; min-height: 4.5rem; border-radius: 10px; border: 2px solid var(--ink); display: grid; place-items: center; font-size: 2.5rem; }
+.art-lilac { background: var(--lilac); }
+.art-lime { background: var(--lime); }
+.art-coral { background: var(--coral); }
+.card-text { font-size: 0.95rem; line-height: 1.35; }
 
-.game-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    pointer-events: none;
-}
+footer { background: var(--navy); color: var(--paper); padding: 2.5rem var(--gutter); margin-top: 2rem; }
+footer span { color: var(--lilac); }
 
-.game-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.game-card:hover::before {
-    opacity: 1;
-}
-
-/* Card Content */
-.card-icon {
-    font-size: 3rem;
-    margin-bottom: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    width: 80px;
-    height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.05);
-    transition: transform 0.4s ease;
-}
-
-.game-card:hover .card-icon {
-    transform: rotate(-10deg) scale(1.1);
-}
-
-.card-title {
-    font-size: 1.8rem;
-    font-weight: 600;
-    margin-bottom: 12px;
-    color: #f8fafc;
-}
-
-.card-desc {
-    font-size: 1rem;
-    color: #94a3b8;
-    line-height: 1.6;
-    margin-bottom: 25px;
-    flex-grow: 1;
-}
-
-/* Buttons */
-.play-btn-new, .demo-btn-new {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 12px 20px;
-    border-radius: 25px;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    width: 100%;
-    position: relative;
-    z-index: 10;
-}
-
-.play-btn-new {
-    background: rgba(96, 165, 250, 0.2);
-    color: #93c5fd;
-    border: 1px solid rgba(96, 165, 250, 0.4);
-}
-.play-btn-new:hover {
-    background: rgba(96, 165, 250, 0.4);
-    transform: scale(1.02);
-}
-
-.demo-btn-new {
-    background: rgba(255, 255, 255, 0.05);
-    color: #e2e8f0;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-.demo-btn-new:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: scale(1.02);
-}
-
-/* Specific Card Accents */
-.card-chesspell:hover { box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3); }
-.card-chesspell .card-icon { color: #8b5cf6; }
-
-.card-chessdown:hover { box-shadow: 0 20px 40px rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); }
-.card-chessdown .card-icon { color: #ef4444; }
-
-.card-local:hover { box-shadow: 0 20px 40px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); }
-.card-local .card-icon { color: #10b981; }
-
-@media (max-width: 768px) {
-    header h1 { font-size: 2.5rem; }
-    .game-grid { grid-template-columns: 1fr; padding: 0 20px; }
+@media (max-width: 760px) {
+    .hero, .box { grid-template-columns: 1fr; }
+    .box { border-radius: 28px; }
+    /* Narrow box: yard lines would cross the text, keep the mown stripes only. */
+    .box-chessdown { background: repeating-linear-gradient(90deg, var(--turf) 0 10%, var(--turf-light) 10% 20%); }
+    .tokens { height: 300px; max-width: 420px; }
+    .cards { flex-direction: column; }
+    .card {
+        width: 100%;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 4.5rem minmax(0, 1fr);
+        column-gap: 1rem;
+        align-items: center;
+    }
+    .card-art { grid-column: 1; grid-row: 1 / 3; height: 4.5rem; font-size: 2rem; }
+    .card-name, .card-text { grid-column: 2; }
+    .card:nth-child(1) { transform: rotate(-1.5deg); }
+    .card:nth-child(3) { transform: rotate(1.5deg); }
+    .scoreboard { padding: 0.25rem 1rem; }
+    .scoreboard div { grid-template-columns: 3.5rem minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .bg-orb { animation: none; }
+    * { transition: none !important; }
 }

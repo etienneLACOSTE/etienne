@@ -18,6 +18,9 @@ const io = new Server(server, { maxHttpBufferSize: 300_000 });
 // Serve the portfolio hub
 app.use(express.static(path.join(ROOT, 'hub')));
 
+// Shared assets (self-hosted fonts)
+app.use('/assets', express.static(path.join(ROOT, 'assets')));
+
 // Serve the games statically
 app.use('/chesspell', express.static(path.join(ROOT, 'games', 'chesspell')));
 app.use('/chessdown', express.static(path.join(ROOT, 'games', 'chessdown')));
