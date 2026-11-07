@@ -57,12 +57,22 @@ Commandes :
   - Bot sans variables globales : dépend des décisions sur l'entraîneur Chessdown (voir l'audit).
   - Les 3 `onclick` générés dans `games/chesspell/js/profiles.js` : réécrits avec la correction XSS (phase 5).
 
-### Phase 5 — Mise à niveau
-- Serveur autoritaire (validation des coups et des tours, codes de salle plus longs).
-- XSS : `textContent` au lieu de `innerHTML` pour les données utilisateur.
-- Accessibilité WCAG 2.2 AA (plateau au clavier, ARIA, contrastes).
-- Design selon `DESIGN.md` (à rédiger).
-- Avant production : `/tribunal`, `/crap`, décision sur l'hébergement de l'IA Python.
+### Phase 5 — Mise à niveau (en cours)
+**5a. Sécurité ✅ (2026-11-07)**
+- Chessdown : serveur arbitre (drafts, tours, coups légaux, fin de partie, saut de tour via le serveur) avec le moteur partagé.
+- Ches'spell : seuls les membres d'une salle sont relayés, avec leurs propres cartes ; decks validés, profils nettoyés.
+- XSS corrigée (noms et avatars sans `innerHTML`) ; codes de salle à 6 lettres (crypto) ; messages limités à 300 Ko.
+- CSP stricte (`script-src 'self'`) + `nosniff`, `no-referrer`, `DENY`.
+- API Python : debug coupé, CORS restreint, entrées validées (+ tests Python dans `npm test`).
+- Limites restantes listées dans l'audit (triche possible en Ches'spell, minuteur serveur, HTTPS, débit).
+
+**5b. Interface (à faire)**
+- Accessibilité WCAG 2.2 AA (plateau au clavier, ARIA, contrastes) et bugs d'affichage connus (`test.fail()`).
+- Design selon `DESIGN.md` (à rédiger avec le développeur : couleurs, typographie).
+- Modules ES + `@ts-check` en réécrivant l'interface.
+
+**5c. Avant production**
+- `/tribunal` sur le diff, `/crap`, hébergement (HTTPS) et décision sur l'IA Python.
 
 ## Décisions
 
