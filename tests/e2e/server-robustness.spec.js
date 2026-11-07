@@ -34,6 +34,20 @@ const MALFORMED = {
 };
 
 test.describe('Server robustness', () => {
+  test('oversized messages are refused and do not affect the server', async ({ page, request }) => {
+    await blockExternalRequests(page);
+    await page.goto('/chessdown/');
+    const disconnected = await page.evaluate(async () => {
+      const s = io('/chesspell', { forceNew: true, reconnection: false });
+      await new Promise((resolve) => s.on('connect', resolve));
+      const closed = new Promise((resolve) => s.on('disconnect', () => resolve(true)));
+      s.emit('createRoom', { deck: [8, 12, 5], profile: { name: 'x', avatar: 'a'.repeat(400_000) } });
+      return Promise.race([closed, new Promise((resolve) => setTimeout(() => resolve(false), 3000))]);
+    });
+    expect(disconnected).toBe(true);
+    expect((await request.get('/')).ok()).toBe(true);
+  });
+
   for (const [namespace, messages] of Object.entries(MALFORMED)) {
     test(`${namespace}: malformed messages do not crash the server`, async ({ page, request }) => {
       await blockExternalRequests(page);

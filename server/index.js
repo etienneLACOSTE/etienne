@@ -12,7 +12,8 @@ const app = express();
 app.disable('x-powered-by');
 app.use(securityHeaders);
 const server = http.createServer(app);
-const io = new Server(server);
+// Largest legitimate message: a Ches'spell profile with a ~200 KB avatar.
+const io = new Server(server, { maxHttpBufferSize: 300_000 });
 
 // Serve the portfolio hub
 app.use(express.static(path.join(ROOT, 'hub')));
