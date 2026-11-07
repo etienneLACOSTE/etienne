@@ -51,14 +51,14 @@ test.describe("Ches'spell menus", () => {
     expect(errors).toEqual([]);
   });
 
-  // Known bug: style.css has no generic `.hidden` rule, so both timer descriptions
-  // stay visible whatever the mode. Remove test.fail() once fixed.
-  test('timer modal shows only the selected mode description (known bug)', async ({ page }) => {
-    test.fail();
+  // Regression test: style.css had no generic `.hidden` rule, so both timer
+  // descriptions stayed visible whatever the mode.
+  test('timer modal shows only the selected mode description', async ({ page }) => {
     await page.goto('/chesspell/');
     await page.getByRole('button', { name: '⚙️ Timer' }).click();
     await page.getByRole('button', { name: 'Overall Time' }).click();
-    await expect(page.locator('#timer-desc-turn')).toBeHidden({ timeout: 2_000 });
+    await expect(page.locator('#timer-desc-turn')).toBeHidden();
+    await expect(page.locator('#timer-desc-overall')).toBeVisible();
   });
 
   test('profiles: create, edit/cancel, build and save a deck', async ({ page }) => {

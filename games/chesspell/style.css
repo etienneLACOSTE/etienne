@@ -10,6 +10,11 @@
     --locked-color: #ef4444;
 }
 
+/* Elements toggled by script with the `hidden` class (timer descriptions, timer bar, ...). */
+.hidden {
+    display: none !important;
+}
+
 * {
     margin: 0;
     padding: 0;
