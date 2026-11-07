@@ -30,7 +30,7 @@ const ARCHETYPES = ['normal', 'ecuries', 'citadelle', 'chapiteau', 'chair', 'sor
 const BOUNDS = {
     p: [60, 140], n: [220, 420], b: [220, 420], r: [380, 650], q: [750, 1150],
     centerBonusCols: [0, 40], centerBonusRows: [0, 60], pawnForwardBonus: [0, 40], touchdownBonus: [100, 450],
-    backRankPenalty: [0, 150], openFilePenalty: [0, 100], kingOpenPenalty: [0, 100], kingThreatPenalty: [50, 600],
+    backRankPenalty: [0, 150], openFilePenalty: [0, 100], kingOpenPenalty: [0, 100], kingThreatPenalty: [0, 600],
 };
 const BONUS_GENES = ['centerBonusCols', 'centerBonusRows', 'pawnForwardBonus', 'touchdownBonus',
     'backRankPenalty', 'openFilePenalty', 'kingOpenPenalty', 'kingThreatPenalty'];

@@ -32,11 +32,13 @@
         touchdownBonus: 400,
         // Structure: a back-rank square (the opponent's end zone) not guarded, a file
         // open to it guarded less than twice, a king on an open line / facing an enemy
-        // line piece.
-        backRankPenalty: 60,
-        openFilePenalty: 40,
-        kingOpenPenalty: 40,
-        kingThreatPenalty: 300,
+        // line piece. Off by default: once the search sees quiet touchdowns, these
+        // penalties made the bot weaker (50 % instead of 56 % against rook/queen armies,
+        // 300 games). The trainer may tune them.
+        backRankPenalty: 0,
+        openFilePenalty: 0,
+        kingOpenPenalty: 0,
+        kingThreatPenalty: 0,
     };
 
     /** Extra plies of captures only, after the main search (see quiescence). */
@@ -85,10 +87,10 @@
 
     /** Penalties for `player`'s weaknesses: unguarded back rank, open files, exposed king. */
     function structurePenalty(board, profile, player, king) {
-        const backPenalty = profile.backRankPenalty ?? 60;
-        const filePenalty = profile.openFilePenalty ?? 40;
-        const kingOpen = profile.kingOpenPenalty ?? 40;
-        const kingThreat = profile.kingThreatPenalty ?? 300;
+        const backPenalty = profile.backRankPenalty ?? 0;
+        const filePenalty = profile.openFilePenalty ?? 0;
+        const kingOpen = profile.kingOpenPenalty ?? 0;
+        const kingThreat = profile.kingThreatPenalty ?? 0;
         const row = backRank(player);
         const ahead = forward(player);
         let penalty = 0;
@@ -157,7 +159,9 @@
                 }
             }
         }
-        score += structurePenalty(board, profile, 1, kings[1]) - structurePenalty(board, profile, 2, kings[2]);
+        if (profile.backRankPenalty || profile.openFilePenalty || profile.kingOpenPenalty || profile.kingThreatPenalty) {
+            score += structurePenalty(board, profile, 1, kings[1]) - structurePenalty(board, profile, 2, kings[2]);
+        }
         return me === 2 ? score : -score;
     }
 
