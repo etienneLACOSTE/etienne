@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const OUTPUT_PATH = path.join(__dirname, 'spell_heuristics.json');
+const rules = require('../../games/chesspell/rules.js');
 
 // --- GAME CONSTANTS ---
 const ROWS = 8;
@@ -159,84 +160,12 @@ class HeadlessChesspell {
     }
 
     getColor(p) {
-        if (!p) return null;
-        if (p === 'W') return 'none'; // Wall
-        return p === p.toUpperCase() ? 'white' : 'black';
+        return rules.getColor(p);
     }
 
     getValidMoves(r, c) {
-        if (this.frozenPieces.some(fp => fp.r === r && fp.c === c)) return [];
-
-        const p = this.board[r][c];
-        if (!p || p === 'W') return [];
-        const color = this.getColor(p);
-        const type = p.toLowerCase();
-        const moves = [];
-
-        const addIfValid = (nr, nc, captureOnly = false, moveOnly = false) => {
-            if (nr < 0 || nr > 7 || nc < 0 || nc > 7) return false;
-            const target = this.board[nr][nc];
-
-            const isRestrictedState = (this.doubleTroubleState.active) || this.ghostActive || this.leapFrogActive || this.assassinActive;
-
-            if (this.ghostActive) {
-                if (target) {
-                    if (this.getColor(target) !== color && target !== 'W' && !moveOnly) {
-                        if (target.toLowerCase() === 'k' && isRestrictedState) return true;
-                        if (type !== 'k' && this.shieldedPieces.some(sp => sp.r === nr && sp.c === nc)) return true;
-                        moves.push({ r: nr, c: nc, capture: true });
-                    }
-                    return true;
-                } else {
-                    if (!captureOnly) moves.push({ r: nr, c: nc, capture: false });
-                    return true;
-                }
-            } else {
-                if (target) {
-                    if (moveOnly) return false;
-                    if (this.getColor(target) !== color && target !== 'W') {
-                        if (target.toLowerCase() === 'k' && isRestrictedState) return false;
-                        if (type === 'k' || !this.shieldedPieces.some(sp => sp.r === nr && sp.c === nc)) {
-                            moves.push({ r: nr, c: nc, capture: true });
-                        }
-                    }
-                    return false;
-                } else {
-                    if (!captureOnly) moves.push({ r: nr, c: nc, capture: false });
-                    return true;
-                }
-            }
-        };
-
-        if (this.leapFrogActive && color === this.turn) {
-            const jumps = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
-            jumps.forEach(j => addIfValid(r + j[0], c + j[1]));
-        }
-
-        if (type === 'p') {
-            const dir = color === 'white' ? -1 : 1;
-            const startRow = color === 'white' ? 6 : 1;
-            if (addIfValid(r + dir, c, false, true) && r === startRow) {
-                addIfValid(r + dir * 2, c, false, true);
-            }
-            addIfValid(r + dir, c - 1, true, false);
-            addIfValid(r + dir, c + 1, true, false);
-        } else if (type === 'n') {
-            const jumps = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
-            jumps.forEach(j => addIfValid(r + j[0], c + j[1]));
-        } else if (type === 'b' || type === 'r' || type === 'q') {
-            const dirs = [];
-            if (type === 'b' || type === 'q') dirs.push([-1, -1], [-1, 1], [1, -1], [1, 1]);
-            if (type === 'r' || type === 'q') dirs.push([-1, 0], [1, 0], [0, -1], [0, 1]);
-            dirs.forEach(d => {
-                let nr = r + d[0], nc = c + d[1];
-                while (addIfValid(nr, nc)) { nr += d[0]; nc += d[1]; }
-            });
-        } else if (type === 'k') {
-            const dirs = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
-            dirs.forEach(d => addIfValid(r + d[0], c + d[1]));
-        }
-        return moves;
+        // Same rules as the game; the trainer instance is the rules state.
+        return rules.getValidMoves(this, r, c);
     }
 
     getAllMoves(playerColor) {
