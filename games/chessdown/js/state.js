@@ -12,7 +12,8 @@ let myPlayerNumber = 1;
 // Rules live in engine.js (loaded first); this file is the UI and the bot.
 const { ROWS, COLS, MAX_POINTS } = ChessdownEngine;
 
-const PIECE_ICONS = { p: '♙', n: '♘', b: '♗', r: '♖', q: '♕', k: '♔' };
+// Filled glyphs for both sides: CSS colours them with the jersey and an outline.
+const PIECE_ICONS = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' };
 const PIECES = Object.fromEntries(Object.entries(ChessdownEngine.PIECE_VALUES)
     .map(([type, value]) => [type, { value, icon: PIECE_ICONS[type] }]));
 

@@ -10,34 +10,15 @@ function startDemo() {
     const overlay = document.createElement('div');
     overlay.id = 'demo-overlay-bubble';
     overlay.innerHTML = `
-        <h2 style="margin: 0 0 15px 0; color: #2563eb; font-size: 1.2rem;">Interactive Demo</h2>
-        <p id="demo-text" style="margin: 0; line-height: 1.5; font-size: 0.95rem;">Welcome to Chessdown! First, build your army. Click the highlighted <b>King</b> in the shop.</p>
-        <a href="/" style="color: #3b82f6; text-decoration: none; margin-top: 15px; display: inline-block; pointer-events: auto; font-weight: bold; border-top: 1px solid #e2e8f0; padding-top: 10px; width: 100%;">← Return to Hub</a>
+        <h2>Interactive Demo</h2>
+        <p id="demo-text">Welcome to Chessdown! First, build your army. Click the highlighted <b>King</b> in the shop.</p>
+        <a href="/">Back to the games</a>
     `;
     
     let demoStep = 0;
     const pText = overlay.querySelector('#demo-text');
     
-    const style = document.createElement('style');
-    style.textContent = `
-        #demo-overlay-bubble {
-            position: absolute;
-            width: 320px;
-            background: white;
-            color: #1e293b;
-            padding: 20px;
-            border-radius: 15px;
-            z-index: 99999;
-            text-align: left;
-            border: 2px solid #e2e8f0;
-            font-family: sans-serif;
-            pointer-events: none;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-        }
-        .demo-highlight { animation: demoPulse 1.5s infinite; border: 2px solid #60a5fa !important; box-sizing: border-box; cursor: pointer !important; z-index: 100; position: relative; }
-        @keyframes demoPulse { 0% { box-shadow: 0 0 0 0 rgba(96,165,250, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(96,165,250, 0); } 100% { box-shadow: 0 0 0 0 rgba(96,165,250, 0); } }
-    `;
-    document.head.appendChild(style);
+    // Bubble and highlight styles live in styles.css.
     
     // Position the bubble relative to the board dynamically to avoid overflow: hidden clipping
     setTimeout(() => {
@@ -107,7 +88,7 @@ function startDemo() {
         window.handleDraftSquareClick = function(viewR, viewC) {
             if (demoStep === 1) {
                 if (viewR !== 5) {
-                    pText.innerHTML = "<span style='color: #fca5a5;'>Please place the King on the highlighted bottom row!</span>";
+                    pText.innerHTML = "<span class='demo-error'>Please place the King on the highlighted bottom row!</span>";
                     return;
                 }
                 originalHandleDraftSquareClick(viewR, viewC);
@@ -118,7 +99,7 @@ function startDemo() {
                 if(rookItem) rookItem.classList.add('demo-highlight');
             } else if (demoStep === 3) {
                 if (viewR !== 5) {
-                    pText.innerHTML = "<span style='color: #fca5a5;'>Please place the Rook on the bottom row to defend the King!</span>";
+                    pText.innerHTML = "<span class='demo-error'>Please place the Rook on the bottom row to defend the King!</span>";
                     return;
                 }
                 originalHandleDraftSquareClick(viewR, viewC);
@@ -129,7 +110,7 @@ function startDemo() {
                 if(rookItem) rookItem.classList.add('demo-highlight');
             } else if (demoStep === 5) {
                 if (viewR !== 5) {
-                    pText.innerHTML = "<span style='color: #fca5a5;'>Place it on the bottom row!</span>";
+                    pText.innerHTML = "<span class='demo-error'>Place it on the bottom row!</span>";
                     return;
                 }
                 originalHandleDraftSquareClick(viewR, viewC);
@@ -140,7 +121,7 @@ function startDemo() {
                 if(pawnItem) pawnItem.classList.add('demo-highlight');
             } else if (demoStep === 7) {
                 if (viewR !== 4) {
-                    pText.innerHTML = "<span style='color: #fca5a5;'>Place the Pawn on the highlighted row in front of your pieces.</span>";
+                    pText.innerHTML = "<span class='demo-error'>Place the Pawn on the highlighted row in front of your pieces.</span>";
                     return;
                 }
                 originalHandleDraftSquareClick(viewR, viewC);

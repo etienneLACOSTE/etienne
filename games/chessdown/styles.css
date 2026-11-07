@@ -1,16 +1,16 @@
+/* Chessdown, "Stade" style: turf, stadium signage, scoreboard clock. See DESIGN.md. */
 :root {
-    --primary: #2c3e50;
-    --secondary: #27ae60;
-    --danger: #e74c3c;
-    --light: #ecf0f1;
-    --dark: #2c3e50;
-    
-    --board-light: #f0d9b5;
-    --board-dark: #b58863;
-    --yard-line: rgba(255, 255, 255, 0.4);
-    
-    --p1-color: #3498db;
-    --p2-color: #e67e22;
+    --turf: #0B6E3F;
+    --turf-light: #0E7A47;
+    --black: #000000;
+    --white: #FFFFFF;
+    --amber: #FFB81C;
+    --muted-on-dark: #BDBDBD;
+
+    --display: 'Big Shoulders Display', Impact, sans-serif;
+    --text: 'Archivo', Arial, sans-serif;
+    --pieces: 'Chess Pieces', 'DejaVu Sans', serif;
+    --yard-line: rgba(255, 255, 255, 0.75);
 }
 
 * {
@@ -20,9 +20,9 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #1a1a2e;
-    color: white;
+    font-family: var(--text);
+    background-color: var(--black);
+    color: var(--white);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -44,6 +44,7 @@ body {
     flex-direction: column;
     transition: transform 0.5s ease-in-out; /* For 180deg rotation */
     overflow: hidden;
+    position: relative;
 }
 
 #game-container.draft-mode {
@@ -58,171 +59,286 @@ body {
     transform: rotate(180deg);
 }
 
+/* --- Header: stadium signage --- */
 header {
-    text-align: center;
-    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    padding: 8px 16px;
+    border-bottom: 3px solid var(--turf);
 }
 
 h1 {
-    font-size: 24px;
-    color: #f1c40f;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: 28px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 
 #status-bar {
-    background: rgba(255,255,255,0.1);
-    padding: 5px 15px;
-    border-radius: 20px;
-    display: inline-block;
-    margin-top: 5px;
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--muted-on-dark);
 }
 
-/* Screens */
+/* --- Screens --- */
 .screen {
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 16px;
     text-align: center;
-    background: rgba(0,0,0,0.8);
-    border-radius: 10px;
-    padding: 20px;
+    background: var(--black);
+    padding: 24px 16px;
     z-index: 10;
 }
+
+.screen h2 {
+    font-family: var(--display);
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 0.95;
+    font-size: clamp(36px, 9vw, 64px);
+    text-wrap: balance;
+}
+
+.screen h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+}
+
+.muted { color: var(--muted-on-dark); }
 
 .hidden {
     display: none !important;
 }
 
-#victory-screen {
+/* Full-screen panels over the game (rules, campaign, timer). */
+.overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.6) !important;
-    backdrop-filter: blur(4px);
-    z-index: 100;
+    inset: 0;
+    z-index: 200;
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding-top: 40px;
 }
-#victory-title {
-    font-size: 3em;
-    color: #f1c40f;
-    text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
-}
-button {
-    padding: 10px 20px;
-    margin: 10px;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s, filter 0.2s;
+.overlay > h2 { color: var(--amber); }
+.overlay-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
 }
 
-button:hover:not(:disabled) {
-    transform: scale(1.05);
-    filter: brightness(1.1);
+/* Main menu */
+#main-menu h2 { margin-bottom: 8px; }
+.menu-group, .menu-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: min(100%, 320px);
 }
+.menu-online {
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    padding-top: 16px;
+}
+.menu-row { flex-direction: row; }
+.menu-row button { flex: 1; }
+.join-row { display: flex; gap: 8px; }
+.join-row button { flex: 1; }
+
+#room-code-input {
+    width: 7.5em;
+    padding: 10px 12px;
+    font: 600 18px var(--text);
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+    border-radius: 999px;
+    border: 2px solid var(--white);
+    background: var(--black);
+    color: var(--white);
+}
+#room-code-input::placeholder { color: var(--muted-on-dark); }
+
+/* Waiting room: the code is the scoreboard */
+.room-code {
+    font-variant-numeric: tabular-nums;
+    color: var(--amber);
+    letter-spacing: 0.08em;
+    font-size: clamp(48px, 16vw, 96px) !important;
+}
+
+/* Rules */
+.rules-text {
+    max-width: 600px;
+    text-align: left;
+    line-height: 1.6;
+    font-size: 16px;
+}
+.rules-text h3 { margin: 20px 0 4px; color: var(--amber); }
+.rules-text p { margin-bottom: 4px; }
+.rules-text ul { margin: 8px 0 0 20px; }
+.rules-text li { margin-bottom: 4px; }
+
+/* --- Buttons: pills --- */
+button {
+    padding: 10px 22px;
+    border: 2px solid var(--white);
+    border-radius: 999px;
+    font: 600 16px var(--text);
+    cursor: pointer;
+    background: transparent;
+    color: var(--white);
+    transition: transform 0.15s, background-color 0.15s;
+}
+
+button:hover:not(:disabled) { transform: translateY(-2px); }
 
 button:disabled {
-    opacity: 0.5;
+    opacity: 0.45;
     cursor: not-allowed;
     pointer-events: none;
 }
 
-.btn-primary { background-color: var(--primary); color: white; }
-.btn-success { background-color: var(--secondary); color: white; }
-.btn-danger { background-color: var(--danger); color: white; }
-.btn-secondary { background-color: #7f8c8d; color: white; }
+.btn-primary, .btn-success { background: var(--amber); border-color: var(--amber); color: var(--black); }
+.btn-secondary { background: transparent; border-color: var(--white); color: var(--white); }
+.btn-ghost { background: transparent; border-color: rgba(255, 255, 255, 0.35); color: var(--white); }
+/* Destructive or "mode on": white fill, so it reads as switched on. */
+.btn-danger { background: var(--white); border-color: var(--white); color: var(--black); }
+.btn-big { padding: 14px 32px; font-size: 18px; }
 
-/* Draft UI */
-#draft-ui {
-    justify-content: flex-start;
-    padding: 10px;
-    margin-bottom: 10px;
-    background: rgba(255,255,255,0.05);
+/* Choice groups (difficulty, archetype, timer mode): selected = amber fill. */
+.choice-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    max-width: 520px;
+    margin-bottom: 12px;
+}
+.btn-difficulty.selected, .btn-archetype.selected, .timer-toggle-btn.selected {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--black);
 }
 
+/* Timer options */
+.time-inputs { display: flex; align-items: flex-start; gap: 10px; margin: 8px 0 16px; }
+.time-field { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--muted-on-dark); }
+.time-input {
+    font: 900 48px var(--display);
+    font-variant-numeric: tabular-nums;
+    width: 96px;
+    text-align: center;
+    border-radius: 6px;
+    border: 2px solid var(--white);
+    padding: 6px;
+    background: var(--black);
+    color: var(--amber);
+}
+.time-sep { font: 900 48px var(--display); color: var(--amber); }
+
+/* Victory */
+#victory-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82) !important;
+    z-index: 100;
+}
+#victory-title {
+    font-size: clamp(64px, 18vw, 140px);
+    color: var(--amber);
+}
+#victory-reason { font-size: 18px; }
+.victory-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 12px; }
+
+/* --- Draft --- */
 #draft-header, #draft-footer {
     flex: none;
+    padding: 12px;
+    gap: 10px;
 }
-
-.draft-header {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    align-items: center;
-    margin-bottom: 10px;
+#draft-header h3 {
+    font-family: var(--display);
+    font-weight: 900;
+    font-size: 26px;
 }
+#draft-points { color: var(--amber); font-variant-numeric: tabular-nums; }
 
-.points-counter {
-    font-size: 18px;
-    font-weight: bold;
-    background: var(--dark);
-    padding: 5px 10px;
-    border-radius: 5px;
-}
-
-/* Color Picker */
+/* Color Picker (jersey colours are team data, see DESIGN.md) */
 .color-picker {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 10px;
     justify-content: center;
 }
 .color-swatch {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    border: 2px solid transparent;
+    border: 2px solid var(--black);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.15s;
 }
 .color-swatch:hover:not(.disabled) { transform: scale(1.1); }
-.color-swatch.selected { border-color: white; box-shadow: 0 0 8px rgba(255,255,255,0.8); }
+.color-swatch.selected { box-shadow: 0 0 0 3px var(--amber); transform: scale(1.1); }
 .color-swatch.disabled { filter: grayscale(100%); opacity: 0.3; cursor: not-allowed; }
 
 .pieces-shop {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 8px;
 }
 
 .shop-item {
-    background: rgba(255,255,255,0.1);
-    border: 2px solid transparent;
-    border-radius: 5px;
-    padding: 5px 10px;
+    background: var(--black);
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-radius: 8px;
+    padding: 4px 10px 6px;
+    min-width: 58px;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    transition: background 0.2s;
-    color: white; /* Base color, overridden by dynamically added jersey classes */
+    transition: border-color 0.15s;
+    color: var(--white); /* Base color, overridden by dynamically added jersey classes */
 }
 
-.shop-item:hover { background: rgba(255,255,255,0.2); }
-.shop-item.selected { border-color: var(--secondary); background: rgba(39, 174, 96, 0.2); }
-.shop-item.disabled { opacity: 0.3; cursor: not-allowed; }
+.shop-item:hover { border-color: var(--white); }
+.shop-item.selected { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber); }
+.shop-item.disabled { opacity: 0.35; cursor: not-allowed; }
 
-.shop-item .icon { font-size: 24px; font-family: 'Arial', 'Helvetica', sans-serif; }
-.shop-item .name { font-size: 12px; }
-.shop-item .cost { font-size: 10px; color: #aaa; }
+.shop-item .icon { font-size: 28px; line-height: 1.15; font-family: var(--pieces); }
+.shop-item .name { font-size: 12px; font-weight: 600; color: var(--white); }
+.shop-item .cost { font-size: 12px; color: var(--muted-on-dark); font-variant-numeric: tabular-nums; }
 
-/* Board Layout */
+.draft-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+
+/* --- Board layout --- */
 #game-layout {
     flex: 1;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
+    gap: 12px;
     height: 100%;
     width: 100%;
+    min-height: 0;
 }
 
 #game-container.draft-mode #game-layout,
@@ -242,21 +358,24 @@ button:disabled {
     max-width: 800px; /* Limit board width on very wide screens */
 }
 
-/* Side Status Timer */
+/* Side timer: a scoreboard column, the bar takes the jersey colour of the player to move. */
 #side-status {
-    width: 20px;
+    position: relative;
+    width: 34px;
     height: 100%;
-    background: rgba(255,255,255,0.1);
+    max-height: 92vh;
+    background: var(--black);
+    border: 2px solid var(--white);
+    border-radius: 6px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    overflow: hidden;
 }
 
 #timer-bar-container {
     width: 100%;
     height: 100%;
-    border-radius: 8px;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -265,22 +384,40 @@ button:disabled {
 #timer-bar {
     width: 100%;
     height: 100%;
-    background-color: white;
+    background-color: var(--white);
     transition: height 0.1s linear, background-color 0.3s;
 }
 
+#timer-text-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-90deg);
+    font: 900 22px var(--display);
+    font-variant-numeric: tabular-nums;
+    color: var(--amber);
+    background: var(--black);
+    padding: 0 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* End zones: painted in the jersey colour of the team that defends them. */
 .endzone {
     width: 100%;
-    max-width: 400px;
+    max-width: min(100%, 45vh);
     text-align: center;
-    font-weight: bold;
-    font-size: 14px;
-    letter-spacing: 2px;
-    padding: 5px 0;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    font: 900 18px/1 var(--display);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    padding: 4px 0;
+    color: var(--white);
+    border: 3px solid var(--white);
 }
-.endzone-top { background-color: var(--p2-color); border-radius: 5px 5px 0 0; }
-.endzone-bottom { background-color: var(--p1-color); border-radius: 0 0 5px 5px; }
+.endzone::before { content: 'End zone'; }
+#endzone-top { border-bottom: none; }
+#endzone-bottom { border-top: none; }
 
 #chessboard {
     display: grid;
@@ -292,9 +429,13 @@ button:disabled {
     max-width: 45vh;
     max-width: 45dvh;
     aspect-ratio: 1 / 2;
-    border: 3px solid #fff;
+    border: 3px solid var(--white);
     position: relative;
-    background: #27ae60; /* Base grass color */
+    /* Mown stripes, one per row (12 rows in a match, 6 in the draft view). */
+    background: repeating-linear-gradient(180deg, var(--turf) 0 8.3333%, var(--turf-light) 8.3333% 16.6667%);
+}
+#game-container.draft-mode #chessboard {
+    background: repeating-linear-gradient(180deg, var(--turf) 0 16.6667%, var(--turf-light) 16.6667% 33.3333%);
 }
 
 .square {
@@ -303,93 +444,88 @@ button:disabled {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: clamp(30px, 6vw, 40px);
+    font-size: clamp(24px, min(6.2vh, 11vw), 52px);
     position: relative;
     cursor: pointer;
     user-select: none;
-    font-family: 'Arial', 'Helvetica', sans-serif; /* Force text rendering for unicode pieces */
+    font-family: var(--pieces);
 }
 
-/* Chess pattern blended with football grass */
-.square.light { background-color: rgba(255,255,255,0.15); }
-.square.dark { background-color: rgba(0,0,0,0.15); }
+/* Chess pattern laid over the turf */
+.square.dark { background-color: rgba(0, 0, 0, 0.16); }
 
-/* Football Yard Lines */
+/* Football yard lines */
 .square.yard-line-top { border-top: 2px solid var(--yard-line); }
 .square.yard-line-bottom { border-bottom: 2px solid var(--yard-line); }
 
-/* Interactive States */
-.square.highlight {
-    background-color: rgba(46, 204, 113, 0.5); /* Move highlight */
-}
+/* Draft: the deployment zone and its limit */
+.square.draft-area { box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.06); }
+.square.draft-limit { border-top: 3px dashed var(--amber); }
+
+/* Interactive states */
 .square.highlight::after {
     content: '';
-    width: 30%;
-    height: 30%;
-    background-color: rgba(0,0,0,0.3);
+    width: 28%;
+    height: 28%;
+    background-color: rgba(0, 0, 0, 0.45);
     border-radius: 50%;
     position: absolute;
 }
 .square.highlight.has-piece::after {
-    width: 90%;
-    height: 90%;
+    width: 88%;
+    height: 88%;
     background-color: transparent;
-    border: 4px solid rgba(231, 76, 60, 0.7);
+    border: 4px solid var(--amber);
 }
 
-.square.selected {
-    background-color: rgba(241, 196, 15, 0.5); /* Selected piece */
-}
-
-/* Draft Area Boundary & Error */
-.square.draft-limit {
-    border-top: 2px solid red;
-}
+.square.selected { background-color: rgba(255, 184, 28, 0.55); }
 
 @keyframes flashError {
     0%, 100% { background-color: transparent; }
-    50% { background-color: rgba(255, 0, 0, 0.6); }
+    50% { background-color: rgba(0, 0, 0, 0.6); }
 }
 
 .square.error-blink {
     animation: flashError 0.3s ease-in-out 3;
 }
 
-/* Pieces styling based on player */
-.piece-p1 { color: #ffffff; text-shadow: 0 0 3px #000, 0 0 5px var(--p1-color); }
-.piece-p2 { color: #000000; text-shadow: 0 0 3px #fff, 0 0 5px var(--p2-color); }
-
 .piece-icon {
     display: inline-block;
+    line-height: 1;
     transition: transform 0.3s;
 }
 .piece-rotated {
     transform: rotate(180deg);
 }
 
-/* Dynamic Jersey Colors */
-.jersey-red { color: #e74c3c; text-shadow: 1px 1px 2px black; }
-.jersey-blue { color: #3498db; text-shadow: 1px 1px 2px black; }
-.jersey-green { color: #2ecc71; text-shadow: 1px 1px 2px black; }
-.jersey-yellow { color: #f1c40f; text-shadow: 1px 1px 2px black; }
-.jersey-purple { color: #9b59b6; text-shadow: 1px 1px 2px black; }
-.jersey-orange { color: #e67e22; text-shadow: 1px 1px 2px black; }
-.jersey-white { color: #ecf0f1; text-shadow: 1px 1px 2px black; }
-.jersey-black { color: #2c3e50; text-shadow: 1px 1px 2px white; }
+/* Jerseys: the piece is filled with the team colour and outlined so it reads on the turf. */
+.has-piece, .shop-item {
+    -webkit-text-stroke: 1.5px var(--black);
+    paint-order: stroke fill;
+}
+.shop-item .name, .shop-item .cost { -webkit-text-stroke: 0; }
+.jersey-red { color: #e74c3c; }
+.jersey-blue { color: #3498db; }
+.jersey-green { color: #2ecc71; }
+.jersey-yellow { color: #f1c40f; }
+.jersey-purple { color: #9b59b6; }
+.jersey-orange { color: #e67e22; }
+.jersey-white { color: #ecf0f1; }
+.jersey-black { color: #2c3e50; -webkit-text-stroke-color: var(--white); }
 
+/* Text on the end zone follows the jersey: black on light jerseys, white on dark ones. */
 .endzone-red { background-color: #e74c3c; }
 .endzone-blue { background-color: #3498db; }
-.endzone-green { background-color: #2ecc71; }
-.endzone-yellow { background-color: #f1c40f; color: black; }
+.endzone-green { background-color: #2ecc71; color: var(--black); }
+.endzone-yellow { background-color: #f1c40f; color: var(--black); }
 .endzone-purple { background-color: #9b59b6; }
-.endzone-orange { background-color: #e67e22; }
-.endzone-white { background-color: #ecf0f1; color: black; }
+.endzone-orange { background-color: #e67e22; color: var(--black); }
+.endzone-white { background-color: #ecf0f1; color: var(--black); }
 .endzone-black { background-color: #2c3e50; }
 
-/* Coin Flip 3D */
+/* --- Coin flip --- */
 .coin-container {
     perspective: 1000px;
-    margin: 20px auto;
     width: 100px;
     height: 100px;
 }
@@ -409,16 +545,10 @@ button:disabled {
 
 #coin-flip-screen {
     position: absolute !important;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.4) !important;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5) !important;
     z-index: 100;
     pointer-events: none;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 .coin-face {
@@ -427,77 +557,99 @@ button:disabled {
     height: 100%;
     border-radius: 50%;
     backface-visibility: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 30px;
-    font-weight: bold;
-    border: 4px solid #f1c40f;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-    color: white;
-    text-shadow: 1px 1px 2px black;
+    border: 5px solid var(--amber);
+    box-shadow: 0 0 0 3px var(--black);
 }
 
 .coin-front { transform: rotateY(0deg); }
 .coin-back { transform: rotateY(180deg); }
 
-@keyframes flipCoin {
-    0% { transform: rotateY(0); }
-    100% { transform: rotateY(1800deg); } /* 5 spins */
-}
-
 /* Confetti Canvas */
 #confetti-canvas {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
     z-index: 9999;
 }
 
-/* --- Media Queries for Responsiveness --- */
-@media (max-width: 600px), (max-height: 800px) {
-    h1 {
-        font-size: 20px;
-    }
-    
-    .shop-item {
-        padding: 3px 6px;
-    }
-    .shop-item .icon {
-        font-size: 20px;
-    }
-    .shop-item .name {
-        font-size: 10px;
-    }
-    
-    button {
-        padding: 8px 15px;
-        font-size: 14px;
-        margin: 5px;
-    }
-    
-    .points-counter {
-        font-size: 16px;
-    }
+/* --- Tutorial bubble (js/demo.js) --- */
+#demo-overlay-bubble {
+    position: absolute;
+    width: min(320px, calc(100vw - 32px));
+    background: var(--white);
+    color: var(--black);
+    padding: 18px 20px;
+    border-radius: 8px;
+    border: 3px solid var(--black);
+    box-shadow: 6px 6px 0 var(--turf);
+    z-index: 99999;
+    text-align: left;
+    pointer-events: none;
+}
+#demo-overlay-bubble h2 {
+    font: 900 26px/1 var(--display);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+#demo-text { line-height: 1.5; font-size: 15px; }
+.demo-error { font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; }
+#demo-overlay-bubble a {
+    display: block;
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.2);
+    font-weight: 700;
+    color: var(--black);
+    pointer-events: auto;
+}
+.demo-highlight {
+    animation: demoPulse 1.5s infinite;
+    outline: 3px solid var(--amber) !important;
+    outline-offset: 2px;
+    cursor: pointer !important;
+    z-index: 100;
+    position: relative;
+}
+@keyframes demoPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 184, 28, 0.7); }
+    70% { box-shadow: 0 0 0 14px rgba(255, 184, 28, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 184, 28, 0); }
+}
 
-    #draft-ui {
-        padding: 5px;
-    }
+/* --- Small screens --- */
+@media (max-width: 600px), (max-height: 800px) {
+    h1 { font-size: 22px; }
+    #status-bar { font-size: 13px; }
+    .shop-item { padding: 2px 6px 4px; min-width: 48px; }
+    .shop-item .icon { font-size: 22px; }
+    .shop-item .name { font-size: 11px; }
+    button { padding: 8px 16px; font-size: 15px; }
+    #draft-header, #draft-footer { padding: 8px; }
+    #draft-header h3 { font-size: 22px; }
+    .endzone { font-size: 14px; padding: 2px 0; }
 }
 
 /* Visible keyboard focus on everything the keyboard can reach (WCAG 2.4.7). */
 button:focus-visible,
 input:focus-visible,
+a:focus-visible,
 .shop-item:focus-visible,
 .color-swatch:focus-visible {
-    outline: 3px solid #f1c40f;
+    outline: 3px solid var(--amber);
     outline-offset: 3px;
 }
 .square:focus-visible {
-    outline: 3px solid #f1c40f;
+    outline: 3px solid var(--amber);
     outline-offset: -3px;
     z-index: 2;
+}
+
+/* Headings get the focus on screen changes (a11y.js) only so that screen readers
+   announce them; they are not controls, so no ring. */
+h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outline: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
 }
