@@ -70,6 +70,7 @@ Communication : réponds en français ; code, noms de variables et commits en an
 - Règles : une seule source par jeu en JS (`games/chessdown/engine.js`, `games/chesspell/rules.js`), utilisée par le jeu et `tools/`. L'IA Python (`ai/chesspell/chess_env.py`) a sa propre implémentation : un changement de règle doit y être reporté.
 - Les tests lisent les variables globales des jeux (`board`, `currentPlayer`, `engine`…) : les garder accessibles ou adapter les tests en même temps.
 - Bugs connus épinglés par `test.fail()` dans `tests/e2e/` : retirer la marque quand ils sont corrigés.
+- Accessibilité : `games/<jeu>/js/a11y.js` rend chaque jeu jouable au clavier (Chessdown écoute `pointerdown` : les clics clavier y sont relayés). Tout nouveau contrôle doit rester utilisable au clavier et avoir un nom accessible (`tests/e2e/keyboard.spec.js`, `a11y.spec.js`).
 - Ches'spell : les boutons de `index.html` utilisent `data-action` (table `UI_ACTIONS` dans `js/main.js`), jamais d'`onclick` inline.
 - Le venv Python contient des chemins absolus : s'il est déplacé, il faut réécrire ses chemins (ou le recréer).
 - Ne jamais versionner `*.pth` (200 Mo chacun), `venv/`, `self_play_logs/`.

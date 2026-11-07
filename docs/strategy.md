@@ -66,9 +66,12 @@ Commandes :
 - API Python : debug coupé, CORS restreint, entrées validées (+ tests Python dans `npm test`).
 - Limites restantes listées dans l'audit (triche possible en Ches'spell, minuteur serveur, HTTPS, débit).
 
-**5b. Interface (à faire)**
-- Accessibilité WCAG 2.2 AA (plateau au clavier, ARIA, contrastes) et bugs d'affichage connus (`test.fail()`).
-- Design selon `DESIGN.md` (à rédiger avec le développeur : couleurs, typographie).
+**5b. Interface (en cours)**
+- ✅ Bugs d'affichage connus corrigés : clic des noirs en ligne, plateau et cartes à 375 px, menu Timer (`.hidden`), débordement horizontal de l'accueil, titre Ches'spell rogné, panneau `#game-logger` vide sur le plateau. Tests `layout.spec.js` ajoutés.
+- ✅ Clavier (WCAG 2.1.1) : les deux jeux se jouent sans souris (`games/<jeu>/js/a11y.js`) ; plateau à un seul arrêt de tabulation, flèches, Entrée/Espace ; cases nommées ; fenêtres de dialogue accessibles ; focus déplacé au changement d'écran ; focus visible.
+- ✅ Noms accessibles : champs étiquetés, icônes décoratives masquées, un seul h1 par page (`a11y.spec.js`).
+- À faire : contrastes (à traiter avec la direction visuelle choisie), annonces vocales des tours et des coups, audit automatique axe (`@axe-core/playwright`, dépendance à valider).
+- Design : 3 directions explorées (`design-explorations/`), en attente du choix ; puis `DESIGN.md`.
 - Modules ES + `@ts-check` en réécrivant l'interface.
 
 **5c. Avant production**
