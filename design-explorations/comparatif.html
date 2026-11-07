@@ -1,0 +1,122 @@
+<title>Pistes visuelles du hub</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@900&family=Bagel+Fat+One&family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: a neutral contact sheet; three equal columns compared row by row (sheet, desktop, phone). */
+:root {
+  --bg: #F5F6F8;
+  --surface: #FFFFFF;
+  --fg: #16181D;
+  --muted: #555B66;
+  --line: #D5D9E0;
+  --frame: #C4C9D1;
+  --text: "Schibsted Grotesk", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #14161A; --surface: #1D2026; --fg: #EDEFF3; --muted: #A7AEBB; --line: #33373F; --frame: #444A55; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #14161A; --surface: #1D2026; --fg: #EDEFF3; --muted: #A7AEBB; --line: #33373F; --frame: #444A55; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 2.5rem 4rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 2.5rem; }
+header h1 { font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.15; margin: 0 0 .5rem; text-wrap: balance; }
+header p { color: var(--muted); max-width: 70ch; margin: 0; }
+
+h2 { font-size: 1.1rem; margin: 0 0 1rem; }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; align-items: start; }
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; display: grid; gap: .9rem; min-width: 0; }
+.sheet .name { font-size: 2rem; line-height: 1; margin: 0; }
+.stade .name { font-family: "Big Shoulders Display", Impact, sans-serif; text-transform: uppercase; }
+.boite .name { font-family: "Bagel Fat One", sans-serif; font-weight: 400; }
+.carnet .name { font-weight: 800; letter-spacing: -0.02em; }
+.sheet p { margin: 0; }
+.tone { color: var(--muted); }
+dl { margin: 0; display: grid; grid-template-columns: 6.5rem 1fr; gap: .45rem .75rem; }
+dt { color: var(--muted); }
+dd { margin: 0; min-width: 0; }
+.swatches { display: grid; gap: .35rem; }
+.swatch { display: grid; grid-template-columns: 1.6rem 1fr auto; gap: .6rem; align-items: center; font-variant-numeric: tabular-nums; }
+.chip { width: 1.6rem; height: 1.6rem; border-radius: 6px; border: 1px solid var(--frame); }
+.ratio { color: var(--muted); font-size: .85rem; }
+
+.shot { margin: 0; min-width: 0; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--frame); border-radius: 6px; }
+.phones .shot { max-width: 300px; justify-self: center; width: 100%; }
+figcaption { color: var(--muted); font-size: .85rem; margin-top: .4rem; }
+
+@media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .phones .shot { max-width: 320px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Trois pistes pour la page d'accueil</h1>
+    <p>Mêmes contenus, trois tons. Chaque maquette est une page autonome dans <code>design-explorations/</code> ; le site n'est pas modifié. Tous les textes atteignent au moins 4,5:1 de contraste (WCAG AA).</p>
+  </header>
+
+  <section>
+    <div class="cols">
+      <article class="sheet stade">
+        <p class="name">Stade</p>
+        <p class="tone">Sportif et compétitif. Le terrain de Chessdown, une typo de stade, l'horloge des 10 secondes en vedette.</p>
+        <dl>
+          <dt>Polices</dt><dd>Big Shoulders Display (titres), Archivo (texte)</dd>
+          <dt>Référence</dt><dd>DESIGN.md « nike » (awesome-design-md)</dd>
+        </dl>
+        <div class="swatches">
+          <div class="swatch"><span class="chip" style="background:#0B6E3F"></span><span>Gazon #0B6E3F</span><span class="ratio">blanc 6,3</span></div>
+          <div class="swatch"><span class="chip" style="background:#000000"></span><span>Noir #000000</span><span class="ratio">blanc 21</span></div>
+          <div class="swatch"><span class="chip" style="background:#FFB81C"></span><span>Ambre #FFB81C</span><span class="ratio">sur noir 12,1</span></div>
+          <div class="swatch"><span class="chip" style="background:#545454"></span><span>Gris #545454</span><span class="ratio">sur blanc 7,6</span></div>
+        </div>
+      </article>
+      <article class="sheet boite">
+        <p class="name">Boîte de jeu</p>
+        <p class="tone">Ludique et chaleureux. Des couvercles de boîtes de jeu, des jetons découpés, les cartes de sorts posées sur la table.</p>
+        <dl>
+          <dt>Polices</dt><dd>Bagel Fat One (titres), Atkinson Hyperlegible (texte)</dd>
+          <dt>Référence</dt><dd>DESIGN.md « figma » (awesome-design-md)</dd>
+        </dl>
+        <div class="swatches">
+          <div class="swatch"><span class="chip" style="background:#D7EE9C"></span><span>Citron vert #D7EE9C</span><span class="ratio">noir 16,6</span></div>
+          <div class="swatch"><span class="chip" style="background:#C9B6F2"></span><span>Lilas #C9B6F2</span><span class="ratio">noir 11,5</span></div>
+          <div class="swatch"><span class="chip" style="background:#F6B9A3"></span><span>Corail #F6B9A3</span><span class="ratio">noir 12,4</span></div>
+          <div class="swatch"><span class="chip" style="background:#1F1D3D"></span><span>Nuit #1F1D3D</span><span class="ratio">blanc 16,1</span></div>
+        </div>
+      </article>
+      <article class="sheet carnet">
+        <p class="name">Carnet d'analyse</p>
+        <p class="tone">Technique et cérébral. Un plan bleu d'analyste, un diagramme annoté et les règles en fiches techniques.</p>
+        <dl>
+          <dt>Polices</dt><dd>Schibsted Grotesk (titres et texte), JetBrains Mono (notation des coups)</dd>
+          <dt>Référence</dt><dd>DESIGN.md « together.ai » (awesome-design-md)</dd>
+        </dl>
+        <div class="swatches">
+          <div class="swatch"><span class="chip" style="background:#1D4E89"></span><span>Cyanotype #1D4E89</span><span class="ratio">blanc 8,4</span></div>
+          <div class="swatch"><span class="chip" style="background:#FFD166"></span><span>Annotation #FFD166</span><span class="ratio">sur bleu 5,8</span></div>
+          <div class="swatch"><span class="chip" style="background:#F3F5F8"></span><span>Papier #F3F5F8</span><span class="ratio">encre 13,3</span></div>
+          <div class="swatch"><span class="chip" style="background:#0F2A4A"></span><span>Encre #0F2A4A</span><span class="ratio">blanc 14,5</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ordinateur (1280 px)</h2>
+    <div class="cols">
+      <figure class="shot"><img src="stade-desktop.png" alt="Maquette Stade sur ordinateur" width="1280" height="1757" loading="lazy"><figcaption>Stade</figcaption></figure>
+      <figure class="shot"><img src="boite-desktop.png" alt="Maquette Boîte de jeu sur ordinateur" width="1280" height="1676" loading="lazy"><figcaption>Boîte de jeu</figcaption></figure>
+      <figure class="shot"><img src="carnet-desktop.png" alt="Maquette Carnet d'analyse sur ordinateur" width="1280" height="1607" loading="lazy"><figcaption>Carnet d'analyse</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Téléphone (375 px)</h2>
+    <div class="cols phones">
+      <figure class="shot"><img src="stade-mobile.png" alt="Maquette Stade sur téléphone" width="375" height="2295" loading="lazy"><figcaption>Stade</figcaption></figure>
+      <figure class="shot"><img src="boite-mobile.png" alt="Maquette Boîte de jeu sur téléphone" width="375" height="2602" loading="lazy"><figcaption>Boîte de jeu</figcaption></figure>
+      <figure class="shot"><img src="carnet-mobile.png" alt="Maquette Carnet d'analyse sur téléphone" width="375" height="2384" loading="lazy"><figcaption>Carnet d'analyse</figcaption></figure>
+    </div>
+  </section>
+</div>

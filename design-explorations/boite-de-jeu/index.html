@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Etienne's chess variants (direction "Boîte de jeu")</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bagel+Fat+One&family=Noto+Sans+Symbols+2&display=swap" rel="stylesheet">
+<style>
+/* Direction "Boîte de jeu": board-game box lids, die-cut tokens and spell cards on the table.
+   Palette (WCAG AA checked): white #FFF, black #000, lime #D7EE9C (Chessdown),
+   lilac #C9B6F2 (Ches'spell), coral #F6B9A3, navy #1F1D3D. */
+:root {
+  --paper: #FFFFFF;
+  --ink: #000000;
+  --lime: #D7EE9C;
+  --lilac: #C9B6F2;
+  --coral: #F6B9A3;
+  --navy: #1F1D3D;
+  --muted-lime: #3A3A3A;
+  --muted-lilac: #2F2A3D;
+  --display: "Bagel Fat One", "Arial Rounded MT Bold", sans-serif;
+  --text: "Atkinson Hyperlegible", Arial, sans-serif;
+  --pieces: "Noto Sans Symbols 2", "DejaVu Sans", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--text); font-size: 1.125rem; line-height: 1.55; color: var(--ink); background: var(--paper); }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.25rem clamp(1rem, 4vw, 3rem); }
+.wordmark { font-family: var(--display); font-size: 1.4rem; text-decoration: none; }
+.topbar nav { display: flex; gap: .5rem; }
+.pill { display: inline-block; padding: .6rem 1.2rem; border-radius: 999px; border: 2px solid var(--ink); font-weight: 700; text-decoration: none; background: var(--paper); }
+.pill.solid { background: var(--ink); color: var(--paper); }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 2rem; align-items: center; padding: clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem) clamp(3rem, 7vw, 6rem); }
+.hero h1 { font-family: var(--display); font-weight: 400; font-size: clamp(3.25rem, 9vw, 7.5rem); line-height: .95; letter-spacing: -0.02em; margin: 0; }
+.hero p { font-size: 1.3rem; max-width: 32ch; margin: 1.5rem 0 0; }
+
+/* Die-cut tokens: the memorable element. */
+.tokens { position: relative; height: clamp(260px, 34vw, 420px); }
+.token { position: absolute; display: grid; place-items: center; border-radius: 50%; border: 4px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); font-family: var(--pieces); line-height: 1; }
+.token.a { width: 62%; aspect-ratio: 1; left: 0; top: 4%; background: var(--lime); font-size: clamp(5rem, 13vw, 10rem); transform: rotate(-8deg); }
+.token.b { width: 50%; aspect-ratio: 1; right: 2%; top: 30%; background: var(--lilac); font-size: clamp(4rem, 10vw, 8rem); transform: rotate(10deg); }
+.token.c { width: 26%; aspect-ratio: 1; left: 44%; top: 0; background: var(--coral); font-size: clamp(2rem, 5vw, 4rem); }
+
+.box { margin: 0 clamp(1rem, 4vw, 3rem) 2rem; border-radius: 40px; padding: clamp(2rem, 5vw, 4rem); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem 3rem; align-items: center; }
+.box.lime { background: var(--lime); }
+.box.lilac { background: var(--lilac); }
+.box h2 { font-family: var(--display); font-weight: 400; font-size: clamp(2.75rem, 7vw, 5.5rem); line-height: 1; margin: 0; }
+.box .lede { font-size: 1.25rem; max-width: 34ch; margin: 1rem 0 0; }
+.box.lime .note { color: var(--muted-lime); }
+.box.lilac .note { color: var(--muted-lilac); }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.75rem; }
+.actions .pill { padding: .85rem 1.5rem; }
+
+.stickers { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .75rem; }
+.stickers li { background: var(--paper); border: 3px solid var(--ink); border-radius: 18px; padding: .9rem 1.1rem; box-shadow: 5px 5px 0 var(--ink); max-width: 15rem; }
+.stickers b { display: block; font-family: var(--display); font-weight: 400; font-size: 1.6rem; line-height: 1.1; }
+.stickers li:nth-child(2) { transform: rotate(-2deg); }
+.stickers li:nth-child(3) { transform: rotate(1.5deg); }
+
+.cards { display: flex; gap: 1rem; justify-content: center; }
+.card { width: 10.5rem; min-height: 14rem; background: var(--paper); border: 3px solid var(--ink); border-radius: 16px; padding: 1rem; box-shadow: 6px 6px 0 var(--ink); display: flex; flex-direction: column; gap: .5rem; }
+.card:nth-child(1) { transform: rotate(-6deg) translateY(10px); }
+.card:nth-child(3) { transform: rotate(6deg) translateY(10px); }
+.card .name { font-family: var(--display); font-size: 1.5rem; line-height: 1.05; }
+.card .art { flex: 1; border-radius: 10px; display: grid; place-items: center; font-family: var(--pieces); font-size: 2.5rem; }
+.card:nth-child(1) .art { background: #DCEBFA; }
+.card:nth-child(2) .art { background: var(--lilac); }
+.card:nth-child(3) .art { background: #F1E1C6; }
+.card p { margin: 0; font-size: .95rem; line-height: 1.35; }
+
+footer { background: var(--navy); color: #FFFFFF; padding: 2.5rem clamp(1rem, 4vw, 3rem); margin-top: 2rem; }
+footer span { color: var(--lilac); }
+
+@media (max-width: 760px) {
+  .hero, .box { grid-template-columns: 1fr; }
+  .tokens { height: 300px; }
+  .cards { flex-direction: column; gap: 1rem; }
+  .card { width: 100%; min-height: 0; display: grid; grid-template-columns: 4.5rem 1fr; grid-template-rows: auto auto; column-gap: 1rem; align-items: center; }
+  .card .art { grid-column: 1; grid-row: 1 / 3; height: 4.5rem; font-size: 2rem; }
+  .card .name, .card p { grid-column: 2; }
+  .card:nth-child(1) { transform: rotate(-1.5deg); }
+  .card:nth-child(3) { transform: rotate(1.5deg); }
+  .topbar nav .pill:not(.solid) { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="wordmark" href="/">Etienne's chess variants</a>
+  <nav aria-label="Games"><a class="pill" href="#chessdown">Chessdown</a><a class="pill solid" href="#chesspell">Ches'spell</a></nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div>
+      <h1>Chess, with house rules.</h1>
+      <p>Two board games built on the chessboard you know. Draft a team, hold a hand of spells, and play a friend across the table or across the internet.</p>
+    </div>
+    <div class="tokens" aria-hidden="true">
+      <div class="token a">♞</div>
+      <div class="token b">♛</div>
+      <div class="token c">♙</div>
+    </div>
+  </section>
+
+  <section class="box lime" id="chessdown" aria-labelledby="chessdown-title">
+    <div>
+      <h2 id="chessdown-title">Chessdown</h2>
+      <p class="lede">Chess meets American football on a 12-row field. Spend your budget, line up your team, run for the end zone.</p>
+      <div class="actions">
+        <a class="pill solid" href="/chessdown/">Play Chessdown</a>
+        <a class="pill" href="/chessdown/?demo=true">Learn the rules</a>
+      </div>
+    </div>
+    <ul class="stickers">
+      <li><b>39 points</b>to buy your pieces</li>
+      <li><b>Touchdown</b>reach the end zone and hold it a turn</li>
+      <li><b>10 seconds</b>per move, so think fast</li>
+    </ul>
+  </section>
+
+  <section class="box lilac" id="chesspell" aria-labelledby="chesspell-title">
+    <div>
+      <h2 id="chesspell-title">Ches'spell</h2>
+      <p class="lede">A full chess set plus three spell cards. Pick them from twenty, play them at the right moment.</p>
+      <p class="note">No check here: capture the king to win.</p>
+      <div class="actions">
+        <a class="pill solid" href="/chesspell/">Play Ches'spell</a>
+        <a class="pill" href="/chesspell/?demo=true">Learn the rules</a>
+      </div>
+    </div>
+    <div class="cards" aria-label="Three of the twenty spell cards">
+      <article class="card"><span class="name">Freeze</span><div class="art" aria-hidden="true">♜</div><p>Freeze an enemy piece for one turn.</p></article>
+      <article class="card"><span class="name">Ghost</span><div class="art" aria-hidden="true">♝</div><p>Your piece passes through others this turn.</p></article>
+      <article class="card"><span class="name">Wall</span><div class="art" aria-hidden="true">♖</div><p>Block an empty square for two turns.</p></article>
+    </div>
+  </section>
+</main>
+
+<footer>Made by Etienne. <span>Two games, one board.</span></footer>
+</body>
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Etienne's chess variants (direction "Carnet d'analyse")</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+Symbols+2&family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* Direction "Carnet d'analyse": a cyanotype blueprint of the board, annotated like a game study.
+   Palette (WCAG AA checked): blueprint #1D4E89, white #FFF, pale line #C9D8EC,
+   annotation yellow #FFD166 (on blueprint only), paper #F3F5F8, deep ink #0F2A4A. */
+:root {
+  --blueprint: #1D4E89;
+  --deep: #0F2A4A;
+  --white: #FFFFFF;
+  --line: #C9D8EC;
+  --note: #FFD166;
+  --paper: #F3F5F8;
+  --muted-paper: #4A5B70;
+  --text: "Schibsted Grotesk", Arial, sans-serif;
+  --notation: "JetBrains Mono", monospace;
+  --pieces: "Noto Sans Symbols 2", "DejaVu Sans", serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--text); font-size: 1.0625rem; line-height: 1.6; color: var(--deep); background: var(--paper); }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--note); outline-offset: 3px; }
+
+.sheet {
+  color: var(--white);
+  background-color: var(--blueprint);
+  background-image:
+    linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.25rem clamp(1rem, 4vw, 3rem); border-bottom: 1px solid rgba(255,255,255,.25); }
+.wordmark { font-weight: 800; text-decoration: none; font-size: 1.1rem; }
+.topbar nav { display: flex; gap: 1.5rem; }
+.topbar nav a { text-decoration: none; color: var(--line); }
+.topbar nav a:hover { color: var(--white); text-decoration: underline; text-underline-offset: 4px; }
+
+.study { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem); }
+.study h1 { font-weight: 800; font-size: clamp(2.6rem, 6vw, 4.75rem); line-height: 1.02; letter-spacing: -0.025em; margin: 0; max-width: 13ch; }
+.study p { color: var(--line); font-size: 1.2rem; max-width: 38ch; margin: 1.25rem 0 0; }
+.moves { font-family: var(--notation); color: var(--white); margin-top: 2rem; padding-top: 1rem; border-top: 1px dashed rgba(255,255,255,.45); font-size: 1rem; }
+.moves .spell { color: var(--note); }
+.moves .move { white-space: nowrap; margin-right: .5em; }
+
+figure { margin: 0; }
+.board { width: 100%; height: auto; display: block; }
+figcaption { color: var(--line); font-size: .95rem; margin-top: .75rem; }
+
+.specs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(2rem, 5vw, 4rem); padding: clamp(3rem, 7vw, 5rem) clamp(1rem, 4vw, 3rem); max-width: 80rem; }
+.spec h2 { font-weight: 800; font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.02em; margin: 0 0 .5rem; }
+.spec > p { color: var(--muted-paper); margin: 0 0 1.5rem; max-width: 40ch; }
+dl { margin: 0; display: grid; grid-template-columns: 8.5rem 1fr; border-top: 2px solid var(--deep); }
+dt, dd { padding: .7rem 0; border-bottom: 1px solid #C5CFDC; margin: 0; }
+dt { font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.75rem; }
+.btn { display: inline-block; padding: .8rem 1.4rem; border-radius: 4px; border: 2px solid var(--blueprint); color: var(--blueprint); font-weight: 600; text-decoration: none; }
+.btn.primary { background: var(--blueprint); color: var(--white); }
+
+footer { background: var(--deep); color: var(--white); padding: 2rem clamp(1rem, 4vw, 3rem); }
+
+@media (max-width: 760px) {
+  .study, .specs { grid-template-columns: 1fr; }
+  dl { grid-template-columns: 7rem 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header class="topbar">
+    <a class="wordmark" href="/">Etienne's chess variants</a>
+    <nav aria-label="Games"><a href="#chessdown">Chessdown</a><a href="#chesspell">Ches'spell</a></nav>
+  </header>
+
+  <section class="study">
+    <div>
+      <h1>Two chess variants, worked out move by move.</h1>
+      <p>Same pieces, new rules: a football field you draft yourself, and a hand of spells that bend how pieces move.</p>
+      <p class="moves" aria-label="Example game notation"><span class="move">1. e4 e5</span> <span class="move">2. <span class="spell">Wall d5</span> Nc6</span> <span class="move">3. <span class="spell">Ghost</span> R×a7</span></p>
+    </div>
+    <figure>
+      <svg class="board" viewBox="0 0 440 440" role="img" aria-labelledby="board-title">
+        <title id="board-title">Diagram: with the Ghost spell, the white rook on a1 slides through its own pawn on a4 and captures on a7. A wall blocks d5.</title>
+        <defs>
+          <pattern id="dark" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,.22)" stroke-width="2"/>
+          </pattern>
+          <marker id="head" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#FFD166"/>
+          </marker>
+        </defs>
+        <g transform="translate(30 10)">
+          <rect x="0" y="0" width="400" height="400" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+          <!-- Dark squares hatched; drawn statically for a1-h8. -->
+          <g fill="url(#dark)">
+            <rect x="0" y="350" width="50" height="50"/><rect x="100" y="350" width="50" height="50"/><rect x="200" y="350" width="50" height="50"/><rect x="300" y="350" width="50" height="50"/>
+            <rect x="50" y="300" width="50" height="50"/><rect x="150" y="300" width="50" height="50"/><rect x="250" y="300" width="50" height="50"/><rect x="350" y="300" width="50" height="50"/>
+            <rect x="0" y="250" width="50" height="50"/><rect x="100" y="250" width="50" height="50"/><rect x="200" y="250" width="50" height="50"/><rect x="300" y="250" width="50" height="50"/>
+            <rect x="50" y="200" width="50" height="50"/><rect x="150" y="200" width="50" height="50"/><rect x="250" y="200" width="50" height="50"/><rect x="350" y="200" width="50" height="50"/>
+            <rect x="0" y="150" width="50" height="50"/><rect x="100" y="150" width="50" height="50"/><rect x="200" y="150" width="50" height="50"/><rect x="300" y="150" width="50" height="50"/>
+            <rect x="50" y="100" width="50" height="50"/><rect x="150" y="100" width="50" height="50"/><rect x="250" y="100" width="50" height="50"/><rect x="350" y="100" width="50" height="50"/>
+            <rect x="0" y="50" width="50" height="50"/><rect x="100" y="50" width="50" height="50"/><rect x="200" y="50" width="50" height="50"/><rect x="300" y="50" width="50" height="50"/>
+            <rect x="50" y="0" width="50" height="50"/><rect x="150" y="0" width="50" height="50"/><rect x="250" y="0" width="50" height="50"/><rect x="350" y="0" width="50" height="50"/>
+          </g>
+          <g stroke="rgba(255,255,255,.35)" stroke-width="1">
+            <path d="M50 0V400M100 0V400M150 0V400M200 0V400M250 0V400M300 0V400M350 0V400M0 50H400M0 100H400M0 150H400M0 200H400M0 250H400M0 300H400M0 350H400"/>
+          </g>
+          <!-- Wall on d5 -->
+          <rect x="152" y="152" width="46" height="46" fill="#1D4E89" stroke="#FFD166" stroke-width="2" stroke-dasharray="6 4"/>
+          <text x="175" y="181" text-anchor="middle" font-family="Schibsted Grotesk, sans-serif" font-size="12" font-weight="600" fill="#FFD166">WALL</text>
+          <!-- Pieces -->
+          <g font-family="Noto Sans Symbols 2, DejaVu Sans, serif" font-size="38" text-anchor="middle" fill="#FFFFFF">
+            <text x="25" y="390">♖</text>
+            <text x="25" y="240">♙</text>
+            <text x="225" y="240">♙</text>
+            <text x="225" y="40">♚</text>
+            <text x="125" y="140">♞</text>
+            <text x="225" y="190">♟</text>
+            <text x="25" y="90" opacity=".45">♟</text>
+          </g>
+          <!-- Ghost path -->
+          <path d="M25 350 L25 78" stroke="#FFD166" stroke-width="4" stroke-dasharray="10 7" marker-end="url(#head)" fill="none"/>
+          <text x="40" y="300" font-family="Schibsted Grotesk, sans-serif" font-size="18" font-weight="600" fill="#FFD166">Ghost: through a4</text>
+        </g>
+        <g font-family="JetBrains Mono, monospace" font-size="15" fill="#C9D8EC" text-anchor="middle">
+          <text x="55" y="428">a</text><text x="105" y="428">b</text><text x="155" y="428">c</text><text x="205" y="428">d</text><text x="255" y="428">e</text><text x="305" y="428">f</text><text x="355" y="428">g</text><text x="405" y="428">h</text>
+          <text x="15" y="389">1</text><text x="15" y="339">2</text><text x="15" y="289">3</text><text x="15" y="239">4</text><text x="15" y="189">5</text><text x="15" y="139">6</text><text x="15" y="89">7</text><text x="15" y="39">8</text>
+        </g>
+      </svg>
+      <figcaption>Ches'spell, move 3: the Ghost spell lets the rook pass through one piece.</figcaption>
+    </figure>
+  </section>
+</div>
+
+<main class="specs">
+  <section class="spec" id="chessdown" aria-labelledby="chessdown-title">
+    <h2 id="chessdown-title">Chessdown</h2>
+    <p>Chess on an American football field. You build your team before kick-off.</p>
+    <dl>
+      <dt>Board</dt><dd>12 rows by 8 columns, end zones at each side</dd>
+      <dt>Setup</dt><dd>Draft your pieces with 39 points, one king required</dd>
+      <dt>To win</dt><dd>Capture the king, or hold the end zone for a turn</dd>
+      <dt>Clock</dt><dd>10 seconds per move</dd>
+      <dt>Play</dt><dd>Same screen, online, or against the bot</dd>
+    </dl>
+    <div class="actions">
+      <a class="btn primary" href="/chessdown/">Play Chessdown</a>
+      <a class="btn" href="/chessdown/?demo=true">Tutorial</a>
+    </div>
+  </section>
+
+  <section class="spec" id="chesspell" aria-labelledby="chesspell-title">
+    <h2 id="chesspell-title">Ches'spell</h2>
+    <p>The standard set, plus three spells drawn from a deck of twenty.</p>
+    <dl>
+      <dt>Board</dt><dd>8 by 8, standard start</dd>
+      <dt>Setup</dt><dd>Pick 3 spells: Freeze, Ghost, Wall, Teleport and 16 more</dd>
+      <dt>To win</dt><dd>Capture the king; there is no check</dd>
+      <dt>Clock</dt><dd>Per turn or per game, you choose</dd>
+      <dt>Play</dt><dd>Same screen, online, or against the AI</dd>
+    </dl>
+    <div class="actions">
+      <a class="btn primary" href="/chesspell/">Play Ches'spell</a>
+      <a class="btn" href="/chesspell/?demo=true">Tutorial</a>
+    </div>
+  </section>
+</main>
+
+<footer>Made by Etienne.</footer>
+</body>
+</html>
