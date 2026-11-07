@@ -302,6 +302,19 @@ function setupAnnouncer() {
         announceTurn();
         return result;
     };
+    // Online: the server sends the state after each action.
+    const applyServerState = engine.applyServerState;
+    engine.applyServerState = function (state, action) {
+        if (action && action.type === 'spell' && action.status !== 'refused') {
+            const card = cardsData.find(c => c.id === action.cardId);
+            if (card) pendingSpell = `${capitalize(action.by)} casts ${card.name}.`;
+        } else if (action && action.type === 'timeout') {
+            pendingSpell = "Time's up.";
+        }
+        const result = applyServerState.call(this, state, action);
+        if (action && action.turnEnded) announceTurn();
+        return result;
+    };
     // The first turn (local games): announced once the board is on screen.
     const initGame = app.initGame;
     app.initGame = function (...args) {

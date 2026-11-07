@@ -36,6 +36,24 @@ test.describe('Server authority', () => {
           const sockets = { 1: p1, 2: p2 };
           return { code, p1, p2, starter: state.currentPlayer, mover: sockets[state.currentPlayer], waiter: sockets[3 - state.currentPlayer], state, joined };
         },
+        // A Ches'spell game: white (creator) has Wall, Trap, Tornado; black has Cannibalism, Freeze, Sacrifice.
+        async chesspellRoom(timer = {}) {
+          const white = await T.connect('/chesspell');
+          const black = await T.connect('/chesspell');
+          const profile = { id: 'a', name: 'A', avatar: '', stats: { played: 0, wins: 0 } };
+          const code = await new Promise((r) => { white.once('roomCreated', r); white.emit('createRoom', { deck: [8, 16, 10], profile, ...timer }); });
+          const started = T.once(white, 'gameStarted');
+          black.emit('joinRoom', { roomCode: code, deck: [1, 15, 14], profile: { ...profile, id: 'b', name: 'B' } });
+          await started;
+          const g = { code, white, black };
+          // Send a message and wait until both players got the resulting state.
+          g.act = async (socket, event, data) => {
+            const states = Promise.all([T.once(white, 'gameState', 2000), T.once(black, 'gameState', 2000)]);
+            socket.emit(event, { roomCode: code, ...data });
+            return states;
+          };
+          return g;
+        },
         // A legal first move for whoever starts.
         firstMove(starter) {
           return starter === 1 ? { from: { r: 9, c: 3 }, to: { r: 8, c: 3 } } : { from: { r: 0, c: 3 }, to: { r: 1, c: 3 } };
@@ -160,35 +178,86 @@ test.describe('Server authority', () => {
     expect(result.restarted).toBeUndefined();
   });
 
-  test("ches'spell: only room members can relay moves and their own spells", async ({ page }) => {
+  // Ches'spell: the server referees with games/chesspell/game.js and sends each player
+  // { state, action } after every accepted action.
+  test("ches'spell: outsiders, the wrong turn, foreign cards and illegal moves are refused", async ({ page }) => {
     const result = await page.evaluate(async () => {
-      const p1 = await T.connect('/chesspell');
-      const p2 = await T.connect('/chesspell');
+      const g = await T.chesspellRoom();
       const intruder = await T.connect('/chesspell');
-      const profile = { id: 'a', name: 'A', avatar: '', stats: { played: 0, wins: 0 }, deck: [8, 12, 5] };
-      const code = await new Promise((r) => { p1.once('roomCreated', r); p1.emit('createRoom', { deck: [8, 12, 5], profile }); });
-      const started = T.once(p1, 'gameStarted');
-      p2.emit('joinRoom', { roomCode: code, deck: [1, 15, 14], profile: { ...profile, id: 'b', name: 'B' } });
-      await started;
+      const nothing = T.once(g.white, 'gameState', 600);
+      intruder.emit('makeMove', { roomCode: g.code, from: { r: 6, c: 4 }, to: { r: 4, c: 4 } }); // Not in the room
+      g.black.emit('makeMove', { roomCode: g.code, from: { r: 1, c: 4 }, to: { r: 3, c: 4 } }); // Not their turn
+      g.white.emit('makeMove', { roomCode: g.code, from: { r: 6, c: 4 }, to: { r: 3, c: 4 } }); // Pawn cannot go 3 squares
+      g.white.emit('spellActivated', { roomCode: g.code, cardId: 1 }); // In the opponent's deck
+      intruder.emit('spellActivated', { roomCode: g.code, cardId: 8 });
+      const refused = await nothing;
 
-      const anyMove = T.once(p1, 'moveMade', 500);
-      intruder.emit('makeMove', { roomCode: code, from: { r: 6, c: 4 }, to: { r: 4, c: 4 } });
-      const anySpell = T.once(p1, 'spellActivated', 500);
-      intruder.emit('spellActivated', { roomCode: code, cardId: 8 });
-      p1.emit('spellActivated', { roomCode: code, cardId: 1 }); // Card from the opponent's deck
-      const outsiderMove = await anyMove;
-      const foreignSpell = await anySpell;
-
-      const ownSpell = T.once(p2, 'spellActivated');
-      p1.emit('spellActivated', { roomCode: code, cardId: 8 });
-      const ownMove = T.once(p2, 'moveMade');
-      p1.emit('makeMove', { roomCode: code, from: { r: 6, c: 4 }, to: { r: 4, c: 4 } });
-      return { outsiderMove, foreignSpell, ownSpell: await ownSpell, ownMove: await ownMove };
+      const moved = T.once(g.black, 'gameState');
+      g.white.emit('makeMove', { roomCode: g.code, from: { r: 6, c: 4 }, to: { r: 4, c: 4 } });
+      return { refused, moved: await moved };
     });
-    expect(result.outsiderMove).toBeUndefined();
-    expect(result.foreignSpell).toBeUndefined();
-    expect(result.ownSpell).toMatchObject({ cardId: 8 });
-    expect(result.ownMove).toMatchObject({ from: { r: 6, c: 4 }, to: { r: 4, c: 4 } });
+    expect(result.refused).toBeUndefined();
+    expect(result.moved.action).toMatchObject({ type: 'move', by: 'white', turnEnded: true });
+    expect(result.moved.state.turn).toBe('black');
+    expect(result.moved.state.board[4][4]).toBe('P');
+  });
+
+  test("ches'spell: a card is played once, and spell targets are checked", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const g = await T.chesspellRoom();
+      const [cast] = await g.act(g.white, 'spellActivated', { cardId: 8 }); // Wall
+      const targeting = cast.state.targetingState;
+      const error = T.once(g.white, 'errorMsg', 600);
+      const noState = T.once(g.black, 'gameState', 600);
+      g.white.emit('spellSquareClicked', { roomCode: g.code, r: 6, c: 0 }); // Occupied: ignored
+      g.black.emit('spellSquareClicked', { roomCode: g.code, r: 4, c: 0 }); // Not the caster
+      const ignored = await noState;
+      const [, { state: walled }] = await g.act(g.white, 'spellSquareClicked', { r: 4, c: 0 });
+      // Black's turn now; white tries again later with the same card.
+      await g.act(g.black, 'makeMove', { from: { r: 1, c: 0 }, to: { r: 2, c: 0 } });
+      const again = T.once(g.black, 'gameState', 600);
+      g.white.emit('spellActivated', { roomCode: g.code, cardId: 8 });
+      return { targeting, ignored, error: await error, wall: walled.board[4][0], turn: walled.turn, used: walled.usedCards.white, again: await again };
+    });
+    expect(result.targeting).toBe('select_empty_square');
+    expect(result.ignored).toBeUndefined();
+    expect(result.error).toBeUndefined();
+    expect(result.wall).toBe('W');
+    expect(result.turn).toBe('black');
+    expect(result.used).toEqual([8]);
+    expect(result.again).toBeUndefined();
+  });
+
+  test("ches'spell: a trap stays hidden from the opponent", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const g = await T.chesspellRoom();
+      await g.act(g.white, 'spellActivated', { cardId: 16 });
+      const [forWhite, forBlack] = await g.act(g.white, 'spellSquareClicked', { r: 4, c: 4 });
+      return { white: forWhite.state.traps, black: forBlack.state.traps };
+    });
+    expect(result.white).toEqual([{ r: 4, c: 4, owner: 'white' }]);
+    expect(result.black).toEqual([]);
+  });
+
+  test("ches'spell: Tornado is shuffled once, by the server, for both players", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const g = await T.chesspellRoom();
+      await g.act(g.white, 'spellActivated', { cardId: 10 });
+      const [forWhite, forBlack] = await g.act(g.white, 'spellSquareClicked', { r: 6, c: 3 }); // Around d2
+      return { white: forWhite.state.board, black: forBlack.state.board, turn: forWhite.state.turn };
+    });
+    expect(result.white).toEqual(result.black);
+    expect(result.turn).toBe('black');
+  });
+
+  // 1 s timer + grace (1.5 s) before the server steps in.
+  test("ches'spell: the server skips the turn of a player out of time", async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const g = await T.chesspellRoom({ timerMode: 'turn', timerSeconds: 1 });
+      return T.once(g.black, 'gameState', 5_000);
+    });
+    expect(result.action).toMatchObject({ type: 'timeout', by: 'white', turnEnded: true });
+    expect(result.state.turn).toBe('black');
   });
 
   test("ches'spell: decks are validated and profiles sanitized", async ({ page }) => {

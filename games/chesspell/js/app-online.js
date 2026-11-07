@@ -11,7 +11,13 @@ Object.assign(app, {
             }
             this.p1Profile = profile;
             this.p1Deck = [...profile.deck];
-            socket.emit('createRoom', { deck: this.p1Deck, profile: this.p1Profile });
+            // The creator's timer applies to both players; the server keeps the clock.
+            const minutes = parseInt(document.getElementById('timer-min').value) || 0;
+            const seconds = parseInt(document.getElementById('timer-sec').value) || 0;
+            socket.emit('createRoom', {
+                deck: this.p1Deck, profile: this.p1Profile,
+                timerMode: this.timerMode, timerSeconds: minutes * 60 + seconds,
+            });
         });
         
         document.getElementById('btn-join-room')?.addEventListener('click', () => {
@@ -68,6 +74,14 @@ Object.assign(app, {
             this.setupPlayerBanner('player1-banner', this.p1Profile);
             this.setupPlayerBanner('player2-banner', this.p2Profile);
             
+            // Both players use the room's timer (chosen by its creator).
+            const timer = state.timer || { mode: 'turn', seconds: 10 };
+            this.timerMode = timer.mode;
+            this.timerMinutes = Math.floor(timer.seconds / 60);
+            this.timerSeconds = timer.seconds % 60;
+            this.timeLeftP1 = timer.seconds;
+            this.timeLeftP2 = timer.seconds;
+
             engine.init();
             this.showScreen('game-board');
             
@@ -75,24 +89,12 @@ Object.assign(app, {
             this.renderInGameDeck(this.p2Deck, 'player2-cards', 'black');
             
             this.renderChessboard();
+            this.startTimer();
         });
 
-        socket.on('moveMade', (data) => {
-            const { from, to } = data;
-            engine.move(from.r, from.c, to.r, to.c, true);
-        });
-
-        socket.on('spellActivated', (data) => {
-            // Find the card element to animate it or mark it
-            const containerId = engine.turn === 'white' ? 'player1-cards' : 'player2-cards';
-            const cardEl = document.querySelector(`#${containerId} .in-game-card[data-card-id="${data.cardId}"]`);
-            if (cardEl) {
-                engine.activateSpell(data.cardId, cardEl, true);
-            }
-        });
-
-        socket.on('spellSquareClicked', (data) => {
-            engine.handleSquareClick(data.r, data.c, true);
+        // The server referees the game: after every action it sends the new state.
+        socket.on('gameState', ({ state, action }) => {
+            engine.applyServerState(state, action);
         });
 
         socket.on('opponentLeft', () => {

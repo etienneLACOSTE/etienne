@@ -31,7 +31,9 @@ python3 api.py
 *L'IA écoute sur le port 5000. Le modèle `chesspell_model.pth` n'est pas versionné (trop lourd) : il doit être présent dans `ai/chesspell/`.*
 
 ### Fichiers
-- `games/chesspell/` : client du jeu
+- `games/chesspell/rules.js` : déplacements des pièces (sans échec : le roi se capture)
+- `games/chesspell/game.js` : tours, coups et les 20 sorts, sans DOM ; partagé avec le serveur, qui arbitre les parties en ligne (`server/chesspell.js`)
+- `games/chesspell/js/` : interface (affichage, bot, tutoriel, jeu en ligne)
 - `ai/chesspell/` : IA Python (MCTS + réseau de neurones, entraînement par self-play)
 - `tools/chesspell/train_spells.js` : algorithme génétique pour les heuristiques de sorts du bot JS
 

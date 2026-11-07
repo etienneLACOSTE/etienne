@@ -214,6 +214,7 @@ const app = {
 
     handleTimeout(player) {
         clearInterval(this.timerInterval);
+        if (isOnline) return; // Online, the server keeps the clock and decides
         if (this.timerMode === 'overall') {
             alert(`Game Over! ${player === 'white' ? 'Black' : 'White'} wins on time!`);
             this.showScreen('main-menu');

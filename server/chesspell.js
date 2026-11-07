@@ -1,11 +1,14 @@
 const { generateRoomCode, makeRoomFor, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
+const { TurnClock, sanitizeTimer } = require('./turn-clock');
+const Game = require('../games/chesspell/game.js');
 
 // -----------------------------------------------------
 // CHES'SPELL SOCKET LOGIC (Namespace /chesspell)
-// Spells are resolved in the browsers, so the server cannot check move legality
-// or turn order (spells such as Double Trouble change it). It relays only
-// well-formed messages from room members, each playing their own deck, and
-// sanitizes the profiles shown to the opponent.
+// The server is the referee: it keeps the game state with the shared game logic
+// (games/chesspell/game.js), accepts only the player to move, legal moves, cards
+// from their deck not played yet and valid spell targets, draws Tornado's random
+// shuffle, keeps the clock, and sends each player the resulting state (without
+// the opponent's hidden traps).
 // -----------------------------------------------------
 const chesspellRooms = {};
 
@@ -19,11 +22,13 @@ function getChesspellPublicRoomState(room) {
     return {
         id: room.id,
         gameState: room.gameState,
-        currentPlayer: room.currentPlayer,
         decks: room.decks,
-        profiles: room.profiles
+        profiles: room.profiles,
+        timer: room.clock.settings,
     };
 }
+
+const COLORS = { 1: 'white', 2: 'black' };
 
 /** A deck is exactly 3 distinct card ids between 1 and 20, or null. */
 function sanitizeDeck(deck) {
@@ -51,6 +56,41 @@ function sanitizeProfile(profile, deck) {
 
 function registerChesspell(io) {
     const ioChesspell = io.of('/chesspell');
+
+    /** Each player gets the new state (their own traps only) and what just happened. */
+    function sendState(room, action) {
+        const game = room.game;
+        if (game.winner) {
+            room.gameState = 'over';
+            room.clock.stop();
+        } else if (action.turnEnded) {
+            room.clock.start(game.turn);
+        }
+        for (const player of [1, 2]) {
+            ioChesspell.to(room.players[player]).emit('gameState', { state: Game.snapshot(game, COLORS[player]), action });
+        }
+    }
+
+    /** The player to move ran out of time: turn skipped, or game lost (overall timer). */
+    function timeUp(room) {
+        if (chesspellRooms[room.id] !== room || room.gameState !== 'playing') return;
+        const loser = room.game.turn;
+        if (room.clock.timer.mode === 'overall') {
+            room.game.winner = loser === 'white' ? 'Black' : 'White';
+            sendState(room, { type: 'timeout', by: loser, turnEnded: false });
+            return;
+        }
+        Game.cancelSpell(room.game);
+        room.game.targetingState = null;
+        Game.endTurn(room.game);
+        sendState(room, { type: 'timeout', by: loser, turnEnded: true });
+    }
+
+    function closeRoom(code) {
+        chesspellRooms[code].clock.stop();
+        delete chesspellRooms[code];
+    }
+
     ioChesspell.on('connection', (socket) => {
         console.log('Chesspell User connected:', socket.id);
 
@@ -64,14 +104,15 @@ function registerChesspell(io) {
                 roomCode = generateRoomCode();
             }
 
-            chesspellRooms[roomCode] = {
+            const room = chesspellRooms[roomCode] = {
                 id: roomCode,
-                players: { 1: socket.id, 2: null }, // P1 creates the room
+                players: { 1: socket.id, 2: null }, // P1 creates the room and plays white
                 gameState: 'waiting',
-                currentPlayer: 'white', // white plays first
                 decks: { 1: deck, 2: [] },
-                profiles: { 1: sanitizeProfile(data.profile, deck), 2: null }
+                profiles: { 1: sanitizeProfile(data.profile, deck), 2: null },
+                game: null,
             };
+            room.clock = new TurnClock(sanitizeTimer(data), () => timeUp(room));
 
             socket.join(roomCode);
             socket.emit('roomCreated', roomCode);
@@ -96,43 +137,62 @@ function registerChesspell(io) {
                 socket.emit('roomJoined', { roomCode, playerNumber: 2 });
 
                 room.gameState = 'playing';
+                room.game = Game.newGame();
                 ioChesspell.to(roomCode).emit('gameStarted', {
                     roomState: getChesspellPublicRoomState(room)
                 });
+                room.clock.start('white');
             }
         });
 
+        /** The room and color of a member whose turn it is, or null. */
+        function playerToMove(data) {
+            const room = getRoom(chesspellRooms, data && data.roomCode);
+            if (!room || room.gameState !== 'playing') return null;
+            const player = playerOf(room, socket);
+            if (player === null || room.game.turn !== COLORS[player] || room.game.winner) return null;
+            return { room, color: COLORS[player] };
+        }
+
         safeOn(socket, 'makeMove', (data) => {
-            const room = getRoom(chesspellRooms, data.roomCode);
-            if (!room || room.gameState !== 'playing' || playerOf(room, socket) === null) return;
-            if (!isSquare(data.from, 8, 8) || !isSquare(data.to, 8, 8)) return;
+            const turn = playerToMove(data);
+            if (!turn || !isSquare(data.from, 8, 8) || !isSquare(data.to, 8, 8)) return;
+            const { room, color } = turn;
+            const { from, to } = data;
+            if (!Game.isLegalMove(room.game, from.r, from.c, to.r, to.c)) return;
 
-            // Switch turn
-            room.currentPlayer = room.currentPlayer === 'white' ? 'black' : 'white';
-
-            ioChesspell.to(data.roomCode).emit('moveMade', {
-                from: { r: data.from.r, c: data.from.c },
-                to: { r: data.to.r, c: data.to.c },
-                nextPlayer: room.currentPlayer
-            });
+            const result = Game.move(room.game, from.r, from.c, to.r, to.c);
+            if (result === 'endTurn') Game.endTurn(room.game);
+            sendState(room, { type: 'move', by: color, from, to, turnEnded: result === 'endTurn' });
         });
 
         safeOn(socket, 'spellActivated', (data) => {
-            const room = getRoom(chesspellRooms, data.roomCode);
-            if (!room || room.gameState !== 'playing') return;
-            const player = playerOf(room, socket);
-            // A player can only cast cards from their own deck.
-            if (player === null || !room.decks[player].includes(data.cardId)) return;
+            const turn = playerToMove(data);
+            if (!turn) return;
+            const { room, color } = turn;
+            const player = color === 'white' ? 1 : 2;
+            // Only a card from the player's own deck, once, and not in the middle of another spell.
+            if (room.game.targetingState || !room.decks[player].includes(data.cardId)
+                || room.game.usedCards[color].includes(data.cardId)) return;
 
-            ioChesspell.to(data.roomCode).emit('spellActivated', { roomCode: data.roomCode, cardId: data.cardId });
+            const result = Game.activateSpell(room.game, data.cardId);
+            sendState(room, { type: 'spell', by: color, cardId: data.cardId, status: result.status, message: result.message || null });
         });
 
         safeOn(socket, 'spellSquareClicked', (data) => {
-            const room = getRoom(chesspellRooms, data.roomCode);
-            if (!room || room.gameState !== 'playing' || playerOf(room, socket) === null) return;
-            if (!isSquare(data, 8, 8)) return;
+            const turn = playerToMove(data);
+            if (!turn || !isSquare(data, 8, 8) || !turn.room.game.targetingState) return;
+            const { room, color } = turn;
 
-            ioChesspell.to(data.roomCode).emit('spellSquareClicked', { roomCode: data.roomCode, r: data.r, c: data.c });
+            // Tornado's shuffle is drawn here, so both players see the same board.
+            const result = Game.clickSquare(room.game, data.r, data.c, Math.random);
+            if (result.status === 'invalid') return socket.emit('errorMsg', result.message);
+            if (result.status === 'ignored') return;
+            if (result.status === 'done') {
+                if (result.endTurn) Game.endTurn(room.game);
+                Game.completeSpell(room.game);
+            }
+            sendState(room, { type: 'target', by: color, turnEnded: result.status === 'done' && result.endTurn });
         });
 
         safeOn(socket, 'leaveRoom', (data) => {
@@ -140,7 +200,7 @@ function registerChesspell(io) {
             if (room && playerOf(room, socket) !== null) {
                 socket.leave(data.roomCode);
                 socket.to(data.roomCode).emit('opponentLeft');
-                delete chesspellRooms[data.roomCode];
+                closeRoom(data.roomCode);
             }
         });
 
@@ -148,7 +208,7 @@ function registerChesspell(io) {
             for (const [code, room] of Object.entries(chesspellRooms)) {
                 if (playerOf(room, socket) !== null) {
                     ioChesspell.to(code).emit('opponentLeft');
-                    delete chesspellRooms[code];
+                    closeRoom(code);
                 }
             }
         });

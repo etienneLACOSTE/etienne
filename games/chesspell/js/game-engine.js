@@ -163,6 +163,11 @@ const engine = {
         } else {
             document.getElementById('spell-instruction').classList.add('hidden');
         }
+        if (action && action.type === 'spell' && action.status === 'refused'
+            && typeof myPlayerColor !== 'undefined' && action.by === myPlayerColor) {
+            this.showInstruction(action.message);
+            setTimeout(() => document.getElementById('spell-instruction').classList.add('hidden'), 2000);
+        }
         if (action && action.turnEnded && typeof app !== 'undefined') app.startTimer();
         if (typeof app !== 'undefined') app.renderChessboard();
         this.showGameOver();

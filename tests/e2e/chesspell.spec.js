@@ -208,6 +208,20 @@ test.describe("Ches'spell", () => {
     await dragMove(p2, [1, 4], [3, 4], true); // Black e5, from the rotated view
     for (const page of [p1, p2]) await expect.poll(() => pieceAt(page, 3, 4)).toBe('p');
     expect(await turn(p1)).toBe('white');
+
+    // White casts Wall on a4: the server resolves it, both players see it.
+    await p1.locator('#player1-cards .in-game-card[data-card-id="8"] .card-main').click();
+    await p1.locator('#modal-confirm').click();
+    await expect(p1.locator('#spell-instruction')).toHaveText(/empty square/);
+    await expect(p2.locator('#spell-instruction')).toBeHidden(); // Instructions are for the caster
+    const target = await cellCenter(p1, 4, 0, false);
+    await p1.mouse.click(target.x, target.y);
+    for (const page of [p1, p2]) {
+      await expect.poll(() => pieceAt(page, 4, 0)).toBe('W');
+      await expect(page.locator('#player1-cards .in-game-card[data-card-id="8"]')).toHaveClass(/used/);
+    }
+    await expect(p2.locator('#announcer')).toHaveText('White casts Wall. Board: a4 wall. Your turn.');
+    expect(await turn(p2)).toBe('black');
     expect(errors.flat()).toEqual([]);
 
     await ctx1.close();
