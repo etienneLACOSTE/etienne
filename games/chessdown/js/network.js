@@ -71,6 +71,13 @@ function setupNetwork() {
         startTurn();
     });
 
+    socket.on('turnSkipped', (data) => {
+        currentPlayer = data.nextPlayer;
+        selectedBoardPiece = null;
+        clearHighlights();
+        startTurn();
+    });
+
     socket.on('playAgainStatus', (data) => {
         const btn = document.getElementById('btn-restart');
         if (btn && !btn.disabled) btn.textContent = `Play Again (${data.count}/2)`;

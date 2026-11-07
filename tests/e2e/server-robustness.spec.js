@@ -45,11 +45,11 @@ test.describe('Server robustness', () => {
         // Some payloads target a real room so they reach the deeper handler code.
         const roomCode = await new Promise((resolve) => {
           attacker.once('roomCreated', resolve);
-          attacker.emit('createRoom', { deck: [], profile: null });
+          attacker.emit('createRoom', { deck: [8, 12, 5], profile: null });
         });
         const victim = io(ns, { forceNew: true });
         await new Promise((resolve) => victim.on('connect', resolve));
-        victim.emit('joinRoom', ns === '/chessdown' ? roomCode : { roomCode, deck: [], profile: null });
+        victim.emit('joinRoom', ns === '/chessdown' ? roomCode : { roomCode, deck: [1, 15, 14], profile: null });
         await new Promise((resolve) => setTimeout(resolve, 200));
 
         for (const [event, payload] of msgs) {
@@ -68,7 +68,7 @@ test.describe('Server robustness', () => {
         const s = io(ns, { forceNew: true });
         const created = await new Promise((resolve) => {
           s.once('roomCreated', resolve);
-          s.emit('createRoom', { deck: [], profile: null });
+          s.emit('createRoom', { deck: [8, 12, 5], profile: null });
         });
         s.disconnect();
         return created;

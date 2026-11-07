@@ -125,6 +125,12 @@ function startTimer() {
 function skipTurn() {
     clearHighlights();
     selectedBoardPiece = null;
+    if (currentRoomCode) {
+        // Online, the server decides: the player whose time ran out gives up the turn,
+        // and both clients switch when the server announces it ('turnSkipped').
+        if (currentPlayer === myPlayerNumber) socket.emit('skipTurn', { roomCode: currentRoomCode });
+        return;
+    }
     currentPlayer = currentPlayer === 1 ? 2 : 1;
     startTurn();
 }

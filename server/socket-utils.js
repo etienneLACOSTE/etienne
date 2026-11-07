@@ -32,4 +32,11 @@ function isSquare(pos, rows, cols) {
         && pos.r >= 0 && pos.r < rows && pos.c >= 0 && pos.c < cols;
 }
 
-module.exports = { generateRoomCode, safeOn, getRoom, isSquare };
+/** Player number (1 or 2) of this socket in the room, or null for outsiders. */
+function playerOf(room, socket) {
+    if (room.players[1] === socket.id) return 1;
+    if (room.players[2] === socket.id) return 2;
+    return null;
+}
+
+module.exports = { generateRoomCode, safeOn, getRoom, isSquare, playerOf };
