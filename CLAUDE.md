@@ -9,7 +9,7 @@ Communication : réponds en français ; code, noms de variables et commits en an
 ## Stack
 - Langage / framework : JavaScript vanilla (navigateur, scripts classiques) ; serveur Node + Express 5 + Socket.io 4
 - IA Ches'spell : Python 3 + PyTorch + Flask (`ai/chesspell/`, venv local, port 5000)
-- Style : CSS vanilla par jeu — toute interface suit DESIGN.md (à créer)
+- Style : CSS vanilla par jeu — toute interface suit `DESIGN.md` (accueil et Ches'spell : « Boîte de jeu » ; Chessdown : « Stade ») ; polices auto-hébergées dans `assets/fonts/`, aucune ressource tierce (CSP)
 - Base de données : aucune (profils Ches'spell dans le localStorage du navigateur)
 - Authentification : aucune
 - Hébergement : non décidé (local uniquement pour l'instant)
@@ -23,6 +23,7 @@ Communication : réponds en français ; code, noms de variables et commits en an
 
 ## Structure
 - `hub/` : page d'accueil
+- `assets/` : ressources partagées servies sous `/assets` (polices)
 - `games/chessdown/`, `games/chesspell/` : clients des jeux (tout ce qui est ici est public) ; règles pures dans `engine.js` / `rules.js`, code client dans `js/` (un fichier par rôle, scripts classiques chargés dans l'ordre par `index.html`)
 - `server/` : serveur HTTP + un module Socket.io par jeu
 - `ai/chesspell/` : IA Python (modèles `.pth`, venv et logs non versionnés)
