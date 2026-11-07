@@ -74,7 +74,7 @@ export function createBoardDOM(isDraft) {
     ui.chessboard.innerHTML = '';
     const viewRows = isDraft ? 6 : ROWS;
     
-    ui.chessboard.style.gridTemplateRows = `repeat(${viewRows}, 1fr)`;
+    ui.chessboard.style.gridTemplateRows = `repeat(${viewRows}, minmax(0, 1fr))`;
     ui.chessboard.style.aspectRatio = isDraft ? '1 / 1' : '1 / 2';
     ui.chessboard.style.maxWidth = isDraft ? 'min(100%, 45vh)' : 'min(100%, 45vh)';
 

@@ -42,6 +42,21 @@ test.describe('Layout', () => {
     });
   }
 
+  // Regression: columns holding pieces used to widen and push the others (grid 1fr).
+  test('chessdown squares keep the same size when pieces are placed', async ({ page }) => {
+    await page.goto('/chessdown/');
+    const pointer = (selector) => page.locator(selector).dispatchEvent('pointerdown');
+    await pointer('#btn-start-local');
+    for (const [type, vc] of [['k', 4], ['q', 3], ['q', 2], ['r', 1]]) {
+      await pointer(`.shop-item[data-type="${type}"]`);
+      await pointer(`#chessboard .square[data-vr="5"][data-vc="${vc}"]`);
+    }
+    const sizes = await page.evaluate(() => [...document.querySelectorAll('#chessboard .square')]
+      .map((sq) => { const r = sq.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }));
+    expect(new Set(sizes.map(([w]) => w)).size).toBe(1);
+    expect(new Set(sizes.map(([, h]) => h)).size).toBe(1);
+  });
+
   test("ches'spell game screen fits: board, spell cards, banners", async ({ page }) => {
     await page.goto('/chesspell/');
     await page.getByRole('button', { name: 'Local Game' }).click();

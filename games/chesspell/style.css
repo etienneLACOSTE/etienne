@@ -482,8 +482,8 @@ header h2 {
 .chessboard {
     position: relative;
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    grid-template-rows: repeat(8, 1fr);
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(8, minmax(0, 1fr));
     /* Fit the screen: viewport minus the app padding and the board frame (padding + borders). */
     --board-size: min(calc(100vw - 2 * var(--app-pad) - 26px), 45vh);
     width: var(--board-size);

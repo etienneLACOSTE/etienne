@@ -421,8 +421,9 @@ button:disabled {
 
 #chessboard {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    grid-template-rows: repeat(12, 1fr);
+    /* minmax(0, 1fr): every square keeps the same size, whatever piece it holds. */
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(12, minmax(0, 1fr));
     width: 100%;
     max-height: 90vh;
     max-height: 90dvh;
@@ -450,6 +451,8 @@ button:disabled {
     cursor: pointer;
     user-select: none;
     font-family: var(--pieces);
+    min-width: 0;
+    min-height: 0;
 }
 
 /* Chess pattern laid over the turf */
