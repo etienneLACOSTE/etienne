@@ -4,10 +4,13 @@ const { Server } = require('socket.io');
 const path = require('path');
 const { registerChesspell } = require('./chesspell');
 const { registerChessdown } = require('./chessdown');
+const { securityHeaders } = require('./security');
 
 const ROOT = path.join(__dirname, '..');
 
 const app = express();
+app.disable('x-powered-by');
+app.use(securityHeaders);
 const server = http.createServer(app);
 const io = new Server(server);
 
