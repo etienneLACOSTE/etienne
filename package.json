@@ -4,11 +4,12 @@
   "description": "",
   "main": "server/index.js",
   "scripts": {
-    "test": "npm run test:unit && npm run test:e2e",
+    "test": "npm run test:unit && npm run test:ai && npm run test:e2e",
     "test:update": "playwright test --update-snapshots",
     "start": "node server/index.js",
     "test:unit": "node --test tests/unit/",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:ai": "python3 -m unittest discover -s ai/chesspell/tests"
   },
   "keywords": [],
   "author": "",

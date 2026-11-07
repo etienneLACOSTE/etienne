@@ -6,9 +6,15 @@ import chess
 from chess_env import ChesspellEnv, move_to_int
 from model import ChesspellNet
 from mcts import MCTS
+from request_validation import InvalidRequest, validate_get_move_payload
 
 app = Flask(__name__)
-CORS(app) # Allow cross-origin requests from the JS frontend
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024  # A move request is a few hundred bytes
+
+# Only the game itself may call this API from a browser (not any website the
+# player happens to visit). Override with a comma-separated list if needed.
+ALLOWED_ORIGINS = os.environ.get('CHESSPELL_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+CORS(app, origins=ALLOWED_ORIGINS)
 
 # Load model globally to avoid reloading on each request
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -25,9 +31,12 @@ model.eval()
 
 @app.route('/get_move', methods=['POST'])
 def get_move():
-    data = request.json
-    fen = data.get('fen')
-    elo = int(data.get('elo', 1500))
+    try:
+        data = validate_get_move_payload(request.get_json(silent=True))
+    except InvalidRequest as err:
+        return jsonify({"error": str(err)}), 400
+    fen = data['fen']
+    elo = data['elo']
     
     # Dynamic ELO mapping (drastically scaled down for real-time Python inference)
     # ELO 800 -> ~10 sims. ELO 1500 -> ~50 sims. ELO 2500 -> ~150 sims.
@@ -124,4 +133,5 @@ def get_move():
     return jsonify(resp)
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    # Never enable the Werkzeug debugger by default: it allows running code.
+    app.run(host='127.0.0.1', port=5000, debug=os.environ.get('FLASK_DEBUG') == '1')
