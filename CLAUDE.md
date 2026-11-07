@@ -23,7 +23,7 @@ Communication : réponds en français ; code, noms de variables et commits en an
 
 ## Structure
 - `hub/` : page d'accueil
-- `games/chessdown/`, `games/chesspell/` : clients des jeux (tout ce qui est ici est public) ; règles pures dans `engine.js` / `rules.js`
+- `games/chessdown/`, `games/chesspell/` : clients des jeux (tout ce qui est ici est public) ; règles pures dans `engine.js` / `rules.js`, code client dans `js/` (un fichier par rôle, scripts classiques chargés dans l'ordre par `index.html`)
 - `server/` : serveur HTTP + un module Socket.io par jeu
 - `ai/chesspell/` : IA Python (modèles `.pth`, venv et logs non versionnés)
 - `tools/<jeu>/` : scripts d'entraînement des bots JS
@@ -69,7 +69,8 @@ Communication : réponds en français ; code, noms de variables et commits en an
 - Refonte en cours, par phases : suivre `docs/strategy.md` (déplacer avant de modifier, `npm test` à chaque étape).
 - Règles : une seule source par jeu en JS (`games/chessdown/engine.js`, `games/chesspell/rules.js`), utilisée par le jeu et `tools/`. L'IA Python (`ai/chesspell/chess_env.py`) a sa propre implémentation : un changement de règle doit y être reporté.
 - Les tests lisent les variables globales des jeux (`board`, `currentPlayer`, `engine`…) : les garder accessibles ou adapter les tests en même temps.
-- Bugs connus épinglés par `test.fail()` dans `tests/e2e/chesspell.spec.js` : retirer la marque quand ils sont corrigés.
+- Bugs connus épinglés par `test.fail()` dans `tests/e2e/` : retirer la marque quand ils sont corrigés.
+- Ches'spell : les boutons de `index.html` utilisent `data-action` (table `UI_ACTIONS` dans `js/main.js`), jamais d'`onclick` inline.
 - Le venv Python contient des chemins absolus : s'il est déplacé, il faut réécrire ses chemins (ou le recréer).
 - Ne jamais versionner `*.pth` (200 Mo chacun), `venv/`, `self_play_logs/`.
 - Quand je te corrige deux fois sur le même point, propose d'ajouter la règle ici.

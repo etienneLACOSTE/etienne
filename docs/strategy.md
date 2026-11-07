@@ -47,9 +47,15 @@ Commandes :
 - Corrigés au passage : prise en passant impossible en ligne (Chessdown) ; règle Ghost divergente dans l'entraîneur Ches'spell.
 - JS / Python : comparaison faite (voir l'audit). L'IA Python suit les règles d'échecs classiques ; l'aligner demande de réentraîner le modèle → décision à prendre, hors refactor.
 
-### Phase 4 — Découper les gros fichiers
-- Modules ES : `engine`, `ui`, `network`, `ai`, `tutorial`, un par commit.
-- Suppression des `onclick` inline ; `// @ts-check` + JSDoc.
+### Phase 4 — Découper les gros fichiers ✅ (2026-11-07, partiel assumé)
+- `games/chessdown/game.js` (1 700 lignes) → `games/chessdown/js/` : state, rules-bridge, board-view, draft, gameplay, bot, network, events, demo, main.
+- `games/chesspell/script.js` (2 900 lignes) → `games/chesspell/js/` : state, game-engine, profiles, app + app-online, app-demo, app-bot, app-view (méthodes ajoutées par `Object.assign(app, …)`), main.
+- Déplacement vérifié ligne à ligne : seuls les en-têtes et les enveloppes sont nouveaux.
+- Ches'spell : plus aucun `onclick`/`oninput` dans `index.html` (`data-action` + un écouteur dans `main.js`) ; tests de tous les menus ajoutés.
+- Reporté, volontairement :
+  - Modules ES et `@ts-check` : les fichiers restent des scripts classiques qui partagent la portée globale (les tests et le HTML s'appuient dessus). La conversion se fera avec la phase 5, quand l'interface sera réécrite.
+  - Bot sans variables globales : dépend des décisions sur l'entraîneur Chessdown (voir l'audit).
+  - Les 3 `onclick` générés dans `games/chesspell/js/profiles.js` : réécrits avec la correction XSS (phase 5).
 
 ### Phase 5 — Mise à niveau
 - Serveur autoritaire (validation des coups et des tours, codes de salle plus longs).
