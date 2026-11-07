@@ -127,39 +127,19 @@ test.describe("Ches'spell", () => {
     expect(errors).toEqual([]);
   });
 
-  test('campaign: the bot plays the move returned by the AI API', async ({ page }) => {
+  // The Python AI (ai/chesspell/) is set aside: the campaign bot is the JS minimax.
+  test('campaign: the bot answers by itself, without calling any AI server', async ({ page }) => {
     const errors = trackPageErrors(page);
+    /** @type {string[]} */
+    const aiCalls = [];
+    page.on('request', (r) => { if (r.url().includes('get_move')) aiCalls.push(r.url()); });
     await seedProfiles(page);
-    /** @type {any} */
-    let requestBody = null;
-    await page.route('**/get_move', async (route) => {
-      requestBody = route.request().postDataJSON();
-      await route.fulfill({ json: { type: 'move', from: 'e7', to: 'e5', promotion: null } });
-    });
     await page.goto('/chesspell/');
 
     await page.getByRole('button', { name: 'Local Game' }).click();
     await page.getByRole('button', { name: 'Play Campaign Mode' }).click();
     await page.locator('#btn-confirm-campaign').click();
     await expect(page.locator('#game-board')).toHaveClass(/active/);
-
-    await clickMove(page, [6, 4], [4, 4]); // e4
-    await expect.poll(() => pieceAt(page, 3, 4)).toBe('p');
-    expect(await turn(page)).toBe('white');
-    expect(requestBody.fen).toBe('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b - - 0 1');
-    expect(requestBody.elo).toBe(1500);
-    expect(errors).toEqual([]);
-  });
-
-  test('campaign: falls back to the JS bot when the AI API is down', async ({ page }) => {
-    const errors = trackPageErrors(page);
-    await seedProfiles(page);
-    await page.route('**/get_move', (route) => route.abort());
-    await page.goto('/chesspell/');
-
-    await page.getByRole('button', { name: 'Local Game' }).click();
-    await page.getByRole('button', { name: 'Play Campaign Mode' }).click();
-    await page.locator('#btn-confirm-campaign').click();
 
     await clickMove(page, [6, 4], [4, 4]); // e4
     const afterWhite = await page.evaluate(() => JSON.stringify(chesspell.engine.board));
@@ -170,7 +150,23 @@ test.describe("Ches'spell", () => {
       JSON.stringify(chesspell.engine.board) !== before
         || document.querySelectorAll('#player2-cards .in-game-card.used').length > 0, afterWhite);
     expect(botActed).toBe(true);
+    expect(aiCalls).toEqual([]);
     expect(errors).toEqual([]);
+  });
+
+  test('campaign: the ELO slider sets how far the bot searches and how often it blunders', async ({ page }) => {
+    await page.goto('/chesspell/');
+    const strength = await page.evaluate(() => [400, 800, 1200, 1500, 3000].map((elo) => {
+      chesspell.app.botElo = elo;
+      return chesspell.app.botStrength();
+    }));
+    expect(strength).toEqual([
+      { depth: 1, randomMoveRate: 0.3 },
+      { depth: 1, randomMoveRate: 0.15 },
+      { depth: 2, randomMoveRate: 0 },
+      { depth: 3, randomMoveRate: 0 },
+      { depth: 3, randomMoveRate: 0 },
+    ]);
   });
 
   test('online: both players see each move', async ({ browser }) => {

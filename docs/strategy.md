@@ -79,7 +79,7 @@ Commandes :
 - ✅ Modules ES + `@ts-check` : clients des deux jeux en modules ES (état partagé explicite), serveur et règles partagées vérifiés par TypeScript (`npm run typecheck`, 0 erreur).
 
 **5c. Avant production**
-- `/tribunal` sur le diff, `/crap`, hébergement (HTTPS) et décision sur l'IA Python.
+- `/tribunal` sur le diff, `/crap`, hébergement (HTTPS).
 
 ## Décisions
 
@@ -88,5 +88,5 @@ Commandes :
 | Langage | JavaScript, modules ES + `@ts-check` ; TypeScript plus tard si besoin |
 | Arborescence | `hub/` plutôt que `apps/hub/` (une seule app hors jeux) |
 | Historique git | Conservé ; rien n'est poussé sans demande |
-| IA Python | Conservée, hors du parcours critique ; hébergement décidé en phase 5 |
+| IA Python | Mise de côté (2026-11-07) : règles classiques, appelée sur la machine du visiteur, hébergement trop lourd. Le dossier reste comme recherche ; la campagne utilise le bot JS |
 | Dépendances | Demander avant chaque ajout |

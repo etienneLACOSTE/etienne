@@ -804,214 +804,50 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
         }
     },
 
-    async playBotTurn() {
-        console.log("playBotTurn called!");
-        if (engine.isGameOver || this.winner) return;
-        if (engine.turn !== 'black' || this.isOnlineMultiplayer) return;
-        
-        console.log("playBotTurn executing...");
-        const delay = 300;
-        
-        setTimeout(async () => {
-            if (engine.turn !== 'black') return;
-            
-            try {
-                console.log("Generating FEN...");
-                const fen = engine.generateFEN();
-                console.log("FEN generated:", fen);
-                
-                let white_spells = {};
-                Array.from(/** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('#player1-cards .in-game-card:not(.used)'))).forEach(el => {
-                    const id = el.dataset.cardId;
-                    white_spells[id] = (white_spells[id] || 0) + 1;
-                });
-                
-                let black_spells = {};
-                Array.from(/** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('#player2-cards .in-game-card:not(.used)'))).forEach(el => {
-                    const id = el.dataset.cardId;
-                    black_spells[id] = (black_spells[id] || 0) + 1;
-                });
-                
-                let walls = [];
-                for (let r=0; r<8; r++) {
-                    for (let c=0; c<8; c++) {
-                        if (engine.board[r][c] === 'W') walls.push({r, c});
-                    }
-                }
-                let traps = engine.traps || [];
-                let frozen = engine.frozenPieces || [];
-                let shielded = engine.shieldedPieces || [];
-                
-                console.log("Fetching from API...");
-                const response = await fetch('http://127.0.0.1:5000/get_move', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        fen: fen,
-                        elo: app.botElo,
-                        white_spells: white_spells,
-                        black_spells: black_spells,
-                        walls: walls,
-                        traps: traps,
-                        frozen: frozen,
-                        shielded: shielded,
-                        last_played_spell: engine.lastPlayedCardId,
-                        ghost_active: engine.ghostActive,
-                        leap_frog_active: engine.leapFrogActive,
-                        cannibalism_active: engine.cannibalismActive,
-                        assassin_active: engine.assassinActive,
-                        promotion_active: engine.promotionActive
-                    })
-                });
-                
-                if (!response.ok) throw new Error('API Error');
-                
-                const data = await response.json();
-                
-                if (data.type === 'move') {
-                    const fromC = data.from.charCodeAt(0) - 97;
-                    const fromR = 8 - parseInt(data.from[1]);
-                    const toC = data.to.charCodeAt(0) - 97;
-                    const toR = 8 - parseInt(data.to[1]);
-                    
-                    const res = engine.move(fromR, fromC, toR, toC, data.promotion);
-                    if (res === 'reverted') {
-                        setTimeout(() => this.playBotTurn(), 500);
-                    }
-                } else if (data.type === 'spell') {
-                    console.log("AlphaZero played spell:", data);
-                    this.handleBotSpell(data.spell_id, data.target1, data.target2);
-                }
-            } catch (err) {
-                console.error("AlphaZero API error, falling back to old Minimax bot...", err);
-                this.botTryUseSpell();
-                if (engine.turn !== 'black') return;
-                
-                let bestMove = app.getBestMoveFromAI(3);
-                if (bestMove) {
-                    engine.move(bestMove.from.r, bestMove.from.c, bestMove.to.r, bestMove.to.c);
-                } else {
-                    engine.endTurn();
-                    this.renderChessboard();
-                }
-            }
-        }, delay);
+    /**
+     * Strength of the campaign bot, from the ELO slider (400 to 3000): how many moves
+     * ahead it searches, and how often it plays a random move instead.
+     */
+    botStrength() {
+        const elo = this.botElo || 1500;
+        return {
+            depth: elo < 900 ? 1 : elo < 1400 ? 2 : 3,
+            randomMoveRate: elo < 700 ? 0.3 : elo < 1000 ? 0.15 : 0,
+        };
     },
 
-    handleBotSpell(spellId, target1Str, target2Str) {
-        // Find the card element in the DOM to mark it as used visually
-        let cardEl = Array.from(/** @type {HTMLCollectionOf<HTMLElement>} */ (document.getElementById('player2-cards').children))
-            .find(el => parseInt(el.dataset.cardId) === spellId && !el.classList.contains('used'));
-            
-        // If the card doesn't exist in the deck, it must be because the API swapped Mirror (13) for this spellId
-        if (!cardEl && engine.lastPlayedCardId === spellId) {
-            cardEl = Array.from(/** @type {HTMLCollectionOf<HTMLElement>} */ (document.getElementById('player2-cards').children))
-                .find(el => parseInt(el.dataset.cardId) === 13 && !el.classList.contains('used'));
-        }
-        
-        if (cardEl) {
-            cardEl.classList.add('used');
-        }
-
-        engine.activeSpellId = spellId;
-        engine.lastPlayedCardId = spellId; // Save for future mirrors
-        
-        // Map spell ID to initial targeting state
-        const spellInitialStates = {
-            1: null,
-            2: 'select_double_trouble',
-            3: 'select_domi_reversi',
-            4: 'select_sidestep_from',
-            5: 'select_ghost_piece',
-            6: 'select_swap_1',
-            7: 'select_sniper_bishop',
-            8: 'select_empty_square',
-            9: 'select_revive_square',
-            10: 'select_tornado_center',
-            11: 'select_shield_piece',
-            12: 'select_leapfrog_piece',
-            13: 'select_mirror_piece',
-            14: 'select_own_piece_sac',
-            15: 'select_enemy_freeze',
-            16: 'select_trap_square',
-            17: 'select_own_piece_tp',
-            18: 'select_kamikaze_piece',
-            19: 'select_assassin_piece',
-            20: 'select_own_pawn_promo'
-        };
-        
-        engine.targetingState = spellInitialStates[spellId];
-
-        const parseSquare = (sq) => {
-            if (!sq) return null;
-            const c = sq.charCodeAt(0) - 97;
-            const r = 7 - (sq.charCodeAt(1) - 49); // '1' is 49 in ASCII, rank 1 is row 7
-            return {r, c};
-        };
-
-        let t1 = parseSquare(target1Str);
-        let t2 = parseSquare(target2Str);
-        
-        // Cannibalism (1) is a global buff now, ignore any dummy targets the AI sends
-        if (spellId === 1) { t1 = null; t2 = null; }
-        
-        // Simulate clicks for spells that require targeting
-        if (t1) engine.handleSquareClick(t1.r, t1.c, true);
-        if (t2) engine.handleSquareClick(t2.r, t2.c, true);
-        
-        // Targeted spells that KEEP the turn need to trigger the next bot action manually
-        if (t1 || t2) {
-            if (spellId === 11 || spellId === 15) {
-                setTimeout(() => this.playBotTurn(), 500);
-            }
-        }
-
-        // For spells that do not require any targets (e.g. Double Trouble, Ghost)
-        if (!t1 && !t2) {
-            let keepTurn = false;
-            
-            if (spellId === 1) { engine.cannibalismActive = true; keepTurn = true; }
-            if (spellId === 2) {
-                engine.doubleTroubleState = { active: true, player: engine.turn, movesLeft: 2 };
-                keepTurn = true;
-            }
-            if (spellId === 5) { engine.ghostActive = true; keepTurn = true; }
-            if (spellId === 9) { 
-                const captured = engine.turn === 'white' ? engine.capturedByBlack : engine.capturedByWhite;
-                if (captured && captured.length > 0) {
-                    const emptySquares = [];
-                    for (let r=0; r<8; r++) {
-                        for (let c=0; c<8; c++) {
-                            if (!engine.board[r][c]) emptySquares.push({r, c});
-                        }
-                    }
-                    if (emptySquares.length > 0) {
-                        const sq = emptySquares[Math.floor(Math.random() * emptySquares.length)];
-                        engine.targetingState = 'select_revive_square';
-                        engine.handleSquareClick(sq.r, sq.c, true);
-                    } else {
-                        engine.completeSpell();
-                    }
-                } else {
-                    engine.completeSpell();
+    /** Any legal move of the bot (black), or null. */
+    randomBotMove() {
+        const moves = [];
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const p = engine.board[r][c];
+                if (p && p !== 'W' && engine.getColor(p) === 'black') {
+                    engine.getValidMoves(r, c).forEach(m => moves.push({ from: { r, c }, to: m }));
                 }
-                setTimeout(() => this.playBotTurn(), 500);
-                keepTurn = false;
-            }
-            if (spellId === 12) { engine.leapFrogActive = true; keepTurn = true; }
-            // Mirror is handled at the top
-            if (spellId === 19) { engine.assassinActive = true; keepTurn = true; }
-            if (spellId === 20) { engine.promotionActive = true; keepTurn = true; }
-            
-            if (keepTurn) {
-                engine.completeSpell();
-                setTimeout(() => this.playBotTurn(), 500);
-            } else if (spellId !== 9) { // 9 is handled entirely above
-                engine.endTurn();
-                engine.completeSpell();
             }
         }
-        
-        this.renderChessboard();
+        return moves.length ? moves[Math.floor(Math.random() * moves.length)] : null;
+    },
+
+    /** The bot's turn: maybe a spell, then a move found by minimax (getBestMoveFromAI). */
+    playBotTurn() {
+        if (engine.isGameOver || this.winner) return;
+        if (engine.turn !== 'black' || this.isOnlineMultiplayer) return;
+
+        setTimeout(() => {
+            if (engine.turn !== 'black') return;
+            this.botTryUseSpell();
+            if (engine.turn !== 'black') return;
+
+            const { depth, randomMoveRate } = this.botStrength();
+            const bestMove = Math.random() < randomMoveRate ? this.randomBotMove() : this.getBestMoveFromAI(depth);
+            if (bestMove) {
+                engine.move(bestMove.from.r, bestMove.from.c, bestMove.to.r, bestMove.to.c);
+            } else {
+                engine.endTurn();
+                this.renderChessboard();
+            }
+        }, 300);
     },
 }));
