@@ -158,7 +158,7 @@ test.describe('Chessdown', () => {
     await p2.goto('/chessdown/');
     await p1.locator('#btn-create-room').click();
     const codeEl = p1.locator('#waiting-room-code');
-    await expect(codeEl).toHaveText(/^[A-Z]{4}$/);
+    await expect(codeEl).toHaveText(/^[A-Z]{6}$/);
     await expect(codeEl).not.toHaveText('ABCD');
     const code = await codeEl.textContent();
 

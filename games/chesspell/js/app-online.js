@@ -21,12 +21,12 @@ Object.assign(app, {
                 return alert("You must select a profile with a valid 3-card deck.");
             }
             const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-            if (code.length === 4) {
+            if (code.length === 6) {
                 this.p2Profile = profile; // Locally, we are p2 joining
                 this.p2Deck = [...profile.deck];
                 socket.emit('joinRoom', { roomCode: code, deck: this.p2Deck, profile: this.p2Profile });
             } else {
-                alert("Please enter a valid 4-letter code.");
+                alert("Please enter a valid 6-letter code.");
             }
         });
         

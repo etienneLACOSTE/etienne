@@ -191,7 +191,7 @@ test.describe("Ches'spell", () => {
     await p2.locator('#online-p1-select').selectOption('guest2');
     await p1.locator('#btn-create-room').click();
     const codeEl = p1.locator('#waiting-room-code');
-    await expect(codeEl).toHaveText(/^[A-Z]{4}$/);
+    await expect(codeEl).toHaveText(/^[A-Z]{6}$/);
     await expect(codeEl).not.toHaveText('XXXX'); // Placeholder shown before the server answers
     await p2.locator('#room-code-input').fill((await codeEl.textContent()) ?? '');
     await p2.locator('#btn-join-room').click();

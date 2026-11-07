@@ -1,11 +1,14 @@
 // Helpers shared by the game socket handlers.
 
-// Helper
+const crypto = require('crypto');
+
+const ROOM_CODE_LENGTH = 6; // 26^6 ≈ 309 million codes: not practical to guess
+
 function generateRoomCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let code = '';
-    for (let i = 0; i < 4; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < ROOM_CODE_LENGTH; i++) {
+        code += chars.charAt(crypto.randomInt(chars.length));
     }
     return code;
 }

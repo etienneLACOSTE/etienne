@@ -116,10 +116,10 @@ function setupEventListeners() {
             if (!socket) return alert("Online mode is not available right now. Please launch the server.");
             enterFullscreen();
             const code = inputRoomCode.value.trim().toUpperCase();
-            if (code.length === 4) {
+            if (code.length === 6) {
                 socket.emit('joinRoom', code);
             } else {
-                alert("Please enter a valid 4-letter code.");
+                alert("Please enter a valid 6-letter code.");
             }
         });
     }

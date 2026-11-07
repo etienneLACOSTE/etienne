@@ -73,7 +73,7 @@ test.describe('Server robustness', () => {
         s.disconnect();
         return created;
       }, namespace);
-      expect(code).toMatch(/^[A-Z]{4}$/);
+      expect(code).toMatch(/^[A-Z]{6}$/);
     });
   }
 });

@@ -166,7 +166,7 @@
                 </div>
                 <div style="margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem;">
                     <h3>Join Room</h3>
-                    <input type="text" id="room-code-input" placeholder="Enter 4-letter code" maxlength="4" style="text-transform: uppercase; text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem;">
+                    <input type="text" id="room-code-input" placeholder="CODE" aria-label="Room code (6 letters)" maxlength="6" style="text-transform: uppercase; text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem;">
                     <button class="btn btn-secondary" id="btn-join-room">Join Room</button>
                 </div>
             </div>
@@ -180,7 +180,7 @@
             </header>
             <div style="text-align: center; margin-top: 4rem;">
                 <h3>Room Code:</h3>
-                <h1 id="waiting-room-code" style="font-size: 4rem; letter-spacing: 1rem; color: var(--accent-color);">XXXX</h1>
+                <h1 id="waiting-room-code" style="font-size: clamp(2rem, 11vw, 4rem); letter-spacing: clamp(0.3rem, 2vw, 1rem); color: var(--accent-color);">XXXX</h1>
                 <p>Share this code with your opponent.</p>
             </div>
         </section>
