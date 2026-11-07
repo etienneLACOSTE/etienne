@@ -198,7 +198,11 @@ footer { background: var(--navy); color: var(--paper); padding: 2.5rem var(--gut
 footer span { color: var(--lilac); }
 
 @media (max-width: 760px) {
-    .hero, .box { grid-template-columns: 1fr; }
+    /* minmax(0, ...): a title set in a wider fallback font (before the web font loads)
+       must not widen the page. */
+    .hero, .box { grid-template-columns: minmax(0, 1fr); }
+    .box-chessdown h2 { font-size: clamp(2.75rem, 13vw, 4rem); }
+    .box h2 { overflow-wrap: anywhere; }
     .box { border-radius: 28px; }
     /* Narrow box: yard lines would cross the text, keep the mown stripes only. */
     .box-chessdown { background: repeating-linear-gradient(90deg, var(--turf) 0 10%, var(--turf-light) 10% 20%); }
