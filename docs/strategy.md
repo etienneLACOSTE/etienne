@@ -39,11 +39,13 @@ Commandes :
 - Les dossiers servis ne contiennent plus que des fichiers publics ; un test vérifie que le code, le modèle et la config ne sont pas téléchargeables.
 - venv Python réparé : ses chemins pointaient encore vers l'ancien emplacement `~/Documents/etienne`.
 
-### Phase 3 — Un moteur de règles par jeu
-- Extraire les règles pures dans `engine.js` (copie sans changement de logique), Chessdown d'abord.
-- Tests unitaires avec `node:test` (intégré, aucune dépendance).
-- Les scripts d'entraînement et bots importent le moteur au lieu de le copier.
-- Tests croisés JS / Python (`chess_env.py`) sur les mêmes positions.
+### Phase 3 — Un moteur de règles par jeu ✅ (2026-11-07)
+- `games/chessdown/engine.js` et `games/chesspell/rules.js` : règles pures (sans DOM), chargées par le navigateur et par Node.
+- Équivalence prouvée avant branchement : tests différentiels aléatoires contre l'ancien code (453 k vérifications pour Chessdown, 1,6 M pour Ches'spell, 0 écart).
+- Tests unitaires `node:test` (`tests/unit/`, 31 tests) ; `npm test` lance unitaires puis e2e.
+- Le jeu et les entraîneurs (`tools/`) utilisent ces modules ; plus aucune copie des règles en JavaScript.
+- Corrigés au passage : prise en passant impossible en ligne (Chessdown) ; règle Ghost divergente dans l'entraîneur Ches'spell.
+- JS / Python : comparaison faite (voir l'audit). L'IA Python suit les règles d'échecs classiques ; l'aligner demande de réentraîner le modèle → décision à prendre, hors refactor.
 
 ### Phase 4 — Découper les gros fichiers
 - Modules ES : `engine`, `ui`, `network`, `ai`, `tutorial`, un par commit.

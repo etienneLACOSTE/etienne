@@ -17,17 +17,17 @@ Communication : réponds en français ; code, noms de variables et commits en an
 ## Commandes
 - Installer : `npm install` (puis `npx playwright install chromium` pour les tests)
 - Lancer en local : `npm start` (port 3000) ; IA optionnelle : `cd ai/chesspell && source venv/bin/activate && python3 api.py`
-- Tests : `npm test` (Playwright, desktop + mobile 375 px) ; `npm run test:update` après un changement visuel voulu
+- Tests : `npm test` (unitaires `node:test` puis Playwright desktop + mobile 375 px) ; `npm run test:unit` / `npm run test:e2e` séparément ; `npm run test:update` après un changement visuel voulu
 - Lint / format : pas encore configuré
 - Build de production : aucun (fichiers servis tels quels)
 
 ## Structure
 - `hub/` : page d'accueil
-- `games/chessdown/`, `games/chesspell/` : clients des jeux (tout ce qui est ici est public)
+- `games/chessdown/`, `games/chesspell/` : clients des jeux (tout ce qui est ici est public) ; règles pures dans `engine.js` / `rules.js`
 - `server/` : serveur HTTP + un module Socket.io par jeu
 - `ai/chesspell/` : IA Python (modèles `.pth`, venv et logs non versionnés)
 - `tools/<jeu>/` : scripts d'entraînement des bots JS
-- `tests/e2e/` : tests Playwright et captures de référence
+- `tests/unit/` : tests unitaires des règles (`node:test`) ; `tests/e2e/` : tests Playwright et captures de référence
 - `docs/` : specs, décisions, rapports de revue (Tribunal écrit dans `docs/reviews/`) ; plan de refonte : `docs/strategy.md`
 
 ## Façon de travailler
@@ -67,7 +67,7 @@ Communication : réponds en français ; code, noms de variables et commits en an
 
 ## À savoir
 - Refonte en cours, par phases : suivre `docs/strategy.md` (déplacer avant de modifier, `npm test` à chaque étape).
-- Les règles du jeu sont dupliquées entre le client, `tools/` et `ai/chesspell/chess_env.py` : un changement de règle doit être reporté partout (jusqu'à la phase 3).
+- Règles : une seule source par jeu en JS (`games/chessdown/engine.js`, `games/chesspell/rules.js`), utilisée par le jeu et `tools/`. L'IA Python (`ai/chesspell/chess_env.py`) a sa propre implémentation : un changement de règle doit y être reporté.
 - Les tests lisent les variables globales des jeux (`board`, `currentPlayer`, `engine`…) : les garder accessibles ou adapter les tests en même temps.
 - Bugs connus épinglés par `test.fail()` dans `tests/e2e/chesspell.spec.js` : retirer la marque quand ils sont corrigés.
 - Le venv Python contient des chemins absolus : s'il est déplacé, il faut réécrire ses chemins (ou le recréer).
