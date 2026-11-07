@@ -208,13 +208,124 @@
         return best;
     }
 
+    const KNIGHT_JUMPS = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+    const AROUND = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+    const RAYS = {
+        r: [[1, 0], [-1, 0], [0, 1], [0, -1]],
+        b: [[1, 1], [1, -1], [-1, 1], [-1, -1]],
+        q: [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]],
+    };
+
+    /**
+     * How many of its own pieces attack each square of a formation (3 rows x 8, in the
+     * bot's own frame: row 0 is its back rank, it moves towards higher rows).
+     * Only its own pieces are on the board during the draft.
+     */
+    function formationControl(grid) {
+        const control = grid.map((row) => row.map(() => 0));
+        const hit = (r, c) => { if (r >= 0 && r < 3 && c >= 0 && c < COLS) control[r][c]++; };
+        grid.forEach((row, r) => row.forEach((type, c) => {
+            if (!type) return;
+            if (type === 'p') { hit(r + 1, c - 1); hit(r + 1, c + 1); return; }
+            if (type === 'k') { AROUND.forEach(([dr, dc]) => hit(r + dr, c + dc)); return; }
+            if (type === 'n') { KNIGHT_JUMPS.forEach(([dr, dc]) => hit(r + dr, c + dc)); return; }
+            for (const [dr, dc] of RAYS[type]) {
+                for (let rr = r + dr, cc = c + dc; rr >= 0 && rr < 3 && cc >= 0 && cc < COLS; rr += dr, cc += dc) {
+                    hit(rr, cc);
+                    if (grid[rr][cc]) break; // Blocked, but the blocking piece is defended
+                }
+            }
+        }));
+        return control;
+    }
+
+    /**
+     * True if the king can be hit from afar at once: its file or a forward diagonal runs
+     * out of the formation without meeting one of its own pieces (the middle rows are empty).
+     */
+    function kingExposed(grid) {
+        for (let r = 0; r < 3; r++) {
+            const c = grid[r].indexOf('k');
+            if (c === -1) continue;
+            return [[1, 0], [1, 1], [1, -1]].some(([dr, dc]) => {
+                for (let rr = r + dr, cc = c + dc; cc >= 0 && cc < COLS; rr += dr, cc += dc) {
+                    if (rr >= 3) return true; // Out of the formation: open to the enemy
+                    if (grid[rr][cc]) return false;
+                }
+                return false; // A diagonal that leaves by the side of the board
+            });
+        }
+        return false;
+    }
+
+    /**
+     * Weaknesses of a formation, worst first: a king open to a long-range attack; then
+     * back-rank squares (the opponent's end zone) not controlled by its own pieces, a
+     * piece standing there counting only if defended (it can be taken, and the taker
+     * would stay); then files left open to the enemy (nothing in front of the back
+     * rank) whose back square is not controlled twice, since two rooks stacked on a file
+     * take, retake and stay; then undefended pieces on the front row, then the middle row.
+     */
+    function formationFaults(grid) {
+        const control = formationControl(grid);
+        let open = 0;
+        let stackable = 0;
+        let frontUndefended = 0;
+        let middleUndefended = 0;
+        for (let c = 0; c < COLS; c++) {
+            if (control[0][c] === 0) open++;
+            if (!grid[1][c] && !grid[2][c]) stackable += Math.max(0, 2 - control[0][c]);
+            if (grid[2][c] && control[2][c] === 0) frontUndefended++;
+            if (grid[1][c] && grid[1][c] !== 'k' && control[1][c] === 0) middleUndefended++;
+        }
+        const king = kingExposed(grid) ? 1 : 0;
+        return {
+            king, open, stackable, frontUndefended, middleUndefended,
+            cost: king * 1000000 + open * 10000 + stackable * 1000 + frontUndefended * 100 + middleUndefended * 10,
+        };
+    }
+
+    /**
+     * Rearrange a formation so the back rank is guarded and the front pieces defended,
+     * moving as few pieces as possible: swaps of two squares, kept while they lower the
+     * faults (the king stays off the front row).
+     */
+    function strengthenFormation(grid) {
+        const squares = [];
+        for (let r = 0; r < 3; r++) for (let c = 0; c < COLS; c++) squares.push([r, c]);
+        let cost = formationFaults(grid).cost;
+        for (let pass = 0; pass < 20 && cost > 0; pass++) {
+            let improved = false;
+            for (const [r1, c1] of squares) {
+                if (!grid[r1][c1]) continue;
+                for (const [r2, c2] of squares) {
+                    const a = grid[r1][c1];
+                    const b = grid[r2][c2];
+                    if (a === b || (a === 'k' && r2 === 2) || (b === 'k' && r1 === 2)) continue;
+                    grid[r1][c1] = b;
+                    grid[r2][c2] = a;
+                    const next = formationFaults(grid).cost;
+                    if (next < cost) {
+                        cost = next;
+                        improved = true;
+                    } else {
+                        grid[r2][c2] = b;
+                        grid[r1][c1] = a;
+                    }
+                }
+            }
+            if (!improved) break;
+        }
+        return grid;
+    }
+
     /**
      * The bot's army for `player`, drafted with its profile: king placement by difficulty,
      * optional archetype, best value for the points left, then a structured formation.
      * Returns the pieces `{ r, c, type }` (in `player`'s deployment rows) and the points left.
      * @param {Profile} profile
      * @param {number} player
-     * @param {{ difficulty?: string, archetype?: string, random?: () => number }} [options]
+     * @param {{ difficulty?: string, archetype?: string, random?: () => number, strengthen?: boolean }} [options]
      */
     function draftArmy(profile, player, options = {}) {
         const difficulty = options.difficulty || 'master';
@@ -304,8 +415,19 @@
         each('n', () => place('n', [1, 2], false)); // Knights: middle row
         each('p', () => place('p', [2, 1, 0], false)); // Pawns: a front wall
 
+        // Beyond the beginner level, the back rank is guarded and the front defended,
+        // so a file opened by stacked rooks never gives a free touchdown.
+        if (difficulty !== 'novice' && options.strengthen !== false) {
+            const local = (r) => (player === 2 ? r : ROWS - 1 - r);
+            const grid = [0, 1, 2].map(() => Array(COLS).fill(null));
+            placed.forEach((p) => { grid[local(p.r)][p.c] = p.type; });
+            strengthenFormation(grid);
+            placed.length = 0;
+            grid.forEach((line, r) => line.forEach((type, c) => { if (type) placed.push({ r: row(r), c, type }); }));
+        }
+
         return { pieces: placed, pointsLeft: points };
     }
 
-    return { DEFAULT_PROFILE, evaluate, bestMove, draftArmy };
+    return { DEFAULT_PROFILE, evaluate, bestMove, draftArmy, formationFaults, kingExposed };
 });

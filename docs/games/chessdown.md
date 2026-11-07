@@ -31,7 +31,7 @@ Forget the standard chess setup! Before the match begins, both players enter the
 | Touchdown | `engine.js` (`endzoneRow()`, `hasPieceInEndzone()`), checked at each `startTurn()` (`js/gameplay.js`) |
 | Turn timer | `startTimer()` / `skipTurn()` in `js/gameplay.js`; online clock in `server/chessdown.js` (`startClock()`) |
 | Pass & Play (board rotation) | `js/board-view.js` (`getViewCoords()`), `rotate-180` class in `js/draft.js` |
-| Bot | `js/bot.js` (minimax), profiles trained by `tools/chessdown/train.js` |
+| Bot | `bot-search.js` (draft with a guarded formation, minimax with quiescence), used by `js/bot.js` and the trainer `tools/chessdown/train.js` |
 
 ## 📱 Tech Stack
 - Pure HTML, CSS (Vanilla), and JavaScript.

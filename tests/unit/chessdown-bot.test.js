@@ -30,6 +30,32 @@ test('drafts are legal for both sides, every difficulty and archetype, and spend
     }
 });
 
+test('beyond beginner level the formation resists stacked rooks', () => {
+    // King covered, every back-rank square controlled (twice on an open file), front defended.
+    const random = seededRandom(21);
+    for (const player of [1, 2]) {
+        for (const difficulty of ['apprentice', 'expert', 'master']) {
+            for (const archetype of ['normal', 'ecuries', 'citadelle', 'chapiteau', 'sorcieres']) {
+                for (let i = 0; i < 10; i++) {
+                    const { pieces } = Bot.draftArmy(Bot.DEFAULT_PROFILE, player, { difficulty, archetype, random });
+                    const grid = [0, 1, 2].map(() => Array(8).fill(null));
+                    pieces.forEach((p) => { grid[player === 2 ? p.r : ROWS - 1 - p.r][p.c] = p.type; });
+                    const faults = Bot.formationFaults(grid);
+                    assert.deepEqual([faults.king, faults.open, faults.stackable, faults.frontUndefended], [0, 0, 0, 0],
+                        `${difficulty} ${archetype} player ${player}\n${grid.map((r) => r.map((t) => t || '.').join('')).join('\n')}`);
+                }
+            }
+        }
+    }
+});
+
+test('a beginner keeps a naive formation', () => {
+    const { pieces } = Bot.draftArmy(Bot.DEFAULT_PROFILE, 2, { difficulty: 'novice', random: seededRandom(3) });
+    const grid = [0, 1, 2].map(() => Array(8).fill(null));
+    pieces.forEach((p) => { grid[p.r][p.c] = p.type; });
+    assert.ok(Bot.formationFaults(grid).cost > 0);
+});
+
 test('the old trainer bug is gone: armies hold more than a king', () => {
     const { pieces } = Bot.draftArmy(Bot.DEFAULT_PROFILE, 1, { random: seededRandom(1) });
     assert.ok(pieces.length > 5);
