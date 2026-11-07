@@ -94,11 +94,14 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
 - Board: a clear checkerboard, every square clearly light or clearly dark: dark = turf,
   light = turf mixed with 45 % white (`--square-light`); white yard lines, end zones in
   jersey colours. Pieces: jersey colour, 1.5px black outline.
-- Stands: around the field, a rudimentary pixel crowd (`js/crowd.js`, 6px pixels, at
-  45 % opacity so the field stays the focus) on concrete steps (#141414 / #262626).
-  Fans wear the jersey colours; their faces use five skin tones (#F1C27D, #E0AC69,
-  #C68642, #8D5524, #FFDBAC), added at the owner's request for the crowd only.
-  A few fans stand up or sit down every 400 ms; still under reduced motion.
+- Stadium (`js/crowd.js`, a canvas behind the game, 5px pixels): the pitch runs the full
+  height in turf; along both touchlines a grass apron and a barrier (#D9DEE6), then blue
+  stands, rows of seats parallel to the touchline (#2B5FB4 / #3A70C9, risers #1C4180,
+  stairs #7A8494 every 12 seats), and beyond them the concourse (#0E1A2E). The crowd sits
+  in the seats (30 % empty): jersey-coloured shirts, faces in five skin tones (#F1C27D,
+  #E0AC69, #C68642, #8D5524, #FFDBAC). The blues and skin tones were added at the owner's
+  request, for the stadium only. A few fans stand up or sit down every 400 ms; still
+  under reduced motion. The stands follow the board (draft or match).
 - Timer: scoreboard style, amber digits on black.
 
 ## Layout and motion

@@ -70,7 +70,6 @@ body {
     height: 100vh;
     image-rendering: pixelated;
     z-index: 0;
-    opacity: 0.45; /* In the background: the field stays the focus */
 }
 #game-container { z-index: 1; }
 

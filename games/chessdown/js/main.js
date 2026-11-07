@@ -12,7 +12,12 @@ import { generateAllMoves, getValidMoves } from './rules-bridge.js';
 
 // Initialization
 export function init() {
-    startCrowd(/** @type {HTMLCanvasElement} */ (document.getElementById('crowd')));
+    // The stands follow the pitch: the board and its end zones, when shown.
+    startCrowd(/** @type {HTMLCanvasElement} */ (document.getElementById('crowd')), () => {
+        if (ui.gameLayout.classList.contains('hidden')) return null;
+        const board = ui.chessboard.getBoundingClientRect();
+        return board.width ? board : null;
+    });
     setupEventListeners();
     setupAccessibility(); // a11y.js
     
