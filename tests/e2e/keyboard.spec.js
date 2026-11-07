@@ -131,3 +131,34 @@ test.describe("Keyboard: Ches'spell", () => {
     await dialog.accept();
   });
 });
+
+test.describe("Keyboard: Ches'spell dialogs", () => {
+  test('dialogs take the focus, keep it inside, close with Escape and give it back', async ({ page }) => {
+    await blockExternalRequests(page);
+    await page.goto('/chesspell/');
+    await activate(page.getByRole('button', { name: 'Local Game' }));
+    await activate(page.getByRole('button', { name: 'Play Draft Mode' }));
+
+    const card = page.locator('#draft-grid .spell-card[data-id="8"]');
+    await activate(card);
+    const dialog = page.getByRole('dialog', { name: 'Wall' });
+    await expect(dialog).toBeVisible();
+    await expect(page.locator('#modal-confirm')).toBeFocused();
+    // Tab cycles inside the dialog.
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => document.getElementById('card-modal').contains(document.activeElement))).toBe(true);
+    }
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(card).toBeFocused();
+
+    // The info dialog too.
+    await activate(card.locator('.btn-info'));
+    const info = page.getByRole('dialog', { name: 'Wall' });
+    await expect(info).toBeVisible();
+    await expect(page.locator('#info-modal-close')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(info).toBeHidden();
+  });
+});

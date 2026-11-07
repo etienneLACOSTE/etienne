@@ -124,6 +124,57 @@ function onBoardKeydown(e) {
     }
 }
 
+
+// --- Dialogs: card choice and spell info ---
+// Each modal is announced as a dialog, takes the focus when it opens, keeps Tab inside,
+// closes with Escape (same as its cancel/close button) and gives the focus back.
+const DIALOGS = [
+    { id: 'card-modal', title: 'modal-title', initial: 'modal-confirm', cancel: 'modal-cancel' },
+    { id: 'info-modal', title: 'info-modal-title', initial: 'info-modal-close', cancel: 'info-modal-close' },
+];
+
+function focusableIn(root) {
+    return [...root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+        .filter(el => !el.disabled && el.getClientRects().length);
+}
+
+function setupDialog({ id, title, initial, cancel }) {
+    const modal = document.getElementById(id);
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', title);
+    let opener = null;
+
+    new MutationObserver(() => {
+        const open = !modal.classList.contains('hidden');
+        if (open && !opener) {
+            opener = document.activeElement;
+            // Buttons are re-created when the dialog opens: look them up now.
+            document.getElementById(initial)?.focus();
+        } else if (!open && opener) {
+            const back = opener;
+            opener = null;
+            // Give the focus back unless the action already moved it somewhere useful.
+            const focusLost = document.activeElement === document.body || modal.contains(document.activeElement);
+            if (focusLost && back.isConnected) back.focus();
+        }
+    }).observe(modal, { attributes: true, attributeFilter: ['class'] });
+
+    modal.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            document.getElementById(cancel)?.click();
+        } else if (e.key === 'Tab') {
+            const items = focusableIn(modal);
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+    });
+}
+
 function setupAccessibility() {
     // Enter/Space on any non-native button (cards) acts like a click.
     document.addEventListener('keydown', (e) => {
@@ -138,6 +189,7 @@ function setupAccessibility() {
     new MutationObserver(() => enhanceCards(document)).observe(document.getElementById('app'), { childList: true, subtree: true });
 
     document.getElementById('spell-instruction').setAttribute('role', 'status');
+    DIALOGS.forEach(setupDialog);
     document.getElementById('chessboard').addEventListener('keydown', onBoardKeydown);
 
     // The board DOM is rebuilt on every render: re-enhance it and keep the keyboard focus.
