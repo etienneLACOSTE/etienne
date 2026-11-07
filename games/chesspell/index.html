@@ -17,13 +17,13 @@
         <section id="main-menu" class="screen active">
             <h1 class="game-title">Ches'spell</h1>
             <div class="menu-buttons">
-                <button class="btn btn-primary" onclick="app.showScreen('player-select-screen')">Local Game</button>
-                <button class="btn btn-secondary" onclick="app.showScreen('online-screen')">Online Multiplayer</button>
-                <button class="btn" onclick="app.showScreen('deck-builder')">Deck Builder</button>
-                <button class="btn" onclick="app.showScreen('profiles-screen')">Manage Profiles</button>
-                <button class="btn" onclick="app.showScreen('card-index')">Card Index</button>
-                <button class="btn btn-secondary" style="border-color: #f1c40f; color: #f1c40f;" onclick="app.showScreen('timer-modal')">⚙️ Timer</button>
-                <button class="btn btn-secondary" style="border-color: #c084fc; color: #c084fc;" onclick="app.toggleTabletopMode()">⛶ Toggle Tabletop Mode</button>
+                <button class="btn btn-primary" data-action="showScreen" data-screen="player-select-screen">Local Game</button>
+                <button class="btn btn-secondary" data-action="showScreen" data-screen="online-screen">Online Multiplayer</button>
+                <button class="btn" data-action="showScreen" data-screen="deck-builder">Deck Builder</button>
+                <button class="btn" data-action="showScreen" data-screen="profiles-screen">Manage Profiles</button>
+                <button class="btn" data-action="showScreen" data-screen="card-index">Card Index</button>
+                <button class="btn btn-secondary" style="border-color: #f1c40f; color: #f1c40f;" data-action="showScreen" data-screen="timer-modal">⚙️ Timer</button>
+                <button class="btn btn-secondary" style="border-color: #c084fc; color: #c084fc;" data-action="toggleTabletopMode">⛶ Toggle Tabletop Mode</button>
             </div>
             <div class="deck-status" id="deck-status-display">
                 Deck: 0/3 cards selected
@@ -36,8 +36,8 @@
                 <h2>Deck Builder</h2>
                 <div class="header-controls">
                     <span class="selection-count" id="selection-count">0/3 Cards Selected</span>
-                    <button class="btn btn-small" id="save-deck-btn" style="display: none;" onclick="app.saveDeckForProfile()">Save Deck</button>
-                    <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+                    <button class="btn btn-small" id="save-deck-btn" style="display: none;" data-action="saveDeck">Save Deck</button>
+                    <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back</button>
                 </div>
             </header>
             <div class="cards-grid" id="deck-grid">
@@ -49,7 +49,7 @@
         <section id="card-index" class="screen">
             <header>
                 <h2>Card Index</h2>
-                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back to Menu</button>
+                <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back to Menu</button>
             </header>
             <div class="cards-grid" id="index-grid">
                 <!-- Cards injected via JS -->
@@ -58,7 +58,7 @@
         <section id="draft-phase" class="screen">
             <header>
                 <h2>Card Draft</h2>
-                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+                <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back</button>
             </header>
             <div id="draft-turn-indicator" class="player-banner">
                 <!-- Injected via JS -->
@@ -73,7 +73,7 @@
             <header>
                 <h2>Ches'spell</h2>
                 <div class="header-controls">
-                    <button class="btn btn-small" onclick="app.showScreen('main-menu')">Quit Game</button>
+                    <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Quit Game</button>
                 </div>
             </header>
             
@@ -111,15 +111,15 @@
         <section id="profiles-screen" class="screen">
             <header>
                 <h2>Manage Profiles</h2>
-                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+                <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back</button>
             </header>
             <div class="profiles-container">
                 <div class="create-profile">
                     <h3 id="profile-form-title">Create New Profile</h3>
                     <input type="text" id="new-profile-name" placeholder="Enter Username..." maxlength="15">
                     <input type="file" id="new-profile-avatar" accept="image/*">
-                    <button class="btn btn-primary" id="profile-submit-btn" onclick="ProfileManager.submitProfile()">Create</button>
-                    <button class="btn" id="profile-cancel-btn" style="display: none;" onclick="ProfileManager.cancelEdit()">Cancel</button>
+                    <button class="btn btn-primary" id="profile-submit-btn" data-action="submitProfile">Create</button>
+                    <button class="btn" id="profile-cancel-btn" style="display: none;" data-action="cancelProfileEdit">Cancel</button>
                 </div>
                 <div class="profiles-list" id="profiles-list">
                     <!-- Profiles injected here -->
@@ -131,7 +131,7 @@
         <section id="player-select-screen" class="screen">
             <header>
                 <h2>Select Players</h2>
-                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+                <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back</button>
             </header>
             <div class="player-select-container">
                 <div class="player-select-box">
@@ -143,8 +143,8 @@
                     <select id="p2-select"></select>
                 </div>
                 <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-                    <button class="btn btn-primary" onclick="app.startGame(false)">Play Draft Mode</button>
-                    <button class="btn btn-secondary" onclick="app.showScreen('difficulty-modal')">Play Campaign Mode</button>
+                    <button class="btn btn-primary" data-action="startDraftGame">Play Draft Mode</button>
+                    <button class="btn btn-secondary" data-action="showScreen" data-screen="difficulty-modal">Play Campaign Mode</button>
                 </div>
             </div>
         </section>
@@ -153,7 +153,7 @@
         <section id="online-screen" class="screen">
             <header>
                 <h2>Online Multiplayer</h2>
-                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+                <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back</button>
             </header>
             <div class="player-select-container">
                 <div class="player-select-box" style="width: 100%;">
@@ -225,12 +225,12 @@
         <section id="timer-modal" class="screen">
             <header>
                 <h2>Timer Options</h2>
-                <button class="btn btn-small" onclick="app.showScreen('main-menu')">Back</button>
+                <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back</button>
             </header>
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 2rem;">
                 <div style="display: flex; gap: 20px; margin-bottom: 30px;">
-                    <button class="btn timer-toggle-btn selected" id="btn-timer-turn" onclick="app.setTimerMode('turn')" style="background-color: var(--accent-color); color: black;">Turn Time</button>
-                    <button class="btn timer-toggle-btn" id="btn-timer-overall" onclick="app.setTimerMode('overall')">Overall Time</button>
+                    <button class="btn timer-toggle-btn selected" id="btn-timer-turn" data-action="setTimerMode" data-mode="turn" style="background-color: var(--accent-color); color: black;">Turn Time</button>
+                    <button class="btn timer-toggle-btn" id="btn-timer-overall" data-action="setTimerMode" data-mode="overall">Overall Time</button>
                 </div>
 
                 <p id="timer-desc-turn" style="color: #ccc; margin-bottom: 20px; text-align: center;">Time resets each turn.</p>
@@ -248,7 +248,7 @@
                     </div>
                 </div>
 
-                <button id="btn-save-timer" class="btn btn-primary" style="font-size: 1.2em; padding: 15px 40px;" onclick="app.showScreen('main-menu')">Save Options</button>
+                <button id="btn-save-timer" class="btn btn-primary" style="font-size: 1.2em; padding: 15px 40px;" data-action="showScreen" data-screen="main-menu">Save Options</button>
             </div>
         </section>
 
@@ -256,7 +256,7 @@
         <section id="difficulty-modal" class="screen">
             <header>
                 <h2>Campaign Setup</h2>
-                <button class="btn btn-small" onclick="app.showScreen('player-select-screen')">Back</button>
+                <button class="btn btn-small" data-action="showScreen" data-screen="player-select-screen">Back</button>
             </header>
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 2rem; overflow-y: auto;">
                 
@@ -267,19 +267,19 @@
                         <span id="elo-display" style="font-weight: bold; color: var(--accent-color); font-size: 1.2rem;">1500 ELO</span>
                         <span>Grandmaster (3000)</span>
                     </div>
-                    <input type="range" id="bot-elo-slider" min="400" max="3000" step="50" value="1500" style="width: 100%; margin-bottom: 10px;" oninput="document.getElementById('elo-display').textContent = this.value + ' ELO'">
+                    <input type="range" id="bot-elo-slider" min="400" max="3000" step="50" value="1500" style="width: 100%; margin-bottom: 10px;">
                 </div>
 
                 <h3 style="color: white; margin-bottom: 10px;">2. Select Bot Deck</h3>
                 <div id="deck-selector" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 500px; margin-bottom: 30px;">
-                    <button class="btn btn-archetype selected" data-deck="random" onclick="app.selectBotDeck('random')" style="background-color: #34495e; color: white;">🃏 Random</button>
-                    <button class="btn btn-archetype" data-deck="aggressive" onclick="app.selectBotDeck('aggressive')" style="background-color: #e74c3c; color: white;">⚔️ Aggressive</button>
-                    <button class="btn btn-archetype" data-deck="defensive" onclick="app.selectBotDeck('defensive')" style="background-color: #3498db; color: white;">🛡️ Defensive</button>
-                    <button class="btn btn-archetype" data-deck="chaos" onclick="app.selectBotDeck('chaos')" style="background-color: #9b59b6; color: white;">🌀 Chaos</button>
+                    <button class="btn btn-archetype selected" data-deck="random" data-action="selectBotDeck" style="background-color: #34495e; color: white;">🃏 Random</button>
+                    <button class="btn btn-archetype" data-deck="aggressive" data-action="selectBotDeck" style="background-color: #e74c3c; color: white;">⚔️ Aggressive</button>
+                    <button class="btn btn-archetype" data-deck="defensive" data-action="selectBotDeck" style="background-color: #3498db; color: white;">🛡️ Defensive</button>
+                    <button class="btn btn-archetype" data-deck="chaos" data-action="selectBotDeck" style="background-color: #9b59b6; color: white;">🌀 Chaos</button>
                 </div>
 
                 <div style="text-align: center; display: flex; gap: 20px;">
-                    <button id="btn-confirm-campaign" class="btn btn-primary" style="font-size: 1.2em; padding: 15px 30px;" onclick="app.startCampaign()">Start Match</button>
+                    <button id="btn-confirm-campaign" class="btn btn-primary" style="font-size: 1.2em; padding: 15px 30px;" data-action="startCampaign">Start Match</button>
                 </div>
             </div>
         </section>
