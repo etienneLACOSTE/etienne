@@ -8,6 +8,11 @@
     --card-border: rgba(255, 255, 255, 0.1);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     --locked-color: #ef4444;
+    --app-pad: 2rem;
+}
+
+@media (max-width: 600px) {
+    :root { --app-pad: 1rem; }
 }
 
 /* Elements toggled by script with the `hidden` class (timer descriptions, timer bar, ...). */
@@ -82,7 +87,7 @@ html, body {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: var(--app-pad);
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -496,8 +501,10 @@ header h2 {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    width: min(95vw, 45vh);
-    height: min(95vw, 45vh);
+    /* Fit the screen: viewport minus the app padding and the board frame (padding + borders). */
+    --board-size: min(calc(100vw - 2 * var(--app-pad) - 26px), 45vh);
+    width: var(--board-size);
+    height: var(--board-size);
     border: 2px solid #333;
 }
 

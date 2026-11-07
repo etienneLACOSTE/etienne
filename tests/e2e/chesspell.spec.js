@@ -214,10 +214,9 @@ test.describe("Ches'spell", () => {
     await ctx2.close();
   });
 
-  // Known bug: at 375 px the board is wider than #game-board (overflow: hidden),
-  // so files a and h are half cut off. Remove test.fail() once fixed.
-  test('the whole board is visible (known bug on mobile)', async ({ page }, testInfo) => {
-    test.fail(testInfo.project.name === 'mobile');
+  // Regression test: at 375 px the board used to be wider than #game-board
+  // (overflow: hidden), so files a and h were half cut off.
+  test('the whole board is visible', async ({ page }) => {
     await page.goto('/chesspell/');
     await page.getByRole('button', { name: 'Local Game' }).click();
     await page.getByRole('button', { name: 'Play Draft Mode' }).click();
