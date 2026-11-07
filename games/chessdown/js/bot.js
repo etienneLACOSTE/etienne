@@ -4,31 +4,26 @@
 import { Bot, COLOR_HEX, MAX_POINTS, state } from './state.js';
 import { movePiece, skipTurn } from './gameplay.js';
 
+/**
+ * Difficulty: the profile of an earlier or later generation of training_data.json
+ * (40 %, 70 %, 90 % or 100 % of the training) and how many plies the bot searches.
+ */
+const DIFFICULTIES = {
+    novice: { progress: 0.4, depth: 3 },
+    apprentice: { progress: 0.7, depth: 3 },
+    expert: { progress: 0.9, depth: 4 },
+    master: { progress: 1, depth: 5 },
+};
+
 export function loadBotProfileForDifficulty(level) {
     state.botDifficultyLevel = level;
-    if (!state.botTrainingData) return;
-
-    const generations = state.botTrainingData.generations;
-    let targetGenIndex = generations.length - 1; // Default to last
-    let depth = 5;
-
-    if (level === 'novice') {
-        targetGenIndex = Math.min(39, generations.length - 1); // Gen 40
-        depth = 3;
-    } else if (level === 'apprentice') {
-        targetGenIndex = Math.min(69, generations.length - 1); // Gen 70
-        depth = 3;
-    } else if (level === 'expert') {
-        targetGenIndex = Math.min(89, generations.length - 1); // Gen 90
-        depth = 4;
-    } else if (level === 'master') {
-        targetGenIndex = generations.length - 1; // Last Gen (Gen 100)
-        depth = 5;
+    const { progress, depth } = DIFFICULTIES[level] || DIFFICULTIES.master;
+    const generations = state.botTrainingData && state.botTrainingData.generations;
+    if (generations && generations.length) {
+        const index = Math.max(0, Math.ceil(generations.length * progress) - 1);
+        console.log(`Loading AI Profile [${level.toUpperCase()}]: Gen ${index + 1}, Depth ${depth}`);
+        state.botProfile = { ...generations[index].bestBot };
     }
-
-    const selectedBot = generations[targetGenIndex].bestBot;
-    console.log(`Loading AI Profile [${level.toUpperCase()}]: Gen ${targetGenIndex + 1}, Depth ${depth}`);
-    state.botProfile = selectedBot;
     state.botProfile.depth = depth;
 }
 
