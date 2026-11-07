@@ -1,15 +1,20 @@
-// Ches'spell client state: socket, online flags, card catalogue, piece glyphs, Zobrist keys.
+// @ts-check
+// Ches'spell client state: socket, online session, card catalogue, piece glyphs, Zobrist keys.
+// Socket.io client (absent when the page is opened without the server).
+export const socket = typeof io !== 'undefined' ? io('/chesspell') : null;
 
-let socket = null;
-if (typeof io !== 'undefined') {
-    socket = io('/chesspell');
-}
-let isOnline = false;
-let currentRoomCode = null;
-let myPlayerColor = null;
-let myPlayerNumber = null;
+/** Online play: set when a room is created or joined. */
+export const session = {
+    isOnline: false,
+    /** @type {string|null} */
+    currentRoomCode: null,
+    /** @type {'white'|'black'|null} */
+    myPlayerColor: null,
+    /** @type {number|null} */
+    myPlayerNumber: null,
+};
 
-const cardsData = [
+export const cardsData = [
     { id: 1, name: "Cannibalism", icon: "💀", effect: "Eat one of your own pieces.", unlock: "Unlocked by default.", isLocked: false,
       details: { timing: "Play instead of your normal move.", conditions: "You must have at least one piece to destroy.", inputs: "Click on one of your own pieces." } },
     { id: 2, name: "Double Trouble", icon: "⚡", effect: "Play 2 moves in a row, but your opponent does the same on their next turn.", unlock: "Play 5 games.", isLocked: true,
@@ -52,15 +57,15 @@ const cardsData = [
       details: { timing: "Play before capturing a piece.", conditions: "Your next move must be a capture of an enemy piece.", inputs: "None." } }
 ];
 
-const PIECE_MAP = {
+export const PIECE_MAP = {
     'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
     // Same filled glyphs for both sides: the CSS colours them (see DESIGN.md).
     'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟',
     'W': '🧱'
 };
 
-const ZOBRIST = { pieces: {}, turn: 0n };
-function initZobrist() {
+export const ZOBRIST = { pieces: {}, turn: 0n };
+export function initZobrist() {
     const pieces = ['p','n','b','r','q','k','P','N','B','R','Q','K','W'];
     const randomBigInt = () => BigInt(Math.floor(Math.random() * 0xFFFFFFFF)) << 32n | BigInt(Math.floor(Math.random() * 0xFFFFFFFF));
     for (let p of pieces) {

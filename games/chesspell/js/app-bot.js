@@ -1,5 +1,11 @@
+// @ts-check
 // Campaign bot: Python AI client, JS minimax fallback and spell heuristics, added to `app`.
-Object.assign(app, {
+import { ZOBRIST, cardsData } from './state.js';
+import { engine } from './game-engine.js';
+import { ProfileManager } from './profiles.js';
+import { app } from './app.js';
+
+Object.assign(app, /** @type {ThisType<any>} */ ({
     // Bot Functions
     selectBotDeck(deckType) {
         this.botDeckType = deckType;
@@ -21,8 +27,8 @@ Object.assign(app, {
 
     startCampaign() {
         this.isBotGame = true;
-        this.botElo = parseInt(document.getElementById('bot-elo-slider').value) || 1500;
-        this.p1Profile = ProfileManager.profiles.find(p => p.id === document.getElementById('p1-select').value);
+        this.botElo = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('bot-elo-slider')).value) || 1500;
+        this.p1Profile = ProfileManager.profiles.find(p => p.id === /** @type {HTMLSelectElement} */ (document.getElementById('p1-select')).value);
         this.p2Profile = { name: `Bot (${this.botElo} ELO)`, avatar: '', stats: { played: 0, wins: 0 } };
         
         this.startGame(true);
@@ -104,10 +110,8 @@ Object.assign(app, {
         
         // Let's get both players' decks
         let p1Deck = [], p2Deck = [];
-        if (typeof app !== 'undefined') {
-            p1Deck = app.p1Deck || []; // white
-            p2Deck = app.p2Deck || []; // black
-        }
+        p1Deck = app.p1Deck || []; // white
+        p2Deck = app.p2Deck || []; // black
 
         const applyThreats = (playerColor, oppColor, oppDeck) => {
             const oppHasAssassin = oppDeck.includes(19);
@@ -534,7 +538,7 @@ Object.assign(app, {
     },
 
     botTryUseSpell() {
-        const unusedCards = Array.from(document.querySelectorAll('#player2-cards .in-game-card:not(.used)'));
+        const unusedCards = Array.from(/** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('#player2-cards .in-game-card:not(.used)')));
         if (unusedCards.length === 0) return;
         
         // Fiche Technique (Genetic Algorithm DNA - Contextual - Gen 100)
@@ -817,13 +821,13 @@ Object.assign(app, {
                 console.log("FEN generated:", fen);
                 
                 let white_spells = {};
-                Array.from(document.querySelectorAll('#player1-cards .in-game-card:not(.used)')).forEach(el => {
+                Array.from(/** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('#player1-cards .in-game-card:not(.used)'))).forEach(el => {
                     const id = el.dataset.cardId;
                     white_spells[id] = (white_spells[id] || 0) + 1;
                 });
                 
                 let black_spells = {};
-                Array.from(document.querySelectorAll('#player2-cards .in-game-card:not(.used)')).forEach(el => {
+                Array.from(/** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('#player2-cards .in-game-card:not(.used)'))).forEach(el => {
                     const id = el.dataset.cardId;
                     black_spells[id] = (black_spells[id] || 0) + 1;
                 });
@@ -896,12 +900,12 @@ Object.assign(app, {
 
     handleBotSpell(spellId, target1Str, target2Str) {
         // Find the card element in the DOM to mark it as used visually
-        let cardEl = Array.from(document.getElementById('player2-cards').children)
+        let cardEl = Array.from(/** @type {HTMLCollectionOf<HTMLElement>} */ (document.getElementById('player2-cards').children))
             .find(el => parseInt(el.dataset.cardId) === spellId && !el.classList.contains('used'));
             
         // If the card doesn't exist in the deck, it must be because the API swapped Mirror (13) for this spellId
         if (!cardEl && engine.lastPlayedCardId === spellId) {
-            cardEl = Array.from(document.getElementById('player2-cards').children)
+            cardEl = Array.from(/** @type {HTMLCollectionOf<HTMLElement>} */ (document.getElementById('player2-cards').children))
                 .find(el => parseInt(el.dataset.cardId) === 13 && !el.classList.contains('used'));
         }
         
@@ -1010,4 +1014,4 @@ Object.assign(app, {
         
         this.renderChessboard();
     },
-});
+}));

@@ -1,9 +1,12 @@
+// @ts-check
 // Game engine for the page: the rules of play live in game.js (ChesspellGame, shared
 // with the server); this object holds the game state and adds what the page needs:
 // spell instructions, alerts, card marks, rendering, timer, bot turns and online play.
 // It is itself the state that ChesspellGame and ChesspellRules work on.
+import { session, socket } from './state.js';
+import { app } from './app.js';
 
-const engine = {
+export const engine = {
     activeCardEl: null,
 
     generateFEN() {
@@ -28,11 +31,11 @@ const engine = {
         const winner = this.winner;
         setTimeout(() => {
             alert(`Game Over! ${winner} wins!`);
-            if (typeof isOnline !== 'undefined' && isOnline && typeof socket !== 'undefined' && socket) {
-                socket.emit('leaveRoom', { roomCode: typeof currentRoomCode !== 'undefined' ? currentRoomCode : null });
-                if (typeof currentRoomCode !== 'undefined') currentRoomCode = null;
-                isOnline = false;
-                if (typeof app !== 'undefined') app.showScreen('main-menu');
+            if (session.isOnline && socket) {
+                socket.emit('leaveRoom', { roomCode: session.currentRoomCode });
+                session.currentRoomCode = null;
+                session.isOnline = false;
+                app.showScreen('main-menu');
             }
         }, 500);
     },
@@ -51,31 +54,27 @@ const engine = {
 
     endTurn() {
         ChesspellGame.endTurn(this);
-        if (typeof app !== 'undefined') {
-            app.startTimer();
-            if (this.turn === 'black' && app.isBotGame) {
-                setTimeout(() => app.playBotTurn(), 500);
-            }
+        app.startTimer();
+        if (this.turn === 'black' && app.isBotGame) {
+            setTimeout(() => app.playBotTurn(), 500);
         }
     },
 
     move(r1, c1, r2, c2, isFromNetwork = false) {
-        if (isOnline && !isFromNetwork) {
-            socket.emit('makeMove', { roomCode: currentRoomCode, from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
+        if (session.isOnline && !isFromNetwork) {
+            socket.emit('makeMove', { roomCode: session.currentRoomCode, from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
             app.renderChessboard(); // Snap back visually and clear highlights
             return;
         }
         const result = ChesspellGame.move(this, r1, c1, r2, c2);
         this.showGameOver();
         if (result === 'reverted') {
-            if (typeof app !== 'undefined') app.renderChessboard();
+            app.renderChessboard();
             return 'reverted';
         }
         if (result === 'assassin_kill') {
-            if (typeof app !== 'undefined') {
-                app.renderChessboard();
-                this.showInstruction(ChesspellGame.INSTRUCTIONS.select_assassin_kill);
-            }
+            app.renderChessboard();
+            this.showInstruction(ChesspellGame.INSTRUCTIONS.select_assassin_kill);
             return 'assassin_kill';
         }
         this.endTurn();
@@ -117,9 +116,9 @@ const engine = {
     handleSquareClick(r, c, isFromNetwork = false) {
         if (!this.targetingState) return;
 
-        if (isOnline && !isFromNetwork) {
-            if (myPlayerColor !== engine.turn) return; // Only active player can click targets
-            socket.emit('spellSquareClicked', { roomCode: currentRoomCode, r: r, c: c });
+        if (session.isOnline && !isFromNetwork) {
+            if (session.myPlayerColor !== engine.turn) return; // Only active player can click targets
+            socket.emit('spellSquareClicked', { roomCode: session.currentRoomCode, r: r, c: c });
             return; // Wait for the server
         }
 
@@ -139,7 +138,7 @@ const engine = {
         if (this.activeCardEl) this.activeCardEl.classList.add('used');
         ChesspellGame.completeSpell(this);
         this.cancelSpell();
-        if (typeof app !== 'undefined') app.renderChessboard();
+        app.renderChessboard();
     },
 
     /**
@@ -149,27 +148,25 @@ const engine = {
     applyServerState(state, action) {
         Object.assign(this, state);
         this.activeCardEl = null;
-        if (typeof app !== 'undefined') {
-            const decks = { white: 'player1-cards', black: 'player2-cards' };
-            for (const [color, containerId] of Object.entries(decks)) {
-                document.querySelectorAll(`#${containerId} .in-game-card`).forEach((el) => {
-                    el.classList.toggle('used', state.usedCards[color].includes(Number(el.dataset.cardId)));
-                });
-            }
+        const decks = { white: 'player1-cards', black: 'player2-cards' };
+        for (const [color, containerId] of Object.entries(decks)) {
+            /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(`#${containerId} .in-game-card`)).forEach((el) => {
+                el.classList.toggle('used', state.usedCards[color].includes(Number(el.dataset.cardId)));
+            });
         }
         // Spell instructions are for the caster only.
-        if (state.targetingState && typeof myPlayerColor !== 'undefined' && state.turn === myPlayerColor) {
+        if (state.targetingState && state.turn === session.myPlayerColor) {
             this.showInstruction(ChesspellGame.INSTRUCTIONS[state.targetingState]);
         } else {
             document.getElementById('spell-instruction').classList.add('hidden');
         }
         if (action && action.type === 'spell' && action.status === 'refused'
-            && typeof myPlayerColor !== 'undefined' && action.by === myPlayerColor) {
+            && action.by === session.myPlayerColor) {
             this.showInstruction(action.message);
             setTimeout(() => document.getElementById('spell-instruction').classList.add('hidden'), 2000);
         }
-        if (action && action.turnEnded && typeof app !== 'undefined') app.startTimer();
-        if (typeof app !== 'undefined') app.renderChessboard();
+        if (action && action.turnEnded) app.startTimer();
+        app.renderChessboard();
         this.showGameOver();
         return action;
     },

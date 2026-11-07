@@ -75,12 +75,12 @@ async function dragMove(page, from, to, flipped = false) {
  * @param {number} c
  */
 function pieceAt(page, r, c) {
-  return page.evaluate(([row, col]) => engine.board[row][col], [r, c]);
+  return page.evaluate(([row, col]) => chesspell.engine.board[row][col], [r, c]);
 }
 
 /** @param {import('@playwright/test').Page} page */
 function turn(page) {
-  return page.evaluate(() => engine.turn);
+  return page.evaluate(() => chesspell.engine.turn);
 }
 
 test.describe("Ches'spell", () => {
@@ -162,12 +162,12 @@ test.describe("Ches'spell", () => {
     await page.locator('#btn-confirm-campaign').click();
 
     await clickMove(page, [6, 4], [4, 4]); // e4
-    const afterWhite = await page.evaluate(() => JSON.stringify(engine.board));
+    const afterWhite = await page.evaluate(() => JSON.stringify(chesspell.engine.board));
     expect(await turn(page)).toBe('black');
     await expect.poll(() => turn(page), { timeout: 20_000 }).toBe('white');
     // The bot either moved a piece or cast a spell (which may not change the board).
     const botActed = await page.evaluate((before) =>
-      JSON.stringify(engine.board) !== before
+      JSON.stringify(chesspell.engine.board) !== before
         || document.querySelectorAll('#player2-cards .in-game-card.used').length > 0, afterWhite);
     expect(botActed).toBe(true);
     expect(errors).toEqual([]);

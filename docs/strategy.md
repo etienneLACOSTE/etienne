@@ -76,7 +76,7 @@ Commandes :
 - ✅ Design : `DESIGN.md` écrit. Accueil et Ches'spell en « Boîte de jeu », Chessdown en « Stade ». Polices auto-hébergées (`assets/fonts/`), CSP sans origine tierce, contrastes AA vérifiés pour toutes les paires de texte. Styles en ligne déplacés dans le CSS.
 - ✅ Audit axe (`@axe-core/playwright`, WCAG 2.2 A/AA) sur chaque écran : `tests/e2e/axe.spec.js`. Corrigé : zoom autorisé (WCAG 1.4.4), cartes de sorts sans contrôles imbriqués (le titre est le bouton), cibles tactiles ≥ 24 px.
 - ✅ Annonces vocales : coups, sorts, tours sautés et joueur au trait lus par les lecteurs d'écran (zone `#announcer`, `a11y.spec.js`).
-- Modules ES + `@ts-check` en réécrivant l'interface.
+- ✅ Modules ES + `@ts-check` : clients des deux jeux en modules ES (état partagé explicite), serveur et règles partagées vérifiés par TypeScript (`npm run typecheck`, 0 erreur).
 
 **5c. Avant production**
 - `/tribunal` sur le diff, `/crap`, hébergement (HTTPS) et décision sur l'IA Python.

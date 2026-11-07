@@ -1,21 +1,26 @@
+// @ts-check
 // Keyboard and screen-reader support.
 // - Spell cards are keyboard-ready by design: their title is a <button> whose click
 //   reaches the card (see .card-main in style.css), next to the "i" info button.
 // - The board is one tab stop: arrow keys move between squares, Enter/Space select a
 //   piece, play a move or pick a spell target, with the same rules as the mouse.
 // - Every square says what it holds and what it can do.
+import { cardsData, session } from './state.js';
+import { engine } from './game-engine.js';
+import { app } from './app.js';
 
-const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
-const FILES = 'abcdefgh';
+export const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
+export const FILES = 'abcdefgh';
 
 /** The board is shown upside down for the online black player. */
-const boardFlipped = () => isOnline && myPlayerColor === 'black';
+export const boardFlipped = () => session.isOnline && session.myPlayerColor === 'black';
 
-function squareAt(r, c) {
-    return document.getElementById('chessboard').children[r * 8 + c];
+/** @returns {HTMLElement} */
+export function squareAt(r, c) {
+    return /** @type {HTMLElement} */ (document.getElementById('chessboard').children[r * 8 + c]);
 }
 
-function describeSquare(r, c, sq) {
+export function describeSquare(r, c, sq) {
     const p = engine.board[r][c];
     let what = 'empty';
     if (p === 'W') what = 'wall';
@@ -29,21 +34,21 @@ function describeSquare(r, c, sq) {
     return `${FILES[c]}${8 - r}: ${what}${notes.length ? ', ' + notes.join(', ') : ''}`;
 }
 
-function refreshSquareLabels() {
+export function refreshSquareLabels() {
     const board = document.getElementById('chessboard');
-    for (const sq of board.children) {
+    for (const sq of /** @type {HTMLCollectionOf<HTMLElement>} */ (board.children)) {
         if (!sq.classList.contains('square')) continue;
         sq.setAttribute('aria-label', describeSquare(Number(sq.dataset.r), Number(sq.dataset.c), sq));
     }
 }
 
-let focusedSquare = { r: 7, c: 0 }; // White's a1 corner until the player moves the focus
+export let focusedSquare = { r: 7, c: 0 }; // White's a1 corner until the player moves the focus
 
-function enhanceBoard(restoreFocus) {
+export function enhanceBoard(restoreFocus) {
     const board = document.getElementById('chessboard');
     board.setAttribute('role', 'group');
     board.setAttribute('aria-label', 'Board');
-    for (const sq of board.children) {
+    for (const sq of /** @type {HTMLCollectionOf<HTMLElement>} */ (board.children)) {
         if (!sq.classList.contains('square')) continue;
         sq.setAttribute('role', 'button');
         const here = Number(sq.dataset.r) === focusedSquare.r && Number(sq.dataset.c) === focusedSquare.c;
@@ -53,7 +58,7 @@ function enhanceBoard(restoreFocus) {
     if (restoreFocus) squareAt(focusedSquare.r, focusedSquare.c)?.focus();
 }
 
-function focusSquare(r, c) {
+export function focusSquare(r, c) {
     if (r < 0 || r > 7 || c < 0 || c > 7) return;
     squareAt(focusedSquare.r, focusedSquare.c).tabIndex = -1;
     focusedSquare = { r, c };
@@ -62,12 +67,12 @@ function focusSquare(r, c) {
     sq.focus();
 }
 
-function selectedSquareCleanup() {
+export function selectedSquareCleanup() {
     document.querySelectorAll('#chessboard .kbd-selected').forEach(sq => sq.classList.remove('kbd-selected'));
 }
 
 /** Same outcomes as the mouse: target a spell, play a highlighted move, or select a piece. */
-function keyboardSquareAction(r, c) {
+export function keyboardSquareAction(r, c) {
     if (engine.targetingState) {
         engine.handleSquareClick(r, c);
         return;
@@ -81,7 +86,7 @@ function keyboardSquareAction(r, c) {
     }
     const p = engine.board[r][c];
     const canPlay = p && p !== 'W' && ChesspellRules.getColor(p) === engine.turn
-        && (!isOnline || engine.turn === myPlayerColor)
+        && (!session.isOnline || engine.turn === session.myPlayerColor)
         && !(app.isBotGame && engine.turn === 'black');
     app.clearHighlights();
     if (!canPlay || (selected && selected.r === r && selected.c === c)) {
@@ -96,7 +101,7 @@ function keyboardSquareAction(r, c) {
     refreshSquareLabels();
 }
 
-function onBoardKeydown(e) {
+export function onBoardKeydown(e) {
     const sq = e.target.closest('.square');
     if (!sq) return;
     const r = Number(sq.dataset.r);
@@ -117,17 +122,17 @@ function onBoardKeydown(e) {
 // --- Dialogs: card choice and spell info ---
 // Each modal is announced as a dialog, takes the focus when it opens, keeps Tab inside,
 // closes with Escape (same as its cancel/close button) and gives the focus back.
-const DIALOGS = [
+export const DIALOGS = [
     { id: 'card-modal', title: 'modal-title', initial: 'modal-confirm', cancel: 'modal-cancel' },
     { id: 'info-modal', title: 'info-modal-title', initial: 'info-modal-close', cancel: 'info-modal-close' },
 ];
 
-function focusableIn(root) {
+export function focusableIn(root) {
     return [...root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
         .filter(el => !el.disabled && el.getClientRects().length);
 }
 
-function setupDialog({ id, title, initial, cancel }) {
+export function setupDialog({ id, title, initial, cancel }) {
     const modal = document.getElementById(id);
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
@@ -167,12 +172,12 @@ function setupDialog({ id, title, initial, cancel }) {
 
 // --- Screen changes: when the focus is lost (its screen was hidden), move it to the
 // new screen's heading, so screen readers announce it and Tab continues from there.
-function focusLost() {
+export function focusLost() {
     const el = document.activeElement;
     return !el || el === document.body || !el.getClientRects().length;
 }
 
-function focusScreen(screen) {
+export function focusScreen(screen) {
     if (!screen || !focusLost()) return;
     const target = screen.querySelector('h1, h2, h3')
         || screen.querySelector('button, [href], input, select, [tabindex]:not([tabindex="-1"])');
@@ -181,7 +186,7 @@ function focusScreen(screen) {
     target.focus();
 }
 
-function setupAccessibility() {
+export function setupAccessibility() {
     document.getElementById('spell-instruction').setAttribute('role', 'status');
     setupAnnouncer();
     DIALOGS.forEach(setupDialog);
@@ -215,30 +220,30 @@ function setupAccessibility() {
 // board change, and whose turn it is. The board is compared with the one seen at the
 // previous turn, so local, bot and online moves are all covered.
 
-let announcer = null;
-let previousBoard = null;
-let pendingSpell = '';
+export let announcer = null;
+export let previousBoard = null;
+export let pendingSpell = '';
 
-function announce(text) {
+export function announce(text) {
     // Emptied first so that the same sentence twice in a row is read again.
     announcer.textContent = '';
     requestAnimationFrame(() => { announcer.textContent = text; });
 }
 
-const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+export const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
-function describePiece(p) {
+export function describePiece(p) {
     return p === 'W' ? 'wall' : `${ChesspellRules.getColor(p)} ${PIECE_NAMES[p.toLowerCase()]}`;
 }
 
-function whoseTurn() {
-    if (isOnline) return engine.turn === myPlayerColor ? 'Your turn.' : "Opponent's turn.";
+export function whoseTurn() {
+    if (session.isOnline) return engine.turn === session.myPlayerColor ? 'Your turn.' : "Opponent's turn.";
     if (app.isBotGame) return engine.turn === 'white' ? 'Your turn.' : "Bot's turn.";
     return `${capitalize(engine.turn)} to move.`;
 }
 
 /** "white pawn e2 to e4, takes black knight", or the list of changed squares after a spell. */
-function describeBoardChange(before) {
+export function describeBoardChange(before) {
     const after = engine.board;
     const emptied = [];
     const filled = [];
@@ -266,16 +271,16 @@ function describeBoardChange(before) {
     return `Board: ${changes.join(', ')}.`;
 }
 
-const snapshot = () => engine.board.map(row => [...row]);
+export const snapshot = () => engine.board.map(row => [...row]);
 
-function announceTurn() {
+export function announceTurn() {
     const parts = [pendingSpell, previousBoard ? describeBoardChange(previousBoard) : '', whoseTurn()];
     announce(parts.filter(Boolean).join(' '));
     pendingSpell = '';
     previousBoard = snapshot();
 }
 
-function setupAnnouncer() {
+export function setupAnnouncer() {
     announcer = document.createElement('div');
     announcer.id = 'announcer';
     announcer.className = 'visually-hidden';

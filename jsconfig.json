@@ -25,6 +25,7 @@
     "games/chesspell/game.js",
     "types/**/*.d.ts",
     "games/chessdown/js/**/*.js",
-    "games/chessdown/confetti.js"
+    "games/chessdown/confetti.js",
+    "games/chesspell/js/**/*.js"
   ]
 }

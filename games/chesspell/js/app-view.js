@@ -1,5 +1,11 @@
+// @ts-check
 // Rendering: banners, draft and deck cards, modals, chessboard, drag and drop, added to `app`.
-Object.assign(app, {
+import { PIECE_MAP, cardsData, session, socket } from './state.js';
+import { engine } from './game-engine.js';
+import { createAvatarElement, createPlayerInfoElement } from './profiles.js';
+import { app } from './app.js';
+
+Object.assign(app, /** @type {ThisType<any>} */ ({
     setupPlayerBanner(containerId, profile) {
         const container = document.getElementById(containerId);
         container.replaceChildren(
@@ -15,7 +21,7 @@ Object.assign(app, {
             const cardEl = document.createElement('div');
             // FIX: All cards are unlocked in 2-player local mode
             cardEl.className = 'spell-card';
-            cardEl.dataset.id = card.id;
+            cardEl.dataset.id = String(card.id);
 
             cardEl.innerHTML = `
                 <div class="card-header">
@@ -191,9 +197,9 @@ Object.assign(app, {
         
         newConfirm.addEventListener('click', () => {
             modal.classList.add('hidden');
-            if (isOnline) {
-                if (engine.turn !== myPlayerColor) return;
-                socket.emit('spellActivated', { roomCode: currentRoomCode, cardId: card.id });
+            if (session.isOnline) {
+                if (engine.turn !== session.myPlayerColor) return;
+                socket.emit('spellActivated', { roomCode: session.currentRoomCode, cardId: card.id });
             } else {
                 engine.activateSpell(card.id, cardEl);
             }
@@ -233,7 +239,7 @@ Object.assign(app, {
                 const square = document.createElement('div');
                 let renderR = r;
                 let renderC = c;
-                if (isOnline && myPlayerColor === 'black') {
+                if (session.isOnline && session.myPlayerColor === 'black') {
                     renderR = 7 - r;
                     renderC = 7 - c;
                 }
@@ -243,11 +249,11 @@ Object.assign(app, {
                 // rotated, and the square must sit where its piece is drawn.
                 square.style.gridRow = String(renderR + 1);
                 square.style.gridColumn = String(renderC + 1);
-                square.dataset.r = r;
-                square.dataset.c = c;
+                square.dataset.r = String(r);
+                square.dataset.c = String(c);
                 
                 const trap = engine.traps.find(t => t.r === r && t.c === c);
-                if (trap && (typeof isOnline === 'undefined' || !isOnline || trap.owner === myPlayerColor)) {
+                if (trap && (!session.isOnline || trap.owner === session.myPlayerColor)) {
                     const trapEl = document.createElement('div');
                     trapEl.innerHTML = '🕸️';
                     trapEl.style.position = 'absolute';
@@ -288,7 +294,7 @@ Object.assign(app, {
                 // Adjust rendering position based on online mode
                 let renderR = r;
                 let renderC = c;
-                if (isOnline && myPlayerColor === 'black') {
+                if (session.isOnline && session.myPlayerColor === 'black') {
                     renderR = 7 - r;
                     renderC = 7 - c;
                 }
@@ -321,7 +327,7 @@ Object.assign(app, {
                     });
 
                     if (engine.getColor(p) === engine.turn && !engine.targetingState) {
-                        if (!isOnline || engine.turn === myPlayerColor) {
+                        if (!session.isOnline || engine.turn === session.myPlayerColor) {
                             this.setupDrag(pieceEl, r, c);
                         }
                     }
@@ -388,7 +394,7 @@ Object.assign(app, {
             const boardWidth = document.getElementById('chessboard').offsetWidth;
             let renderR = startR;
             let renderC = startC;
-            if (isOnline && myPlayerColor === 'black') {
+            if (session.isOnline && session.myPlayerColor === 'black') {
                 renderR = 7 - startR;
                 renderC = 7 - startC;
             }
@@ -446,7 +452,7 @@ Object.assign(app, {
                 this.selectedPiece = {r: startR, c: startC, validMoves};
                 let renderR = startR;
                 let renderC = startC;
-                if (isOnline && myPlayerColor === 'black') {
+                if (session.isOnline && session.myPlayerColor === 'black') {
                     renderR = 7 - startR;
                     renderC = 7 - startC;
                 }
@@ -469,7 +475,7 @@ Object.assign(app, {
             
             let targetC = renderTargetC;
             let targetR = renderTargetR;
-            if (isOnline && myPlayerColor === 'black') {
+            if (session.isOnline && session.myPlayerColor === 'black') {
                 targetC = 7 - renderTargetC;
                 targetR = 7 - renderTargetR;
             }
@@ -481,7 +487,7 @@ Object.assign(app, {
             } else {
                 let renderR = startR;
                 let renderC = startC;
-                if (isOnline && myPlayerColor === 'black') {
+                if (session.isOnline && session.myPlayerColor === 'black') {
                     renderR = 7 - startR;
                     renderC = 7 - startC;
                 }
@@ -499,7 +505,7 @@ Object.assign(app, {
             const cardEl = document.createElement('div');
             const lockedClass = card.isLocked && isDeckBuilder ? 'locked' : '';
             cardEl.className = `spell-card ${lockedClass}`;
-            cardEl.dataset.id = card.id;
+            cardEl.dataset.id = String(card.id);
 
             cardEl.innerHTML = `
                 <div class="card-header">
@@ -563,4 +569,4 @@ Object.assign(app, {
             }
         }
     },
-});
+}));

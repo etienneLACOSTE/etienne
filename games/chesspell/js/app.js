@@ -1,6 +1,11 @@
+// @ts-check
 // App shell: state, menus, screens, game setup and timer. Other app-*.js files add methods.
+import { session } from './state.js';
+import { engine } from './game-engine.js';
+import { ProfileManager } from './profiles.js';
 
-const app = {
+/** The application: its methods are spread over app*.js, so `this` is the whole app. */
+export const app = /** @type {any} */ ({
     selectedCards: new Set(),
     maxCards: 3,
     selectedPiece: null,
@@ -37,8 +42,8 @@ const app = {
     },
 
     updatePlayerSelects() {
-        const p1Select = document.getElementById('p1-select');
-        const p2Select = document.getElementById('p2-select');
+        const p1Select = /** @type {HTMLSelectElement} */ (document.getElementById('p1-select'));
+        const p2Select = /** @type {HTMLSelectElement} */ (document.getElementById('p2-select'));
         p1Select.innerHTML = '';
         p2Select.innerHTML = '';
         
@@ -91,8 +96,9 @@ const app = {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().then(() => {
                 document.body.classList.add('tabletop-mode');
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(e => console.warn('Orientation lock failed:', e));
+                const orientation = /** @type {any} */ (screen.orientation); // lock() is not in every browser
+                if (orientation && orientation.lock) {
+                    orientation.lock('landscape').catch(e => console.warn('Orientation lock failed:', e));
                 }
             }).catch(err => {
                 alert(`Error attempting to enable fullscreen: ${err.message}`);
@@ -116,8 +122,8 @@ const app = {
     },
 
     startGame(skipDraft) {
-        const p1Id = document.getElementById('p1-select').value;
-        const p2Id = document.getElementById('p2-select').value;
+        const p1Id = /** @type {HTMLSelectElement} */ (document.getElementById('p1-select')).value;
+        const p2Id = /** @type {HTMLSelectElement} */ (document.getElementById('p2-select')).value;
         
         if (p1Id === p2Id) {
             return alert("Please select different profiles for Player 1 and Player 2.");
@@ -126,8 +132,8 @@ const app = {
         this.p1Profile = ProfileManager.profiles.find(p => p.id === p1Id);
         this.p2Profile = ProfileManager.profiles.find(p => p.id === p2Id);
         
-        this.timerMinutes = parseInt(document.getElementById('timer-min').value) || 0;
-        this.timerSeconds = parseInt(document.getElementById('timer-sec').value) || 0;
+        this.timerMinutes = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('timer-min')).value) || 0;
+        this.timerSeconds = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('timer-sec')).value) || 0;
         
         if (this.timerMode === 'overall') {
             this.timeLeftP1 = this.timerMinutes * 60 + this.timerSeconds;
@@ -214,7 +220,7 @@ const app = {
 
     handleTimeout(player) {
         clearInterval(this.timerInterval);
-        if (isOnline) return; // Online, the server keeps the clock and decides
+        if (session.isOnline) return; // Online, the server keeps the clock and decides
         if (this.timerMode === 'overall') {
             alert(`Game Over! ${player === 'white' ? 'Black' : 'White'} wins on time!`);
             this.showScreen('main-menu');
@@ -224,4 +230,4 @@ const app = {
             this.renderChessboard();
         }
     },
-};
+});

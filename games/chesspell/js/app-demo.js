@@ -1,5 +1,10 @@
+// @ts-check
 // Scripted tutorial shown with ?demo=true, added to `app`.
-Object.assign(app, {
+import { session } from './state.js';
+import { engine } from './game-engine.js';
+import { app } from './app.js';
+
+Object.assign(app, /** @type {ThisType<any>} */ ({
     startDemo() {
         this.p1Profile = { name: 'Demo Player', deck: [2, 12, 1] };
         this.p2Profile = { name: 'Bot', deck: [17, 15, 20] };
@@ -7,7 +12,7 @@ Object.assign(app, {
         this.p2Deck = this.p2Profile.deck;
         
         this.isBotGame = true;
-        isOnline = false;
+        session.isOnline = false;
         
         engine.init();
         this.renderInGameDeck(this.p1Deck, 'player1-cards', 'white');
@@ -97,7 +102,7 @@ Object.assign(app, {
             function addHighlight(r, c, isPiece) {
                 if (isPiece) {
                     const board = document.getElementById('chessboard');
-                    const p = Array.from(board.querySelectorAll('.chess-piece')).find(el => {
+                    const p = Array.from(/** @type {NodeListOf<HTMLElement>} */ (board.querySelectorAll('.chess-piece'))).find(el => {
                         return Math.abs(parseFloat(el.style.top) - (r * 12.5)) < 0.1 && 
                                Math.abs(parseFloat(el.style.left) - (c * 12.5)) < 0.1;
                     });
@@ -175,4 +180,4 @@ Object.assign(app, {
             };
         }, 500);
     },
-});
+}));

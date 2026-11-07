@@ -1,10 +1,16 @@
+// @ts-check
 // Online play: Socket.io handlers, added to `app`.
-Object.assign(app, {
+import { session, socket } from './state.js';
+import { engine } from './game-engine.js';
+import { ProfileManager } from './profiles.js';
+import { app } from './app.js';
+
+Object.assign(app, /** @type {ThisType<any>} */ ({
     setupOnlineListeners() {
         if (!socket) return;
         
         document.getElementById('btn-create-room')?.addEventListener('click', () => {
-            const p1Id = document.getElementById('online-p1-select').value;
+            const p1Id = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select')).value;
             const profile = ProfileManager.profiles.find(p => p.id === p1Id);
             if (!profile || !profile.deck || profile.deck.length !== 3) {
                 return alert("You must select a profile with a valid 3-card deck.");
@@ -12,8 +18,8 @@ Object.assign(app, {
             this.p1Profile = profile;
             this.p1Deck = [...profile.deck];
             // The creator's timer applies to both players; the server keeps the clock.
-            const minutes = parseInt(document.getElementById('timer-min').value) || 0;
-            const seconds = parseInt(document.getElementById('timer-sec').value) || 0;
+            const minutes = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('timer-min')).value) || 0;
+            const seconds = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('timer-sec')).value) || 0;
             socket.emit('createRoom', {
                 deck: this.p1Deck, profile: this.p1Profile,
                 timerMode: this.timerMode, timerSeconds: minutes * 60 + seconds,
@@ -21,12 +27,12 @@ Object.assign(app, {
         });
         
         document.getElementById('btn-join-room')?.addEventListener('click', () => {
-            const p1Id = document.getElementById('online-p1-select').value;
+            const p1Id = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select')).value;
             const profile = ProfileManager.profiles.find(p => p.id === p1Id);
             if (!profile || !profile.deck || profile.deck.length !== 3) {
                 return alert("You must select a profile with a valid 3-card deck.");
             }
-            const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+            const code = /** @type {HTMLInputElement} */ (document.getElementById('room-code-input')).value.trim().toUpperCase();
             if (code.length === 6) {
                 this.p2Profile = profile; // Locally, we are p2 joining
                 this.p2Deck = [...profile.deck];
@@ -37,33 +43,33 @@ Object.assign(app, {
         });
         
         document.getElementById('btn-leave-room')?.addEventListener('click', () => {
-            if (currentRoomCode) {
-                socket.emit('leaveRoom', { roomCode: currentRoomCode });
-                currentRoomCode = null;
+            if (session.currentRoomCode) {
+                socket.emit('leaveRoom', { roomCode: session.currentRoomCode });
+                session.currentRoomCode = null;
             }
             this.showScreen('main-menu');
         });
 
         socket.on('roomCreated', (code) => {
-            currentRoomCode = code;
-            myPlayerNumber = 1;
-            myPlayerColor = 'white';
-            isOnline = true;
+            session.currentRoomCode = code;
+            session.myPlayerNumber = 1;
+            session.myPlayerColor = 'white';
+            session.isOnline = true;
             document.getElementById('waiting-room-code').textContent = code;
             this.showScreen('waiting-screen');
         });
 
         socket.on('roomJoined', (data) => {
-            currentRoomCode = data.roomCode;
-            myPlayerNumber = data.playerNumber;
-            myPlayerColor = 'black';
-            isOnline = true;
+            session.currentRoomCode = data.roomCode;
+            session.myPlayerNumber = data.playerNumber;
+            session.myPlayerColor = 'black';
+            session.isOnline = true;
         });
 
         socket.on('gameStarted', (data) => {
             const state = data.roomState;
             // When game starts, we need to map profiles and decks correctly
-            if (myPlayerNumber === 1) {
+            if (session.myPlayerNumber === 1) {
                 this.p2Profile = state.profiles[2];
                 this.p2Deck = state.decks[2];
             } else {
@@ -99,8 +105,8 @@ Object.assign(app, {
 
         socket.on('opponentLeft', () => {
             alert("Your opponent left the game.");
-            currentRoomCode = null;
-            isOnline = false;
+            session.currentRoomCode = null;
+            session.isOnline = false;
             this.showScreen('main-menu');
         });
 
@@ -108,4 +114,4 @@ Object.assign(app, {
             alert(msg);
         });
     },
-});
+}));

@@ -87,14 +87,14 @@ test.describe('Announcements', () => {
     const announcer = page.locator('#announcer');
     await expect(announcer).toHaveText('Match starts. White to move.');
 
-    await page.evaluate(() => engine.move(6, 4, 4, 4)); // e4
+    await page.evaluate(() => chesspell.engine.move(6, 4, 4, 4)); // e4
     await expect(announcer).toHaveText('White pawn e2 to e4. Black to move.');
 
-    await page.evaluate(() => engine.move(1, 3, 3, 3)); // d5
+    await page.evaluate(() => chesspell.engine.move(1, 3, 3, 3)); // d5
     await expect(announcer).toHaveText('Black pawn d7 to d5. White to move.');
-    await page.evaluate(() => engine.move(4, 4, 3, 3)); // exd5
+    await page.evaluate(() => chesspell.engine.move(4, 4, 3, 3)); // exd5
     await expect(announcer).toHaveText('White pawn e4 to d5, takes black pawn. Black to move.');
-    await page.evaluate(() => engine.move(1, 0, 2, 0)); // a6
+    await page.evaluate(() => chesspell.engine.move(1, 0, 2, 0)); // a6
 
     // White casts Wall on a4.
     await page.locator('#player1-cards .in-game-card[data-card-id="8"] .card-main').click();

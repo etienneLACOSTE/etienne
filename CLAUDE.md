@@ -7,7 +7,7 @@ Développeur : seul sur le projet, Ubuntu 24.04, Node via nvm.
 Communication : réponds en français ; code, noms de variables et commits en anglais.
 
 ## Stack
-- Langage / framework : JavaScript vanilla (navigateur, scripts classiques) ; serveur Node + Express 5 + Socket.io 4
+- Langage / framework : JavaScript vanilla, modules ES côté navigateur, `@ts-check` partout (vérifié par `npm run typecheck`) ; serveur Node (CommonJS) + Express 5 + Socket.io 4
 - IA Ches'spell : Python 3 + PyTorch + Flask (`ai/chesspell/`, venv local, port 5000)
 - Style : CSS vanilla par jeu — toute interface suit `DESIGN.md` (accueil et Ches'spell : « Boîte de jeu » ; Chessdown : « Stade ») ; polices auto-hébergées dans `assets/fonts/`, aucune ressource tierce (CSP)
 - Base de données : aucune (profils Ches'spell dans le localStorage du navigateur)
@@ -18,13 +18,14 @@ Communication : réponds en français ; code, noms de variables et commits en an
 - Installer : `npm install` (puis `npx playwright install chromium` pour les tests)
 - Lancer en local : `npm start` (port 3000) ; IA optionnelle : `cd ai/chesspell && source venv/bin/activate && python3 api.py`
 - Tests : `npm test` (unitaires `node:test` puis Playwright desktop + mobile 375 px) ; `npm run test:unit` / `npm run test:e2e` séparément ; `npm run test:update` après un changement visuel voulu
+- Types : `npm run typecheck` (`jsconfig.json`, déclarations dans `types/`)
 - Lint / format : pas encore configuré
 - Build de production : aucun (fichiers servis tels quels)
 
 ## Structure
 - `hub/` : page d'accueil
 - `assets/` : ressources partagées servies sous `/assets` (polices)
-- `games/chessdown/`, `games/chesspell/` : clients des jeux (tout ce qui est ici est public) ; règles pures dans `engine.js` / `rules.js`, code client dans `js/` (un fichier par rôle, scripts classiques chargés dans l'ordre par `index.html`)
+- `games/chessdown/`, `games/chesspell/` : clients des jeux (tout ce qui est ici est public) ; règles pures dans `engine.js` / `rules.js`, code client dans `js/` (modules ES, un fichier par rôle, point d'entrée `js/main.js`) ; les règles partagées avec le serveur restent des scripts classiques UMD
 - `server/` : serveur HTTP + un module Socket.io par jeu
 - `ai/chesspell/` : IA Python (modèles `.pth`, venv et logs non versionnés)
 - `tools/<jeu>/` : scripts d'entraînement des bots JS
@@ -69,7 +70,8 @@ Communication : réponds en français ; code, noms de variables et commits en an
 ## À savoir
 - Refonte en cours, par phases : suivre `docs/strategy.md` (déplacer avant de modifier, `npm test` à chaque étape).
 - Règles : une seule source par jeu en JS (`games/chessdown/engine.js` ; Ches'spell : `games/chesspell/rules.js` pour les déplacements, `games/chesspell/game.js` pour les tours et les sorts), utilisée par le jeu, le serveur (arbitre en ligne) et `tools/`. `js/game-engine.js` ne fait que l'affichage autour de `game.js`. L'IA Python (`ai/chesspell/chess_env.py`) a sa propre implémentation : un changement de règle doit y être reporté.
-- Les tests lisent les variables globales des jeux (`board`, `currentPlayer`, `engine`…) : les garder accessibles ou adapter les tests en même temps.
+- État partagé : Chessdown dans l'objet `state` (`js/state.js`), Ches'spell dans `engine`, `app` et `session` ; jamais de variable globale réassignée d'un fichier à l'autre. Les tests lisent la partie via `window.chessdown` / `window.chesspell` (exposés par `js/main.js`).
+- Après une modification : `npm run typecheck` (TypeScript via npx) en plus de `npm test`.
 - Bugs connus épinglés par `test.fail()` dans `tests/e2e/` : retirer la marque quand ils sont corrigés.
 - Accessibilité : `games/<jeu>/js/a11y.js` rend chaque jeu jouable au clavier (Chessdown écoute `pointerdown` : les clics clavier y sont relayés). Tout nouveau contrôle doit rester utilisable au clavier et avoir un nom accessible (`tests/e2e/keyboard.spec.js`, `a11y.spec.js`) ; tout nouvel écran s'ajoute à l'audit axe (`axe.spec.js`). Cartes Ches'spell : le titre `.card-main` est le bouton (zone étirée sur la carte), jamais de contrôle imbriqué dans un élément cliquable. Le zoom ne doit jamais être bloqué (`touch-action: none` réservé aux plateaux).
 - Ches'spell : les boutons de `index.html` utilisent `data-action` (table `UI_ACTIONS` dans `js/main.js`), jamais d'`onclick` inline.

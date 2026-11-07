@@ -1,10 +1,12 @@
+// @ts-check
 // Player profiles stored in localStorage.
+import { app } from './app.js';
 
 // Player data (names, avatars) may come from another player: it is only ever
 // written with textContent or as an image src, never as HTML.
-const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,/;
+export const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,/;
 
-function createAvatarElement(avatar) {
+export function createAvatarElement(avatar) {
     if (typeof avatar === 'string' && AVATAR_DATA_URL.test(avatar)) {
         const img = document.createElement('img');
         img.src = avatar;
@@ -17,7 +19,7 @@ function createAvatarElement(avatar) {
     return placeholder;
 }
 
-function createPlayerInfoElement(name, statsText) {
+export function createPlayerInfoElement(name, statsText) {
     const info = document.createElement('div');
     info.className = 'player-info';
     const nameEl = document.createElement('span');
@@ -30,7 +32,7 @@ function createPlayerInfoElement(name, statsText) {
     return info;
 }
 
-const ProfileManager = {
+export const ProfileManager = {
     profiles: [],
     editingProfileId: null,
     
@@ -54,8 +56,8 @@ const ProfileManager = {
     },
     
     submitProfile() {
-        const nameInput = document.getElementById('new-profile-name');
-        const fileInput = document.getElementById('new-profile-avatar');
+        const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('new-profile-name'));
+        const fileInput = /** @type {HTMLInputElement} */ (document.getElementById('new-profile-avatar'));
         const name = nameInput.value.trim();
         
         if (!name) return alert("Please enter a username.");
@@ -80,7 +82,7 @@ const ProfileManager = {
                         
                         callback(canvas.toDataURL('image/jpeg', 0.8));
                     };
-                    img.src = e.target.result;
+                    img.src = /** @type {string} */ (e.target.result); // readAsDataURL gives a string
                 };
                 reader.readAsDataURL(file);
             } else {
@@ -111,7 +113,7 @@ const ProfileManager = {
         const p = this.profiles.find(p => p.id === id);
         if (!p) return;
         this.editingProfileId = id;
-        document.getElementById('new-profile-name').value = p.name;
+        /** @type {HTMLInputElement} */ (document.getElementById('new-profile-name')).value = p.name;
         document.getElementById('profile-form-title').textContent = "Edit Profile";
         document.getElementById('profile-submit-btn').textContent = "Save Changes";
         document.getElementById('profile-cancel-btn').style.display = 'inline-block';
@@ -120,8 +122,8 @@ const ProfileManager = {
 
     cancelEdit() {
         this.editingProfileId = null;
-        document.getElementById('new-profile-name').value = '';
-        document.getElementById('new-profile-avatar').value = '';
+        /** @type {HTMLInputElement} */ (document.getElementById('new-profile-name')).value = '';
+        /** @type {HTMLInputElement} */ (document.getElementById('new-profile-avatar')).value = '';
         document.getElementById('profile-form-title').textContent = "Create New Profile";
         document.getElementById('profile-submit-btn').textContent = "Create";
         document.getElementById('profile-cancel-btn').style.display = 'none';
