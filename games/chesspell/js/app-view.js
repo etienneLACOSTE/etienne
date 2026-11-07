@@ -19,7 +19,7 @@ Object.assign(app, {
 
             cardEl.innerHTML = `
                 <div class="card-header">
-                    <span class="card-title">${card.icon} ${card.name}</span>
+                    <button type="button" class="card-title card-main">${card.icon} ${card.name}</button>
                     <div class="card-meta">
                         <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
                         <span class="card-id">#${card.id}</span>
@@ -139,7 +139,7 @@ Object.assign(app, {
             cardEl.innerHTML = `
                 <div class="card-icon-large">${card.icon}</div>
                 <div class="card-info">
-                    <div class="card-title">${card.name}</div>
+                    <button type="button" class="card-title card-main">${card.name}</button>
                     <div class="card-effect">${card.effect}</div>
                 </div>
                 <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
@@ -503,7 +503,7 @@ Object.assign(app, {
 
             cardEl.innerHTML = `
                 <div class="card-header">
-                    <span class="card-title">${card.icon} ${card.name}</span>
+                    <button type="button" class="card-title card-main"${card.isLocked && isDeckBuilder ? ' aria-disabled="true"' : ''}>${card.icon} ${card.name}</button>
                     <div class="card-meta">
                         <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
                         <span class="card-id">#${card.id}</span>

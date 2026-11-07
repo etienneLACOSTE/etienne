@@ -29,8 +29,8 @@ body {
     min-height: 100vh;
     min-height: 100dvh;
     overflow: hidden;
-    /* Touch Shield */
-    touch-action: none;
+    /* Touch shield: no double-tap zoom or selection; pinch zoom stays possible (WCAG 1.4.4). */
+    touch-action: manipulation;
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
@@ -431,6 +431,7 @@ button:disabled {
     aspect-ratio: 1 / 2;
     border: 3px solid var(--white);
     position: relative;
+    touch-action: none; /* The board keeps every touch for the game. */
     /* Mown stripes, one per row (12 rows in a match, 6 in the draft view). */
     background: repeating-linear-gradient(180deg, var(--turf) 0 8.3333%, var(--turf-light) 8.3333% 16.6667%);
 }

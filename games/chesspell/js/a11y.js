@@ -1,23 +1,12 @@
 // Keyboard and screen-reader support.
-// - Spell cards (draft, deck builder, in game) become keyboard buttons.
+// - Spell cards are keyboard-ready by design: their title is a <button> whose click
+//   reaches the card (see .card-main in style.css), next to the "i" info button.
 // - The board is one tab stop: arrow keys move between squares, Enter/Space select a
 //   piece, play a move or pick a spell target, with the same rules as the mouse.
 // - Every square says what it holds and what it can do.
 
 const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 const FILES = 'abcdefgh';
-const CARD_SELECTOR = '.spell-card, .in-game-card';
-
-/** Cards are rendered often: give each new one the keyboard behaviour of a button. */
-function enhanceCards(root) {
-    root.querySelectorAll(CARD_SELECTOR).forEach(card => {
-        if (card.hasAttribute('role')) return;
-        card.setAttribute('role', 'button');
-        card.tabIndex = 0;
-        const title = card.querySelector('.card-title');
-        if (title) card.setAttribute('aria-label', title.textContent.trim());
-    });
-}
 
 /** The board is shown upside down for the online black player. */
 const boardFlipped = () => isOnline && myPlayerColor === 'black';
@@ -193,18 +182,6 @@ function focusScreen(screen) {
 }
 
 function setupAccessibility() {
-    // Enter/Space on any non-native button (cards) acts like a click.
-    document.addEventListener('keydown', (e) => {
-        const el = e.target;
-        if ((e.key === 'Enter' || e.key === ' ') && el.getAttribute && el.getAttribute('role') === 'button'
-            && el.tagName !== 'BUTTON' && !el.classList.contains('square')) {
-            e.preventDefault();
-            el.click();
-        }
-    });
-    enhanceCards(document);
-    new MutationObserver(() => enhanceCards(document)).observe(document.getElementById('app'), { childList: true, subtree: true });
-
     document.getElementById('spell-instruction').setAttribute('role', 'status');
     DIALOGS.forEach(setupDialog);
     document.getElementById('chessboard').addEventListener('keydown', onBoardKeydown);

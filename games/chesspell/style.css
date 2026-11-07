@@ -46,7 +46,8 @@ html, body {
     height: 100vh;
     overflow: hidden;
     overscroll-behavior: none;
-    touch-action: none;
+    /* Pinch zoom stays possible (WCAG 1.4.4); only the board blocks touch gestures. */
+    touch-action: manipulation;
     position: relative;
     -webkit-user-select: none;
     user-select: none;
@@ -245,6 +246,26 @@ header h2 {
 
 .card-meta { display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0; }
 
+/* The card title is the card's button; its ::after stretches the click area over the
+   whole card, and the "i" button sits above it. */
+.card-main {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.card-main::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
+.card-main:focus-visible { outline: none; }
+.spell-card:has(.card-main:focus-visible), .in-game-card:has(.card-main:focus-visible) {
+    outline: 3px solid var(--ink);
+    outline-offset: 3px;
+}
+.btn-info { position: relative; z-index: 1; }
+.spell-card.locked .card-main { cursor: not-allowed; }
+.in-game-card .card-main { text-align: inherit; }
+
 .card-title {
     font-family: var(--display);
     font-weight: 400;
@@ -396,6 +417,7 @@ header h2 {
     align-items: center;
     gap: 0.6rem;
     cursor: pointer;
+    position: relative;
     box-shadow: var(--shadow-small);
     transition: transform 0.15s ease;
 }
@@ -956,7 +978,7 @@ body.tabletop-mode .chess-piece { font-size: calc(min(85vw, 80vh) / 8 * 0.78); }
     .in-game-card .card-info { min-width: 0; }
     .in-game-card .card-title { font-size: 0.85rem; line-height: 1.15; }
     .in-game-card .card-icon-large { font-size: 1.3rem; }
-    .in-game-card .btn-info { position: absolute; top: 0.15rem; right: 0.15rem; width: 1.4rem; height: 1.4rem; font-size: 0.8rem; }
+    .in-game-card .btn-info { position: absolute; top: 0.1rem; right: 0.1rem; width: 1.5rem; height: 1.5rem; font-size: 0.85rem; }
     /* No side gutter on phones: the timer column turns a quarter (it fills from the
        left) and lies under the board. */
     #side-status {

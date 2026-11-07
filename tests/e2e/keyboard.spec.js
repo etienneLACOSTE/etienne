@@ -98,7 +98,7 @@ test.describe("Keyboard: Ches'spell", () => {
     await activate(page.getByRole('button', { name: 'Local Game' }));
     await activate(page.getByRole('button', { name: 'Play Draft Mode' }));
     for (const id of [8, 1, 2, 12, 5, 15]) {
-      await activate(page.locator(`#draft-grid .spell-card[data-id="${id}"]`));
+      await activate(page.locator(`#draft-grid .spell-card[data-id="${id}"] .card-main`));
       await activate(page.locator('#modal-confirm'));
     }
     await expect(page.locator('#game-board')).toHaveClass(/active/);
@@ -113,7 +113,7 @@ test.describe("Keyboard: Ches'spell", () => {
     await expect(cell(page, 6, 1)).toBeFocused();
 
     // Wall on a4 with the keyboard.
-    await activate(page.locator('#player1-cards .in-game-card[data-card-id="8"]'));
+    await activate(page.locator('#player1-cards .in-game-card[data-card-id="8"] .card-main'));
     await activate(page.locator('#modal-confirm'));
     await activate(cell(page, 4, 0));
     await expect(cell(page, 4, 0)).toHaveAttribute('aria-label', 'a4: wall');
@@ -140,7 +140,8 @@ test.describe("Keyboard: Ches'spell dialogs", () => {
     await activate(page.getByRole('button', { name: 'Play Draft Mode' }));
 
     const card = page.locator('#draft-grid .spell-card[data-id="8"]');
-    await activate(card);
+    const cardButton = card.locator('.card-main');
+    await activate(cardButton);
     const dialog = page.getByRole('dialog', { name: 'Wall' });
     await expect(dialog).toBeVisible();
     await expect(page.locator('#modal-confirm')).toBeFocused();
@@ -151,7 +152,7 @@ test.describe("Keyboard: Ches'spell dialogs", () => {
     }
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
-    await expect(card).toBeFocused();
+    await expect(cardButton).toBeFocused();
 
     // The info dialog too.
     await activate(card.locator('.btn-info'));

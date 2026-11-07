@@ -71,7 +71,8 @@ Commandes :
 - ✅ Clavier (WCAG 2.1.1) : les deux jeux se jouent sans souris (`games/<jeu>/js/a11y.js`) ; plateau à un seul arrêt de tabulation, flèches, Entrée/Espace ; cases nommées ; fenêtres de dialogue accessibles ; focus déplacé au changement d'écran ; focus visible.
 - ✅ Noms accessibles : champs étiquetés, icônes décoratives masquées, un seul h1 par page (`a11y.spec.js`).
 - ✅ Design : `DESIGN.md` écrit. Accueil et Ches'spell en « Boîte de jeu », Chessdown en « Stade ». Polices auto-hébergées (`assets/fonts/`), CSP sans origine tierce, contrastes AA vérifiés pour toutes les paires de texte. Styles en ligne déplacés dans le CSS.
-- À faire : annonces vocales des tours et des coups, audit automatique axe (`@axe-core/playwright`, dépendance à valider).
+- ✅ Audit axe (`@axe-core/playwright`, WCAG 2.2 A/AA) sur chaque écran : `tests/e2e/axe.spec.js`. Corrigé : zoom autorisé (WCAG 1.4.4), cartes de sorts sans contrôles imbriqués (le titre est le bouton), cibles tactiles ≥ 24 px.
+- À faire : annonces vocales des tours et des coups (axe ne les vérifie pas).
 - Modules ES + `@ts-check` en réécrivant l'interface.
 
 **5c. Avant production**
