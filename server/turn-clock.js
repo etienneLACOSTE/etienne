@@ -1,3 +1,4 @@
+// @ts-check
 // The server keeps the clock of online games, so a player cannot keep the turn by
 // never giving it up. Clients show the countdown; the server only steps in once the
 // time is over plus a grace period (network delay, animations).

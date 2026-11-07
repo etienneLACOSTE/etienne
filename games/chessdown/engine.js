@@ -1,3 +1,4 @@
+// @ts-check
 // Chessdown rules engine: board geometry, legal moves, applying moves, touchdowns.
 // No DOM and no globals: every function works on a `state` object
 // `{ board, lastMove }`. Loaded by the browser (as `window.ChessdownEngine`)
@@ -6,7 +7,7 @@
     const api = factory();
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.ChessdownEngine = api;
-})(typeof self !== 'undefined' ? self : this, function () {
+})(/** @type {any} */ (typeof self !== 'undefined' ? self : this), function () {
     'use strict';
 
     const ROWS = 12;

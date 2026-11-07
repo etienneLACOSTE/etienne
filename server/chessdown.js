@@ -1,3 +1,4 @@
+// @ts-check
 const { generateRoomCode, makeRoomFor, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
@@ -99,6 +100,7 @@ function registerChessdown(io) {
                 playerColors: { 1: 'blue', 2: 'red' },
                 ...newGameState(),
                 gameState: 'waiting',
+                clock: /** @type {TurnClock} */ (null),
             };
             room.clock = new TurnClock(sanitizeTimer(data), () => timeUp(room));
 

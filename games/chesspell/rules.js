@@ -1,3 +1,4 @@
+// @ts-check
 // Ches'spell rules: piece colours, legal moves under active spells, promotion, FEN.
 // No DOM and no globals: functions read a `state` object with the same fields
 // as the game's `engine` (board, turn, frozenPieces, shieldedPieces, hasMoved,
@@ -9,7 +10,7 @@
     const api = factory();
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.ChesspellRules = api;
-})(typeof self !== 'undefined' ? self : this, function () {
+})(/** @type {any} */ (typeof self !== 'undefined' ? self : this), function () {
     'use strict';
 
     const SIZE = 8;

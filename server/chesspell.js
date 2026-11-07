@@ -1,3 +1,4 @@
+// @ts-check
 const { generateRoomCode, makeRoomFor, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
 const Game = require('../games/chesspell/game.js');
@@ -111,6 +112,7 @@ function registerChesspell(io) {
                 decks: { 1: deck, 2: [] },
                 profiles: { 1: sanitizeProfile(data.profile, deck), 2: null },
                 game: null,
+                clock: /** @type {TurnClock} */ (null),
             };
             room.clock = new TurnClock(sanitizeTimer(data), () => timeUp(room));
 

@@ -1,3 +1,4 @@
+// @ts-check
 // Helpers shared by the game socket handlers.
 
 const crypto = require('crypto');

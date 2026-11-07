@@ -1,3 +1,4 @@
+// @ts-check
 // HTTP hardening headers for every response.
 
 // Scripts only from this origin: no inline or injected scripts can run.

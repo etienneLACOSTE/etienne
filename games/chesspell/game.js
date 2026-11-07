@@ -1,3 +1,4 @@
+// @ts-check
 // Ches'spell game logic: turns, moves and the 20 spells, without any DOM.
 // Shared by the browser (js/game-engine.js adds display, timer and bot) and by the
 // server, which referees online games with it. Move rules come from rules.js.
@@ -8,7 +9,7 @@
     const api = factory(typeof module === 'object' && module.exports ? require('./rules.js') : root.ChesspellRules);
     if (typeof module === 'object' && module.exports) module.exports = api;
     else root.ChesspellGame = api;
-})(typeof self !== 'undefined' ? self : this, function (Rules) {
+})(/** @type {any} */ (typeof self !== 'undefined' ? self : this), function (Rules) {
     'use strict';
 
     const WALL = 'W';
