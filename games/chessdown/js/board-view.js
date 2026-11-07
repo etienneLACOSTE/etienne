@@ -110,6 +110,7 @@ function createBoardDOM(isDraft) {
             ui.chessboard.appendChild(square);
         }
     }
+    enhanceBoardSquares(); // a11y.js
 }
 
 // --- Coin Flip ---
@@ -193,6 +194,7 @@ function renderBoard() {
             }
         }
     }
+    refreshSquareLabels(); // a11y.js
 }
 
 function getSquareElement(viewR, viewC) {
@@ -204,6 +206,7 @@ function clearHighlights() {
     for (let i = 0; i < squares.length; i++) {
         squares[i].classList.remove('highlight', 'selected');
     }
+    refreshSquareLabels(); // a11y.js
 }
 
 function highlightValidMoves(r, c) {
@@ -217,4 +220,5 @@ function highlightValidMoves(r, c) {
         const sq = getSquareElement(viewR, viewC);
         if (sq) sq.classList.add('highlight');
     });
+    refreshSquareLabels(); // a11y.js
 }

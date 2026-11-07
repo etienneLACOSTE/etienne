@@ -3,6 +3,7 @@
 // Initialization
 function init() {
     setupEventListeners();
+    setupAccessibility(); // a11y.js
     
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('demo') === 'true') {

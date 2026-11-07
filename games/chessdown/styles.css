@@ -487,3 +487,17 @@ button:disabled {
         padding: 5px;
     }
 }
+
+/* Visible keyboard focus on everything the keyboard can reach (WCAG 2.4.7). */
+button:focus-visible,
+input:focus-visible,
+.shop-item:focus-visible,
+.color-swatch:focus-visible {
+    outline: 3px solid #f1c40f;
+    outline-offset: 3px;
+}
+.square:focus-visible {
+    outline: 3px solid #f1c40f;
+    outline-offset: -3px;
+    z-index: 2;
+}
