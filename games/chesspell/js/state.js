@@ -54,7 +54,8 @@ const cardsData = [
 
 const PIECE_MAP = {
     'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
-    'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', 'P': '♙',
+    // Same filled glyphs for both sides: the CSS colours them (see DESIGN.md).
+    'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟',
     'W': '🧱'
 };
 

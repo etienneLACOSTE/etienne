@@ -14,7 +14,6 @@ function createAvatarElement(avatar) {
     }
     const placeholder = document.createElement('div');
     placeholder.className = 'player-avatar';
-    placeholder.style.background = '#333';
     return placeholder;
 }
 
@@ -168,9 +167,7 @@ const ProfileManager = {
             };
             addButton('Build Deck', 'btn btn-secondary', () => app.buildDeckForProfile(p.id));
             addButton('Edit', 'btn', () => ProfileManager.editProfile(p.id));
-            const del = addButton('Delete', 'btn', () => ProfileManager.deleteProfile(p.id));
-            del.style.borderColor = '#ef4444';
-            del.style.color = '#ef4444';
+            addButton('Delete', 'btn btn-danger', () => ProfileManager.deleteProfile(p.id));
 
             el.append(createAvatarElement(p.avatar), createPlayerInfoElement(p.name, statsText), actions);
             container.appendChild(el);

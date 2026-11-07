@@ -27,7 +27,7 @@ test.describe("Ches'spell menus", () => {
       await expect(active(page)).toHaveId('main-menu');
     }
 
-    await page.getByRole('button', { name: '⚙️ Timer' }).click();
+    await page.getByRole('button', { name: 'Timer', exact: true }).click();
     await expect(active(page)).toHaveId('timer-modal');
     await page.getByRole('button', { name: 'Overall Time' }).click();
     await expect(page.locator('#timer-desc-overall')).not.toHaveClass(/hidden/);
@@ -55,7 +55,7 @@ test.describe("Ches'spell menus", () => {
   // descriptions stayed visible whatever the mode.
   test('timer modal shows only the selected mode description', async ({ page }) => {
     await page.goto('/chesspell/');
-    await page.getByRole('button', { name: '⚙️ Timer' }).click();
+    await page.getByRole('button', { name: 'Timer', exact: true }).click();
     await page.getByRole('button', { name: 'Overall Time' }).click();
     await expect(page.locator('#timer-desc-turn')).toBeHidden();
     await expect(page.locator('#timer-desc-overall')).toBeVisible();

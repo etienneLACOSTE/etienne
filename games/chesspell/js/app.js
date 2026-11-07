@@ -166,7 +166,6 @@ const app = {
         document.querySelectorAll('.timer-toggle-btn').forEach(btn => btn.classList.remove('selected', 'btn-primary'));
         const btn = document.getElementById(mode === 'turn' ? 'btn-timer-turn' : 'btn-timer-overall');
         btn.classList.add('selected');
-        btn.style.backgroundColor = 'var(--accent-color)';
         
         document.getElementById('timer-desc-turn').classList.toggle('hidden', mode !== 'turn');
         document.getElementById('timer-desc-overall').classList.toggle('hidden', mode !== 'overall');
@@ -206,9 +205,7 @@ const app = {
         const bar = document.getElementById('timer-bar');
         bar.style.height = `${pct}%`;
         
-        if (pct < 20) bar.style.backgroundColor = '#e74c3c';
-        else if (pct < 50) bar.style.backgroundColor = '#f1c40f';
-        else bar.style.backgroundColor = '#2ecc71';
+        bar.classList.toggle('timer-low', pct < 20);
         
         const m = Math.floor(time / 60);
         const s = time % 60;

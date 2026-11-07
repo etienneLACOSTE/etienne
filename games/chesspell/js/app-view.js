@@ -20,8 +20,8 @@ Object.assign(app, {
             cardEl.innerHTML = `
                 <div class="card-header">
                     <span class="card-title">${card.icon} ${card.name}</span>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <button class="btn-info" title="More Info">ℹ️</button>
+                    <div class="card-meta">
+                        <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
                         <span class="card-id">#${card.id}</span>
                     </div>
                 </div>
@@ -87,8 +87,7 @@ Object.assign(app, {
         // Mark card as picked
         const cardEl = document.querySelector(`#draft-grid .spell-card[data-id="${cardId}"]`);
         if (cardEl) {
-            cardEl.style.opacity = '0.3';
-            cardEl.style.pointerEvents = 'none';
+            cardEl.classList.add('picked');
         }
         
         this.currentDraftIndex++;
@@ -109,7 +108,7 @@ Object.assign(app, {
         
         // Add a visual cue about drafting
         const cue = document.createElement('div');
-        cue.style.cssText = 'margin-left: auto; color: var(--accent-color); font-weight: bold;';
+        cue.className = 'draft-cue';
         cue.textContent = 'Your Turn to Pick!';
         indicator.appendChild(cue);
         
@@ -143,7 +142,7 @@ Object.assign(app, {
                     <div class="card-title">${card.name}</div>
                     <div class="card-effect">${card.effect}</div>
                 </div>
-                <button class="btn-info" title="More Info">ℹ️</button>
+                <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
             `;
             
             cardEl.querySelector('.btn-info').addEventListener('click', (e) => {
@@ -505,8 +504,8 @@ Object.assign(app, {
             cardEl.innerHTML = `
                 <div class="card-header">
                     <span class="card-title">${card.icon} ${card.name}</span>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <button class="btn-info" title="More Info">ℹ️</button>
+                    <div class="card-meta">
+                        <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
                         <span class="card-id">#${card.id}</span>
                     </div>
                 </div>
@@ -553,7 +552,7 @@ Object.assign(app, {
     updateSelectionUI() {
         const countEl = document.getElementById('selection-count');
         countEl.textContent = `${this.selectedCards.size}/${this.maxCards} Cards Selected`;
-        countEl.style.color = this.selectedCards.size === this.maxCards ? 'var(--accent-color)' : 'white';
+        countEl.classList.toggle('complete', this.selectedCards.size === this.maxCards);
         
         const saveBtn = document.getElementById('save-deck-btn');
         if (saveBtn) {
