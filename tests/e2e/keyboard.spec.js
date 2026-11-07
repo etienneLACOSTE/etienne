@@ -162,3 +162,27 @@ test.describe("Keyboard: Ches'spell dialogs", () => {
     await expect(info).toBeHidden();
   });
 });
+
+test.describe('Keyboard: screen changes', () => {
+  test.beforeEach(async ({ page }) => {
+    await blockExternalRequests(page);
+  });
+
+  const focusInside = (page, id) => page.evaluate((i) => document.getElementById(i).contains(document.activeElement), id);
+
+  test("ches'spell: the focus follows to the new screen", async ({ page }) => {
+    await page.goto('/chesspell/');
+    await activate(page.getByRole('button', { name: 'Card Index' }));
+    await expect.poll(() => focusInside(page, 'card-index')).toBe(true);
+    await page.keyboard.press('Tab');
+    await expect.poll(() => focusInside(page, 'card-index')).toBe(true);
+  });
+
+  test('chessdown: the focus follows to the new screen', async ({ page }) => {
+    await page.goto('/chessdown/');
+    await activate(page.locator('#btn-how-to-play'));
+    await expect.poll(() => focusInside(page, 'rules-modal')).toBe(true);
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#btn-close-rules')).toBeFocused();
+  });
+});

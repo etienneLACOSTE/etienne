@@ -34,6 +34,23 @@ function syncPressedState(el) {
     new MutationObserver(update).observe(el, { attributes: true, attributeFilter: ['class'] });
 }
 
+
+// --- Screen changes: when the focus is lost (its screen was hidden), move it to the
+// new screen's heading, so screen readers announce it and Tab continues from there.
+function focusLost() {
+    const el = document.activeElement;
+    return !el || el === document.body || !el.getClientRects().length;
+}
+
+function focusScreen(screen) {
+    if (!screen || !focusLost()) return;
+    const target = screen.querySelector('h1, h2, h3')
+        || screen.querySelector('button, [href], input, select, [tabindex]:not([tabindex="-1"])');
+    if (!target) return;
+    if (/^H[1-3]$/.test(target.tagName)) target.tabIndex = -1;
+    target.focus();
+}
+
 function setupAccessibility() {
     // Keyboard-made clicks (detail === 0) on buttons run the pointerdown handlers.
     document.addEventListener('click', (e) => {
@@ -54,6 +71,12 @@ function setupAccessibility() {
     ui.chessboard.setAttribute('role', 'group');
     ui.chessboard.setAttribute('aria-label', 'Board');
     ui.chessboard.addEventListener('keydown', onBoardKeydown);
+
+    const show = showScreen;
+    showScreen = function (screen) {
+        show(screen);
+        focusScreen(screen);
+    };
 }
 
 // --- Board: one tab stop, arrow keys between squares, Enter/Space to act ---

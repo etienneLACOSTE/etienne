@@ -175,6 +175,23 @@ function setupDialog({ id, title, initial, cancel }) {
     });
 }
 
+
+// --- Screen changes: when the focus is lost (its screen was hidden), move it to the
+// new screen's heading, so screen readers announce it and Tab continues from there.
+function focusLost() {
+    const el = document.activeElement;
+    return !el || el === document.body || !el.getClientRects().length;
+}
+
+function focusScreen(screen) {
+    if (!screen || !focusLost()) return;
+    const target = screen.querySelector('h1, h2, h3')
+        || screen.querySelector('button, [href], input, select, [tabindex]:not([tabindex="-1"])');
+    if (!target) return;
+    if (/^H[1-3]$/.test(target.tagName)) target.tabIndex = -1;
+    target.focus();
+}
+
 function setupAccessibility() {
     // Enter/Space on any non-native button (cards) acts like a click.
     document.addEventListener('keydown', (e) => {
@@ -199,6 +216,12 @@ function setupAccessibility() {
         const hadFocus = board.contains(document.activeElement);
         const result = render.apply(this, args);
         enhanceBoard(hadFocus);
+        return result;
+    };
+    const show = app.showScreen;
+    app.showScreen = function (screenId, ...rest) {
+        const result = show.call(this, screenId, ...rest);
+        focusScreen(document.getElementById(screenId));
         return result;
     };
     const clear = app.clearHighlights;
