@@ -2,6 +2,9 @@
 :root {
     --turf: #0B6E3F;
     --turf-light: #0E7A47;
+    /* Board squares: clearly dark (turf) or clearly light (the same turf, lightened). */
+    --square-dark: var(--turf);
+    --square-light: color-mix(in srgb, var(--turf) 55%, white);
     --black: #000000;
     --white: #FFFFFF;
     --amber: #FFB81C;
@@ -59,8 +62,21 @@ body {
     transform: rotate(180deg);
 }
 
+/* --- Stands: a pixel crowd behind the field (js/crowd.js) --- */
+#crowd {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    image-rendering: pixelated;
+    z-index: 0;
+    opacity: 0.45; /* In the background: the field stays the focus */
+}
+#game-container { z-index: 1; }
+
 /* --- Header: stadium signage --- */
 header {
+    background: var(--black);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -433,11 +449,7 @@ button:disabled {
     border: 3px solid var(--white);
     position: relative;
     touch-action: none; /* The board keeps every touch for the game. */
-    /* Mown stripes, one per row (12 rows in a match, 6 in the draft view). */
-    background: repeating-linear-gradient(180deg, var(--turf) 0 8.3333%, var(--turf-light) 8.3333% 16.6667%);
-}
-#game-container.draft-mode #chessboard {
-    background: repeating-linear-gradient(180deg, var(--turf) 0 16.6667%, var(--turf-light) 16.6667% 33.3333%);
+    background: var(--square-dark);
 }
 
 .square {
@@ -455,8 +467,9 @@ button:disabled {
     min-height: 0;
 }
 
-/* Chess pattern laid over the turf */
-.square.dark { background-color: rgba(0, 0, 0, 0.16); }
+/* Chess pattern: every square is clearly light or clearly dark. */
+.square.light { background-color: var(--square-light); }
+.square.dark { background-color: var(--square-dark); }
 
 /* Football yard lines */
 .square.yard-line-top { border-top: 2px solid var(--yard-line); }

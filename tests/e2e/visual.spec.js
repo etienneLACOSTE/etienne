@@ -18,7 +18,7 @@ test.describe('Visual baseline', () => {
 
   test('chessdown main menu', async ({ page }) => {
     await page.goto('/chessdown/');
-    await expect(page).toHaveScreenshot('chessdown-menu.png');
+    await expect(page).toHaveScreenshot('chessdown-menu.png', { mask: [page.locator('#crowd')] }); // The crowd moves
   });
 
   test('chessdown draft screen', async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe('Visual baseline', () => {
     await page.locator('#btn-start-local').click();
     await page.locator('.shop-item[data-type="k"]').click();
     await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
-    await expect(page).toHaveScreenshot('chessdown-draft.png');
+    await expect(page).toHaveScreenshot('chessdown-draft.png', { mask: [page.locator('#crowd')] });
   });
 
   test("ches'spell main menu", async ({ page }) => {

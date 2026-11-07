@@ -6,11 +6,13 @@ import { loadBotProfileForDifficulty } from './bot.js';
 import { setupEventListeners } from './events.js';
 import { startDemo } from './demo.js';
 import { setupAccessibility } from './a11y.js';
+import { startCrowd } from './crowd.js';
 import { movePiece, skipTurn } from './gameplay.js';
 import { generateAllMoves, getValidMoves } from './rules-bridge.js';
 
 // Initialization
 export function init() {
+    startCrowd(/** @type {HTMLCanvasElement} */ (document.getElementById('crowd')));
     setupEventListeners();
     setupAccessibility(); // a11y.js
     

@@ -91,8 +91,14 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
 - Screens: black panels; titles in Big Shoulders; numbers in tabular figures.
 - Buttons: pills, 2px border. Primary on black = amber fill, black text. Secondary =
   white outline. On white: primary = black fill.
-- Board: turf with mown stripes (alternate rows), white yard lines, end zones in jersey
-  colours. Pieces: jersey colour, 1.5px black outline.
+- Board: a clear checkerboard, every square clearly light or clearly dark: dark = turf,
+  light = turf mixed with 45 % white (`--square-light`); white yard lines, end zones in
+  jersey colours. Pieces: jersey colour, 1.5px black outline.
+- Stands: around the field, a rudimentary pixel crowd (`js/crowd.js`, 6px pixels, at
+  45 % opacity so the field stays the focus) on concrete steps (#141414 / #262626).
+  Fans wear the jersey colours; their faces use five skin tones (#F1C27D, #E0AC69,
+  #C68642, #8D5524, #FFDBAC), added at the owner's request for the crowd only.
+  A few fans stand up or sit down every 400 ms; still under reduced motion.
 - Timer: scoreboard style, amber digits on black.
 
 ## Layout and motion
