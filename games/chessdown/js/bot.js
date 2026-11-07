@@ -15,6 +15,9 @@ const DIFFICULTIES = {
     master: { progress: 1, depth: 5 },
 };
 
+/** How long the bot may think per move (the search deepens while time allows). */
+const BOT_THINKING_MS = 2000;
+
 export function loadBotProfileForDifficulty(level) {
     state.botDifficultyLevel = level;
     const { progress, depth } = DIFFICULTIES[level] || DIFFICULTIES.master;
@@ -48,7 +51,8 @@ export function autoDraftBot() {
 
 export function playBotTurn() {
     if (state.gameState === 'over') return;
-    const bestMove = Bot.bestMove(state, 2, state.botProfile.depth, state.botProfile);
+    // Deepens up to the level's depth, within the thinking time.
+    const bestMove = Bot.bestMove(state, 2, state.botProfile.depth, state.botProfile, Math.random, BOT_THINKING_MS);
     if (bestMove) {
         movePiece(bestMove.fromR, bestMove.fromC, bestMove.toR, bestMove.toC);
     } else {

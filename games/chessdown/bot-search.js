@@ -30,12 +30,101 @@
         // turn, which the search checks): the bonus stays below a rook, so a speculative
         // run never outweighs real material.
         touchdownBonus: 400,
+        // Structure: a back-rank square (the opponent's end zone) not guarded, a file
+        // open to it guarded less than twice, a king on an open line / facing an enemy
+        // line piece.
+        backRankPenalty: 60,
+        openFilePenalty: 40,
+        kingOpenPenalty: 40,
+        kingThreatPenalty: 300,
     };
 
     /** Extra plies of captures only, after the main search (see quiescence). */
     const QUIESCENCE_PLIES = 4;
 
+    // Time budget (see bestMove): the search stops by throwing TIMEOUT once past the
+    // deadline; every move tried is undone on the way out (try/finally).
+    const TIMEOUT = Symbol('timeout');
+    let deadline = Infinity;
+    let nodes = 0;
+    function checkTime() {
+        if ((++nodes & 1023) === 0 && Date.now() > deadline) throw TIMEOUT;
+    }
+
     const other = (player) => (player === 1 ? 2 : 1);
+    const backRank = (player) => (player === 1 ? ROWS - 1 : 0);
+    const forward = (player) => (player === 1 ? -1 : 1);
+    const LINES = { r: [[1, 0], [-1, 0], [0, 1], [0, -1]], b: [[1, 1], [1, -1], [-1, 1], [-1, -1]] };
+    const KNIGHT = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+
+    /**
+     * How many of `player`'s pieces attack (r, c). Pieces lined up behind each other on
+     * a file or diagonal (stacked rooks, a queen behind a bishop) all count.
+     */
+    function attackers(board, r, c, player, cap = Infinity) {
+        let n = 0;
+        const at = (rr, cc) => (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS ? board[rr][cc] : null);
+        const mine = (p, types) => p && p.player === player && types.includes(p.type);
+        // Pawns attack diagonally forward, so they come from the row behind (r - forward).
+        for (const dc of [-1, 1]) if (mine(at(r - forward(player), c + dc), ['p'])) n++;
+        for (const [dr, dc] of KNIGHT) if (mine(at(r + dr, c + dc), ['n'])) n++;
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) if ((dr || dc) && mine(at(r + dr, c + dc), ['k'])) n++;
+        for (const [kind, dirs] of Object.entries(LINES)) {
+            const types = [kind, 'q'];
+            for (const [dr, dc] of dirs) {
+                for (let rr = r + dr, cc = c + dc; rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS; rr += dr, cc += dc) {
+                    const p = board[rr][cc];
+                    if (!p) continue;
+                    if (!mine(p, types)) break;
+                    if (++n >= cap) return n; // ...else look behind it for a battery
+                }
+            }
+        }
+        return n;
+    }
+
+    /** Penalties for `player`'s weaknesses: unguarded back rank, open files, exposed king. */
+    function structurePenalty(board, profile, player, king) {
+        const backPenalty = profile.backRankPenalty ?? 60;
+        const filePenalty = profile.openFilePenalty ?? 40;
+        const kingOpen = profile.kingOpenPenalty ?? 40;
+        const kingThreat = profile.kingThreatPenalty ?? 300;
+        const row = backRank(player);
+        const ahead = forward(player);
+        let penalty = 0;
+        for (let c = 0; c < COLS; c++) {
+            const guards = attackers(board, row, c, player, 2); // Only 0, 1 or 2+ matter
+            if (guards === 0) penalty += backPenalty;
+            // Open file: nothing of ours stands in front of the back square.
+            let open = true;
+            for (let r = row + ahead; r >= 0 && r < ROWS; r += ahead) {
+                const p = board[r][c];
+                if (p) { open = p.player !== player; break; }
+            }
+            if (open && guards < 2) penalty += filePenalty * (2 - guards);
+        }
+        // The king: its file and forward diagonals.
+        if (king) {
+            const [r, c] = king;
+            {
+                for (const dc of [0, -1, 1]) {
+                    const enemyTypes = dc === 0 ? ['r', 'q'] : ['b', 'q'];
+                    let rr = r + ahead;
+                    let cc = c + dc;
+                    let blocked = false;
+                    for (; rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS; rr += ahead, cc += dc) {
+                        const p = board[rr][cc];
+                        if (!p) continue;
+                        blocked = true;
+                        if (p.player !== player && enemyTypes.includes(p.type)) penalty += kingThreat;
+                        break;
+                    }
+                    if (!blocked && cc >= 0 && cc < COLS) penalty += kingOpen; // Open to the far side
+                }
+            }
+        }
+        return penalty;
+    }
 
     /** Board score for `me` (positive = good for `me`). */
     function evaluate(board, profile, me) {
@@ -44,10 +133,12 @@
         const pawnForward = profile.pawnForwardBonus !== undefined ? profile.pawnForwardBonus : 10;
         const tdBonus = profile.touchdownBonus !== undefined ? profile.touchdownBonus : 400;
         let score = 0; // From player 2's side, then turned to `me`
+        const kings = { 1: null, 2: null };
         for (let r = 0; r < ROWS; r++) {
             for (let c = 0; c < COLS; c++) {
                 const piece = board[r][c];
                 if (!piece) continue;
+                if (piece.type === 'k') kings[piece.player] = [r, c];
                 const val = piece.type === 'k' ? 10000 : (profile.pieceWeights[piece.type] || PIECE_VALUES[piece.type] * 100);
                 let positionBonus = 0;
                 let centerBonus = 0;
@@ -66,6 +157,7 @@
                 }
             }
         }
+        score += structurePenalty(board, profile, 1, kings[1]) - structurePenalty(board, profile, 2, kings[2]);
         return me === 2 ? score : -score;
     }
 
@@ -120,6 +212,7 @@
      * The side to move may also stop capturing ("stand pat").
      */
     function quiescence(state, profile, me, alpha, beta, maximizing, plies) {
+        checkTime();
         const end = terminalScore(state, me, 0, maximizing);
         if (end !== null) return end;
         const standPat = evaluate(state.board, profile, me);
@@ -137,8 +230,12 @@
         let best = standPat;
         for (const move of captures) {
             const undo = Engine.applyMove(state, move);
-            const ev = quiescence(state, profile, me, alpha, beta, !maximizing, plies - 1);
-            Engine.undoMove(state, move, undo);
+            let ev;
+            try {
+                ev = quiescence(state, profile, me, alpha, beta, !maximizing, plies - 1);
+            } finally {
+                Engine.undoMove(state, move, undo);
+            }
             if (maximizing) {
                 best = Math.max(best, ev);
                 alpha = Math.max(alpha, ev);
@@ -153,6 +250,7 @@
 
     /** Minimax with alpha-beta; `maximizing` means it is `me` to play. */
     function minimax(state, profile, me, depth, alpha, beta, maximizing) {
+        checkTime();
         const end = terminalScore(state, me, depth, maximizing);
         if (end !== null) return end;
 
@@ -165,8 +263,12 @@
         let best = maximizing ? -Infinity : Infinity;
         for (const move of moves) {
             const undo = Engine.applyMove(state, move);
-            const ev = minimax(state, profile, me, depth - 1, alpha, beta, !maximizing);
-            Engine.undoMove(state, move, undo);
+            let ev;
+            try {
+                ev = minimax(state, profile, me, depth - 1, alpha, beta, !maximizing);
+            } finally {
+                Engine.undoMove(state, move, undo);
+            }
             if (maximizing) {
                 best = Math.max(best, ev);
                 alpha = Math.max(alpha, ev);
@@ -179,11 +281,8 @@
         return best;
     }
 
-    /**
-     * Best move for `me`, searching `depth` plies ({ board, lastMove } state).
-     * A tiny random noise varies the games; `random` can be seeded.
-     */
-    function bestMove(state, me, depth, profile, random = Math.random) {
+    /** One full search at `depth` plies from the root. */
+    function searchRoot(state, me, depth, profile, random) {
         const moves = orderMoves(state.board, Engine.generateAllMoves(state, me));
         let best = null;
         let maxEval = -Infinity;
@@ -191,19 +290,47 @@
         const beta = Infinity;
         for (const move of moves) {
             const undo = Engine.applyMove(state, move);
-            let ev = minimax(state, profile, me, depth - 1, alpha, beta, false);
-            // A lost position: every move scores as a loss. Prefer the one that keeps the
-            // most material, so the bot keeps resisting instead of giving pieces away.
-            // (A later loss already scores higher; this breaks ties between equal losses.)
-            if (ev <= -WIN) ev = minimax(state, profile, me, depth - 1, -Infinity, Infinity, false)
-                + Math.max(-0.9, Math.min(0.9, material(state.board, profile, me) / 100000));
-            else ev += random() * 0.1;
-            Engine.undoMove(state, move, undo);
+            let ev;
+            try {
+                ev = minimax(state, profile, me, depth - 1, alpha, beta, false);
+                // A lost position: every move scores as a loss. Prefer the one that keeps the
+                // most material, so the bot keeps resisting instead of giving pieces away.
+                // (A later loss already scores higher; this breaks ties between equal losses.)
+                if (ev <= -WIN) ev = minimax(state, profile, me, depth - 1, -Infinity, Infinity, false)
+                    + Math.max(-0.9, Math.min(0.9, material(state.board, profile, me) / 100000));
+                else ev += random() * 0.1;
+            } finally {
+                Engine.undoMove(state, move, undo);
+            }
             if (ev > maxEval) {
                 maxEval = ev;
                 best = move;
             }
             alpha = Math.max(alpha, ev);
+        }
+        return best;
+    }
+
+    /**
+     * Best move for `me`, searching `depth` plies ({ board, lastMove } state).
+     * A tiny random noise varies the games; `random` can be seeded.
+     * With `timeLimitMs`, the bot deepens one ply at a time (1, 2, ... `depth`) and keeps
+     * the move of the deepest search finished in time; without it, one search at `depth`.
+     */
+    function bestMove(state, me, depth, profile, random = Math.random, timeLimitMs = Infinity) {
+        if (timeLimitMs === Infinity) return searchRoot(state, me, depth, profile, random);
+        const stop = Date.now() + timeLimitMs;
+        let best = searchRoot(state, me, 1, profile, random); // Always a move
+        for (let d = 2; d <= depth && Date.now() < stop; d++) {
+            deadline = stop;
+            try {
+                best = searchRoot(state, me, d, profile, random);
+            } catch (err) {
+                if (err !== TIMEOUT) throw err;
+                break;
+            } finally {
+                deadline = Infinity;
+            }
         }
         return best;
     }
@@ -429,5 +556,5 @@
         return { pieces: placed, pointsLeft: points };
     }
 
-    return { DEFAULT_PROFILE, evaluate, bestMove, draftArmy, formationFaults, kingExposed };
+    return { DEFAULT_PROFILE, evaluate, bestMove, draftArmy, formationFaults, kingExposed, attackers, structurePenalty };
 });

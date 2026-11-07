@@ -136,6 +136,22 @@ test('in a lost position the bot still takes material instead of moving at rando
     }
 });
 
+test('with a time budget the bot answers in time and leaves the board untouched', () => {
+    const state = { board: Engine.createBoard(), lastMove: null };
+    for (const player of [1, 2]) {
+        for (const p of Bot.draftArmy(Bot.DEFAULT_PROFILE, player, { random: seededRandom(player) }).pieces) {
+            state.board[p.r][p.c] = { type: p.type, player, hasMoved: false };
+        }
+    }
+    const before = JSON.stringify(state);
+    const start = Date.now();
+    const move = Bot.bestMove(state, 2, 12, Bot.DEFAULT_PROFILE, () => 0, 300); // Depth 12 cannot finish
+    const elapsed = Date.now() - start;
+    assert.ok(move, 'a move is always returned');
+    assert.ok(elapsed < 1500, `took ${elapsed} ms`);
+    assert.equal(JSON.stringify(state), before, 'every move tried was undone');
+});
+
 test('a training game ends with a result, and the same seed replays it', () => {
     const a = playGame(Bot.DEFAULT_PROFILE, Bot.DEFAULT_PROFILE, 2, seededRandom(3));
     const b = playGame(Bot.DEFAULT_PROFILE, Bot.DEFAULT_PROFILE, 2, seededRandom(3));

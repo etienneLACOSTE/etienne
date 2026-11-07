@@ -30,7 +30,10 @@ const ARCHETYPES = ['normal', 'ecuries', 'citadelle', 'chapiteau', 'chair', 'sor
 const BOUNDS = {
     p: [60, 140], n: [220, 420], b: [220, 420], r: [380, 650], q: [750, 1150],
     centerBonusCols: [0, 40], centerBonusRows: [0, 60], pawnForwardBonus: [0, 40], touchdownBonus: [100, 450],
+    backRankPenalty: [0, 150], openFilePenalty: [0, 100], kingOpenPenalty: [0, 100], kingThreatPenalty: [50, 600],
 };
+const BONUS_GENES = ['centerBonusCols', 'centerBonusRows', 'pawnForwardBonus', 'touchdownBonus',
+    'backRankPenalty', 'openFilePenalty', 'kingOpenPenalty', 'kingThreatPenalty'];
 const clamp = (key, v) => Math.max(BOUNDS[key][0], Math.min(BOUNDS[key][1], Math.round(v)));
 
 /** Keep a profile sensible: genes in range, queen > rook > minor pieces > pawn, end-zone bonus < rook. */
@@ -41,7 +44,7 @@ function normalize(profile) {
     w.r = Math.max(w.r, Math.max(w.n, w.b) + 40);
     w.q = Math.max(w.q, w.r + 150);
     w.k = 10000;
-    for (const k of ['centerBonusCols', 'centerBonusRows', 'pawnForwardBonus', 'touchdownBonus']) profile[k] = clamp(k, profile[k]);
+    for (const k of BONUS_GENES) profile[k] = clamp(k, profile[k]);
     profile.touchdownBonus = Math.min(profile.touchdownBonus, w.r - 50);
     return profile;
 }
@@ -90,10 +93,7 @@ function randomProfile(id, random) {
         id,
         fitness: 0, wins: 0, losses: 0, draws: 0,
         pieceWeights: { p: gene('p'), n: gene('n'), b: gene('b'), r: gene('r'), q: gene('q'), k: 10000 },
-        centerBonusCols: gene('centerBonusCols'),
-        centerBonusRows: gene('centerBonusRows'),
-        pawnForwardBonus: gene('pawnForwardBonus'),
-        touchdownBonus: gene('touchdownBonus'),
+        ...Object.fromEntries(BONUS_GENES.map((k) => [k, gene(k)])),
     });
 }
 
@@ -105,7 +105,7 @@ function crossover(parent1, parent2, id, random) {
     for (const k of ['p', 'n', 'b', 'r', 'q']) {
         child.pieceWeights[k] = mutate(pick(parent1.pieceWeights[k], parent2.pieceWeights[k]));
     }
-    for (const k of ['centerBonusCols', 'centerBonusRows', 'pawnForwardBonus', 'touchdownBonus']) {
+    for (const k of BONUS_GENES) {
         child[k] = mutate(pick(parent1[k], parent2[k]));
     }
     return normalize(child);
@@ -156,8 +156,8 @@ function parseArgs(argv) {
 async function train(opts) {
     const random = seededRandom(opts.seed);
     const pool = createPool(opts.workers);
-    const strip = ({ id, pieceWeights, centerBonusCols, centerBonusRows, pawnForwardBonus, touchdownBonus }) =>
-        ({ id, pieceWeights, centerBonusCols, centerBonusRows, pawnForwardBonus, touchdownBonus });
+    const strip = (profile) => ({ id: profile.id, pieceWeights: profile.pieceWeights,
+        ...Object.fromEntries(BONUS_GENES.map((k) => [k, profile[k]])) });
     const standard = strip({ id: 'standard', ...Bot.DEFAULT_PROFILE });
     const archetype = () => ARCHETYPES[Math.floor(random() * ARCHETYPES.length)];
     // Opponent armies: a random archetype, and one game in four a beginner's random draft.
