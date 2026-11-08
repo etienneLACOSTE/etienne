@@ -433,7 +433,7 @@
             return next(state, 'select_sniper_target');
         }
         if (ts === 'select_sniper_target') {
-            if (!p || color === state.turn) return invalid('Must select an enemy piece.');
+            if (!p || p === WALL || color === state.turn) return invalid('Must select an enemy piece.');
             if (p.toLowerCase() === 'k') return invalid('Cannot target the King.');
             const dr = r - state.sniperBishop.r;
             const dc = c - state.sniperBishop.c;
@@ -471,7 +471,7 @@
             return done(false);
         }
         if (spell === 3 && ts === 'select_domi_reversi') {
-            if (!p || color === state.turn || p.toLowerCase() === 'k') return invalid('Select an enemy piece (except King).');
+            if (!p || p === WALL || color === state.turn || p.toLowerCase() === 'k') return invalid('Select an enemy piece (except King).');
             state.domiReversiPiece = { r, c, originalColor: color, caster: state.turn, activeTurn: false };
             board[r][c] = state.turn === 'white' ? p.toUpperCase() : p.toLowerCase();
             return done(true);

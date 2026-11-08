@@ -127,6 +127,15 @@ test('Sniper (7): a bishop destroys an enemy on its diagonal, line of sight requ
     assert.equal(s.board[7][2], 'B');
 });
 
+test('Sniper (7) refuses a wall: it is not a piece', () => {
+    const s = game({ '7,2': 'B', '5,4': 'W', '0,4': 'k' });
+    G.activateSpell(s, 7);
+    G.clickSquare(s, 7, 2);
+    assert.equal(G.clickSquare(s, 5, 4).status, 'invalid');
+    assert.equal(s.board[5][4], 'W');
+    assert.deepEqual(s.capturedByWhite, []);
+});
+
 test('Shield (11) protects a piece and keeps the turn', () => {
     const s = game({ '4,4': 'R' });
     cast(s, 11, [4, 4]);
@@ -159,6 +168,14 @@ test('Domi Reversi (3) takes an enemy piece for a turn', () => {
     cast(s, 3, [3, 3]);
     assert.equal(s.board[3][3], 'N');
     assert.equal(s.turn, 'black');
+});
+
+test('Domi Reversi (3) refuses a wall: it has no owner to give it back to', () => {
+    const s = game({ '3,3': 'W', '7,4': 'K', '0,4': 'k' }, 'black');
+    G.activateSpell(s, 3);
+    assert.equal(G.clickSquare(s, 3, 3).status, 'invalid');
+    assert.equal(s.board[3][3], 'W');
+    assert.equal(s.domiReversiPiece, null);
 });
 
 test('Kamikaze (18) destroys the piece and everything around it except kings', () => {
