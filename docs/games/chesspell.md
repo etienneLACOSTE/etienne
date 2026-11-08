@@ -7,11 +7,15 @@ Ches'spell est un jeu d'échecs magique moderne. En plus des pièces d'échecs c
 Le jeu inclut plusieurs modes de jeu :
 - **Online Multiplayer** : Jouez avec vos amis à distance avec des codes de salon.
 - **Local Game** : Jouez à deux joueurs sur le même ordinateur.
-- **Campaign Mode** : Affrontez l'Intelligence Artificielle (AlphaZero) en difficulté croissante !
+- **Campaign Mode** : affrontez le bot en difficulté croissante (curseur ELO) !
 
 ## 🚀 Installation & Lancement
 
-Le mode Campagne oppose le joueur au bot JavaScript intégré (minimax avec heuristiques de sorts) ; le curseur ELO règle sa profondeur de calcul et sa part de coups au hasard.
+Le mode Campagne oppose le joueur au bot JavaScript `games/chesspell/bot.js` (sans DOM, partagé avec l'entraîneur) :
+- sous 1000 ELO, il choisit ses sorts avec les règles d'origine (`heuristicSpell`, une règle par sort) et joue parfois au hasard ;
+- à partir de 1000 ELO, il essaie chaque carte et chaque cible sur une copie de la partie (via `game.js`, donc avec les vraies règles), puis cherche les réponses (alpha-bêta, quiescence) ; une carte en main a une valeur, il ne la joue que si elle rapporte plus. Profondeur 2 à 4 selon l'ELO, 1,5 s de réflexion au plus.
+
+Un profil entraîné est lu dans `games/chesspell/training_data.json` s'il a été adopté ; sinon le bot utilise le profil standard (`DEFAULT_PROFILE`).
 
 ### 1. Démarrer le serveur web (interface et multijoueur)
 Depuis la racine du projet :
@@ -29,7 +33,7 @@ npm start
 - `games/chesspell/game.js` : tours, coups et les 20 sorts, sans DOM ; partagé avec le serveur, qui arbitre les parties en ligne (`server/chesspell.js`)
 - `games/chesspell/js/` : interface (affichage, bot, tutoriel, jeu en ligne)
 - `ai/chesspell/` : IA Python mise de côté (MCTS + réseau de neurones, self-play)
-- `tools/chesspell/train_spells.js` : algorithme génétique pour les heuristiques de sorts du bot JS
+- `tools/chesspell/train_spells.js` : entraînement génétique du bot (valeurs des pièces, termes positionnels, valeur de chaque carte), parties complètes avec `game.js` et `bot.js` ; `spell_heuristics.json` est la sortie de l'ancien entraîneur (sur une copie des règles), plus utilisée
 
 ## 🛠️ Technologies
 - **Frontend** : Vanilla JS, HTML5, CSS3, Socket.io
