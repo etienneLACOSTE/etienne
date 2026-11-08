@@ -23,3 +23,8 @@ graphify-out/
 test-results/
 playwright-report/
 .playwright-mcp/
+
+# Mutation testing (Stryker)
+.stryker-tmp/
+reports/
+.crap-cache/

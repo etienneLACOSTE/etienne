@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node --test tests/unit/chessdown-engine.test.js tests/unit/chesspell-game.test.js tests/unit/chesspell-rules.test.js tests/unit/socket-utils.test.js"
+  },
+  "coverageAnalysis": "off",
+  "concurrency": 12,
+  "timeoutMS": 20000,
+  "reporters": [
+    "json",
+    "clear-text"
+  ],
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "ignorePatterns": [
+    "ai",
+    "design-explorations",
+    "graphify-out",
+    "test-results",
+    "playwright-report",
+    "docs",
+    "tests/e2e",
+    "reports"
+  ],
+  "mutate": [
+    "games/chessdown/engine.js:39-104",
+    "games/chessdown/engine.js:107-120",
+    "games/chesspell/game.js:83-90",
+    "games/chesspell/game.js:93-134",
+    "games/chesspell/game.js:137-143",
+    "games/chesspell/game.js:151-241",
+    "games/chesspell/game.js:264-310",
+    "games/chesspell/game.js:330-488",
+    "games/chesspell/rules.js:45-131",
+    "games/chesspell/rules.js:133-149",
+    "games/chesspell/rules.js:160-177",
+    "server/socket-utils.js:71-75"
+  ]
+}
