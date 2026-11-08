@@ -206,6 +206,14 @@ test('evaluate: the start is even; cards in hand and pieces taken over by Domi R
     assert.ok(Bot.evaluate(d, 'black', Bot.DEFAULT_PROFILE) > plain + 900);
 });
 
+test('search: a piece taken over by Domi Reversi can die on a trap', () => {
+    // White's stolen knight can jump onto black's trap (2,3); the rook can then go there.
+    const s = game({ '0,4': 'k', '7,4': 'K', '4,4': 'N', '2,0': 'r', '6,0': 'P' });
+    s.domiReversiPiece = { r: 4, c: 4, originalColor: 'black', caster: 'white', activeTurn: false };
+    s.traps = [{ r: 2, c: 3, owner: 'black' }];
+    assert.doesNotThrow(() => Bot.bestMove(s, 'black', noCards, P(4), fixed));
+});
+
 test('spellOptions: every legal target of each card, through the real rules', () => {
     const s = game({ '0,4': 'k', '7,4': 'K', '4,4': 'Q', '2,2': 'b' });
     const options = Bot.spellOptions(s, 'black', [7, 15, 20], fixed);

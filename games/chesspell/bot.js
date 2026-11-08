@@ -524,7 +524,7 @@
         const moving = b[m.fr][m.fc];
         const captured = b[m.tr][m.tc];
         const d = pos.domi;
-        if (d && d.r === m.tr && d.c === m.tc) {
+        if (d && captured && d.r === m.tr && d.c === m.tc) {
             // Capturing the Domi Reversi piece gives it back to its owner (game.js: 'reverted').
             b[m.tr][m.tc] = d.originalColor === 'white' ? captured.toUpperCase() : captured.toLowerCase();
             pos.domi = null;
@@ -549,7 +549,8 @@
         if (flag) pos.hasMoved = { ...prevMoved, [flag]: true };
         // Follow the Domi Reversi piece (or forget it once captured).
         const prevDomi = pos.domi;
-        if (prevDomi && prevDomi.r === m.fr && prevDomi.c === m.fc) pos.domi = { ...prevDomi, r: m.tr, c: m.tc };
+        // A trap can destroy it on the way: then there is nothing left to give back.
+        if (prevDomi && prevDomi.r === m.fr && prevDomi.c === m.fc) pos.domi = b[m.tr][m.tc] ? { ...prevDomi, r: m.tr, c: m.tc } : null;
         else if (prevDomi && prevDomi.r === m.tr && prevDomi.c === m.tc) pos.domi = null;
         return { moving, captured, trap, ti, prevMoved, prevDomi };
     }

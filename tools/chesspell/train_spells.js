@@ -371,7 +371,17 @@ async function train(opts) {
 }
 
 if (!isMainThread) {
-    parentPort.on('message', ({ white, black, depth, seed, decks }) => parentPort.postMessage(playGame(white, black, depth, seededRandom(seed), decks)));
+    parentPort.on('message', ({ white, black, depth, seed, decks }) => {
+        let result;
+        try {
+            result = playGame(white, black, depth, seededRandom(seed), decks);
+        } catch (err) {
+            // A bot bug must not end a night of training: report it (with what replays it) and call it a draw.
+            console.error(`Game crashed (seed ${seed}, depth ${depth}, decks ${JSON.stringify(decks)}, bots ${white.id} vs ${black.id}):`, err);
+            result = 'draw';
+        }
+        parentPort.postMessage(result);
+    });
 } else if (require.main === module) {
     train(parseArgs(process.argv.slice(2))).then(() => process.exit(0), (err) => { console.error(err); process.exit(1); });
 }
