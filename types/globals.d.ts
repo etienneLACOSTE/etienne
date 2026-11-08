@@ -6,6 +6,7 @@ declare global {
     var ChessdownBot: typeof import('../games/chessdown/bot-search.js');
     var ChesspellRules: typeof import('../games/chesspell/rules.js');
     var ChesspellGame: typeof import('../games/chesspell/game.js');
+    var ChesspellBot: typeof import('../games/chesspell/bot.js');
     /** Socket.io client, loaded from /socket.io/socket.io.js when the server runs. */
     var io: ((namespace: string, options?: object) => any) | undefined;
 }

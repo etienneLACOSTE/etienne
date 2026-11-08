@@ -23,6 +23,7 @@
     "games/chessdown/engine.js",
     "games/chesspell/rules.js",
     "games/chesspell/game.js",
+    "games/chesspell/bot.js",
     "types/**/*.d.ts",
     "games/chessdown/js/**/*.js",
     "games/chessdown/confetti.js",
