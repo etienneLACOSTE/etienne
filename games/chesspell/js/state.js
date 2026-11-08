@@ -64,14 +64,3 @@ export const PIECE_MAP = {
     'W': '🧱'
 };
 
-export const ZOBRIST = { pieces: {}, turn: 0n };
-export function initZobrist() {
-    const pieces = ['p','n','b','r','q','k','P','N','B','R','Q','K','W'];
-    const randomBigInt = () => BigInt(Math.floor(Math.random() * 0xFFFFFFFF)) << 32n | BigInt(Math.floor(Math.random() * 0xFFFFFFFF));
-    for (let p of pieces) {
-        ZOBRIST.pieces[p] = [];
-        for (let i = 0; i < 64; i++) ZOBRIST.pieces[p].push(randomBigInt());
-    }
-    ZOBRIST.turn = randomBigInt();
-}
-initZobrist();

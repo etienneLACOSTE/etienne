@@ -5,7 +5,7 @@ const { test, expect } = require('@playwright/test');
 // model weights and project files must never be downloadable.
 
 const PUBLIC = ['/', '/style.css', '/chessdown/', '/chessdown/js/main.js', '/chessdown/js/state.js', '/chessdown/engine.js', '/chessdown/bot-search.js', '/chessdown/training_data.json',
-  '/chesspell/', '/chesspell/js/app.js', '/chesspell/rules.js', '/chesspell/bot.js',
+  '/chesspell/', '/chesspell/js/app.js', '/chesspell/rules.js', '/chesspell/bot.js', '/chesspell/training_data.json',
   '/assets/fonts/fonts.css', '/assets/fonts/bagel-fat-one.woff2', '/assets/fonts/noto-sans-symbols-2-chess.woff2'];
 
 const PRIVATE = [

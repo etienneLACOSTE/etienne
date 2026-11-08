@@ -127,7 +127,7 @@ test.describe("Ches'spell", () => {
     expect(errors).toEqual([]);
   });
 
-  // The Python AI (ai/chesspell/) is set aside: the campaign bot is the JS minimax.
+  // The Python AI (ai/chesspell/) is set aside: the campaign bot is bot.js.
   test('campaign: the bot answers by itself, without calling any AI server', async ({ page }) => {
     const errors = trackPageErrors(page);
     /** @type {string[]} */
@@ -154,18 +154,82 @@ test.describe("Ches'spell", () => {
     expect(errors).toEqual([]);
   });
 
-  test('campaign: the ELO slider sets how far the bot searches and how often it blunders', async ({ page }) => {
+  /** Start a campaign game, then put a custom position on the board with black (the bot) to move. */
+  async function campaignPosition(page, elo, pieces, botDeck) {
+    await seedProfiles(page);
+    await page.goto('/chesspell/');
+    await page.getByRole('button', { name: 'Local Game' }).click();
+    await page.getByRole('button', { name: 'Play Campaign Mode' }).click();
+    await page.locator('#btn-confirm-campaign').click();
+    await expect(page.locator('#game-board')).toHaveClass(/active/);
+    await page.evaluate(([e, p, deck]) => {
+      const { engine, app } = chesspell;
+      app.botElo = e;
+      engine.board = Array.from({ length: 8 }, () => Array(8).fill(null));
+      for (const [key, piece] of Object.entries(p)) {
+        const [r, c] = key.split(',').map(Number);
+        engine.board[r][c] = piece;
+      }
+      app.p2Deck = deck;
+      app.renderInGameDeck(app.p2Deck, 'player2-cards', 'black');
+      engine.turn = 'black';
+      app.renderChessboard();
+      app.playBotTurn();
+    }, [elo, pieces, botDeck]);
+  }
+
+  test('campaign: the bot casts a spell when it pays (Sniper on a defended queen)', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await campaignPosition(page, 1500, { '0,4': 'k', '7,4': 'K', '4,4': 'Q', '2,2': 'b', '5,5': 'P', '6,0': 'P' }, [7, 8, 16]);
+    await expect.poll(() => turn(page), { timeout: 20_000 }).toBe('white');
+    expect(await page.evaluate(() => chesspell.engine.board[4][4])).toBe(null); // the queen is gone
+    expect(await page.evaluate(() => chesspell.engine.usedCards.black)).toEqual([7]);
+    await expect(page.locator('#player2-cards .in-game-card.used')).toHaveCount(1);
+    expect(errors).toEqual([]);
+  });
+
+  for (const elo of [400, 2500]) {
+    test(`campaign: the bot plays a few turns without error (ELO ${elo})`, async ({ page }) => {
+      const errors = trackPageErrors(page);
+      await seedProfiles(page);
+      await page.goto('/chesspell/');
+      await page.getByRole('button', { name: 'Local Game' }).click();
+      await page.getByRole('button', { name: 'Play Campaign Mode' }).click();
+      await page.locator('#btn-confirm-campaign').click();
+      await expect(page.locator('#game-board')).toHaveClass(/active/);
+      await page.evaluate((e) => { chesspell.app.botElo = e; }, elo);
+      // White plays the first legal move it finds, three times; the bot answers each time.
+      for (let i = 0; i < 3; i++) {
+        await page.evaluate(() => {
+          const { engine } = chesspell;
+          for (let r = 7; r >= 0; r--) {
+            for (let c = 0; c < 8; c++) {
+              const p = engine.board[r][c];
+              if (!p || p === 'W' || engine.getColor(p) !== 'white') continue;
+              const m = engine.getValidMoves(r, c).find((x) => !x.castle);
+              if (m) { engine.move(r, c, m.r, m.c); return; }
+            }
+          }
+        });
+        if (await page.evaluate(() => chesspell.engine.winner)) break;
+        await expect.poll(() => turn(page), { timeout: 20_000 }).toBe('white');
+      }
+      expect(errors).toEqual([]);
+    });
+  }
+
+  test('campaign: the ELO slider sets how the bot picks spells, how far it searches and how often it blunders', async ({ page }) => {
     await page.goto('/chesspell/');
     const strength = await page.evaluate(() => [400, 800, 1200, 1500, 3000].map((elo) => {
       chesspell.app.botElo = elo;
       return chesspell.app.botStrength();
     }));
     expect(strength).toEqual([
-      { depth: 1, randomMoveRate: 0.3 },
-      { depth: 1, randomMoveRate: 0.15 },
-      { depth: 2, randomMoveRate: 0 },
-      { depth: 3, randomMoveRate: 0 },
-      { depth: 3, randomMoveRate: 0 },
+      { spells: 'heuristic', depth: 1, randomMoveRate: 0.3 },
+      { spells: 'heuristic', depth: 2, randomMoveRate: 0.15 },
+      { spells: 'search', depth: 2, randomMoveRate: 0 },
+      { spells: 'search', depth: 3, randomMoveRate: 0 },
+      { spells: 'search', depth: 4, randomMoveRate: 0 },
     ]);
   });
 
