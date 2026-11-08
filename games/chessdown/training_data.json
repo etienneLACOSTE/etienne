@@ -1,5 +1,3222 @@
 {
-  "note": "No trained profile: the campaign bot uses the standard profile of bot-search.js (DEFAULT_PROFILE); difficulty sets the search depth.",
-  "generations": [],
-  "validation": null
+  "settings": {
+    "generations": 60,
+    "population": 40,
+    "games": 8,
+    "standardGames": 4,
+    "depth": 3,
+    "validationDepth": 4,
+    "validation": 400,
+    "workers": 15,
+    "seed": 2028,
+    "maxPlies": 80,
+    "bounds": {
+      "p": [
+        60,
+        140
+      ],
+      "n": [
+        220,
+        420
+      ],
+      "b": [
+        220,
+        420
+      ],
+      "r": [
+        380,
+        650
+      ],
+      "q": [
+        750,
+        1150
+      ],
+      "centerBonusCols": [
+        0,
+        40
+      ],
+      "centerBonusRows": [
+        0,
+        60
+      ],
+      "pawnForwardBonus": [
+        0,
+        40
+      ],
+      "touchdownBonus": [
+        100,
+        450
+      ],
+      "backRankPenalty": [
+        0,
+        150
+      ],
+      "openFilePenalty": [
+        0,
+        100
+      ],
+      "kingOpenPenalty": [
+        0,
+        100
+      ],
+      "kingThreatPenalty": [
+        0,
+        600
+      ]
+    }
+  },
+  "generations": [
+    {
+      "generation": 1,
+      "bestBot": {
+        "id": 1,
+        "fitness": 42,
+        "wins": 6,
+        "losses": 2,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 96,
+          "n": 228,
+          "b": 392,
+          "r": 529,
+          "q": 1089,
+          "k": 10000
+        },
+        "centerBonusCols": 38,
+        "centerBonusRows": 2,
+        "pawnForwardBonus": 29,
+        "touchdownBonus": 302,
+        "backRankPenalty": 65,
+        "openFilePenalty": 82,
+        "kingOpenPenalty": 80,
+        "kingThreatPenalty": 53,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 14,
+        "fitness": 14,
+        "wins": 2,
+        "losses": 7,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 72,
+          "n": 403,
+          "b": 257,
+          "r": 498,
+          "q": 866,
+          "k": 10000
+        },
+        "centerBonusCols": 20,
+        "centerBonusRows": 51,
+        "pawnForwardBonus": 2,
+        "touchdownBonus": 201,
+        "backRankPenalty": 68,
+        "openFilePenalty": 86,
+        "kingOpenPenalty": 65,
+        "kingThreatPenalty": 593,
+        "vsStandard": 0
+      },
+      "avgFitness": 26.4
+    },
+    {
+      "generation": 2,
+      "bestBot": {
+        "id": 64,
+        "fitness": 45,
+        "wins": 5,
+        "losses": 2,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 90,
+          "n": 340,
+          "b": 254,
+          "r": 528,
+          "q": 993,
+          "k": 10000
+        },
+        "centerBonusCols": 25,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 296,
+        "backRankPenalty": 41,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 99,
+        "kingThreatPenalty": 39,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 65,
+        "fitness": 13,
+        "wins": 3,
+        "losses": 5,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 66,
+          "n": 325,
+          "b": 226,
+          "r": 410,
+          "q": 1123,
+          "k": 10000
+        },
+        "centerBonusCols": 32,
+        "centerBonusRows": 45,
+        "pawnForwardBonus": 38,
+        "touchdownBonus": 153,
+        "backRankPenalty": 8,
+        "openFilePenalty": 32,
+        "kingOpenPenalty": 29,
+        "kingThreatPenalty": 357,
+        "vsStandard": 1
+      },
+      "avgFitness": 26.475
+    },
+    {
+      "generation": 3,
+      "bestBot": {
+        "id": 104,
+        "fitness": 43,
+        "wins": 4,
+        "losses": 2,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 77,
+          "n": 296,
+          "b": 368,
+          "r": 556,
+          "q": 1111,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 43,
+        "pawnForwardBonus": 38,
+        "touchdownBonus": 172,
+        "backRankPenalty": 86,
+        "openFilePenalty": 27,
+        "kingOpenPenalty": 68,
+        "kingThreatPenalty": 288,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 81,
+        "fitness": 13,
+        "wins": 2,
+        "losses": 4,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 139,
+          "n": 404,
+          "b": 315,
+          "r": 473,
+          "q": 1097,
+          "k": 10000
+        },
+        "centerBonusCols": 10,
+        "centerBonusRows": 13,
+        "pawnForwardBonus": 36,
+        "touchdownBonus": 335,
+        "backRankPenalty": 22,
+        "openFilePenalty": 29,
+        "kingOpenPenalty": 59,
+        "kingThreatPenalty": 282,
+        "vsStandard": 1
+      },
+      "avgFitness": 26.375
+    },
+    {
+      "generation": 4,
+      "bestBot": {
+        "id": 106,
+        "fitness": 42,
+        "wins": 7,
+        "losses": 2,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 77,
+          "n": 323,
+          "b": 348,
+          "r": 537,
+          "q": 1111,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 23,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 340,
+        "backRankPenalty": 47,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 288,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 134,
+        "fitness": 7,
+        "wins": 1,
+        "losses": 7,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 77,
+          "n": 340,
+          "b": 368,
+          "r": 433,
+          "q": 911,
+          "k": 10000
+        },
+        "centerBonusCols": 22,
+        "centerBonusRows": 21,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 351,
+        "backRankPenalty": 86,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 95,
+        "kingThreatPenalty": 469,
+        "vsStandard": 1
+      },
+      "avgFitness": 26.1
+    },
+    {
+      "generation": 5,
+      "bestBot": {
+        "id": 162,
+        "fitness": 42,
+        "wins": 6,
+        "losses": 1,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 79,
+          "n": 239,
+          "b": 220,
+          "r": 607,
+          "q": 886,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 16,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 168,
+        "backRankPenalty": 28,
+        "openFilePenalty": 32,
+        "kingOpenPenalty": 88,
+        "kingThreatPenalty": 335,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 148,
+        "fitness": 15,
+        "wins": 2,
+        "losses": 6,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 125,
+          "n": 277,
+          "b": 413,
+          "r": 473,
+          "q": 815,
+          "k": 10000
+        },
+        "centerBonusCols": 27,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 34,
+        "touchdownBonus": 336,
+        "backRankPenalty": 70,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 17,
+        "vsStandard": 1
+      },
+      "avgFitness": 27.175
+    },
+    {
+      "generation": 6,
+      "bestBot": {
+        "id": 127,
+        "fitness": 43,
+        "wins": 6,
+        "losses": 2,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 76,
+          "n": 304,
+          "b": 368,
+          "r": 556,
+          "q": 825,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 51,
+        "pawnForwardBonus": 38,
+        "touchdownBonus": 323,
+        "backRankPenalty": 75,
+        "openFilePenalty": 34,
+        "kingOpenPenalty": 68,
+        "kingThreatPenalty": 288,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 211,
+        "fitness": 11,
+        "wins": 2,
+        "losses": 8,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 74,
+          "n": 291,
+          "b": 247,
+          "r": 537,
+          "q": 1111,
+          "k": 10000
+        },
+        "centerBonusCols": 29,
+        "centerBonusRows": 23,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 323,
+        "backRankPenalty": 99,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 36,
+        "vsStandard": 2
+      },
+      "avgFitness": 27.375
+    },
+    {
+      "generation": 7,
+      "bestBot": {
+        "id": 245,
+        "fitness": 47,
+        "wins": 5,
+        "losses": 4,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 79,
+          "n": 350,
+          "b": 358,
+          "r": 556,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 20,
+        "pawnForwardBonus": 34,
+        "touchdownBonus": 310,
+        "backRankPenalty": 59,
+        "openFilePenalty": 34,
+        "kingOpenPenalty": 77,
+        "kingThreatPenalty": 288,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 252,
+        "fitness": 12,
+        "wins": 2,
+        "losses": 4,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 90,
+          "n": 279,
+          "b": 348,
+          "r": 556,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 20,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 310,
+        "backRankPenalty": 24,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 80,
+        "kingThreatPenalty": 36,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.225
+    },
+    {
+      "generation": 8,
+      "bestBot": {
+        "id": 282,
+        "fitness": 44,
+        "wins": 7,
+        "losses": 1,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 79,
+          "n": 241,
+          "b": 360,
+          "r": 537,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 19,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 211,
+        "backRankPenalty": 28,
+        "openFilePenalty": 32,
+        "kingOpenPenalty": 97,
+        "kingThreatPenalty": 280,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 294,
+        "fitness": 15,
+        "wins": 2,
+        "losses": 6,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 90,
+          "n": 239,
+          "b": 257,
+          "r": 571,
+          "q": 847,
+          "k": 10000
+        },
+        "centerBonusCols": 24,
+        "centerBonusRows": 43,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 323,
+        "backRankPenalty": 75,
+        "openFilePenalty": 20,
+        "kingOpenPenalty": 80,
+        "kingThreatPenalty": 286,
+        "vsStandard": 0
+      },
+      "avgFitness": 27.475
+    },
+    {
+      "generation": 9,
+      "bestBot": {
+        "id": 240,
+        "fitness": 46,
+        "wins": 8,
+        "losses": 2,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 77,
+          "n": 241,
+          "b": 398,
+          "r": 523,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 20,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 201,
+        "backRankPenalty": 43,
+        "openFilePenalty": 32,
+        "kingOpenPenalty": 97,
+        "kingThreatPenalty": 280,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 269,
+        "fitness": 14,
+        "wins": 3,
+        "losses": 4,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 60,
+          "n": 269,
+          "b": 356,
+          "r": 620,
+          "q": 1055,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 21,
+        "pawnForwardBonus": 16,
+        "touchdownBonus": 168,
+        "backRankPenalty": 75,
+        "openFilePenalty": 23,
+        "kingOpenPenalty": 3,
+        "kingThreatPenalty": 415,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.175
+    },
+    {
+      "generation": 10,
+      "bestBot": {
+        "id": 333,
+        "fitness": 48,
+        "wins": 5,
+        "losses": 4,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 90,
+          "n": 269,
+          "b": 404,
+          "r": 575,
+          "q": 829,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 11,
+        "touchdownBonus": 172,
+        "backRankPenalty": 103,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 333,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 373,
+        "fitness": 14,
+        "wins": 3,
+        "losses": 7,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 79,
+          "n": 298,
+          "b": 373,
+          "r": 461,
+          "q": 765,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 34,
+        "touchdownBonus": 201,
+        "backRankPenalty": 59,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 97,
+        "kingThreatPenalty": 280,
+        "vsStandard": 2
+      },
+      "avgFitness": 28.5
+    },
+    {
+      "generation": 11,
+      "bestBot": {
+        "id": 381,
+        "fitness": 42,
+        "wins": 8,
+        "losses": 2,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 70,
+          "n": 280,
+          "b": 308,
+          "r": 539,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 43,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 211,
+        "backRankPenalty": 54,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 97,
+        "kingThreatPenalty": 227,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 424,
+        "fitness": 14,
+        "wins": 3,
+        "losses": 5,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 60,
+          "n": 241,
+          "b": 220,
+          "r": 556,
+          "q": 993,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 323,
+        "backRankPenalty": 28,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 88,
+        "kingThreatPenalty": 335,
+        "vsStandard": 1
+      },
+      "avgFitness": 27.775
+    },
+    {
+      "generation": 12,
+      "bestBot": {
+        "id": 455,
+        "fitness": 45,
+        "wins": 6,
+        "losses": 3,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 82,
+          "n": 280,
+          "b": 308,
+          "r": 466,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 37,
+        "touchdownBonus": 211,
+        "backRankPenalty": 59,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 97,
+        "kingThreatPenalty": 256,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 464,
+        "fitness": 13,
+        "wins": 1,
+        "losses": 7,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 111,
+          "n": 239,
+          "b": 279,
+          "r": 534,
+          "q": 849,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 364,
+        "backRankPenalty": 75,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 259,
+        "vsStandard": 0
+      },
+      "avgFitness": 27.925
+    },
+    {
+      "generation": 13,
+      "bestBot": {
+        "id": 509,
+        "fitness": 49,
+        "wins": 6,
+        "losses": 4,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 90,
+          "n": 220,
+          "b": 308,
+          "r": 607,
+          "q": 807,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 48,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 311,
+        "backRankPenalty": 54,
+        "openFilePenalty": 20,
+        "kingOpenPenalty": 84,
+        "kingThreatPenalty": 335,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 501,
+        "fitness": 16,
+        "wins": 2,
+        "losses": 7,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 77,
+          "n": 294,
+          "b": 304,
+          "r": 650,
+          "q": 1053,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 10,
+        "touchdownBonus": 323,
+        "backRankPenalty": 65,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 88,
+        "kingThreatPenalty": 335,
+        "vsStandard": 0
+      },
+      "avgFitness": 27.525
+    },
+    {
+      "generation": 14,
+      "bestBot": {
+        "id": 497,
+        "fitness": 43,
+        "wins": 5,
+        "losses": 3,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 86,
+          "n": 323,
+          "b": 341,
+          "r": 568,
+          "q": 991,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 56,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 312,
+        "backRankPenalty": 59,
+        "openFilePenalty": 16,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 259,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 542,
+        "fitness": 13,
+        "wins": 2,
+        "losses": 3,
+        "draws": 7,
+        "pieceWeights": {
+          "p": 65,
+          "n": 291,
+          "b": 308,
+          "r": 539,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 21,
+        "pawnForwardBonus": 37,
+        "touchdownBonus": 211,
+        "backRankPenalty": 85,
+        "openFilePenalty": 20,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 227,
+        "vsStandard": 1
+      },
+      "avgFitness": 27.8
+    },
+    {
+      "generation": 15,
+      "bestBot": {
+        "id": 578,
+        "fitness": 42,
+        "wins": 7,
+        "losses": 3,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 86,
+          "n": 231,
+          "b": 346,
+          "r": 429,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 291,
+        "backRankPenalty": 54,
+        "openFilePenalty": 20,
+        "kingOpenPenalty": 97,
+        "kingThreatPenalty": 233,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 566,
+        "fitness": 10,
+        "wins": 2,
+        "losses": 6,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 77,
+          "n": 280,
+          "b": 250,
+          "r": 529,
+          "q": 993,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 10,
+        "touchdownBonus": 281,
+        "backRankPenalty": 65,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 87,
+        "kingThreatPenalty": 256,
+        "vsStandard": 1
+      },
+      "avgFitness": 27.6
+    },
+    {
+      "generation": 16,
+      "bestBot": {
+        "id": 601,
+        "fitness": 42,
+        "wins": 7,
+        "losses": 4,
+        "draws": 1,
+        "pieceWeights": {
+          "p": 79,
+          "n": 323,
+          "b": 420,
+          "r": 539,
+          "q": 1114,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 49,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 323,
+        "backRankPenalty": 41,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 83,
+        "kingThreatPenalty": 227,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 617,
+        "fitness": 14,
+        "wins": 3,
+        "losses": 4,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 63,
+          "n": 296,
+          "b": 325,
+          "r": 539,
+          "q": 1114,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 312,
+        "backRankPenalty": 54,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 97,
+        "kingThreatPenalty": 305,
+        "vsStandard": 2
+      },
+      "avgFitness": 29.05
+    },
+    {
+      "generation": 17,
+      "bestBot": {
+        "id": 651,
+        "fitness": 44,
+        "wins": 5,
+        "losses": 5,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 89,
+          "n": 220,
+          "b": 341,
+          "r": 493,
+          "q": 1114,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 312,
+        "backRankPenalty": 61,
+        "openFilePenalty": 14,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 657,
+        "fitness": 15,
+        "wins": 2,
+        "losses": 6,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 68,
+          "n": 294,
+          "b": 420,
+          "r": 480,
+          "q": 1110,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 21,
+        "pawnForwardBonus": 37,
+        "touchdownBonus": 181,
+        "backRankPenalty": 86,
+        "openFilePenalty": 10,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 1
+      },
+      "avgFitness": 27.875
+    },
+    {
+      "generation": 18,
+      "bestBot": {
+        "id": 644,
+        "fitness": 51,
+        "wins": 7,
+        "losses": 2,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 60,
+          "n": 296,
+          "b": 308,
+          "r": 539,
+          "q": 1122,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 39,
+        "touchdownBonus": 211,
+        "backRankPenalty": 89,
+        "openFilePenalty": 20,
+        "kingOpenPenalty": 91,
+        "kingThreatPenalty": 257,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 659,
+        "fitness": 15,
+        "wins": 3,
+        "losses": 4,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 60,
+          "n": 294,
+          "b": 308,
+          "r": 617,
+          "q": 1122,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 45,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 211,
+        "backRankPenalty": 86,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 303,
+        "vsStandard": 2
+      },
+      "avgFitness": 28.5
+    },
+    {
+      "generation": 19,
+      "bestBot": {
+        "id": 729,
+        "fitness": 44,
+        "wins": 4,
+        "losses": 3,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 86,
+          "n": 294,
+          "b": 341,
+          "r": 650,
+          "q": 903,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 60,
+        "pawnForwardBonus": 39,
+        "touchdownBonus": 195,
+        "backRankPenalty": 43,
+        "openFilePenalty": 16,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 176,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 748,
+        "fitness": 14,
+        "wins": 1,
+        "losses": 6,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 60,
+          "n": 259,
+          "b": 308,
+          "r": 539,
+          "q": 849,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 52,
+        "pawnForwardBonus": 39,
+        "touchdownBonus": 196,
+        "backRankPenalty": 89,
+        "openFilePenalty": 16,
+        "kingOpenPenalty": 91,
+        "kingThreatPenalty": 256,
+        "vsStandard": 0
+      },
+      "avgFitness": 28.575
+    },
+    {
+      "generation": 20,
+      "bestBot": {
+        "id": 772,
+        "fitness": 53,
+        "wins": 5,
+        "losses": 3,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 60,
+          "n": 275,
+          "b": 328,
+          "r": 645,
+          "q": 1048,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 34,
+        "pawnForwardBonus": 37,
+        "touchdownBonus": 361,
+        "backRankPenalty": 65,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 88,
+        "kingThreatPenalty": 333,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 785,
+        "fitness": 14,
+        "wins": 3,
+        "losses": 6,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 78,
+          "n": 375,
+          "b": 420,
+          "r": 493,
+          "q": 1065,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 53,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 306,
+        "backRankPenalty": 76,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 93,
+        "kingThreatPenalty": 277,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.9
+    },
+    {
+      "generation": 21,
+      "bestBot": {
+        "id": 808,
+        "fitness": 41,
+        "wins": 7,
+        "losses": 3,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 65,
+          "n": 318,
+          "b": 341,
+          "r": 539,
+          "q": 1065,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 49,
+        "pawnForwardBonus": 34,
+        "touchdownBonus": 306,
+        "backRankPenalty": 88,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 259,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 827,
+        "fitness": 16,
+        "wins": 4,
+        "losses": 5,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 103,
+          "n": 267,
+          "b": 331,
+          "r": 563,
+          "q": 903,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 39,
+        "touchdownBonus": 211,
+        "backRankPenalty": 41,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 289,
+        "vsStandard": 2
+      },
+      "avgFitness": 28.4
+    },
+    {
+      "generation": 22,
+      "bestBot": {
+        "id": 845,
+        "fitness": 44,
+        "wins": 5,
+        "losses": 1,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 90,
+          "n": 294,
+          "b": 308,
+          "r": 617,
+          "q": 903,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 32,
+        "touchdownBonus": 211,
+        "backRankPenalty": 65,
+        "openFilePenalty": 16,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 227,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 855,
+        "fitness": 9,
+        "wins": 0,
+        "losses": 6,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 89,
+          "n": 294,
+          "b": 308,
+          "r": 563,
+          "q": 942,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 284,
+        "backRankPenalty": 40,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 274,
+        "vsStandard": 0
+      },
+      "avgFitness": 28.325
+    },
+    {
+      "generation": 23,
+      "bestBot": {
+        "id": 764,
+        "fitness": 50,
+        "wins": 10,
+        "losses": 2,
+        "draws": 0,
+        "pieceWeights": {
+          "p": 90,
+          "n": 294,
+          "b": 331,
+          "r": 563,
+          "q": 1114,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 284,
+        "backRankPenalty": 40,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 909,
+        "fitness": 15,
+        "wins": 2,
+        "losses": 7,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 103,
+          "n": 318,
+          "b": 331,
+          "r": 563,
+          "q": 1114,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 310,
+        "backRankPenalty": 86,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 88,
+        "kingThreatPenalty": 344,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.675
+    },
+    {
+      "generation": 24,
+      "bestBot": {
+        "id": 845,
+        "fitness": 45,
+        "wins": 5,
+        "losses": 2,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 90,
+          "n": 294,
+          "b": 308,
+          "r": 617,
+          "q": 903,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 32,
+        "touchdownBonus": 211,
+        "backRankPenalty": 65,
+        "openFilePenalty": 16,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 227,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 948,
+        "fitness": 12,
+        "wins": 3,
+        "losses": 6,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 103,
+          "n": 318,
+          "b": 331,
+          "r": 457,
+          "q": 1100,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 56,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 284,
+        "backRankPenalty": 65,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 99,
+        "kingThreatPenalty": 334,
+        "vsStandard": 2
+      },
+      "avgFitness": 27.2
+    },
+    {
+      "generation": 25,
+      "bestBot": {
+        "id": 901,
+        "fitness": 50,
+        "wins": 6,
+        "losses": 5,
+        "draws": 1,
+        "pieceWeights": {
+          "p": 73,
+          "n": 267,
+          "b": 331,
+          "r": 617,
+          "q": 903,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 38,
+        "touchdownBonus": 284,
+        "backRankPenalty": 65,
+        "openFilePenalty": 13,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 980,
+        "fitness": 11,
+        "wins": 2,
+        "losses": 5,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 60,
+          "n": 227,
+          "b": 349,
+          "r": 553,
+          "q": 1114,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 48,
+        "pawnForwardBonus": 39,
+        "touchdownBonus": 271,
+        "backRankPenalty": 88,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 96,
+        "kingThreatPenalty": 259,
+        "vsStandard": 0
+      },
+      "avgFitness": 28.125
+    },
+    {
+      "generation": 26,
+      "bestBot": {
+        "id": 1028,
+        "fitness": 45,
+        "wins": 3,
+        "losses": 5,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 60,
+          "n": 241,
+          "b": 331,
+          "r": 563,
+          "q": 796,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 301,
+        "backRankPenalty": 65,
+        "openFilePenalty": 16,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 260,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 1010,
+        "fitness": 15,
+        "wins": 3,
+        "losses": 5,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 90,
+          "n": 267,
+          "b": 331,
+          "r": 539,
+          "q": 903,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 58,
+        "pawnForwardBonus": 35,
+        "touchdownBonus": 219,
+        "backRankPenalty": 55,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 334,
+        "vsStandard": 2
+      },
+      "avgFitness": 27.325
+    },
+    {
+      "generation": 27,
+      "bestBot": {
+        "id": 1047,
+        "fitness": 48,
+        "wins": 5,
+        "losses": 4,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 81,
+          "n": 267,
+          "b": 328,
+          "r": 503,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 439,
+        "backRankPenalty": 40,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 260,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 1067,
+        "fitness": 16,
+        "wins": 3,
+        "losses": 2,
+        "draws": 7,
+        "pieceWeights": {
+          "p": 83,
+          "n": 281,
+          "b": 225,
+          "r": 499,
+          "q": 796,
+          "k": 10000
+        },
+        "centerBonusCols": 7,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 38,
+        "touchdownBonus": 284,
+        "backRankPenalty": 99,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 85,
+        "kingThreatPenalty": 227,
+        "vsStandard": 0
+      },
+      "avgFitness": 28.025
+    },
+    {
+      "generation": 28,
+      "bestBot": {
+        "id": 1099,
+        "fitness": 52,
+        "wins": 10,
+        "losses": 0,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 90,
+          "n": 284,
+          "b": 331,
+          "r": 650,
+          "q": 844,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 59,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 284,
+        "backRankPenalty": 39,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 250,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 1082,
+        "fitness": 13,
+        "wins": 2,
+        "losses": 4,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 87,
+          "n": 251,
+          "b": 328,
+          "r": 569,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 34,
+        "touchdownBonus": 429,
+        "backRankPenalty": 65,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 259,
+        "vsStandard": 2
+      },
+      "avgFitness": 28.525
+    },
+    {
+      "generation": 29,
+      "bestBot": {
+        "id": 1131,
+        "fitness": 44,
+        "wins": 7,
+        "losses": 3,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 86,
+          "n": 228,
+          "b": 353,
+          "r": 650,
+          "q": 1048,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 284,
+        "backRankPenalty": 95,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 260,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 1142,
+        "fitness": 18,
+        "wins": 3,
+        "losses": 4,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 75,
+          "n": 252,
+          "b": 331,
+          "r": 553,
+          "q": 1048,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 54,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 385,
+        "backRankPenalty": 40,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.575
+    },
+    {
+      "generation": 30,
+      "bestBot": {
+        "id": 1182,
+        "fitness": 55,
+        "wins": 6,
+        "losses": 4,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 75,
+          "n": 220,
+          "b": 341,
+          "r": 644,
+          "q": 1074,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 32,
+        "touchdownBonus": 429,
+        "backRankPenalty": 92,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 230,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 1189,
+        "fitness": 15,
+        "wins": 2,
+        "losses": 5,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 65,
+          "n": 267,
+          "b": 361,
+          "r": 650,
+          "q": 951,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 337,
+        "backRankPenalty": 40,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.125
+    },
+    {
+      "generation": 31,
+      "bestBot": {
+        "id": 1099,
+        "fitness": 46,
+        "wins": 6,
+        "losses": 2,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 90,
+          "n": 284,
+          "b": 331,
+          "r": 650,
+          "q": 844,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 59,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 284,
+        "backRankPenalty": 39,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 250,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 1223,
+        "fitness": 14,
+        "wins": 2,
+        "losses": 3,
+        "draws": 7,
+        "pieceWeights": {
+          "p": 84,
+          "n": 296,
+          "b": 270,
+          "r": 563,
+          "q": 916,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 198,
+        "backRankPenalty": 40,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 230,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.025
+    },
+    {
+      "generation": 32,
+      "bestBot": {
+        "id": 1243,
+        "fitness": 53,
+        "wins": 6,
+        "losses": 3,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 81,
+          "n": 267,
+          "b": 328,
+          "r": 650,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 49,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 328,
+        "backRankPenalty": 71,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 211,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1255,
+        "fitness": 13,
+        "wins": 3,
+        "losses": 5,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 75,
+          "n": 310,
+          "b": 331,
+          "r": 645,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 429,
+        "backRankPenalty": 65,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 81,
+        "kingThreatPenalty": 256,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.125
+    },
+    {
+      "generation": 33,
+      "bestBot": {
+        "id": 1304,
+        "fitness": 47,
+        "wins": 7,
+        "losses": 1,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 92,
+          "n": 267,
+          "b": 328,
+          "r": 473,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 35,
+        "touchdownBonus": 284,
+        "backRankPenalty": 65,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 249,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1286,
+        "fitness": 16,
+        "wins": 3,
+        "losses": 5,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 79,
+          "n": 317,
+          "b": 331,
+          "r": 650,
+          "q": 1068,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 49,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 416,
+        "backRankPenalty": 40,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.425
+    },
+    {
+      "generation": 34,
+      "bestBot": {
+        "id": 1327,
+        "fitness": 51,
+        "wins": 8,
+        "losses": 2,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 98,
+          "n": 220,
+          "b": 344,
+          "r": 563,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 49,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 450,
+        "backRankPenalty": 71,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 1339,
+        "fitness": 14,
+        "wins": 1,
+        "losses": 7,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 87,
+          "n": 284,
+          "b": 276,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 60,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 193,
+        "backRankPenalty": 61,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 90,
+        "kingThreatPenalty": 231,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.5
+    },
+    {
+      "generation": 35,
+      "bestBot": {
+        "id": 1376,
+        "fitness": 42,
+        "wins": 9,
+        "losses": 0,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 92,
+          "n": 267,
+          "b": 328,
+          "r": 473,
+          "q": 1133,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 35,
+        "touchdownBonus": 193,
+        "backRankPenalty": 72,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 1328,
+        "fitness": 11,
+        "wins": 2,
+        "losses": 6,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 81,
+          "n": 241,
+          "b": 356,
+          "r": 645,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 49,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 328,
+        "backRankPenalty": 40,
+        "openFilePenalty": 3,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 243,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.15
+    },
+    {
+      "generation": 36,
+      "bestBot": {
+        "id": 1384,
+        "fitness": 43,
+        "wins": 5,
+        "losses": 4,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 98,
+          "n": 236,
+          "b": 389,
+          "r": 645,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 40,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 429,
+        "backRankPenalty": 44,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1381,
+        "fitness": 18,
+        "wins": 3,
+        "losses": 2,
+        "draws": 7,
+        "pieceWeights": {
+          "p": 82,
+          "n": 242,
+          "b": 328,
+          "r": 645,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 29,
+        "touchdownBonus": 430,
+        "backRankPenalty": 65,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 0
+      },
+      "avgFitness": 28
+    },
+    {
+      "generation": 37,
+      "bestBot": {
+        "id": 1422,
+        "fitness": 56,
+        "wins": 6,
+        "losses": 4,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 98,
+          "n": 245,
+          "b": 328,
+          "r": 645,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 450,
+        "backRankPenalty": 65,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 241,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1453,
+        "fitness": 12,
+        "wins": 2,
+        "losses": 4,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 89,
+          "n": 220,
+          "b": 328,
+          "r": 559,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 8,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 35,
+        "touchdownBonus": 450,
+        "backRankPenalty": 53,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 84,
+        "kingThreatPenalty": 256,
+        "vsStandard": 2
+      },
+      "avgFitness": 28.875
+    },
+    {
+      "generation": 38,
+      "bestBot": {
+        "id": 1402,
+        "fitness": 43,
+        "wins": 3,
+        "losses": 4,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 99,
+          "n": 278,
+          "b": 331,
+          "r": 645,
+          "q": 930,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 33,
+        "touchdownBonus": 429,
+        "backRankPenalty": 40,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 94,
+        "kingThreatPenalty": 249,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 1492,
+        "fitness": 17,
+        "wins": 1,
+        "losses": 7,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 94,
+          "n": 267,
+          "b": 285,
+          "r": 495,
+          "q": 1059,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 33,
+        "touchdownBonus": 399,
+        "backRankPenalty": 38,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.075
+    },
+    {
+      "generation": 39,
+      "bestBot": {
+        "id": 1509,
+        "fitness": 47,
+        "wins": 8,
+        "losses": 1,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 81,
+          "n": 245,
+          "b": 371,
+          "r": 645,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 450,
+        "backRankPenalty": 44,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 241,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 1548,
+        "fitness": 13,
+        "wins": 2,
+        "losses": 7,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 81,
+          "n": 245,
+          "b": 371,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 53,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 450,
+        "backRankPenalty": 44,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 229,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.825
+    },
+    {
+      "generation": 40,
+      "bestBot": {
+        "id": 1577,
+        "fitness": 41,
+        "wins": 6,
+        "losses": 2,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 116,
+          "n": 304,
+          "b": 331,
+          "r": 630,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 37,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 295,
+        "backRankPenalty": 44,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 256,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 1561,
+        "fitness": 16,
+        "wins": 4,
+        "losses": 4,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 110,
+          "n": 333,
+          "b": 325,
+          "r": 650,
+          "q": 930,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 37,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 241,
+        "backRankPenalty": 35,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 81,
+        "kingThreatPenalty": 211,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.15
+    },
+    {
+      "generation": 41,
+      "bestBot": {
+        "id": 1589,
+        "fitness": 45,
+        "wins": 7,
+        "losses": 3,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 103,
+          "n": 234,
+          "b": 371,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 33,
+        "touchdownBonus": 193,
+        "backRankPenalty": 53,
+        "openFilePenalty": 14,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 238,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 1608,
+        "fitness": 9,
+        "wins": 2,
+        "losses": 7,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 97,
+          "n": 267,
+          "b": 328,
+          "r": 559,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 268,
+        "backRankPenalty": 84,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 95,
+        "kingThreatPenalty": 241,
+        "vsStandard": 1
+      },
+      "avgFitness": 27.525
+    },
+    {
+      "generation": 42,
+      "bestBot": {
+        "id": 1666,
+        "fitness": 46,
+        "wins": 5,
+        "losses": 6,
+        "draws": 1,
+        "pieceWeights": {
+          "p": 104,
+          "n": 267,
+          "b": 371,
+          "r": 559,
+          "q": 930,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 33,
+        "pawnForwardBonus": 39,
+        "touchdownBonus": 316,
+        "backRankPenalty": 84,
+        "openFilePenalty": 16,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 251,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1662,
+        "fitness": 13,
+        "wins": 3,
+        "losses": 7,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 125,
+          "n": 234,
+          "b": 264,
+          "r": 641,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 33,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 395,
+        "backRankPenalty": 84,
+        "openFilePenalty": 14,
+        "kingOpenPenalty": 89,
+        "kingThreatPenalty": 241,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.975
+    },
+    {
+      "generation": 43,
+      "bestBot": {
+        "id": 1665,
+        "fitness": 48,
+        "wins": 9,
+        "losses": 1,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 93,
+          "n": 234,
+          "b": 353,
+          "r": 457,
+          "q": 1047,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 37,
+        "pawnForwardBonus": 33,
+        "touchdownBonus": 290,
+        "backRankPenalty": 53,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 214,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 1693,
+        "fitness": 11,
+        "wins": 3,
+        "losses": 7,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 97,
+          "n": 304,
+          "b": 339,
+          "r": 559,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 6,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 40,
+        "touchdownBonus": 316,
+        "backRankPenalty": 44,
+        "openFilePenalty": 16,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 232,
+        "vsStandard": 2
+      },
+      "avgFitness": 28.5
+    },
+    {
+      "generation": 44,
+      "bestBot": {
+        "id": 1732,
+        "fitness": 45,
+        "wins": 6,
+        "losses": 1,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 99,
+          "n": 220,
+          "b": 310,
+          "r": 603,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 28,
+        "touchdownBonus": 193,
+        "backRankPenalty": 40,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 211,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1744,
+        "fitness": 17,
+        "wins": 3,
+        "losses": 5,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 99,
+          "n": 257,
+          "b": 367,
+          "r": 539,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 156,
+        "backRankPenalty": 44,
+        "openFilePenalty": 23,
+        "kingOpenPenalty": 88,
+        "kingThreatPenalty": 256,
+        "vsStandard": 3
+      },
+      "avgFitness": 28.025
+    },
+    {
+      "generation": 45,
+      "bestBot": {
+        "id": 1770,
+        "fitness": 46,
+        "wins": 8,
+        "losses": 0,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 103,
+          "n": 220,
+          "b": 349,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 34,
+        "touchdownBonus": 193,
+        "backRankPenalty": 44,
+        "openFilePenalty": 20,
+        "kingOpenPenalty": 83,
+        "kingThreatPenalty": 296,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1779,
+        "fitness": 13,
+        "wins": 3,
+        "losses": 5,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 112,
+          "n": 220,
+          "b": 353,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 36,
+        "touchdownBonus": 181,
+        "backRankPenalty": 73,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 226,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.725
+    },
+    {
+      "generation": 46,
+      "bestBot": {
+        "id": 1788,
+        "fitness": 46,
+        "wins": 7,
+        "losses": 1,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 103,
+          "n": 220,
+          "b": 360,
+          "r": 650,
+          "q": 1004,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 258,
+        "backRankPenalty": 42,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 296,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 1824,
+        "fitness": 15,
+        "wins": 4,
+        "losses": 5,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 71,
+          "n": 288,
+          "b": 360,
+          "r": 645,
+          "q": 972,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 37,
+        "pawnForwardBonus": 33,
+        "touchdownBonus": 258,
+        "backRankPenalty": 55,
+        "openFilePenalty": 27,
+        "kingOpenPenalty": 100,
+        "kingThreatPenalty": 319,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.175
+    },
+    {
+      "generation": 47,
+      "bestBot": {
+        "id": 1855,
+        "fitness": 48,
+        "wins": 9,
+        "losses": 1,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 85,
+          "n": 310,
+          "b": 320,
+          "r": 633,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 36,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 334,
+        "backRankPenalty": 34,
+        "openFilePenalty": 12,
+        "kingOpenPenalty": 96,
+        "kingThreatPenalty": 296,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 1822,
+        "fitness": 16,
+        "wins": 2,
+        "losses": 9,
+        "draws": 1,
+        "pieceWeights": {
+          "p": 103,
+          "n": 312,
+          "b": 322,
+          "r": 650,
+          "q": 919,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 33,
+        "touchdownBonus": 288,
+        "backRankPenalty": 53,
+        "openFilePenalty": 27,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 249,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.175
+    },
+    {
+      "generation": 48,
+      "bestBot": {
+        "id": 1894,
+        "fitness": 45,
+        "wins": 5,
+        "losses": 3,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 96,
+          "n": 234,
+          "b": 353,
+          "r": 649,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 271,
+        "backRankPenalty": 62,
+        "openFilePenalty": 18,
+        "kingOpenPenalty": 94,
+        "kingThreatPenalty": 256,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1901,
+        "fitness": 13,
+        "wins": 3,
+        "losses": 8,
+        "draws": 1,
+        "pieceWeights": {
+          "p": 99,
+          "n": 220,
+          "b": 350,
+          "r": 650,
+          "q": 889,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 228,
+        "backRankPenalty": 53,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 76,
+        "kingThreatPenalty": 248,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.45
+    },
+    {
+      "generation": 49,
+      "bestBot": {
+        "id": 1937,
+        "fitness": 48,
+        "wins": 7,
+        "losses": 1,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 110,
+          "n": 220,
+          "b": 350,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 2,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 300,
+        "backRankPenalty": 56,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 306,
+        "vsStandard": 4
+      },
+      "worstBot": {
+        "id": 1943,
+        "fitness": 15,
+        "wins": 2,
+        "losses": 4,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 69,
+          "n": 266,
+          "b": 353,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 294,
+        "backRankPenalty": 50,
+        "openFilePenalty": 15,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 339,
+        "vsStandard": 0
+      },
+      "avgFitness": 28.675
+    },
+    {
+      "generation": 50,
+      "bestBot": {
+        "id": 1982,
+        "fitness": 42,
+        "wins": 7,
+        "losses": 2,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 87,
+          "n": 220,
+          "b": 388,
+          "r": 649,
+          "q": 1114,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 273,
+        "backRankPenalty": 37,
+        "openFilePenalty": 28,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 374,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 1987,
+        "fitness": 15,
+        "wins": 3,
+        "losses": 3,
+        "draws": 6,
+        "pieceWeights": {
+          "p": 88,
+          "n": 220,
+          "b": 420,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 302,
+        "backRankPenalty": 52,
+        "openFilePenalty": 17,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 296,
+        "vsStandard": 2
+      },
+      "avgFitness": 29.2
+    },
+    {
+      "generation": 51,
+      "bestBot": {
+        "id": 2017,
+        "fitness": 44,
+        "wins": 4,
+        "losses": 1,
+        "draws": 7,
+        "pieceWeights": {
+          "p": 96,
+          "n": 220,
+          "b": 350,
+          "r": 650,
+          "q": 1004,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 41,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 300,
+        "backRankPenalty": 34,
+        "openFilePenalty": 14,
+        "kingOpenPenalty": 85,
+        "kingThreatPenalty": 347,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 2007,
+        "fitness": 15,
+        "wins": 3,
+        "losses": 6,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 85,
+          "n": 220,
+          "b": 388,
+          "r": 649,
+          "q": 1102,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 324,
+        "backRankPenalty": 50,
+        "openFilePenalty": 29,
+        "kingOpenPenalty": 94,
+        "kingThreatPenalty": 374,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.2
+    },
+    {
+      "generation": 52,
+      "bestBot": {
+        "id": 1986,
+        "fitness": 44,
+        "wins": 5,
+        "losses": 3,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 80,
+          "n": 228,
+          "b": 360,
+          "r": 615,
+          "q": 1080,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 42,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 308,
+        "backRankPenalty": 52,
+        "openFilePenalty": 27,
+        "kingOpenPenalty": 94,
+        "kingThreatPenalty": 328,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 2053,
+        "fitness": 17,
+        "wins": 2,
+        "losses": 6,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 112,
+          "n": 269,
+          "b": 398,
+          "r": 540,
+          "q": 1134,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 46,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 300,
+        "backRankPenalty": 58,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 364,
+        "vsStandard": 2
+      },
+      "avgFitness": 28.825
+    },
+    {
+      "generation": 53,
+      "bestBot": {
+        "id": 2067,
+        "fitness": 51,
+        "wins": 7,
+        "losses": 3,
+        "draws": 2,
+        "pieceWeights": {
+          "p": 90,
+          "n": 228,
+          "b": 317,
+          "r": 628,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 359,
+        "backRankPenalty": 58,
+        "openFilePenalty": 20,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 306,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 2089,
+        "fitness": 7,
+        "wins": 0,
+        "losses": 11,
+        "draws": 1,
+        "pieceWeights": {
+          "p": 79,
+          "n": 228,
+          "b": 420,
+          "r": 628,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 53,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 359,
+        "backRankPenalty": 37,
+        "openFilePenalty": 20,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 306,
+        "vsStandard": 0
+      },
+      "avgFitness": 28.1
+    },
+    {
+      "generation": 54,
+      "bestBot": {
+        "id": 2062,
+        "fitness": 44,
+        "wins": 5,
+        "losses": 4,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 117,
+          "n": 220,
+          "b": 350,
+          "r": 587,
+          "q": 1039,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 308,
+        "backRankPenalty": 37,
+        "openFilePenalty": 21,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 275,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 2148,
+        "fitness": 14,
+        "wins": 1,
+        "losses": 8,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 117,
+          "n": 228,
+          "b": 360,
+          "r": 650,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 308,
+        "backRankPenalty": 49,
+        "openFilePenalty": 19,
+        "kingOpenPenalty": 94,
+        "kingThreatPenalty": 328,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.775
+    },
+    {
+      "generation": 55,
+      "bestBot": {
+        "id": 2160,
+        "fitness": 41,
+        "wins": 6,
+        "losses": 2,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 85,
+          "n": 220,
+          "b": 350,
+          "r": 650,
+          "q": 1080,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 60,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 273,
+        "backRankPenalty": 47,
+        "openFilePenalty": 11,
+        "kingOpenPenalty": 85,
+        "kingThreatPenalty": 405,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 2188,
+        "fitness": 15,
+        "wins": 4,
+        "losses": 7,
+        "draws": 1,
+        "pieceWeights": {
+          "p": 96,
+          "n": 220,
+          "b": 340,
+          "r": 650,
+          "q": 1140,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 300,
+        "backRankPenalty": 34,
+        "openFilePenalty": 32,
+        "kingOpenPenalty": 75,
+        "kingThreatPenalty": 489,
+        "vsStandard": 3
+      },
+      "avgFitness": 28.75
+    },
+    {
+      "generation": 56,
+      "bestBot": {
+        "id": 2202,
+        "fitness": 44,
+        "wins": 7,
+        "losses": 4,
+        "draws": 1,
+        "pieceWeights": {
+          "p": 80,
+          "n": 220,
+          "b": 386,
+          "r": 587,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 48,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 332,
+        "backRankPenalty": 52,
+        "openFilePenalty": 12,
+        "kingOpenPenalty": 83,
+        "kingThreatPenalty": 347,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 2206,
+        "fitness": 16,
+        "wins": 3,
+        "losses": 6,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 84,
+          "n": 220,
+          "b": 350,
+          "r": 615,
+          "q": 1108,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 44,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 357,
+        "backRankPenalty": 27,
+        "openFilePenalty": 30,
+        "kingOpenPenalty": 85,
+        "kingThreatPenalty": 275,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.325
+    },
+    {
+      "generation": 57,
+      "bestBot": {
+        "id": 2248,
+        "fitness": 40,
+        "wins": 5,
+        "losses": 2,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 79,
+          "n": 242,
+          "b": 373,
+          "r": 650,
+          "q": 937,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 274,
+        "backRankPenalty": 34,
+        "openFilePenalty": 10,
+        "kingOpenPenalty": 68,
+        "kingThreatPenalty": 240,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 2243,
+        "fitness": 9,
+        "wins": 1,
+        "losses": 8,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 90,
+          "n": 228,
+          "b": 420,
+          "r": 514,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 262,
+        "backRankPenalty": 37,
+        "openFilePenalty": 12,
+        "kingOpenPenalty": 73,
+        "kingThreatPenalty": 393,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.525
+    },
+    {
+      "generation": 58,
+      "bestBot": {
+        "id": 2291,
+        "fitness": 46,
+        "wins": 7,
+        "losses": 2,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 77,
+          "n": 275,
+          "b": 310,
+          "r": 650,
+          "q": 937,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 274,
+        "backRankPenalty": 34,
+        "openFilePenalty": 9,
+        "kingOpenPenalty": 68,
+        "kingThreatPenalty": 284,
+        "vsStandard": 3
+      },
+      "worstBot": {
+        "id": 2294,
+        "fitness": 12,
+        "wins": 3,
+        "losses": 6,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 95,
+          "n": 220,
+          "b": 328,
+          "r": 572,
+          "q": 932,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 47,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 332,
+        "backRankPenalty": 56,
+        "openFilePenalty": 14,
+        "kingOpenPenalty": 83,
+        "kingThreatPenalty": 347,
+        "vsStandard": 1
+      },
+      "avgFitness": 28.275
+    },
+    {
+      "generation": 59,
+      "bestBot": {
+        "id": 2328,
+        "fitness": 44,
+        "wins": 6,
+        "losses": 1,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 85,
+          "n": 229,
+          "b": 342,
+          "r": 583,
+          "q": 1080,
+          "k": 10000
+        },
+        "centerBonusCols": 5,
+        "centerBonusRows": 50,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 273,
+        "backRankPenalty": 52,
+        "openFilePenalty": 28,
+        "kingOpenPenalty": 98,
+        "kingThreatPenalty": 363,
+        "vsStandard": 1
+      },
+      "worstBot": {
+        "id": 2324,
+        "fitness": 14,
+        "wins": 3,
+        "losses": 4,
+        "draws": 5,
+        "pieceWeights": {
+          "p": 80,
+          "n": 232,
+          "b": 409,
+          "r": 615,
+          "q": 1139,
+          "k": 10000
+        },
+        "centerBonusCols": 4,
+        "centerBonusRows": 43,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 428,
+        "backRankPenalty": 37,
+        "openFilePenalty": 11,
+        "kingOpenPenalty": 79,
+        "kingThreatPenalty": 347,
+        "vsStandard": 0
+      },
+      "avgFitness": 27.1
+    },
+    {
+      "generation": 60,
+      "bestBot": {
+        "id": 2284,
+        "fitness": 46,
+        "wins": 7,
+        "losses": 1,
+        "draws": 4,
+        "pieceWeights": {
+          "p": 85,
+          "n": 243,
+          "b": 328,
+          "r": 615,
+          "q": 1150,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 60,
+        "pawnForwardBonus": 1,
+        "touchdownBonus": 273,
+        "backRankPenalty": 52,
+        "openFilePenalty": 34,
+        "kingOpenPenalty": 94,
+        "kingThreatPenalty": 405,
+        "vsStandard": 2
+      },
+      "worstBot": {
+        "id": 2364,
+        "fitness": 10,
+        "wins": 2,
+        "losses": 7,
+        "draws": 3,
+        "pieceWeights": {
+          "p": 85,
+          "n": 229,
+          "b": 351,
+          "r": 637,
+          "q": 937,
+          "k": 10000
+        },
+        "centerBonusCols": 3,
+        "centerBonusRows": 60,
+        "pawnForwardBonus": 0,
+        "touchdownBonus": 300,
+        "backRankPenalty": 37,
+        "openFilePenalty": 34,
+        "kingOpenPenalty": 62,
+        "kingThreatPenalty": 348,
+        "vsStandard": 0
+      },
+      "avgFitness": 27.875
+    }
+  ],
+  "validation": {
+    "depth": 4,
+    "vsStandard": {
+      "games": 400,
+      "wins": 211,
+      "draws": 102,
+      "losses": 87
+    },
+    "vsRandomArmies": {
+      "games": 200,
+      "wins": 137,
+      "draws": 21,
+      "losses": 42
+    },
+    "sameArmiesComparison": {
+      "depth": 4,
+      "games": 210,
+      "seeds": "500-514",
+      "trained": {
+        "wins": 128,
+        "draws": 42,
+        "losses": 40,
+        "score": "71.0%"
+      },
+      "standard": {
+        "wins": 96,
+        "draws": 52,
+        "losses": 62,
+        "score": "58.1%"
+      }
+    }
+  }
 }
