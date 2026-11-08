@@ -133,3 +133,86 @@ test('cards are tried in random order; one that does not apply is skipped', () =
     // Revive does not apply (no captured pawn), so the next card is cast.
     assert.equal(cast(s, [9, 20]).cardId, 20);
 });
+
+// The search bot: spells tried on copies of the game, then the replies searched.
+
+const noCards = { white: [], black: [] };
+const P = (depth = 2, extra = {}) => ({ ...Bot.DEFAULT_PROFILE, depth, ...extra });
+const fixed = () => 0.5;
+
+test('search: takes a hanging queen, and takes the king when it can', () => {
+    const s = game({ '0,4': 'k', '7,4': 'K', '4,4': 'Q', '1,4': 'r', '6,0': 'P' });
+    const plan = Bot.chooseTurn(s, 'black', noCards, P(), fixed);
+    assert.deepEqual(plan.move, { from: { r: 1, c: 4 }, to: { r: 4, c: 4 } });
+    const k = game({ '0,4': 'k', '7,4': 'K', '7,0': 'r', '0,0': 'Q' });
+    const win = Bot.chooseTurn(k, 'black', noCards, P(), fixed);
+    assert.deepEqual(win.move.to, { r: 7, c: 4 });
+    assert.ok(win.value >= Bot.WIN);
+});
+
+test('search: casts Sniper only when it wins material no move can', () => {
+    // The queen is on the bishop's diagonal but defended: taking it with the bishop loses
+    // the bishop; sniping it costs nothing on the board.
+    const s = game({ '0,4': 'k', '7,4': 'K', '4,4': 'Q', '2,2': 'b', '5,5': 'P', '6,0': 'P' });
+    const plan = Bot.chooseTurn(s, 'black', { white: [], black: [7] }, P(), fixed);
+    assert.deepEqual(plan.spell, { cardId: 7, targets: [{ r: 2, c: 2 }, { r: 4, c: 4 }] });
+    // A pawn is not worth the card (Sniper is valued 250).
+    const pawn = game({ '0,4': 'k', '7,4': 'K', '4,4': 'P', '2,2': 'b', '5,5': 'P', '6,0': 'P' });
+    assert.equal(Bot.chooseTurn(pawn, 'black', { white: [], black: [7] }, P(), fixed).spell, null);
+});
+
+test('search: a quiet position keeps its cards', () => {
+    const s = G.newGame();
+    s.turn = 'white';
+    const plan = Bot.chooseTurn(s, 'white', { white: [8, 16, 4], black: [] }, P(), fixed);
+    assert.equal(plan.spell, null);
+    assert.ok(plan.move);
+});
+
+test('search: Assassin, once active, picks the most valuable victim', () => {
+    // The pawn steps between the queen and the knight, then takes the queen.
+    const t = game({ '0,4': 'k', '7,4': 'K', '4,1': 'q', '4,3': 'n', '6,2': 'P' }, 'white');
+    t.assassinActive = true;
+    const best = Bot.bestMove(t, 'white', noCards, P(1), fixed);
+    assert.deepEqual(best.move, { from: { r: 6, c: 2 }, to: { r: 4, c: 2 } });
+    assert.deepEqual(best.kill, { r: 4, c: 1 });
+});
+
+test('search: the game given is left untouched', () => {
+    const s = game({ '0,4': 'k', '7,4': 'K', '4,4': 'Q', '2,2': 'b', '5,5': 'P', '6,0': 'P' });
+    const before = JSON.stringify(s);
+    Bot.chooseTurn(s, 'black', { white: [18], black: [7, 3, 10] }, P(), Math.random);
+    assert.equal(JSON.stringify(s), before);
+});
+
+test('search: the time limit is kept, and a move is still returned', () => {
+    const s = G.newGame();
+    const started = Date.now();
+    const plan = Bot.chooseTurn(s, 'white', { white: [6, 4, 17], black: [3, 7, 18] }, P(8), fixed, 100);
+    assert.ok(Date.now() - started < 1000);
+    assert.ok(plan.move || plan.spell);
+});
+
+test('evaluate: the start is even; cards in hand and pieces taken over by Domi Reversi count', () => {
+    const s = G.newGame();
+    assert.equal(Bot.evaluate(s, 'white', Bot.DEFAULT_PROFILE), 0);
+    assert.equal(Bot.evaluate(s, 'black', Bot.DEFAULT_PROFILE), 0);
+    const withCards = Bot.evaluate(s, 'white', Bot.DEFAULT_PROFILE, { white: [7], black: [] });
+    assert.equal(withCards, Bot.DEFAULT_PROFILE.cardValues[7]);
+    // A black rook taken over (now white) still counts for black.
+    const d = game({ '0,4': 'k', '7,4': 'K', '4,4': 'R' });
+    const plain = Bot.evaluate(d, 'black', Bot.DEFAULT_PROFILE);
+    d.domiReversiPiece = { r: 4, c: 4, originalColor: 'black', caster: 'white', activeTurn: false };
+    assert.ok(Bot.evaluate(d, 'black', Bot.DEFAULT_PROFILE) > plain + 900);
+});
+
+test('spellOptions: every legal target of each card, through the real rules', () => {
+    const s = game({ '0,4': 'k', '7,4': 'K', '4,4': 'Q', '2,2': 'b' });
+    const options = Bot.spellOptions(s, 'black', [7, 15, 20], fixed);
+    const by = (id) => options.filter((o) => o.cardId === id);
+    assert.equal(by(7).length, 1); // the bishop on the queen
+    assert.equal(by(15).length, 1); // freeze the queen (not the king)
+    assert.equal(by(20).length, 1); // Promotion: no target
+    assert.equal(by(20)[0].game.turn, 'black'); // a flag spell keeps the turn
+    assert.equal(by(7)[0].game.turn, 'white'); // Sniper ends it
+});

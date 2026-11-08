@@ -1,873 +1,379 @@
+// @ts-check
+// Genetic training of the Ches'spell campaign bot.
+//
+// A population of bot profiles (piece values, positional terms, threat of the
+// opponent's cards, and the value of each card kept in hand) plays full games with the
+// real rules (games/chesspell/game.js) and the very bot the page uses
+// (games/chesspell/bot.js). Decks are drawn at random (3 cards of 20) and the first
+// moves are random, so the games differ. Each bot meets other bots, the standard
+// profile and the original bot (heuristic spells), so it does not only learn to beat
+// copies of itself. Genes stay in sensible, ordered ranges.
+//
+// At the end the best profile is validated, at a deeper search, against the standard
+// profile and against the original bot, on the same games. Adopt the output
+// (games/chesspell/training_data.json, read by the game) only if it beats the standard
+// profile there.
+//
+// Usage: node tools/chesspell/train_spells.js [--generations 60] [--population 32]
+//          [--games 6] [--standardGames 2] [--legacyGames 2] [--depth 2]
+//          [--validationDepth 3] [--validation 300] [--workers N] [--seed 1] [--out path]
+//          [--from earlier-output.json]   (start from the best bot of an earlier run)
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const { Worker, isMainThread, parentPort } = require('worker_threads');
 
-const OUTPUT_PATH = path.join(__dirname, 'spell_heuristics.json');
-const rules = require('../../games/chesspell/rules.js');
+const Rules = require('../../games/chesspell/rules.js');
+const Game = require('../../games/chesspell/game.js');
+const Bot = require('../../games/chesspell/bot.js');
 
-// --- GAME CONSTANTS ---
-const ROWS = 8;
-const COLS = 8;
-const MAX_TURNS = 100;
+const MAX_PLIES = 160; // Then the game is decided on material (or drawn)
+const OPENING_PLIES = 4; // Random first moves, so that games differ
+const DECK_SIZE = 3;
+const SPELLS = Array.from({ length: 20 }, (_, i) => i + 1);
 
-// Genetic Algorithm Params
-const POPULATION_SIZE = 200;
-const GENERATIONS = 200;
-const MATCHES_PER_BOT = 150;
-const DEPTH = 2; // Depth 2 is enough for training spells
+/** Allowed range of each gene. */
+const BOUNDS = {
+    p: [70, 130], n: [250, 420], b: [250, 420], r: [400, 650], q: [750, 1150],
+    pstScale: [0, 2], pawnScale: [0, 2], kingScale: [0, 2], developmentScale: [0, 2],
+    adjacencyThreat: [0, 0.8], domiThreat: [0, 0.5],
+    card: [-50, 500],
+};
+const SCALE_GENES = ['pstScale', 'pawnScale', 'kingScale', 'developmentScale', 'adjacencyThreat', 'domiThreat'];
+const clamp = (key, v, round = true) => {
+    const x = Math.max(BOUNDS[key][0], Math.min(BOUNDS[key][1], v));
+    return round ? Math.round(x) : Math.round(x * 100) / 100;
+};
 
-const PIECE_VALUES = { 'p': 100, 'n': 320, 'b': 330, 'r': 500, 'q': 900, 'k': 20000, 'W': 0 };
-const SUPPORTED_SPELLS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+/** Keep a profile sensible: genes in range, queen > rook > minor pieces > pawn. */
+function normalize(profile) {
+    const w = profile.weights;
+    for (const k of ['p', 'n', 'b', 'r', 'q']) w[k] = clamp(k, w[k]);
+    w.p = Math.min(w.p, Math.min(w.n, w.b) - 100);
+    w.r = Math.max(w.r, Math.max(w.n, w.b) + 50);
+    w.q = Math.max(w.q, w.r + 200);
+    for (const k of SCALE_GENES) profile[k] = clamp(k, profile[k], false);
+    for (const id of SPELLS) profile.cardValues[id] = clamp('card', profile.cardValues[id]);
+    return profile;
+}
 
-// --- PSTs ---
-const pstPawn = [
-    [0, 0, 0, 0, 0, 0, 0, 0], // 0 (Black back rank)
-    [5, 10, 10, -20, -20, 10, 10, 5], // 1 (starting rank for Black pawns)
-    [5, -5, -10, 0, 0, -10, -5, 5], // 2 (rank 3)
-    [0, 0, 0, 20, 20, 0, 0, 0], // 3 (rank 4)
-    [5, 5, 10, 25, 25, 10, 5, 5], // 4 (rank 5)
-    [10, 10, 20, 30, 30, 20, 10, 10], // 5 (rank 6)
-    [50, 50, 50, 50, 50, 50, 50, 50], // 6 (rank 7)
-    [0, 0, 0, 0, 0, 0, 0, 0] // 7 (promotion rank for Black)
-];
-const pstKnight = [
-    [-50, -40, -30, -30, -30, -30, -40, -50],
-    [-40, -20, 0, 5, 5, 0, -20, -40],
-    [-30, 5, 10, 15, 15, 10, 5, -30],
-    [-30, 0, 15, 20, 20, 15, 0, -30],
-    [-30, 5, 15, 20, 20, 15, 5, -30],
-    [-30, 0, 10, 15, 15, 10, 0, -30],
-    [-40, -20, 0, 0, 0, 0, -20, -40],
-    [-50, -40, -30, -30, -30, -30, -40, -50]
-];
-const pstBishop = [
-    [-20, -10, -10, -10, -10, -10, -10, -20],
-    [-10, 5, 0, 0, 0, 0, 5, -10],
-    [-10, 10, 10, 10, 10, 10, 10, -10],
-    [-10, 0, 10, 10, 10, 10, 0, -10],
-    [-10, 5, 5, 10, 10, 5, 5, -10],
-    [-10, 0, 5, 10, 10, 5, 0, -10],
-    [-10, 0, 0, 0, 0, 0, 0, -10],
-    [-20, -10, -10, -10, -10, -10, -10, -20]
-];
-
-// --- GENETIC FUNCTIONS ---
-function generateRandomProfile(id) {
-    return {
-        id: id,
-        fitness: 0, wins: 0, losses: 0, draws: 0,
-        genes: {
-            meta: { patience: Math.random(), aggressiveness: Math.random(), desperation: Math.random() },
-            sniper: { earlyProb: Math.random(), lateProb: Math.random(), minVal: Math.floor(Math.random() * 1000) },
-            freeze: { prob: Math.random(), minVal: Math.floor(Math.random() * 1000) },
-            shield: { prob: Math.random(), minVal: Math.floor(Math.random() * 1000) },
-            sacrifice: { minVal: Math.floor(Math.random() * 1000), desperationProb: Math.random() },
-            ghost: { offensiveProb: Math.random(), defensiveProb: Math.random() },
-            leapFrog: { prob: Math.random() },
-            doubleTrouble: { earlyProb: Math.random(), lateProb: Math.random() },
-            tornado: { disruptionProb: Math.random() },
-            swap: { savePieceProb: Math.random(), attackProb: Math.random() },
-            revive: { prob: Math.random() },
-            cannibalism: { prob: Math.random() },
-            sidestep: { prob: Math.random() },
-            mirror: { prob: Math.random() },
-            trap: { prob: Math.random() },
-            teleport: { defensiveProb: Math.random(), offensiveProb: Math.random() },
-            assassin: { earlyProb: Math.random(), lateProb: Math.random() },
-            promotion: { prob: Math.random() },
-            domiReversi: { minValEarly: Math.floor(Math.random() * 1000), minValLate: Math.floor(Math.random() * 1000), urgencyProb: Math.random() },
-            kamikaze: { minValDiff: Math.floor(Math.random() * 1000) - 200, desperationMultiplier: 1 + Math.random() }
-        }
+/** Seeded random numbers (mulberry32), so a run can be reproduced. */
+function seededRandom(seed) {
+    let a = seed >>> 0;
+    return () => {
+        a = (a + 0x6D2B79F5) >>> 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
 }
 
-function mutate(val, key) {
-    if (Math.random() < 0.2) {
-        if (key.toLowerCase().includes('prob') || key.toLowerCase() === 'patience' || key.toLowerCase() === 'aggressiveness' || key.toLowerCase() === 'desperation') {
-            let change = (Math.random() * 0.2 - 0.1);
-            return Math.max(0, Math.min(1, val + change));
-        } else if (key.toLowerCase().includes('multiplier')) {
-            let change = (Math.random() * 0.4 - 0.2);
-            return Math.max(0, val + change);
-        } else {
-            let change = 1 + (Math.random() * 0.4 - 0.2);
-            return Math.floor(val * change);
+/** Cast a spell with game.js; false if it did not go through (the spell is dropped). */
+function castSpell(state, spell, random) {
+    const res = Game.activateSpell(state, spell.cardId);
+    if (res.status === 'instant') return true;
+    if (res.status !== 'targeting') return false;
+    for (const t of spell.targets) {
+        const click = Game.clickSquare(state, t.r, t.c, random);
+        if (click.status === 'done') {
+            if (click.endTurn) Game.endTurn(state);
+            Game.completeSpell(state);
+            return true;
         }
+        if (click.status !== 'next') break;
     }
-    return val;
+    Game.cancelSpell(state);
+    return false;
 }
 
-function crossover(p1, p2, newId) {
-    const child = generateRandomProfile(newId);
-
-    function traverse(obj1, obj2, targetObj) {
-        for (let k in targetObj) {
-            if (typeof targetObj[k] === 'object' && targetObj[k] !== null) {
-                traverse(obj1[k], obj2[k], targetObj[k]);
-            } else {
-                targetObj[k] = Math.random() < 0.5 ? obj1[k] : obj2[k];
-                targetObj[k] = mutate(targetObj[k], k);
-            }
-        }
+/** Play a move with game.js, Assassin's victim included; the turn ends as in the page. */
+function playMove(state, plan) {
+    const { from, to } = plan.move;
+    const result = Game.move(state, from.r, from.c, to.r, to.c);
+    if (result === 'reverted') return; // The player moves again (as in the page)
+    if (result === 'assassin_kill') {
+        const kill = plan.kill || state.assassinTargets[0];
+        Game.clickSquare(state, kill.r, kill.c);
     }
-
-    traverse(p1.genes, p2.genes, child.genes);
-    return child;
+    Game.endTurn(state);
 }
 
-// --- HEADLESS ENGINE ---
-class HeadlessChesspell {
-    constructor(p1Profile, p2Profile) {
-        this.profiles = { 'white': p1Profile, 'black': p2Profile };
-        this.board = [
-            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            [null, null, null, null, null, null, null, null],
-            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-        ];
-
-        this.decks = {
-            'white': this.getRandomDeck(),
-            'black': this.getRandomDeck()
-        };
-
-        this.turn = 'white';
-        this.turnCount = 0;
-        this.frozenPieces = []; // {r, c, duration}
-        this.shieldedPieces = []; // {r, c, duration}
-        this.traps = []; // {r, c, owner}
-
-        // Active spells
-        this.ghostActive = false;
-        this.leapFrogActive = false;
-        this.assassinActive = false;
-        this.promotionActive = false;
-        this.doubleTroubleState = { active: false, movesLeft: 0, player: null };
-        this.capturedByWhite = [];
-        this.capturedByBlack = [];
-        this.lastPlayedCardId = null;
-    }
-
-    getRandomDeck() {
-        let deck = [];
-        for (let i = 0; i < 3; i++) {
-            deck.push(SUPPORTED_SPELLS[Math.floor(Math.random() * SUPPORTED_SPELLS.length)]);
-        }
-        return deck;
-    }
-
-    getColor(p) {
-        return rules.getColor(p);
-    }
-
-    getValidMoves(r, c) {
-        // Same rules as the game; the trainer instance is the rules state.
-        return rules.getValidMoves(this, r, c);
-    }
-
-    getAllMoves(playerColor) {
-        let allMoves = [];
-        const deck = this.decks[playerColor] || [];
-        const hasLeapFrog = deck.includes(12);
-        const hasSniper = deck.includes(7);
-        const hasTeleport = deck.includes(17);
-
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                if (this.getColor(this.board[r][c]) === playerColor) {
-                    let moves = this.getValidMoves(r, c);
-
-                    if (hasLeapFrog) {
-                        const jumps = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
-                        jumps.forEach(j => {
-                            let nr = r + j[0], nc = c + j[1];
-                            if (nr >= 0 && nr <= 7 && nc >= 0 && nc <= 7) {
-                                const tgt = this.board[nr][nc];
-                                if (!tgt || (this.getColor(tgt) !== playerColor && tgt !== 'W')) {
-                                    if (!moves.some(m => m.r === nr && m.c === nc)) {
-                                        moves.push({ r: nr, c: nc, capture: !!tgt });
-                                    }
-                                }
-                            }
-                        });
-                    }
-                    if (hasTeleport) {
-                        const backRank = playerColor === 'white' ? 7 : 0;
-                        for (let tc = 0; tc < 8; tc++) {
-                            if (!this.board[backRank][tc]) {
-                                if (!moves.some(m => m.r === backRank && m.c === tc)) {
-                                    moves.push({ r: backRank, c: tc, capture: false });
-                                }
-                            }
-                        }
-                    }
-                    if (hasSniper && this.board[r][c].toLowerCase() === 'b') {
-                        const dirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
-                        dirs.forEach(d => {
-                            let nr = r + d[0], nc = c + d[1];
-                            while (nr >= 0 && nr <= 7 && nc >= 0 && nc <= 7) {
-                                const tgt = this.board[nr][nc];
-                                if (tgt && tgt !== 'W') {
-                                    if (this.getColor(tgt) !== playerColor && tgt.toLowerCase() !== 'k') {
-                                        moves.push({ r: nr, c: nc, capture: true, isSniper: true });
-                                    }
-                                    break;
-                                }
-                                nr += d[0]; nc += d[1];
-                            }
-                        });
-                    }
-
-                    moves.forEach(m => allMoves.push({ from: { r, c }, to: m, isSniper: m.isSniper }));
-                }
+/** Any legal move of the player to move (for the random opening). */
+function randomMove(state, random) {
+    const moves = [];
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const p = state.board[r][c];
+            if (p && p !== 'W' && Rules.getColor(p) === state.turn) {
+                for (const m of Rules.getValidMoves(state, r, c)) moves.push({ from: { r, c }, to: { r: m.r, c: m.c } });
             }
-        }
-        return allMoves;
-    }
-
-    evaluateBoard(forPlayer) {
-        let score = 0;
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const p = this.board[r][c];
-                if (p && p !== 'W') {
-                    const color = this.getColor(p);
-                    const type = p.toLowerCase();
-                    let val = PIECE_VALUES[type] || 0;
-
-                    let pstBonus = 0;
-                    const pstRow = color === 'black' ? r : 7 - r;
-                    if (type === 'p') pstBonus = pstPawn[pstRow][c];
-                    else if (type === 'n') pstBonus = pstKnight[pstRow][c];
-                    else if (type === 'b') pstBonus = pstBishop[pstRow][c];
-                    else if (type !== 'k') {
-                        if (c >= 3 && c <= 4 && r >= 3 && r <= 4) pstBonus = 10;
-                    }
-                    val += pstBonus;
-
-                    if (color === forPlayer) {
-                        score += val;
-                    } else {
-                        score -= val;
-                    }
-                }
-            }
-        }
-
-        const oppColor = forPlayer === 'white' ? 'black' : 'white';
-        const oppDeck = this.decks[oppColor] || [];
-        const oppHasAssassin = oppDeck.includes(19);
-        const oppHasKamikaze = oppDeck.includes(18);
-        const oppHasDomi = oppDeck.includes(3);
-
-        if (oppHasAssassin || oppHasKamikaze || oppHasDomi) {
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
-                    const p = this.board[r][c];
-                    if (p && p !== 'W' && this.getColor(p) === forPlayer && p.toLowerCase() !== 'k') {
-                        let val = PIECE_VALUES[p.toLowerCase()] || 0;
-
-                        if (oppHasAssassin || oppHasKamikaze) {
-                            let adjEnemy = false;
-                            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
-                            for (let d of dirs) {
-                                let nr = r + d[0], nc = c + d[1];
-                                if (nr >= 0 && nr <= 7 && nc >= 0 && nc <= 7) {
-                                    const tgt = this.board[nr][nc];
-                                    if (tgt && this.getColor(tgt) === oppColor && tgt.toLowerCase() !== 'k') {
-                                        adjEnemy = true; break;
-                                    }
-                                }
-                            }
-                            if (adjEnemy) {
-                                score -= (val * 0.8);
-                            }
-                        }
-
-                        if (oppHasDomi) {
-                            if (val >= 500) {
-                                score -= (val * 0.3);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return score;
-    }
-
-    makeVirtualMove(move) {
-        const targetPiece = this.board[move.to.r][move.to.c];
-        const movingPiece = this.board[move.from.r][move.from.c];
-        let pieceToPlace = movingPiece;
-
-        // Auto Queen promotion (or Spell promotion)
-        if (this.promotionActive && targetPiece) {
-            pieceToPlace = this.getColor(movingPiece) === 'white' ? targetPiece.toUpperCase() : targetPiece.toLowerCase();
-        } else if (movingPiece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7)) {
-            pieceToPlace = this.getColor(movingPiece) === 'white' ? 'Q' : 'q';
-        }
-
-        if (move.isSniper) {
-            this.board[move.to.r][move.to.c] = null;
-        } else {
-            this.board[move.to.r][move.to.c] = pieceToPlace;
-            this.board[move.from.r][move.from.c] = null;
-        }
-
-        // Trap logic
-        const trapIndex = this.traps.findIndex(t => t.r === move.to.r && t.c === move.to.c && t.owner !== this.getColor(this.board[move.to.r][move.to.c]));
-        if (trapIndex !== -1) {
-            if (this.board[move.to.r][move.to.c] && this.board[move.to.r][move.to.c].toLowerCase() !== 'k') {
-                this.board[move.to.r][move.to.c] = null;
-            }
-            this.traps.splice(trapIndex, 1);
-        }
-
-        return { targetPiece, origPiece: movingPiece };
-    }
-
-    undoVirtualMove(move, targetInfo) {
-        if (move.isSniper) {
-            this.board[move.to.r][move.to.c] = targetInfo.targetPiece;
-        } else {
-            this.board[move.from.r][move.from.c] = targetInfo.origPiece;
-            this.board[move.to.r][move.to.c] = targetInfo.targetPiece;
         }
     }
+    return moves.length ? { move: moves[Math.floor(random() * moves.length)], kill: null } : null;
+}
 
-    minimax(depth, alpha, beta, isMaximizing, rootPlayer) {
-        let rootKing = false, oppKing = false;
-        for (let r = 0; r < 8; r++) {
-            for (let c = 0; c < 8; c++) {
-                const p = this.board[r][c];
-                if (p && p.toLowerCase() === 'k') {
-                    if (this.getColor(p) === rootPlayer) rootKing = true;
-                    else oppKing = true;
-                }
-            }
-        }
-        if (!rootKing) return -99999 - depth;
-        if (!oppKing) return 99999 + depth;
-
-        if (depth === 0) return this.evaluateBoard(rootPlayer);
-
-        const currentPlayer = isMaximizing ? rootPlayer : (rootPlayer === 'white' ? 'black' : 'white');
-        const moves = this.getAllMoves(currentPlayer);
-
-        if (moves.length === 0) return isMaximizing ? -99999 : 99999;
-
-        moves.sort((a, b) => {
-            const tA = this.board[a.to.r][a.to.c];
-            const tB = this.board[b.to.r][b.to.c];
-            const vA = tA ? (PIECE_VALUES[tA.toLowerCase()] || 0) : 0;
-            const vB = tB ? (PIECE_VALUES[tB.toLowerCase()] || 0) : 0;
-            return vB - vA;
-        });
-
-        if (isMaximizing) {
-            let maxEval = -Infinity;
-            for (let move of moves) {
-                const info = this.makeVirtualMove(move);
-                let ev = this.minimax(depth - 1, alpha, beta, false, rootPlayer);
-                this.undoVirtualMove(move, info);
-                maxEval = Math.max(maxEval, ev);
-                alpha = Math.max(alpha, ev);
-                if (beta <= alpha) break;
-            }
-            return maxEval;
-        } else {
-            let minEval = Infinity;
-            for (let move of moves) {
-                const info = this.makeVirtualMove(move);
-                let ev = this.minimax(depth - 1, alpha, beta, true, rootPlayer);
-                this.undoVirtualMove(move, info);
-                minEval = Math.min(minEval, ev);
-                beta = Math.min(beta, ev);
-                if (beta <= alpha) break;
-            }
-            return minEval;
+/** One turn of `me` with `profile`: maybe a spell, then a move (as js/app-bot.js does). */
+function playTurn(state, me, profile, decks, random) {
+    const cards = Bot.hands(state, decks)[me];
+    let plan;
+    if (profile.spells === 'heuristic') {
+        const spell = Bot.heuristicSpell(state, me, cards, Bot.LEGACY_GENES, random);
+        if (spell) castSpell(state, spell, random);
+        if (state.winner || state.turn !== me) return;
+        plan = Bot.bestMove(state, me, decks, profile, random);
+    } else {
+        plan = Bot.chooseTurn(state, me, decks, profile, random);
+        if (plan.spell) {
+            castSpell(state, plan.spell, random);
+            if (state.winner || state.turn !== me) return;
+            plan = Bot.bestMove(state, me, decks, profile, random);
         }
     }
+    if (plan.move) playMove(state, plan);
+    else Game.endTurn(state);
+}
 
-    tryUseSpell(playerColor) {
-        const deck = this.decks[playerColor];
-        if (deck.length === 0) return false;
-
-        const genes = this.profiles[playerColor].genes;
-
-        let emptySquares = 0;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (!this.board[r][c]) emptySquares++;
-        const isLateGame = emptySquares > 40;
-        const myScore = this.evaluateBoard(playerColor);
-        const oppColor = playerColor === 'white' ? 'black' : 'white';
-        const isDesperate = myScore < -300;
-        const isAggressive = Math.random() < genes.meta.aggressiveness;
-
-        if (Math.random() < genes.meta.patience && !isDesperate && !isLateGame) {
-            return false;
+/** Material balance for white (standard values), to decide unfinished games. */
+function material(state) {
+    let score = 0;
+    for (const row of state.board) {
+        for (const p of row) {
+            if (!p || p === 'W' || p.toLowerCase() === 'k') continue;
+            score += (Rules.getColor(p) === 'white' ? 1 : -1) * Bot.VALUES[p.toLowerCase()];
         }
-
-        deck.sort(() => Math.random() - 0.5);
-        let usedCardIdx = -1;
-        let endedTurn = false;
-
-        for (let i = 0; i < deck.length; i++) {
-            let cardId = deck[i];
-
-            if (cardId === 13) { // Mirror
-                if (this.lastPlayedCardId && Math.random() < genes.mirror.prob) {
-                    cardId = this.lastPlayedCardId;
-                } else {
-                    continue;
-                }
-            }
-
-            if (cardId === 7 || cardId === 15) { // Sniper(7) or Freeze(15)
-                const g = cardId === 7 ? genes.sniper : genes.freeze;
-                const prob = cardId === 7 ? (isLateGame ? g.lateProb : g.earlyProb) : g.prob;
-
-                if (Math.random() < prob) {
-                    let bestTarget = null, maxVal = -1;
-                    for (let r = 0; r < 8; r++) {
-                        for (let c = 0; c < 8; c++) {
-                            const p = this.board[r][c];
-                            if (p && this.getColor(p) !== playerColor && p !== 'W') {
-                                const val = PIECE_VALUES[p.toLowerCase()];
-                                if (val > maxVal) { maxVal = val; bestTarget = { r, c }; }
-                            }
-                        }
-                    }
-                    if (bestTarget && maxVal >= g.minVal) {
-                        if (cardId === 7) {
-                            let bishop = null;
-                            for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (this.board[r][c] && this.board[r][c].toLowerCase() === 'b' && this.getColor(this.board[r][c]) === playerColor) bishop = { r, c };
-                            if (bishop) {
-                                this.board[bestTarget.r][bestTarget.c] = null;
-                                endedTurn = true; usedCardIdx = i; break;
-                            }
-                        } else {
-                            this.frozenPieces.push({ r: bestTarget.r, c: bestTarget.c, duration: 2 });
-                            usedCardIdx = i; break;
-                        }
-                    }
-                }
-            }
-            else if (cardId === 5) { // Ghost
-                const prob = isAggressive ? genes.ghost.offensiveProb : genes.ghost.defensiveProb;
-                if (Math.random() < prob) {
-                    this.ghostActive = true;
-                    usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 12) { // Leap Frog
-                if (Math.random() < genes.leapFrog.prob) {
-                    this.leapFrogActive = true;
-                    usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 2) { // Double Trouble
-                const prob = isLateGame ? genes.doubleTrouble.lateProb : genes.doubleTrouble.earlyProb;
-                if (Math.random() < prob) {
-                    this.doubleTroubleState = { active: true, player: playerColor, movesLeft: 2 };
-                    usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 19) { // Assassin
-                const prob = isLateGame ? genes.assassin.lateProb : genes.assassin.earlyProb;
-                if (Math.random() < prob) {
-                    this.assassinActive = true;
-                    usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 20) { // Promotion
-                if (Math.random() < genes.promotion.prob) {
-                    this.promotionActive = true;
-                    usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 8) { // Wall
-                const empties = [];
-                for (let r = 3; r <= 5; r++) for (let c = 0; c < 8; c++) if (!this.board[r][c]) empties.push({ r, c });
-                if (empties.length > 0) {
-                    let tgt = empties[Math.floor(Math.random() * empties.length)];
-                    this.board[tgt.r][tgt.c] = 'W';
-                    endedTurn = true; usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 16) { // Trap
-                if (Math.random() < genes.trap.prob) {
-                    const empties = [];
-                    for (let r = 2; r <= 6; r++) for (let c = 0; c < 8; c++) if (!this.board[r][c]) empties.push({ r, c });
-                    if (empties.length > 0) {
-                        let tgt = empties[Math.floor(Math.random() * empties.length)];
-                        this.traps.push({ r: tgt.r, c: tgt.c, owner: playerColor });
-                        endedTurn = true; usedCardIdx = i; break;
-                    }
-                }
-            }
-            else if (cardId === 11) { // Shield
-                let bestTarget = null, maxVal = -1;
-                for (let r = 0; r < 8; r++) {
-                    for (let c = 0; c < 8; c++) {
-                        const p = this.board[r][c];
-                        if (p && this.getColor(p) === playerColor) {
-                            const val = PIECE_VALUES[p.toLowerCase()];
-                            if (val > maxVal) { maxVal = val; bestTarget = { r, c }; }
-                        }
-                    }
-                }
-                if (bestTarget && maxVal >= genes.shield.minVal) {
-                    this.shieldedPieces.push({ r: bestTarget.r, c: bestTarget.c, duration: 2 });
-                    endedTurn = true; usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 1) { // Cannibalism
-                if (Math.random() < genes.cannibalism.prob) {
-                    let worstTarget = null, minVal = 99999;
-                    for (let r = 0; r < 8; r++) {
-                        for (let c = 0; c < 8; c++) {
-                            const p = this.board[r][c];
-                            if (p && this.getColor(p) === playerColor && p.toLowerCase() !== 'k') {
-                                const val = PIECE_VALUES[p.toLowerCase()];
-                                if (val < minVal) { minVal = val; worstTarget = { r, c }; }
-                            }
-                        }
-                    }
-                    if (worstTarget) {
-                        this.board[worstTarget.r][worstTarget.c] = null;
-                        endedTurn = true; usedCardIdx = i; break;
-                    }
-                }
-            }
-            else if (cardId === 14) { // Sacrifice
-                let worstTarget = null, minVal = 99999;
-                for (let r = 0; r < 8; r++) {
-                    for (let c = 0; c < 8; c++) {
-                        const p = this.board[r][c];
-                        if (p && this.getColor(p) === playerColor && p.toLowerCase() !== 'k' && p.toLowerCase() !== 'p') {
-                            const val = PIECE_VALUES[p.toLowerCase()];
-                            if (val < minVal) { minVal = val; worstTarget = { r, c }; }
-                        }
-                    }
-                }
-                let pawnTarget = null;
-                for (let r = 0; r < 8; r++) {
-                    for (let c = 0; c < 8; c++) {
-                        const p = this.board[r][c];
-                        if (p && this.getColor(p) === playerColor && p.toLowerCase() === 'p') {
-                            pawnTarget = { r, c }; break;
-                        }
-                    }
-                }
-                const threshold = isDesperate ? (genes.sacrifice.minVal * genes.sacrifice.desperationProb) : genes.sacrifice.minVal;
-                if (worstTarget && pawnTarget && minVal >= threshold) {
-                    this.board[pawnTarget.r][pawnTarget.c] = this.board[worstTarget.r][worstTarget.c];
-                    this.board[worstTarget.r][worstTarget.c] = null;
-                    usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 4) { // Sidestep
-                if (Math.random() < genes.sidestep.prob) {
-                    endedTurn = true; usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 6) { // Swap
-                const prob = isAggressive ? genes.swap.attackProb : genes.swap.savePieceProb;
-                if (Math.random() < prob) {
-                    endedTurn = true; usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 9) { // Revive
-                if (Math.random() < genes.revive.prob) {
-                    const row = playerColor === 'white' ? 6 : 1;
-                    let placed = false;
-                    for (let c = 0; c < 8; c++) {
-                        if (!this.board[row][c]) {
-                            this.board[row][c] = playerColor === 'white' ? 'P' : 'p';
-                            placed = true; break;
-                        }
-                    }
-                    if (placed) { endedTurn = true; usedCardIdx = i; break; }
-                }
-            }
-            else if (cardId === 10) { // Tornado
-                if (Math.random() < genes.tornado.disruptionProb) {
-                    endedTurn = true; usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 3) { // Domi Reversi
-                const prob = isDesperate ? (genes.domiReversi.urgencyProb * 2) : genes.domiReversi.urgencyProb;
-                if (Math.random() < prob) {
-                    let bestTarget = null, maxVal = -1;
-                    for (let r = 0; r < 8; r++) {
-                        for (let c = 0; c < 8; c++) {
-                            const p = this.board[r][c];
-                            if (p && this.getColor(p) !== playerColor && p.toLowerCase() !== 'k') {
-                                const original = this.board[r][c];
-                                this.board[r][c] = playerColor === 'white' ? original.toUpperCase() : original.toLowerCase();
-
-                                const oppMoves = this.getAllMoves(oppColor);
-                                const isCapturable = oppMoves.some(m => m.to.r === r && m.to.c === c);
-
-                                this.board[r][c] = original;
-
-                                if (!isCapturable) {
-                                    const val = PIECE_VALUES[p.toLowerCase()];
-                                    if (val > maxVal) { maxVal = val; bestTarget = { r, c }; }
-                                }
-                            }
-                        }
-                    }
-                    const threshold = isLateGame ? genes.domiReversi.minValLate : genes.domiReversi.minValEarly;
-                    if (bestTarget && maxVal >= threshold) {
-                        this.board[bestTarget.r][bestTarget.c] = playerColor === 'white' ? this.board[bestTarget.r][bestTarget.c].toUpperCase() : this.board[bestTarget.r][bestTarget.c].toLowerCase();
-                        endedTurn = true;
-                        usedCardIdx = i; break;
-                    }
-                }
-            }
-            else if (cardId === 18) { // Kamikaze
-                const threshold = isDesperate ? (genes.kamikaze.minValDiff * genes.kamikaze.desperationMultiplier) : genes.kamikaze.minValDiff;
-                // Wait, if we are desperate we want a LOWER threshold.
-                // So if desperationMultiplier is > 1, dividing by it lowers the threshold!
-                const actualThreshold = isDesperate ? (genes.kamikaze.minValDiff / genes.kamikaze.desperationMultiplier) : genes.kamikaze.minValDiff;
-
-                // For simplicity, let's just use a high prob if valid.
-                let bestTarget = null, bestScore = -9999;
-                for (let r = 0; r < 8; r++) {
-                    for (let c = 0; c < 8; c++) {
-                        const p = this.board[r][c];
-                        if (p && this.getColor(p) === playerColor && p.toLowerCase() !== 'k') {
-                            let myVal = PIECE_VALUES[p.toLowerCase()] || 0;
-                            let enemyValSum = 0;
-                            let friendlyValSum = myVal;
-                            for (let ii = r - 1; ii <= r + 1; ii++) {
-                                for (let jj = c - 1; jj <= c + 1; jj++) {
-                                    if (ii >= 0 && ii <= 7 && jj >= 0 && jj <= 7 && (ii !== r || jj !== c)) {
-                                        const tgt = this.board[ii][jj];
-                                        if (tgt && tgt !== 'W' && tgt.toLowerCase() !== 'k') {
-                                            const v = PIECE_VALUES[tgt.toLowerCase()] || 0;
-                                            if (this.getColor(tgt) !== playerColor) enemyValSum += v;
-                                            else friendlyValSum += v;
-                                        }
-                                    }
-                                }
-                            }
-                            const score = enemyValSum - friendlyValSum;
-                            if (score > actualThreshold && score > bestScore) {
-                                bestScore = score;
-                                bestTarget = { r, c };
-                            }
-                        }
-                    }
-                }
-                if (bestTarget) {
-                    for (let ii = bestTarget.r - 1; ii <= bestTarget.r + 1; ii++) {
-                        for (let jj = bestTarget.c - 1; jj <= bestTarget.c + 1; jj++) {
-                            if (ii >= 0 && ii <= 7 && jj >= 0 && jj <= 7) {
-                                const tgt = this.board[ii][jj];
-                                if (tgt && tgt !== 'W' && tgt.toLowerCase() !== 'k') {
-                                    this.board[ii][jj] = null;
-                                }
-                            }
-                        }
-                    }
-                    endedTurn = true;
-                    usedCardIdx = i; break;
-                }
-            }
-            else if (cardId === 17) { // Teleport
-                const prob = isAggressive ? genes.teleport.offensiveProb : genes.teleport.defensiveProb;
-                if (Math.random() < prob) {
-                    endedTurn = true; usedCardIdx = i; break;
-                }
-            }
-        }
-
-        if (usedCardIdx !== -1) {
-            this.lastPlayedCardId = deck[usedCardIdx] === 13 ? this.lastPlayedCardId : deck[usedCardIdx];
-            deck.splice(usedCardIdx, 1);
-        }
-        return endedTurn;
     }
+    return score;
+}
 
-    getBestMove(playerColor) {
-        const endedTurn = this.tryUseSpell(playerColor);
-        if (endedTurn) return 'spell';
-
-        let bestMove = null;
-        let maxEval = -Infinity;
-        let alpha = -Infinity;
-        let beta = Infinity;
-
-        const moves = this.getAllMoves(playerColor);
-        if (moves.length === 0) return null;
-
-        moves.sort(() => Math.random() - 0.5);
-        moves.sort((a, b) => {
-            const tA = this.board[a.to.r][a.to.c];
-            const tB = this.board[b.to.r][b.to.c];
-            const vA = tA ? (PIECE_VALUES[tA.toLowerCase()] || 0) : 0;
-            const vB = tB ? (PIECE_VALUES[tB.toLowerCase()] || 0) : 0;
-            return vB - vA;
-        });
-
-        for (let move of moves) {
-            const info = this.makeVirtualMove(move);
-            let ev = this.minimax(DEPTH - 1, alpha, beta, false, playerColor);
-            this.undoVirtualMove(move, info);
-
-            ev += Math.random() * 0.1;
-            if (ev > maxEval) {
-                maxEval = ev;
-                bestMove = move;
-            }
-            alpha = Math.max(alpha, ev);
-        }
-        return bestMove;
+/**
+ * One game. `white` and `black` are profiles (spells: 'search' or 'heuristic'),
+ * `decks` their cards. Returns 'white', 'black' or 'draw'.
+ */
+function playGame(white, black, depth, random, decks) {
+    const state = Game.newGame();
+    const profiles = { white: { ...white, depth }, black: { ...black, depth } };
+    for (let ply = 0; ply < OPENING_PLIES; ply++) {
+        const plan = randomMove(state, random);
+        if (plan) playMove(state, plan);
     }
+    for (let turn = 0; turn < MAX_PLIES && !state.winner; turn++) {
+        playTurn(state, state.turn, profiles[state.turn], decks, random);
+    }
+    if (state.winner) return state.winner.toLowerCase();
+    const balance = material(state);
+    return balance >= 300 ? 'white' : balance <= -300 ? 'black' : 'draw';
+}
 
-    playGame() {
-        while (this.turnCount < MAX_TURNS) {
-            let wk = false, bk = false;
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
-                    if (this.board[r][c] === 'K') wk = true;
-                    if (this.board[r][c] === 'k') bk = true;
-                }
-            }
-            if (!wk) return 'black';
-            if (!bk) return 'white';
+/** A random deck of distinct cards. */
+function randomDeck(random) {
+    const pool = [...SPELLS];
+    const deck = [];
+    while (deck.length < DECK_SIZE) deck.push(pool.splice(Math.floor(random() * pool.length), 1)[0]);
+    return deck;
+}
 
-            let move = this.getBestMove(this.turn);
-            if (!move) return this.turn === 'white' ? 'black' : 'white';
+/** A profile: `base` (the standard one) with every gene drawn at random in its range (`spread` 1), or near it. */
+function randomProfile(id, random, spread = 1, base = Bot.DEFAULT_PROFILE) {
+    const near = (key, v) => {
+        const [lo, hi] = BOUNDS[key];
+        return v + (random() * 2 - 1) * spread * (hi - lo) / 2;
+    };
+    const profile = {
+        ...JSON.parse(JSON.stringify(Bot.DEFAULT_PROFILE)),
+        ...JSON.parse(JSON.stringify(base)),
+        id,
+        fitness: 0, wins: 0, losses: 0, draws: 0,
+    };
+    for (const k of ['p', 'n', 'b', 'r', 'q']) profile.weights[k] = near(k, base.weights[k]);
+    for (const k of SCALE_GENES) profile[k] = near(k, base[k]);
+    for (const idKey of SPELLS) profile.cardValues[idKey] = near('card', base.cardValues[idKey]);
+    return normalize(profile);
+}
 
-            if (move !== 'spell') {
-                this.makeVirtualMove(move);
+/** A child mixes its parents' genes; each gene may mutate (±20 %, card values ±60). */
+function crossover(parent1, parent2, id, random) {
+    const child = randomProfile(id, random, 0);
+    const pick = (a, b) => (random() < 0.5 ? a : b);
+    const mutate = (v) => (random() >= 0.2 ? v : v * (0.8 + random() * 0.4));
+    for (const k of ['p', 'n', 'b', 'r', 'q']) child.weights[k] = mutate(pick(parent1.weights[k], parent2.weights[k]));
+    for (const k of SCALE_GENES) child[k] = mutate(pick(parent1[k], parent2[k]));
+    for (const s of SPELLS) {
+        const v = pick(parent1.cardValues[s], parent2.cardValues[s]);
+        child.cardValues[s] = random() >= 0.2 ? v : v + (random() * 2 - 1) * 60;
+    }
+    return normalize(child);
+}
 
-                if (this.assassinActive) {
-                    const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-                    let bestTgt = null, maxV = -1;
-                    dirs.forEach(d => {
-                        let nr = move.to.r + d[0], nc = move.to.c + d[1];
-                        if (nr >= 0 && nr <= 7 && nc >= 0 && nc <= 7) {
-                            const tgt = this.board[nr][nc];
-                            if (tgt && tgt !== 'W' && tgt.toLowerCase() !== 'k' && this.getColor(tgt) !== this.turn) {
-                                const v = PIECE_VALUES[tgt.toLowerCase()] || 0;
-                                if (v > maxV) { maxV = v; bestTgt = { r: nr, c: nc }; }
-                            }
-                        }
+/** Only the genes (what the game needs). */
+function strip(profile) {
+    const { id, weights, cardValues, spells, spellCandidates } = profile;
+    return { id, spells, spellCandidates, weights: { ...weights }, cardValues: { ...cardValues }, ...Object.fromEntries(SCALE_GENES.map((k) => [k, profile[k]])) };
+}
+
+/** Games run in worker threads; each task is { white, black, depth, seed, decks }. */
+function createPool(size) {
+    const workers = Array.from({ length: size }, () => new Worker(__filename));
+    /** @type {((err: Error) => void) | null} */
+    let fail = null;
+    workers.forEach((w) => w.on('error', (err) => fail && fail(err)));
+    return {
+        /** @param {Array<{white: any, black: any, depth: number, seed: number, decks: any}>} tasks @returns {Promise<string[]>} */
+        run(tasks) {
+            return new Promise((resolve, reject) => {
+                fail = reject;
+                const results = new Array(tasks.length);
+                let next = 0;
+                let done = 0;
+                const feed = (worker) => {
+                    if (next >= tasks.length) return;
+                    const index = next++;
+                    worker.once('message', (winner) => {
+                        results[index] = winner;
+                        if (++done === tasks.length) resolve(results);
+                        else feed(worker);
                     });
-                    if (bestTgt) {
-                        this.board[bestTgt.r][bestTgt.c] = null;
+                    worker.postMessage(tasks[index]);
+                };
+                if (tasks.length === 0) resolve([]);
+                workers.forEach(feed);
+            });
+        },
+        close() { workers.forEach((w) => w.terminate()); },
+    };
+}
+
+function parseArgs(argv) {
+    const opts = {
+        generations: 60, population: 32, games: 6, standardGames: 2, legacyGames: 2, depth: 2, validationDepth: 3,
+        validation: 300, workers: Math.max(1, os.cpus().length - 1), seed: 1, from: '',
+        out: path.join(__dirname, '..', '..', 'games', 'chesspell', 'training_data.json'),
+    };
+    for (let i = 0; i < argv.length; i += 2) {
+        const key = argv[i].replace(/^--/, '');
+        if (!(key in opts)) throw new Error(`Unknown option --${key}`);
+        opts[key] = key === 'out' || key === 'from' ? argv[i + 1] : Number(argv[i + 1]);
+    }
+    return opts;
+}
+
+/**
+ * `profile` against `opponent` on `games` games (both colours, same decks and seeds
+ * for whoever is measured): { games, wins, draws, losses, score }.
+ */
+async function match(pool, profile, opponent, games, depth, seedOf) {
+    const tasks = [];
+    const sides = [];
+    for (let k = 0; k < games; k++) {
+        const random = seededRandom(seedOf(k));
+        const decks = { white: randomDeck(random), black: randomDeck(random) };
+        const side = k % 2 ? 'black' : 'white';
+        tasks.push(side === 'white'
+            ? { white: profile, black: opponent, depth, seed: seedOf(k), decks }
+            : { white: opponent, black: profile, depth, seed: seedOf(k), decks });
+        sides.push(side);
+    }
+    const winners = await pool.run(tasks);
+    const wins = winners.filter((w, k) => w === sides[k]).length;
+    const draws = winners.filter((w) => w === 'draw').length;
+    return { games, wins, draws, losses: games - wins - draws, score: Math.round(((wins + draws / 2) / games) * 1000) / 10 };
+}
+
+async function train(opts) {
+    const random = seededRandom(opts.seed);
+    const pool = createPool(opts.workers);
+    const standard = strip({ ...Bot.DEFAULT_PROFILE, id: 'standard' });
+    const legacy = strip({ ...Bot.LEGACY_PROFILE, id: 'legacy' });
+    const seed = () => Math.floor(random() * 2 ** 31);
+    const game = (a, b, side) => {
+        const decks = { white: randomDeck(random), black: randomDeck(random) };
+        return side === 'white'
+            ? { white: a, black: b, depth: opts.depth, seed: seed(), decks }
+            : { white: b, black: a, depth: opts.depth, seed: seed(), decks };
+    };
+
+    // The starting profile (the standard one, or the best of an earlier run with --from),
+    // some close variants and some far ones.
+    const start = opts.from ? JSON.parse(fs.readFileSync(opts.from, 'utf8')).generations.at(-1).bestBot : Bot.DEFAULT_PROFILE;
+    let population = Array.from({ length: opts.population }, (_, i) =>
+        (i === 0 ? randomProfile(0, random, 0, start)
+            : randomProfile(i, random, i < opts.population / 2 ? 0.15 : opts.from ? 0.4 : 1, start)));
+    const output = { settings: { ...opts, out: undefined, maxPlies: MAX_PLIES, openingPlies: OPENING_PLIES, bounds: BOUNDS }, generations: [], validation: null };
+    console.log(`Training: ${opts.population} bots, ${opts.generations} generations, depth ${opts.depth}, ${opts.workers} workers`);
+
+    for (let gen = 1; gen <= opts.generations; gen++) {
+        const started = Date.now();
+        population.forEach((p) => Object.assign(p, { fitness: 0, wins: 0, losses: 0, draws: 0, vsStandard: 0, vsLegacy: 0 }));
+        const tasks = [];
+        const owners = []; // [bot index, its side, opponent index, or -1 standard, -2 legacy]
+        population.forEach((bot, i) => {
+            const add = (opponent, j, count) => {
+                for (let g = 0; g < count / 2; g++) {
+                    for (const side of ['white', 'black']) {
+                        tasks.push(game(strip(bot), opponent, side));
+                        owners.push([i, side, j]);
                     }
-                    this.assassinActive = false;
                 }
+            };
+            for (let g = 0; g < opts.games / 2; g++) {
+                let j = Math.floor(random() * population.length);
+                if (j === i) j = (j + 1) % population.length;
+                add(strip(population[j]), j, 2);
             }
+            add(standard, -1, opts.standardGames);
+            add(legacy, -2, opts.legacyGames);
+        });
+        const winners = await pool.run(tasks);
+        winners.forEach((winner, k) => {
+            const [i, side, j] = owners[k];
+            const bot = population[i];
+            const result = winner === 'draw' ? 'draw' : winner === side ? 'win' : 'loss';
+            bot.fitness += result === 'win' ? 3 : result === 'draw' ? 1 : 0;
+            bot[result === 'win' ? 'wins' : result === 'draw' ? 'draws' : 'losses']++;
+            if (j === -1 && result === 'win') bot.vsStandard++;
+            if (j === -2 && result === 'win') bot.vsLegacy++;
+            if (j >= 0) population[j].fitness += result === 'loss' ? 3 : result === 'draw' ? 1 : 0;
+        });
+        population.sort((x, y) => y.fitness - x.fitness);
+        const best = population[0];
+        const seconds = Math.round((Date.now() - started) / 1000);
+        console.log(`Gen ${gen} (${seconds}s): best ${best.wins}W ${best.draws}D ${best.losses}L (${best.vsStandard}/${opts.standardGames} vs standard, ${best.vsLegacy}/${opts.legacyGames} vs original), weights ${JSON.stringify(best.weights)}`);
+        output.generations.push({ generation: gen, bestBot: strip(best), fitness: best.fitness, record: { wins: best.wins, draws: best.draws, losses: best.losses } });
+        fs.writeFileSync(opts.out, JSON.stringify(output, null, 2) + '\n');
+        if (gen === opts.generations) break;
 
-            // End turn resolution
-            this.ghostActive = false;
-            this.leapFrogActive = false;
-            this.promotionActive = false;
-            this.assassinActive = false;
-
-            if (this.doubleTroubleState.active) {
-                this.doubleTroubleState.movesLeft--;
-                if (this.doubleTroubleState.movesLeft <= 0) {
-                    if (this.doubleTroubleState.player === this.turn) {
-                        this.turn = this.turn === 'white' ? 'black' : 'white';
-                        this.doubleTroubleState.movesLeft = 2;
-                    } else {
-                        this.turn = this.turn === 'white' ? 'black' : 'white';
-                        this.doubleTroubleState.active = false;
-                    }
-                }
-            } else {
-                this.turn = this.turn === 'white' ? 'black' : 'white';
-            }
-
-            this.frozenPieces.forEach(fp => fp.duration--);
-            this.frozenPieces = this.frozenPieces.filter(fp => fp.duration > 0);
-            this.shieldedPieces.forEach(fp => fp.duration--);
-            this.shieldedPieces = this.shieldedPieces.filter(fp => fp.duration > 0);
-
-            this.turnCount++;
+        // Keep the top quarter, breed the rest from the top half.
+        const next = population.slice(0, Math.floor(opts.population * 0.25)).map((p) => JSON.parse(JSON.stringify(p)));
+        const parents = Math.floor(opts.population * 0.5);
+        let id = opts.population * gen;
+        while (next.length < opts.population) {
+            next.push(crossover(population[Math.floor(random() * parents)], population[Math.floor(random() * parents)], id++, random));
         }
-        return 'draw';
+        population = next;
     }
+
+    // Validation, deeper: the same games (decks, seeds) for the best bot and for the
+    // standard profile, against the original bot; and the best bot against the standard.
+    const best = strip(population[0]);
+    const seedOf = (k) => 7_000_000 + k;
+    const d = opts.validationDepth;
+    output.validation = {
+        depth: d,
+        bestVsStandard: await match(pool, best, standard, opts.validation, d, seedOf),
+        bestVsOriginal: await match(pool, best, legacy, opts.validation, d, seedOf),
+        standardVsOriginal: await match(pool, standard, legacy, opts.validation, d, seedOf),
+    };
+    pool.close();
+    fs.writeFileSync(opts.out, JSON.stringify(output, null, 2) + '\n');
+    const line = (r) => `${r.wins}W ${r.draws}D ${r.losses}L / ${r.games} (${r.score}%)`;
+    const v = output.validation;
+    console.log(`Validation (depth ${d}): best vs standard ${line(v.bestVsStandard)}; best vs original ${line(v.bestVsOriginal)}; standard vs original ${line(v.standardVsOriginal)}`);
+    return output;
 }
 
-// --- MAIN TRAINING LOOP ---
-let population = [];
-for (let i = 0; i < POPULATION_SIZE; i++) {
-    population.push(generateRandomProfile(i));
+if (!isMainThread) {
+    parentPort.on('message', ({ white, black, depth, seed, decks }) => parentPort.postMessage(playGame(white, black, depth, seededRandom(seed), decks)));
+} else if (require.main === module) {
+    train(parseArgs(process.argv.slice(2))).then(() => process.exit(0), (err) => { console.error(err); process.exit(1); });
 }
 
-let trainingData = { generations: [] };
-console.log(`Starting Spell Training (18 Spells): ${POPULATION_SIZE} Bots, ${GENERATIONS} Generations`);
-
-for (let gen = 1; gen <= GENERATIONS; gen++) {
-    process.stdout.write(`Generation ${gen}... `);
-    population.forEach(p => { p.fitness = 0; p.wins = 0; p.losses = 0; p.draws = 0; });
-
-    for (let i = 0; i < population.length; i++) {
-        for (let j = 0; j < MATCHES_PER_BOT; j++) {
-            let oppIdx = Math.floor(Math.random() * population.length);
-            if (oppIdx === i) oppIdx = (oppIdx + 1) % population.length;
-
-            let game = new HeadlessChesspell(population[i], population[oppIdx]);
-            let winner = game.playGame();
-
-            if (winner === 'white') {
-                population[i].fitness += 3;
-                population[i].wins++;
-                population[oppIdx].losses++;
-            } else if (winner === 'black') {
-                population[oppIdx].fitness += 3;
-                population[oppIdx].wins++;
-                population[i].losses++;
-            } else {
-                population[i].fitness += 1;
-                population[oppIdx].fitness += 1;
-                population[i].draws++;
-                population[oppIdx].draws++;
-            }
-        }
-    }
-
-    population.sort((a, b) => b.fitness - a.fitness);
-    let best = population[0];
-
-    console.log(`Best: [ID ${best.id}] ${best.wins}W, Fitness ${best.fitness}`);
-
-    trainingData.generations.push({
-        generation: gen,
-        bestBot: best,
-        avgFitness: population.reduce((sum, p) => sum + p.fitness, 0) / population.length
-    });
-
-    fs.writeFileSync(OUTPUT_PATH, JSON.stringify(trainingData, null, 2));
-
-    if (gen === GENERATIONS) break;
-
-    let newPopulation = [];
-    let survivors = Math.floor(POPULATION_SIZE * 0.25);
-    for (let i = 0; i < survivors; i++) {
-        newPopulation.push(JSON.parse(JSON.stringify(population[i])));
-    }
-
-    let parents = Math.floor(POPULATION_SIZE * 0.5);
-    let nextId = POPULATION_SIZE * gen;
-    while (newPopulation.length < POPULATION_SIZE) {
-        let p1 = population[Math.floor(Math.random() * parents)];
-        let p2 = population[Math.floor(Math.random() * parents)];
-        newPopulation.push(crossover(p1, p2, nextId++));
-    }
-    population = newPopulation;
-}
-console.log("Training complete! Saved to spell_heuristics.json");
+module.exports = { playGame, playTurn, castSpell, randomDeck, randomProfile, crossover, normalize, strip, seededRandom, parseArgs, match, createPool, train, BOUNDS };

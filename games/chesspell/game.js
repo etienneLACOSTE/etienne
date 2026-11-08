@@ -216,7 +216,11 @@
     function move(state, r1, c1, r2, c2) {
         saveHistory(state);
 
-        const domi = state.domiReversiPiece;
+        let domi = state.domiReversiPiece;
+        if (domi && !state.board[domi.r][domi.c]) {
+            // The piece was destroyed by a spell (Sniper, Kamikaze...): nothing left to give back.
+            state.domiReversiPiece = domi = null;
+        }
         if (domi && r2 === domi.r && c2 === domi.c) {
             state.board[r2][c2] = domi.originalColor === 'white' ? state.board[r2][c2].toUpperCase() : state.board[r2][c2].toLowerCase();
             state.domiReversiPiece = null;

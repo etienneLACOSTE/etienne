@@ -334,5 +334,453 @@
         return null;
     }
 
-    return { VALUES, LEGACY_GENES, heuristicSpell };
+
+    // ---------------------------------------------------------------------------
+    // The search bot: every spell and target is tried on a copy of the game (through
+    // game.js, so with the real rules), then the replies are searched (minimax with
+    // alpha-beta and quiescence on the board). A card is cast only when the position
+    // after it is worth more than keeping the card: each card in hand has a value.
+
+    const WIN = 1000000;
+    const INF = 10 * WIN;
+    const TIMEOUT = Symbol('timeout');
+    const SPELL_IDS = Array.from({ length: 20 }, (_, i) => i + 1);
+
+    /** Piece-square tables, from black's side (row 0 is black's back rank). */
+    const PST = {
+        p: [
+            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 5, 5, 0, 0, 0], [0, 0, 5, 10, 10, 5, 0, 0],
+            [5, 5, 10, 15, 15, 10, 5, 5], [10, 10, 20, 30, 30, 20, 10, 10], [30, 30, 30, 30, 30, 30, 30, 30], [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        n: [
+            [-50, -40, -30, -30, -30, -30, -40, -50], [-40, -20, 0, 5, 5, 0, -20, -40], [-30, 5, 10, 15, 15, 10, 5, -30],
+            [-30, 0, 15, 20, 20, 15, 0, -30], [-30, 5, 15, 20, 20, 15, 5, -30], [-30, 0, 10, 15, 15, 10, 0, -30],
+            [-40, -20, 0, 0, 0, 0, -20, -40], [-50, -40, -30, -30, -30, -30, -40, -50],
+        ],
+        b: [
+            [-20, -10, -10, -10, -10, -10, -10, -20], [-10, 5, 0, 0, 0, 0, 5, -10], [-10, 10, 10, 10, 10, 10, 10, -10],
+            [-10, 0, 10, 10, 10, 10, 0, -10], [-10, 5, 5, 10, 10, 5, 5, -10], [-10, 0, 5, 10, 10, 5, 0, -10],
+            [-10, 0, 0, 0, 0, 0, 0, -10], [-20, -10, -10, -10, -10, -10, -10, -20],
+        ],
+    };
+
+    /**
+     * The standard profile. `weights`: piece values; the *Scale genes multiply the
+     * positional terms of the original evaluation; `adjacencyThreat` / `domiThreat`:
+     * share of a piece's value at risk from the opponent's Assassin or Kamikaze (piece
+     * next to an enemy) and Domi Reversi (rooks and queens); `cardValues`: what a card
+     * in hand is worth (a card is cast only if it gains more than that).
+     */
+    const DEFAULT_PROFILE = {
+        depth: 3,
+        spells: 'search',
+        weights: { p: 100, n: 320, b: 330, r: 500, q: 900 },
+        pstScale: 1,
+        pawnScale: 1,
+        kingScale: 1,
+        developmentScale: 1,
+        adjacencyThreat: 0.25,
+        domiThreat: 0.15,
+        cardValues: {
+            1: 30, 2: 150, 3: 200, 4: 60, 5: 80, 6: 60, 7: 250, 8: 40, 9: 60, 10: 50,
+            11: 60, 12: 80, 13: 100, 14: 120, 15: 100, 16: 60, 17: 60, 18: 200, 19: 150, 20: 120,
+        },
+        spellCandidates: 6,
+    };
+
+    /** The original bot: heuristic spells, its evaluation (strong contact threats), no card values. */
+    const LEGACY_PROFILE = {
+        ...DEFAULT_PROFILE,
+        spells: 'heuristic',
+        adjacencyThreat: 0.8,
+        domiThreat: 0.3,
+        cardValues: Object.fromEntries(SPELL_IDS.map((id) => [id, 0])),
+    };
+
+    /** Cards still in each hand: the decks minus the cards used. */
+    function hands(state, decks) {
+        const left = (color) => (decks[color] || []).filter((id) => !(state.usedCards && state.usedCards[color].includes(id)));
+        return { white: left('white'), black: left('black') };
+    }
+
+    /** Pawn structure, king shelter and development, white minus black, before scaling. */
+    function structureTerms(board, pawnCols, kings) {
+        let pawns = 0;
+        for (let c = 0; c < 8; c++) {
+            for (const { color, sign } of [{ color: 'white', sign: 1 }, { color: 'black', sign: -1 }]) {
+                const cols = pawnCols[color];
+                if (cols[c] > 1) pawns -= 15 * sign;
+                if (cols[c] > 0 && (c === 0 || cols[c - 1] === 0) && (c === 7 || cols[c + 1] === 0)) pawns -= 10 * sign;
+            }
+        }
+        let king = 0;
+        const shelter = (k, pawn, dir) => {
+            let n = 0;
+            for (let c = Math.max(0, k.c - 1); c <= Math.min(7, k.c + 1); c++) {
+                const one = board[k.r + dir] && board[k.r + dir][c] === pawn;
+                const two = board[k.r + 2 * dir] && board[k.r + 2 * dir][c] === pawn;
+                if (one || two) n++;
+            }
+            return n;
+        };
+        if (kings.white && kings.white.r > 5 && shelter(kings.white, 'P', -1) < 2) king -= 20;
+        if (kings.black && kings.black.r < 2 && shelter(kings.black, 'p', 1) < 2) king += 20;
+        if (kings.white && kings.white.r === 7 && (kings.white.c === 2 || kings.white.c === 6)) king += 40;
+        if (kings.black && kings.black.r === 0 && (kings.black.c === 2 || kings.black.c === 6)) king -= 40;
+        let development = 0;
+        for (const [r, c, p] of [[7, 1, 'N'], [7, 6, 'N'], [7, 2, 'B'], [7, 5, 'B']]) if (board[r][c] === p) development -= 40;
+        for (const [r, c, p] of [[0, 1, 'n'], [0, 6, 'n'], [0, 2, 'b'], [0, 5, 'b']]) if (board[r][c] === p) development += 40;
+        if (board[6][3] === 'Q' || board[5][3] === 'Q' || board[4][3] === 'Q') development -= 30;
+        if (board[1][3] === 'q' || board[2][3] === 'q' || board[3][3] === 'q') development += 30;
+        return { pawns, king, development };
+    }
+
+    /** True if a non-king enemy of `color` stands next to (r, c). */
+    function enemyNextTo(board, r, c, color) {
+        for (let i = r - 1; i <= r + 1; i++) {
+            for (let j = c - 1; j <= c + 1; j++) {
+                if ((i === r && j === c) || !inBoard(i, j)) continue;
+                const t = board[i][j];
+                if (t && t !== WALL && t.toLowerCase() !== 'k' && Rules.getColor(t) !== color) return true;
+            }
+        }
+        return false;
+    }
+
+    /** Value at risk from the opponent's cards, white minus black (positive: black is at risk). */
+    function threatTerms(board, profile, cards) {
+        let score = 0;
+        for (const { color, sign } of [{ color: 'white', sign: -1 }, { color: 'black', sign: 1 }]) {
+            const theirs = cards[other(color)] || [];
+            const contact = theirs.includes(19) || theirs.includes(18);
+            const domi = theirs.includes(3);
+            if (!contact && !domi) continue;
+            for (const [r, c] of squares()) {
+                const p = board[r][c];
+                if (!p || p === WALL || Rules.getColor(p) !== color || p.toLowerCase() === 'k') continue;
+                const v = profile.weights[p.toLowerCase()];
+                if (contact && enemyNextTo(board, r, c, color)) score += sign * v * profile.adjacencyThreat;
+                if (domi && v >= 500) score += sign * v * profile.domiThreat;
+            }
+        }
+        return score;
+    }
+
+    /**
+     * How good the position is for `me` (centipawns). `cards`: the cards still in each
+     * hand ({ white, black }), for the threats and the value of the cards kept.
+     */
+    function evaluate(state, me, profile, cards = { white: [], black: [] }) {
+        const board = state.board;
+        const w = profile.weights;
+        const pawnCols = { white: Array(8).fill(0), black: Array(8).fill(0) };
+        const kings = { white: null, black: null };
+        // A piece taken over by Domi Reversi goes back to its owner after a turn: it counts for them.
+        const domi = state.domi !== undefined ? state.domi : state.domiReversiPiece;
+        let score = 0;
+        for (const [r, c] of squares()) {
+            const p = board[r][c];
+            if (!p || p === WALL) continue;
+            const color = domi && domi.r === r && domi.c === c ? domi.originalColor : Rules.getColor(p);
+            const type = p.toLowerCase();
+            if (type === 'k') { kings[color] = { r, c }; continue; }
+            if (type === 'p') pawnCols[color][c]++;
+            const row = color === 'black' ? r : 7 - r;
+            const bonus = PST[type] ? PST[type][row][c] : (r >= 3 && r <= 4 && c >= 3 && c <= 4 ? 10 : 0);
+            score += (color === 'white' ? 1 : -1) * (w[type] + bonus * profile.pstScale);
+        }
+        const t = structureTerms(board, pawnCols, kings);
+        score += t.pawns * profile.pawnScale + t.king * profile.kingScale + t.development * profile.developmentScale;
+        score -= threatTerms(board, profile, cards);
+        const hand = (color) => (cards[color] || []).reduce((sum, id) => sum + (profile.cardValues[id] || 0), 0);
+        score += hand('white') - hand('black');
+        return me === 'white' ? score : 0 - score;
+    }
+
+    // --- Board search (no spells: they are only tried at the root) ---
+
+    /** A light copy of the game for the board search: one-turn spells are over. */
+    function searchPosition(state, me) {
+        return {
+            board: state.board.map((row) => [...row]),
+            turn: state.turn,
+            frozenPieces: state.frozenPieces.map((f) => ({ ...f })),
+            shieldedPieces: state.shieldedPieces.map((s) => ({ ...s })),
+            traps: state.traps.filter((t) => t.owner === me).map((t) => ({ ...t })),
+            hasMoved: { ...state.hasMoved },
+            doubleTroubleState: null,
+            domiReversiPiece: null,
+            domi: state.domiReversiPiece && state.board[state.domiReversiPiece.r][state.domiReversiPiece.c] ? { r: state.domiReversiPiece.r, c: state.domiReversiPiece.c, originalColor: state.domiReversiPiece.originalColor } : null,
+            ghostActive: false, leapFrogActive: false, assassinActive: false, cannibalismActive: false, promotionActive: false,
+        };
+    }
+
+    const CASTLING_FLAG = { K: 'whiteKing', k: 'blackKing' };
+    const ROOK_FLAG = { R: { 0: 'whiteRookA', 7: 'whiteRookH' }, r: { 0: 'blackRookA', 7: 'blackRookH' } };
+
+    /** Play a move on the search position; returns what `unmake` needs. */
+    function make(pos, m) {
+        const b = pos.board;
+        const moving = b[m.fr][m.fc];
+        const captured = b[m.tr][m.tc];
+        const d = pos.domi;
+        if (d && d.r === m.tr && d.c === m.tc) {
+            // Capturing the Domi Reversi piece gives it back to its owner (game.js: 'reverted').
+            b[m.tr][m.tc] = d.originalColor === 'white' ? captured.toUpperCase() : captured.toLowerCase();
+            pos.domi = null;
+            return { reverted: true, moving, captured, prevDomi: d };
+        }
+        b[m.tr][m.tc] = moving;
+        b[m.fr][m.fc] = null;
+        if (m.castle) {
+            const [from, to] = m.castle === 'kingside' ? [7, m.tc - 1] : [0, m.tc + 1];
+            b[m.tr][to] = b[m.tr][from];
+            b[m.tr][from] = null;
+        }
+        if ((moving === 'P' && m.tr === 0) || (moving === 'p' && m.tr === 7)) b[m.tr][m.tc] = moving === 'P' ? 'Q' : 'q';
+        let trap = null;
+        const ti = pos.traps.findIndex((t) => t.r === m.tr && t.c === m.tc && t.owner !== Rules.getColor(moving));
+        if (ti !== -1) {
+            trap = pos.traps.splice(ti, 1)[0];
+            if (moving.toLowerCase() !== 'k') b[m.tr][m.tc] = null;
+        }
+        const prevMoved = pos.hasMoved;
+        const flag = CASTLING_FLAG[moving] || (ROOK_FLAG[moving] && (m.fr === 0 || m.fr === 7) && ROOK_FLAG[moving][m.fc]);
+        if (flag) pos.hasMoved = { ...prevMoved, [flag]: true };
+        // Follow the Domi Reversi piece (or forget it once captured).
+        const prevDomi = pos.domi;
+        if (prevDomi && prevDomi.r === m.fr && prevDomi.c === m.fc) pos.domi = { ...prevDomi, r: m.tr, c: m.tc };
+        else if (prevDomi && prevDomi.r === m.tr && prevDomi.c === m.tc) pos.domi = null;
+        return { moving, captured, trap, ti, prevMoved, prevDomi };
+    }
+
+    function unmake(pos, m, u) {
+        const b = pos.board;
+        if (u.reverted) {
+            b[m.tr][m.tc] = u.captured;
+            pos.domi = u.prevDomi;
+            return;
+        }
+        if (u.trap) pos.traps.splice(u.ti, 0, u.trap);
+        if (m.castle) {
+            const [from, to] = m.castle === 'kingside' ? [7, m.tc - 1] : [0, m.tc + 1];
+            b[m.tr][from] = b[m.tr][to];
+            b[m.tr][to] = null;
+        }
+        b[m.fr][m.fc] = u.moving;
+        b[m.tr][m.tc] = u.captured;
+        pos.hasMoved = u.prevMoved;
+        pos.domi = u.prevDomi;
+    }
+
+    /** Moves of `color`, captures first (most valuable victim, then least valuable attacker). */
+    function generate(pos, color, capturesOnly = false) {
+        const moves = [];
+        const b = pos.board;
+        pos.turn = color;
+        for (const [r, c] of squares()) {
+            const p = b[r][c];
+            if (!p || p === WALL || Rules.getColor(p) !== color) continue;
+            for (const m of Rules.getValidMoves(pos, r, c)) {
+                if (capturesOnly && !m.capture) continue;
+                const victim = m.capture ? b[m.r][m.c] : null;
+                const order = victim ? 10 * (victim.toLowerCase() === 'k' ? WIN : VALUES[victim.toLowerCase()] || 0) - (VALUES[p.toLowerCase()] || 0) : -INF;
+                moves.push({ fr: r, fc: c, tr: m.r, tc: m.c, castle: m.castle, order });
+            }
+        }
+        return moves.sort((a, b2) => b2.order - a.order);
+    }
+
+    function tick(ctx) {
+        if ((++ctx.nodes & 255) === 0 && Date.now() > ctx.deadline) throw TIMEOUT;
+    }
+
+    /** Captures only, until the position is quiet (score for `color`, to move). */
+    function quiesce(pos, color, alpha, beta, ctx, depth = 0) {
+        tick(ctx);
+        const standPat = evaluate(pos, color, ctx.profile, ctx.cards);
+        if (standPat >= beta || depth >= 6) return standPat;
+        if (standPat > alpha) alpha = standPat;
+        for (const m of generate(pos, color, true)) {
+            const u = make(pos, m);
+            const v = !u.reverted && u.captured && u.captured.toLowerCase() === 'k' ? WIN : -quiesce(pos, other(color), -beta, -alpha, ctx, depth + 1);
+            unmake(pos, m, u);
+            if (v >= beta) return v;
+            if (v > alpha) alpha = v;
+        }
+        return alpha;
+    }
+
+    /** Negamax with alpha-beta: the score for `color`, to move, `depth` plies ahead. */
+    function negamax(pos, color, depth, alpha, beta, ctx) {
+        if (depth <= 0) return quiesce(pos, color, alpha, beta, ctx);
+        tick(ctx);
+        const moves = generate(pos, color);
+        if (moves.length === 0) return evaluate(pos, color, ctx.profile, ctx.cards);
+        let best = -INF;
+        for (const m of moves) {
+            const u = make(pos, m);
+            // A king taken ends the game; sooner is better.
+            const v = !u.reverted && u.captured && u.captured.toLowerCase() === 'k' ? WIN + depth : -negamax(pos, other(color), depth - 1, -beta, -alpha, ctx);
+            unmake(pos, m, u);
+            if (v > best) best = v;
+            if (v > alpha) alpha = v;
+            if (alpha >= beta) break;
+        }
+        return best;
+    }
+
+    // --- The root: real rules, through game.js, on copies of the game ---
+
+    const SPELL_FIELDS = ['activeSpellId', 'spellCard', 'spellCaster', 'targetingState', 'tpSource', 'sacrificePiece', 'swapPiece1', 'sidestepFrom', 'sniperBishop'];
+
+    /** A copy of the game as `me` sees it: the opponent's traps are hidden. */
+    function cloneGame(state, me) {
+        const copy = {
+            board: state.board.map((row) => [...row]),
+            turn: state.turn,
+            frozenPieces: state.frozenPieces.map((f) => ({ ...f })),
+            shieldedPieces: state.shieldedPieces.map((s) => ({ ...s })),
+            traps: state.traps.filter((t) => t.owner === me).map((t) => ({ ...t })),
+            leapFrogActive: state.leapFrogActive, promotionActive: state.promotionActive, assassinActive: state.assassinActive,
+            ghostActive: state.ghostActive, cannibalismActive: state.cannibalismActive,
+            history: [],
+            doubleTroubleState: state.doubleTroubleState ? { ...state.doubleTroubleState } : null,
+            domiReversiPiece: state.domiReversiPiece ? { ...state.domiReversiPiece } : null,
+            lastPlayedCardId: state.lastPlayedCardId,
+            capturedByWhite: [...state.capturedByWhite],
+            capturedByBlack: [...state.capturedByBlack],
+            hasMoved: { ...state.hasMoved },
+            usedCards: { white: [...state.usedCards.white], black: [...state.usedCards.black] },
+            winner: state.winner,
+            assassinTargets: state.assassinTargets ? state.assassinTargets.map((t) => ({ ...t })) : null,
+        };
+        for (const f of SPELL_FIELDS) copy[f] = state[f] && typeof state[f] === 'object' ? { ...state[f] } : (state[f] ?? null);
+        return copy;
+    }
+
+    /** Value for `me` of a game copy, `plies` plies ahead (whoever is to move). */
+    function valueOf(game, me, plies, alpha, ctx) {
+        if (game.winner) return (game.winner.toLowerCase() === me ? 1 : -1) * (WIN + plies + 1);
+        ctx.cards = hands(game, ctx.decks);
+        if (game.turn === me) {
+            if (plies <= 0) return quiesce(searchPosition(game, me), me, alpha, INF, ctx);
+            return bestRootMove(game, me, plies, alpha, ctx).value;
+        }
+        return -negamax(searchPosition(game, me), other(me), plies, -INF, -alpha, ctx);
+    }
+
+    /** All moves of the player to move in a game copy, as { fr, fc, tr, tc }, captures first. */
+    function rootMoves(game, me, random) {
+        const moves = [];
+        for (const [r, c] of squares()) {
+            const p = game.board[r][c];
+            if (!p || p === WALL || Rules.getColor(p) !== me) continue;
+            for (const m of Rules.getValidMoves(game, r, c)) {
+                const victim = m.capture ? game.board[m.r][m.c] : null;
+                moves.push({ fr: r, fc: c, tr: m.r, tc: m.c, order: (victim ? VALUES[victim.toLowerCase()] || 0 : 0) + random() });
+            }
+        }
+        return moves.sort((a, b) => b.order - a.order);
+    }
+
+    /** Play a move on a copy of the game; returns the copies after it (one per Assassin victim). */
+    function afterMove(game, me, m) {
+        const child = cloneGame(game, me);
+        const result = Game.move(child, m.fr, m.fc, m.tr, m.tc);
+        if (result === 'reverted') return [{ game: child }];
+        if (result === 'assassin_kill') {
+            return child.assassinTargets.map((t) => {
+                const g = cloneGame(child, me);
+                Game.clickSquare(g, t.r, t.c);
+                Game.endTurn(g);
+                return { game: g, kill: { r: t.r, c: t.c } };
+            });
+        }
+        Game.endTurn(child);
+        return [{ game: child }];
+    }
+
+    /** The best move of `me` (to move in `game`), searched `plies` plies ahead. */
+    function bestRootMove(game, me, plies, alpha, ctx) {
+        let best = { value: -INF, move: null, kill: null };
+        for (const m of rootMoves(game, me, ctx.random)) {
+            for (const next of afterMove(game, me, m)) {
+                const v = valueOf(next.game, me, plies - 1, Math.max(alpha, best.value), ctx);
+                if (v > best.value) best = { value: v, move: { from: { r: m.fr, c: m.fc }, to: { r: m.tr, c: m.tc } }, kill: next.kill || null };
+            }
+        }
+        if (!best.move) best.value = evaluate(game, me, ctx.profile, hands(game, ctx.decks));
+        return best;
+    }
+
+    /** Every way to cast one of `cards` now: { cardId, targets, game (the copy after it) }. */
+    function spellOptions(game, me, cards, random) {
+        const options = [];
+        const pick = (g, cardId, targets) => {
+            for (const [r, c] of squares()) {
+                const next = cloneGame(g, me);
+                const res = Game.clickSquare(next, r, c, random);
+                const chosen = [...targets, { r, c }];
+                if (res.status === 'next') pick(next, cardId, chosen);
+                else if (res.status === 'done') {
+                    if (res.endTurn) Game.endTurn(next);
+                    Game.completeSpell(next);
+                    options.push({ cardId, targets: chosen, game: next });
+                }
+            }
+        };
+        for (const cardId of new Set(cards)) {
+            const g = cloneGame(game, me);
+            const res = Game.activateSpell(g, cardId);
+            if (res.status === 'instant') options.push({ cardId, targets: [], game: g });
+            else if (res.status === 'targeting') pick(g, cardId, []);
+        }
+        return options;
+    }
+
+    /**
+     * The bot's turn for `me`: { spell: { cardId, targets } | null, move, kill }.
+     * `decks`: both players' decks ({ white, black }, the cards used are in the state).
+     * The move is for the position without a spell; after a spell that keeps the turn,
+     * ask bestMove again. The search deepens until `profile.depth` or the time limit.
+     */
+    function chooseTurn(state, me, decks, profile = DEFAULT_PROFILE, random = Math.random, timeLimitMs = Infinity) {
+        const ctx = { profile, decks, cards: null, random, nodes: 0, deadline: Date.now() + timeLimitMs };
+        const game = cloneGame(state, me);
+        game.turn = me;
+        const mine = hands(game, decks)[me];
+        const options = profile.spells === 'search' && mine.length ? spellOptions(game, me, mine, random) : [];
+        let result = null;
+        let shortlist = options;
+        for (let plies = 1; plies <= profile.depth; plies++) {
+            try {
+                const keep = bestRootMove(game, me, plies, -INF, ctx);
+                let choice = { spell: null, move: keep.move, kill: keep.kill, value: keep.value };
+                const scored = [];
+                for (const o of shortlist) {
+                    // A spell is one ply, like a move: the turn may go on (free spells) or not.
+                    const v = valueOf(o.game, me, o.game.turn === me ? plies : plies - 1, choice.value, ctx);
+                    scored.push({ o, v });
+                    if (v > choice.value) choice = { spell: { cardId: o.cardId, targets: o.targets }, move: null, kill: null, value: v };
+                }
+                if (plies === 1) shortlist = scored.sort((a, b) => b.v - a.v).slice(0, profile.spellCandidates).map((s) => s.o);
+                result = choice;
+            } catch (e) {
+                if (e !== TIMEOUT) throw e;
+                break;
+            }
+        }
+        return result || { spell: null, move: null, kill: null, value: 0 };
+    }
+
+    /** The best move only (after a spell that keeps the turn): { move, kill }. */
+    function bestMove(state, me, decks, profile = DEFAULT_PROFILE, random = Math.random, timeLimitMs = Infinity) {
+        return chooseTurn(state, me, decks, { ...profile, spells: 'none' }, random, timeLimitMs);
+    }
+
+    return {
+        VALUES, LEGACY_GENES, heuristicSpell, DEFAULT_PROFILE, LEGACY_PROFILE, WIN,
+        evaluate, hands, cloneGame, spellOptions, chooseTurn, bestMove,
+    };
 });

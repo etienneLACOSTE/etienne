@@ -227,7 +227,7 @@ test("snapshot: plain data, and each player only sees their own traps", () => {
 // (found by mutation testing, /crap).
 
 test('move keeps an independent copy of the position for undo, at most 5', () => {
-    const s = game({ '6,0': 'P', '7,4': 'K', '0,4': 'k' });
+    const s = game({ '6,0': 'P', '5,5': 'N', '7,4': 'K', '0,4': 'k' });
     s.shieldedPieces.push({ r: 6, c: 0 });
     s.traps.push({ r: 2, c: 2, owner: 'black' });
     s.frozenPieces.push({ r: 0, c: 4 });
@@ -424,4 +424,12 @@ test('move: another piece on the row or column of the Domi Reversi piece leaves 
     G.move(s, 3, 0, 4, 0);
     G.move(s, 6, 3, 5, 3);
     assert.deepEqual(s.domiReversiPiece, { r: 3, c: 3, originalColor: 'black' });
+});
+
+test('move: a Domi Reversi piece destroyed by a spell is forgotten (no crash on its square)', () => {
+    const s = game({ '3,3': null, '5,3': 'Q', '7,4': 'K', '0,4': 'k' });
+    s.domiReversiPiece = { r: 3, c: 3, originalColor: 'black', caster: 'white', activeTurn: false };
+    assert.equal(G.move(s, 5, 3, 3, 3), 'endTurn');
+    assert.equal(s.board[3][3], 'Q');
+    assert.equal(s.domiReversiPiece, null);
 });
