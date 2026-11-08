@@ -142,13 +142,8 @@
         return Rules.getValidMoves(state, r1, c1).some((m) => m.r === r2 && m.c === c2);
     }
 
-    /**
-     * Play a move (legality is the caller's business). Returns:
-     * - 'reverted': the move captured the Domi Reversi piece, which goes back to its owner instead;
-     * - 'assassin_kill': Assassin is active, the player now picks an adjacent victim;
-     * - 'endTurn': the move is done and the caller must end the turn.
-     */
-    function move(state, r1, c1, r2, c2) {
+    /** Keep a copy of the position for undo (the last 5). */
+    function saveHistory(state) {
         state.history.push({
             board: state.board.map((row) => [...row]),
             turn: state.turn,
@@ -161,6 +156,65 @@
             domiReversiPiece: state.domiReversiPiece ? { ...state.domiReversiPiece } : null,
         });
         if (state.history.length > 5) state.history.shift();
+    }
+
+    /** The piece that lands: the mover, or, under Promotion, the captured type in the mover's colour. */
+    function landingPiece(state, movingPiece, targetPiece) {
+        if (!state.promotionActive || !targetPiece) return movingPiece;
+        const newType = targetPiece.toLowerCase();
+        return Rules.getColor(movingPiece) === 'white' ? newType.toUpperCase() : newType;
+    }
+
+    /** Castling right lost by each piece leaving a square. */
+    const CASTLING_FLAGS = {
+        K: { any: 'whiteKing' }, k: { any: 'blackKing' },
+        R: { '7,0': 'whiteRookA', '7,7': 'whiteRookH' },
+        r: { '0,0': 'blackRookA', '0,7': 'blackRookH' },
+    };
+
+    /** Castling: rights lost when the king or a corner rook moves; the rook follows a castling king. */
+    function applyCastling(state, movingPiece, r1, c1, r2, c2) {
+        const flags = CASTLING_FLAGS[movingPiece];
+        const flag = flags && (flags.any || flags[`${r1},${c1}`]);
+        if (state.hasMoved && flag) state.hasMoved[flag] = true;
+        if (movingPiece.toLowerCase() !== 'k' || Math.abs(c2 - c1) !== 2) return;
+        const [rookFrom, rookTo] = c2 > c1 ? [7, c2 - 1] : [0, c2 + 1];
+        state.board[r2][rookTo] = state.board[r2][rookFrom];
+        state.board[r2][rookFrom] = null;
+    }
+
+    /** An enemy trap on the landing square destroys the piece (never a king) and is spent. */
+    function springTrap(state, r, c) {
+        const trapIndex = state.traps.findIndex((t) => t.r === r && t.c === c && t.owner !== Rules.getColor(state.board[r][c]));
+        if (trapIndex === -1) return;
+        if (state.board[r][c].toLowerCase() !== 'k') {
+            destroyPiece(state, state.board[r][c]);
+            state.board[r][c] = null;
+        }
+        state.traps.splice(trapIndex, 1);
+    }
+
+    /** Assassin victims: enemy pieces next to (r, c), never a king or a wall. */
+    function assassinTargets(state, r, c) {
+        const targets = [];
+        for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (!inBoard(nr, nc)) continue;
+            const t = state.board[nr][nc];
+            if (t && t !== WALL && t.toLowerCase() !== 'k' && Rules.getColor(t) !== state.turn) targets.push({ r: nr, c: nc });
+        }
+        return targets;
+    }
+
+    /**
+     * Play a move (legality is the caller's business). Returns:
+     * - 'reverted': the move captured the Domi Reversi piece, which goes back to its owner instead;
+     * - 'assassin_kill': Assassin is active, the player now picks an adjacent victim;
+     * - 'endTurn': the move is done and the caller must end the turn.
+     */
+    function move(state, r1, c1, r2, c2) {
+        saveHistory(state);
 
         const domi = state.domiReversiPiece;
         if (domi && r2 === domi.r && c2 === domi.c) {
@@ -172,64 +226,19 @@
         const targetPiece = state.board[r2][c2];
         const movingPiece = state.board[r1][c1];
         if (targetPiece) destroyPiece(state, targetPiece);
-
-        let pieceToPlace = movingPiece;
-        if (state.promotionActive && targetPiece) {
-            const newType = targetPiece.toLowerCase();
-            pieceToPlace = Rules.getColor(movingPiece) === 'white' ? newType.toUpperCase() : newType;
-        }
-        state.board[r2][c2] = pieceToPlace;
+        state.board[r2][c2] = landingPiece(state, movingPiece, targetPiece);
         state.board[r1][c1] = null;
-
         if (domi && r1 === domi.r && c1 === domi.c) {
             domi.r = r2;
             domi.c = c2;
         }
 
-        // Castling rights
-        const hm = state.hasMoved;
-        if (hm) {
-            if (movingPiece === 'K') hm.whiteKing = true;
-            if (movingPiece === 'k') hm.blackKing = true;
-            if (movingPiece === 'R') {
-                if (r1 === 7 && c1 === 0) hm.whiteRookA = true;
-                if (r1 === 7 && c1 === 7) hm.whiteRookH = true;
-            }
-            if (movingPiece === 'r') {
-                if (r1 === 0 && c1 === 0) hm.blackRookA = true;
-                if (r1 === 0 && c1 === 7) hm.blackRookH = true;
-            }
-        }
-        if (movingPiece.toLowerCase() === 'k' && Math.abs(c2 - c1) === 2) {
-            if (c2 > c1) {
-                state.board[r2][c2 - 1] = state.board[r2][7];
-                state.board[r2][7] = null;
-            } else {
-                state.board[r2][c2 + 1] = state.board[r2][0];
-                state.board[r2][0] = null;
-            }
-        }
-
-        const trapIndex = state.traps.findIndex((t) => t.r === r2 && t.c === c2 && t.owner !== Rules.getColor(state.board[r2][c2]));
-        if (trapIndex !== -1) {
-            if (state.board[r2][c2].toLowerCase() !== 'k') {
-                destroyPiece(state, state.board[r2][c2]);
-                state.board[r2][c2] = null;
-            }
-            state.traps.splice(trapIndex, 1);
-        }
-
+        applyCastling(state, movingPiece, r1, c1, r2, c2);
+        springTrap(state, r2, c2);
         state.frozenPieces = state.frozenPieces.filter((fp) => fp.r !== r1 || fp.c !== c1);
 
         if (state.assassinActive) {
-            const targets = [];
-            for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-                const nr = r2 + dr;
-                const nc = c2 + dc;
-                if (!inBoard(nr, nc)) continue;
-                const t = state.board[nr][nc];
-                if (t && t !== WALL && t.toLowerCase() !== 'k' && Rules.getColor(t) !== state.turn) targets.push({ r: nr, c: nc });
-            }
+            const targets = assassinTargets(state, r2, c2);
             if (targets.length > 0) {
                 state.targetingState = 'select_assassin_kill';
                 state.assassinTargets = targets;
