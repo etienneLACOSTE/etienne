@@ -243,6 +243,15 @@ test("snapshot: plain data, and each player only sees their own traps", () => {
 // move(): every branch of the referee's move, so that a mistake in it fails a test
 // (found by mutation testing, /crap).
 
+test('a king jumping two columns with Leap Frog does not castle', () => {
+    // The king jumps from (1,2) to (0,0): it must land there, the rook next to it stays.
+    const s = game({ '1,2': 'k', '0,1': 'r', '7,4': 'K' }, 'black');
+    s.leapFrogActive = true;
+    assert.equal(G.move(s, 1, 2, 0, 0), 'endTurn');
+    assert.equal(s.board[0][0], 'k');
+    assert.equal(s.board[0][1], 'r');
+});
+
 test('move keeps an independent copy of the position for undo, at most 5', () => {
     const s = game({ '6,0': 'P', '5,5': 'N', '7,4': 'K', '0,4': 'k' });
     s.shieldedPieces.push({ r: 6, c: 0 });

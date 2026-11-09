@@ -177,7 +177,8 @@
         const flags = CASTLING_FLAGS[movingPiece];
         const flag = flags && (flags.any || flags[`${r1},${c1}`]);
         if (state.hasMoved && flag) state.hasMoved[flag] = true;
-        if (movingPiece.toLowerCase() !== 'k' || Math.abs(c2 - c1) !== 2) return;
+        // A castling king stays on its row (a king jumping with Leap Frog may also cross two columns).
+        if (movingPiece.toLowerCase() !== 'k' || r1 !== r2 || Math.abs(c2 - c1) !== 2) return;
         const [rookFrom, rookTo] = c2 > c1 ? [7, c2 - 1] : [0, c2 + 1];
         state.board[r2][rookTo] = state.board[r2][rookFrom];
         state.board[r2][rookFrom] = null;
