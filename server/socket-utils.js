@@ -33,12 +33,32 @@ function allowMessage(socket) {
     return false;
 }
 
-// Rooms are kept in memory: one waiting room per player, and a cap on the total.
+// Rooms are kept in memory: one waiting room per player, a cap per address and in total,
+// so that one machine cannot take every room (or all the memory) for itself.
 const MAX_ROOMS = 1000;
+const MAX_ROOMS_PER_IP = 5;
+const MAX_CONNECTIONS_PER_IP = 20;
+// The end-to-end tests open many connections from one machine: they turn the per-address
+// limits off. Never set in production.
+const PER_IP_LIMITS = process.env.PER_IP_LIMITS !== 'off';
+
+/**
+ * The visitor's address. Behind a host's proxy (Render, Fly.io), every connection comes
+ * from the proxy: set TRUST_PROXY=1 there to read the address the proxy adds last
+ * (the earlier ones are written by the client and could be forged).
+ */
+function clientIp(socket) {
+    const handshake = socket.handshake || {};
+    const forwarded = handshake.headers && handshake.headers['x-forwarded-for'];
+    if (process.env.TRUST_PROXY === '1' && typeof forwarded === 'string') {
+        return forwarded.split(',').pop().trim();
+    }
+    return handshake.address || '';
+}
 
 /**
  * Call before creating a room for `socket`: closes the room it is still waiting in,
- * and says whether there is space for a new one.
+ * and says whether there is space for a new one (in total and for its address).
  */
 function makeRoomFor(rooms, socket) {
     for (const [code, room] of Object.entries(rooms)) {
@@ -47,7 +67,49 @@ function makeRoomFor(rooms, socket) {
             delete rooms[code];
         }
     }
-    return Object.keys(rooms).length < MAX_ROOMS;
+    const ip = clientIp(socket);
+    const own = Object.values(rooms).filter((room) => room.hostIp === ip).length;
+    return Object.keys(rooms).length < MAX_ROOMS && (!PER_IP_LIMITS || own < MAX_ROOMS_PER_IP);
+}
+
+/** The fields every new room starts with: who opened it, and when it was last used. */
+function roomOrigin(socket) {
+    return { hostIp: clientIp(socket), lastActivity: Date.now() };
+}
+
+/** Refuse more than MAX_CONNECTIONS_PER_IP open connections from one address (shared by both games). */
+const connections = new Map();
+function limitConnections(namespace) {
+    namespace.use((socket, next) => {
+        const ip = clientIp(socket);
+        const open = connections.get(ip) || 0;
+        if (PER_IP_LIMITS && open >= MAX_CONNECTIONS_PER_IP) return next(new Error('Too many connections.'));
+        connections.set(ip, open + 1);
+        socket.on('disconnect', () => {
+            const left = (connections.get(ip) || 1) - 1;
+            if (left > 0) connections.set(ip, left);
+            else connections.delete(ip);
+        });
+        next();
+    });
+}
+
+// Idle rooms are closed: a room that is not in the middle of a game (waiting for a
+// second player, drafting, or finished) after 15 minutes without a message from its
+// players, and a game after 6 turns in a row lost on time (nobody plays any more).
+const IDLE_ROOM_MS = 15 * 60_000;
+const MAX_IDLE_TURNS = 6;
+
+/** Codes of the rooms to close at `now`. */
+function idleRooms(rooms, now) {
+    return Object.entries(rooms)
+        .filter(([, room]) => room.gameState !== 'playing' && now - room.lastActivity > IDLE_ROOM_MS)
+        .map(([code]) => code);
+}
+
+/** Check every minute for idle rooms; `close(code)` closes one. */
+function sweepIdleRooms(rooms, close) {
+    setInterval(() => idleRooms(rooms, Date.now()).forEach(close), 60_000).unref();
 }
 
 // A handler that throws would stop the whole server, so every handler is guarded,
@@ -74,11 +136,18 @@ function isSquare(pos, rows, cols) {
         && pos.r >= 0 && pos.r < rows && pos.c >= 0 && pos.c < cols;
 }
 
-/** Player number (1 or 2) of this socket in the room, or null for outsiders. */
+/**
+ * Player number (1 or 2) of this socket in the room, or null for outsiders.
+ * A message from a player counts as activity in the room (see idleRooms).
+ */
 function playerOf(room, socket) {
-    if (room.players[1] === socket.id) return 1;
-    if (room.players[2] === socket.id) return 2;
-    return null;
+    const player = room.players[1] === socket.id ? 1 : room.players[2] === socket.id ? 2 : null;
+    if (player !== null) room.lastActivity = Date.now();
+    return player;
 }
 
-module.exports = { generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, MAX_ROOMS, RATE_PER_SECOND, BURST };
+module.exports = {
+    generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp,
+    limitConnections, idleRooms, sweepIdleRooms,
+    MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST,
+};

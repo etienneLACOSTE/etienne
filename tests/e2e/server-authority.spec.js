@@ -260,6 +260,21 @@ test.describe('Server authority', () => {
     expect(result.state.turn).toBe('black');
   });
 
+  // 6 turns of 1 s + grace (1.5 s) each: about 15 s.
+  test("ches'spell: a game where nobody plays any more is closed", async ({ page }) => {
+    test.setTimeout(40_000);
+    const result = await page.evaluate(async () => {
+      const g = await T.chesspellRoom({ timerMode: 'turn', timerSeconds: 1 });
+      const closed = [T.once(g.white, 'roomClosed', 25_000), T.once(g.black, 'roomClosed', 25_000)];
+      const reasons = await Promise.all(closed);
+      // The room is gone: a move into it is not answered.
+      g.white.emit('makeMove', { roomCode: g.code, from: { r: 6, c: 4 }, to: { r: 4, c: 4 } });
+      return { reasons, after: await T.once(g.white, 'gameState', 1_000) };
+    });
+    expect(result.reasons).toEqual(['Game closed: nobody played for 6 turns.', 'Game closed: nobody played for 6 turns.']);
+    expect(result.after).toBeUndefined();
+  });
+
   test("ches'spell: decks are validated and profiles sanitized", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const p1 = await T.connect('/chesspell');

@@ -30,7 +30,8 @@ module.exports = defineConfig({
   webServer: {
     command: 'node server/index.js',
     url: `http://127.0.0.1:${PORT}`,
-    env: { PORT: String(PORT) },
+    // The tests open many connections from one machine: no per-address limits for them.
+    env: { PORT: String(PORT), PER_IP_LIMITS: 'off' },
     reuseExistingServer: false,
     stdout: 'ignore',
     stderr: 'pipe',

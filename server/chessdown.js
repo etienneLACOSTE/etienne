@@ -1,5 +1,8 @@
 // @ts-check
-const { generateRoomCode, makeRoomFor, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
+const {
+    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
+    MAX_IDLE_TURNS,
+} = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
 
@@ -41,6 +44,7 @@ function newGameState() {
         lastMove: null,
         drafted: { 1: false, 2: false },
         playAgain: { 1: false, 2: false },
+        idleTurns: 0,
     };
 }
 
@@ -65,6 +69,7 @@ function isValidDraft(pieces, player) {
 
 function registerChessdown(io) {
     const ioChessdown = io.of('/chessdown');
+    limitConnections(ioChessdown);
 
     /** The player to move ran out of time. */
     function timeUp(room) {
@@ -73,6 +78,16 @@ function registerChessdown(io) {
             room.gameState = 'over';
             ioChessdown.to(room.id).emit('timeOut', { loser: room.currentPlayer });
             return;
+        }
+        skipTurn(room);
+    }
+
+    /** The turn is lost on time; after MAX_IDLE_TURNS in a row, nobody plays: the room closes. */
+    function skipTurn(room) {
+        room.clock.stop();
+        room.idleTurns = (room.idleTurns || 0) + 1;
+        if (room.idleTurns >= MAX_IDLE_TURNS) {
+            return closeIdleRoom(room.id, `Game closed: nobody played for ${MAX_IDLE_TURNS} turns.`);
         }
         room.currentPlayer = room.currentPlayer === 1 ? 2 : 1;
         ioChessdown.to(room.id).emit('turnSkipped', { nextPlayer: room.currentPlayer });
@@ -83,6 +98,14 @@ function registerChessdown(io) {
         chessdownRooms[code].clock.stop();
         delete chessdownRooms[code];
     }
+
+    /** Close a room nobody uses any more, and tell its players why. */
+    function closeIdleRoom(code, reason = 'Game closed after 15 minutes without activity.') {
+        ioChessdown.to(code).emit('roomClosed', reason);
+        ioChessdown.in(code).socketsLeave(code);
+        closeRoom(code);
+    }
+    sweepIdleRooms(chessdownRooms, (code) => closeIdleRoom(code));
 
     ioChessdown.on('connection', (socket) => {
         console.log('Chessdown User connected:', socket.id);
@@ -101,6 +124,7 @@ function registerChessdown(io) {
                 ...newGameState(),
                 gameState: 'waiting',
                 clock: /** @type {TurnClock} */ (null),
+                ...roomOrigin(socket),
             };
             room.clock = new TurnClock(sanitizeTimer(data), () => timeUp(room));
 
@@ -168,6 +192,7 @@ function registerChessdown(io) {
                 fromR: data.from.r, fromC: data.from.c, toR: data.to.r, toC: data.to.c,
             });
             room.clock.stop();
+            room.idleTurns = 0;
             room.currentPlayer = room.currentPlayer === 1 ? 2 : 1;
             // King captured, or a piece survived a turn in the endzone: game over.
             if ((targetPiece && targetPiece.type === 'k') || engine.hasPieceInEndzone(room.board, room.currentPlayer)) {
@@ -189,10 +214,7 @@ function registerChessdown(io) {
             if (!room || room.gameState !== 'playing') return;
             if (playerOf(room, socket) !== room.currentPlayer) return;
 
-            room.clock.stop();
-            room.currentPlayer = room.currentPlayer === 1 ? 2 : 1;
-            ioChessdown.to(data.roomCode).emit('turnSkipped', { nextPlayer: room.currentPlayer });
-            room.clock.start(room.currentPlayer);
+            skipTurn(room);
         });
 
         safeOn(socket, 'playAgainRequest', (data) => {

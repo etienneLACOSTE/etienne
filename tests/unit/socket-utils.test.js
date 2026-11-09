@@ -1,13 +1,16 @@
 // Unit tests for the server's socket helpers: rate limit and room cap.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { safeOn, makeRoomFor, MAX_ROOMS, BURST } = require('../../server/socket-utils');
+const {
+    safeOn, makeRoomFor, roomOrigin, clientIp, limitConnections, idleRooms, playerOf,
+    MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, BURST,
+} = require('../../server/socket-utils');
 
 /** A stand-in for a socket.io socket: records handlers, leaves and disconnects. */
-function fakeSocket(id = 'me') {
+function fakeSocket(id = 'me', address = '10.0.0.1', headers = {}) {
     const handlers = {};
     return {
-        id, data: {}, left: [], disconnected: false,
+        id, data: {}, left: [], disconnected: false, handshake: { address, headers },
         on(event, fn) { handlers[event] = fn; },
         emit(event, ...args) { handlers[event](...args); },
         leave(code) { this.left.push(code); },
@@ -54,4 +57,58 @@ test('no new room once the cap is reached', () => {
     assert.equal(makeRoomFor(rooms, fakeSocket()), false);
     delete rooms.R0;
     assert.equal(makeRoomFor(rooms, fakeSocket()), true);
+});
+
+test('one address cannot hold more than a few rooms', () => {
+    const rooms = {};
+    for (let i = 0; i < MAX_ROOMS_PER_IP; i++) {
+        const host = fakeSocket(`host${i}`, '10.0.0.9');
+        assert.equal(makeRoomFor(rooms, host), true);
+        rooms[`R${i}`] = { players: { 1: host.id, 2: 'guest' }, ...roomOrigin(host) };
+    }
+    assert.equal(makeRoomFor(rooms, fakeSocket('one-more', '10.0.0.9')), false);
+    assert.equal(makeRoomFor(rooms, fakeSocket('neighbour', '10.0.0.10')), true);
+});
+
+test('the address comes from the proxy only when TRUST_PROXY=1, and is the last one it added', () => {
+    const socket = fakeSocket('me', '10.1.1.1', { 'x-forwarded-for': '6.6.6.6, 203.0.113.7' });
+    assert.equal(clientIp(socket), '10.1.1.1');
+    process.env.TRUST_PROXY = '1';
+    try {
+        assert.equal(clientIp(socket), '203.0.113.7');
+    } finally {
+        delete process.env.TRUST_PROXY;
+    }
+});
+
+test('too many connections from one address are refused, and freed on disconnect', () => {
+    let middleware;
+    limitConnections({ use(fn) { middleware = fn; } });
+    const connect = (socket) => { let error = null; middleware(socket, (e) => { error = e || null; }); return error; };
+    const sockets = Array.from({ length: MAX_CONNECTIONS_PER_IP }, (_, i) => fakeSocket(`s${i}`, '10.0.0.7'));
+    sockets.forEach((socket) => assert.equal(connect(socket), null));
+    assert.ok(connect(fakeSocket('extra', '10.0.0.7')) instanceof Error);
+    assert.equal(connect(fakeSocket('elsewhere', '10.0.0.8')), null);
+    sockets[0].emit('disconnect');
+    assert.equal(connect(fakeSocket('again', '10.0.0.7')), null);
+});
+
+test('idle rooms: closed after 15 minutes, unless a game is being played', () => {
+    const now = Date.now();
+    const old = now - IDLE_ROOM_MS - 1;
+    const rooms = {
+        WAITING: { gameState: 'waiting', lastActivity: old },
+        OVER: { gameState: 'over', lastActivity: old },
+        PLAYING: { gameState: 'playing', lastActivity: old }, // The clock and the idle turns handle it
+        RECENT: { gameState: 'waiting', lastActivity: now - 1000 },
+    };
+    assert.deepEqual(idleRooms(rooms, now), ['WAITING', 'OVER']);
+});
+
+test("a player's message counts as activity in the room, an outsider's does not", () => {
+    const room = { players: { 1: 'a', 2: 'b' }, lastActivity: 0 };
+    playerOf(room, fakeSocket('stranger'));
+    assert.equal(room.lastActivity, 0);
+    assert.equal(playerOf(room, fakeSocket('b')), 2);
+    assert.ok(room.lastActivity > 0);
 });

@@ -138,6 +138,13 @@ export function setupNetwork() {
         showScreen(ui.mainMenu);
     });
 
+    // The server closed an idle room (see server/socket-utils.js).
+    socket.on('roomClosed', (reason) => {
+        alert(reason);
+        resetGame();
+        showScreen(ui.mainMenu);
+    });
+
     socket.on('errorMsg', (msg) => {
         alert(msg);
     });

@@ -111,6 +111,12 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
             this.showScreen('main-menu');
         });
 
+        // The server closed an idle room (see server/socket-utils.js).
+        socket.on('roomClosed', (reason) => {
+            alert(reason);
+            this.leaveGame();
+        });
+
         socket.on('errorMsg', (msg) => {
             alert(msg);
         });

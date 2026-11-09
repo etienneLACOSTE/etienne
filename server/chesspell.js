@@ -1,5 +1,8 @@
 // @ts-check
-const { generateRoomCode, makeRoomFor, safeOn, getRoom, isSquare, playerOf } = require('./socket-utils');
+const {
+    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
+    MAX_IDLE_TURNS,
+} = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
 const Game = require('../games/chesspell/game.js');
 
@@ -8,15 +11,14 @@ const Game = require('../games/chesspell/game.js');
 // The server is the referee: it keeps the game state with the shared game logic
 // (games/chesspell/game.js), accepts only the player to move, legal moves, cards
 // from their deck not played yet and valid spell targets, draws Tornado's random
-// shuffle, keeps the clock, and sends each player the resulting state (without
-// the opponent's hidden traps).
+// shuffle, keeps the clock, and sends each player the resulting state.
 // -----------------------------------------------------
 const chesspellRooms = {};
 
 const CARD_COUNT = 20;
 const DECK_SIZE = 3;
 const NAME_MAX = 15;
-const AVATAR_MAX = 200_000; // ~150 KB image as a data URL
+const AVATAR_MAX = 40_000; // The page makes 150 px JPEG avatars, about 20 KB as a data URL
 const AVATAR_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 function getChesspellPublicRoomState(room) {
@@ -57,6 +59,7 @@ function sanitizeProfile(profile, deck) {
 
 function registerChesspell(io) {
     const ioChesspell = io.of('/chesspell');
+    limitConnections(ioChesspell);
 
     /** Each player gets the new state and what just happened. */
     function sendState(room, action) {
@@ -67,6 +70,7 @@ function registerChesspell(io) {
         } else if (action.turnEnded) {
             room.clock.start(game.turn);
         }
+        if (action.type !== 'timeout') room.idleTurns = 0;
         for (const player of [1, 2]) {
             ioChesspell.to(room.players[player]).emit('gameState', { state: Game.snapshot(game), action });
         }
@@ -81,6 +85,10 @@ function registerChesspell(io) {
             sendState(room, { type: 'timeout', by: loser, turnEnded: false });
             return;
         }
+        room.idleTurns = (room.idleTurns || 0) + 1;
+        if (room.idleTurns >= MAX_IDLE_TURNS) {
+            return closeIdleRoom(room.id, `Game closed: nobody played for ${MAX_IDLE_TURNS} turns.`);
+        }
         Game.cancelSpell(room.game);
         room.game.targetingState = null;
         Game.endTurn(room.game);
@@ -91,6 +99,14 @@ function registerChesspell(io) {
         chesspellRooms[code].clock.stop();
         delete chesspellRooms[code];
     }
+
+    /** Close a room nobody uses any more, and tell its players why. */
+    function closeIdleRoom(code, reason = 'Game closed after 15 minutes without activity.') {
+        ioChesspell.to(code).emit('roomClosed', reason);
+        ioChesspell.in(code).socketsLeave(code);
+        closeRoom(code);
+    }
+    sweepIdleRooms(chesspellRooms, (code) => closeIdleRoom(code));
 
     ioChesspell.on('connection', (socket) => {
         console.log('Chesspell User connected:', socket.id);
@@ -113,6 +129,8 @@ function registerChesspell(io) {
                 profiles: { 1: sanitizeProfile(data.profile, deck), 2: null },
                 game: null,
                 clock: /** @type {TurnClock} */ (null),
+                idleTurns: 0,
+                ...roomOrigin(socket),
             };
             room.clock = new TurnClock(sanitizeTimer(data), () => timeUp(room));
 
