@@ -18,6 +18,7 @@ export const engine = {
         ChesspellGame.newGame(this);
         this.gameOverShown = false;
         this.cancelSpell();
+        document.getElementById('game-over-modal').classList.add('hidden');
     },
 
     destroyPiece(p) {
@@ -25,20 +26,21 @@ export const engine = {
         this.showGameOver();
     },
 
-    /** Once a king is captured: announce the winner and, online, leave the room. */
-    showGameOver() {
+    /**
+     * Once there is a winner (a king captured, or a player out of time): the game stops,
+     * the profiles keep the result, and the end screen comes up after the last move.
+     * @param {'king' | 'time'} reason
+     */
+    showGameOver(reason = 'king') {
         if (!this.winner || this.gameOverShown) return;
         this.gameOverShown = true;
+        clearInterval(app.timerInterval);
+        document.getElementById('spell-instruction').classList.add('hidden');
+        app.recordResult(this.winner.toLowerCase());
         const winner = this.winner;
         setTimeout(() => {
-            alert(`Game Over! ${winner} wins!`);
-            if (session.isOnline && socket) {
-                socket.emit('leaveRoom', { roomCode: session.currentRoomCode });
-                session.currentRoomCode = null;
-                session.isOnline = false;
-                app.showScreen('main-menu');
-            }
-        }, 500);
+            if (this.winner === winner && this.gameOverShown) app.showEndScreen(winner.toLowerCase(), reason);
+        }, 700);
     },
 
     getColor(p) {
@@ -54,6 +56,7 @@ export const engine = {
     },
 
     endTurn() {
+        if (this.winner) return; // No next turn once the game is over
         ChesspellGame.endTurn(this);
         app.startTimer();
         if (this.turn === 'black' && app.isBotGame) {
@@ -62,6 +65,7 @@ export const engine = {
     },
 
     move(r1, c1, r2, c2, isFromNetwork = false) {
+        if (this.winner) return; // The game is over
         if (session.isOnline && !isFromNetwork) {
             socket.emit('makeMove', { roomCode: session.currentRoomCode, from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
             app.renderChessboard(); // Snap back visually and clear highlights
@@ -95,6 +99,7 @@ export const engine = {
     },
 
     activateSpell(cardId, cardEl, isFromNetwork = false) {
+        if (this.winner) return;
         this.activeCardEl = cardEl;
         spellFx.begin(cardId);
         if (cardEl) { // The card flares up as it is cast
@@ -120,7 +125,7 @@ export const engine = {
     },
 
     handleSquareClick(r, c, isFromNetwork = false) {
-        if (!this.targetingState) return;
+        if (!this.targetingState || this.winner) return;
 
         if (session.isOnline && !isFromNetwork) {
             if (session.myPlayerColor !== engine.turn) return; // Only active player can click targets
@@ -184,7 +189,7 @@ export const engine = {
         } else if (action && action.type === 'target' && wasTargeting && !state.targetingState) {
             spellFx.finish();
         }
-        this.showGameOver();
+        this.showGameOver(action && action.type === 'timeout' ? 'time' : 'king');
         return action;
     },
 };

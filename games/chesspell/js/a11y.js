@@ -125,6 +125,8 @@ export function onBoardKeydown(e) {
 export const DIALOGS = [
     { id: 'card-modal', title: 'modal-title', initial: 'modal-confirm', cancel: 'modal-cancel' },
     { id: 'info-modal', title: 'info-modal-title', initial: 'info-modal-close', cancel: 'info-modal-close' },
+    // The end screen has no cancel: Escape does not bring back a finished game.
+    { id: 'game-over-modal', title: 'game-over-title', initial: 'game-over-rematch', cancel: '' },
 ];
 
 export function focusableIn(root) {
@@ -144,7 +146,8 @@ export function setupDialog({ id, title, initial, cancel }) {
         if (open && !opener) {
             opener = document.activeElement;
             // Buttons are re-created when the dialog opens: look them up now.
-            document.getElementById(initial)?.focus();
+            const first = document.getElementById(initial);
+            (first && first.getClientRects().length ? first : focusableIn(modal)[0])?.focus();
         } else if (!open && opener) {
             const back = opener;
             opener = null;
@@ -157,7 +160,7 @@ export function setupDialog({ id, title, initial, cancel }) {
     modal.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             e.preventDefault();
-            document.getElementById(cancel)?.click();
+            if (cancel) document.getElementById(cancel)?.click();
         } else if (e.key === 'Tab') {
             const items = focusableIn(modal);
             if (!items.length) return;

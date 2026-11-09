@@ -1,6 +1,6 @@
 // @ts-check
 // App shell: state, menus, screens, game setup and timer. Other app-*.js files add methods.
-import { session } from './state.js';
+import { session, socket } from './state.js';
 import { engine } from './game-engine.js';
 import { ProfileManager } from './profiles.js';
 
@@ -37,7 +37,9 @@ export const app = /** @type {any} */ ({
         
         this.renderCards('index-grid', false);
         this.renderCards('deck-grid', true);
-        this.updateSelectionUI();
+        document.getElementById('deck-profile-select').addEventListener('change', (e) => {
+            this.loadDeck(/** @type {HTMLSelectElement} */ (e.target).value);
+        });
         this.setupOnlineListeners();
     },
 
@@ -71,25 +73,74 @@ export const app = /** @type {any} */ ({
         }
     },
 
+    /** The deck builder, opened on a profile's deck (from its card in Manage Profiles). */
     buildDeckForProfile(profileId) {
         this.editingDeckForProfileId = profileId;
-        const profile = ProfileManager.profiles.find(p => p.id === profileId);
-        this.selectedCards = new Set(profile.deck || []);
         this.showScreen('deck-builder');
-        this.renderCards('deck-grid', true);
+    },
+
+    /** Fill the profile list and show the deck of the profile being edited (or the first). */
+    openDeckBuilder() {
+        const select = /** @type {HTMLSelectElement} */ (document.getElementById('deck-profile-select'));
+        select.replaceChildren(...ProfileManager.profiles.map((p) => new Option(p.name, p.id)));
+        const known = ProfileManager.profiles.some((p) => p.id === this.editingDeckForProfileId);
+        this.loadDeck(known ? this.editingDeckForProfileId : ProfileManager.profiles[0]?.id);
+    },
+
+    /** Show a profile's saved deck, ready to change. */
+    loadDeck(profileId) {
+        const profile = ProfileManager.profiles.find((p) => p.id === profileId);
+        this.editingDeckForProfileId = profile ? profile.id : null;
+        this.selectedCards = new Set(profile ? profile.deck : []);
+        if (profile) /** @type {HTMLSelectElement} */ (document.getElementById('deck-profile-select')).value = profile.id;
+        this.deckMessage(profile
+            ? 'Click a card to add it to the deck or take it out. A deck holds three cards.'
+            : 'Create a profile first (Manage Profiles): each profile keeps its own deck.');
         this.updateSelectionUI();
     },
 
     saveDeckForProfile() {
-        if (!this.editingDeckForProfileId) return;
         const profile = ProfileManager.profiles.find(p => p.id === this.editingDeckForProfileId);
-        if (profile) {
-            profile.deck = Array.from(this.selectedCards);
-            ProfileManager.saveProfiles();
-            ProfileManager.renderProfilesList();
-            alert(`Deck saved for ${profile.name}!`);
-            this.showScreen('profiles-screen');
+        if (!profile || this.selectedCards.size !== this.maxCards) return;
+        profile.deck = Array.from(this.selectedCards);
+        ProfileManager.saveProfiles();
+        ProfileManager.renderProfilesList();
+        this.deckMessage(`Deck saved for ${profile.name}.`);
+    },
+
+    /** A finished game counts in the players' profiles (not the bot's, not the opponent's online). */
+    recordResult(winner) {
+        let changed = false;
+        for (const [color, profile] of [['white', this.p1Profile], ['black', this.p2Profile]]) {
+            if (!ProfileManager.profiles.includes(profile)) continue;
+            profile.stats.played++;
+            if (color === winner) profile.stats.wins++;
+            changed = true;
         }
+        if (!changed) return;
+        ProfileManager.saveProfiles();
+        ProfileManager.renderProfilesList();
+    },
+
+    /** Same players, same decks, a fresh board. */
+    rematch() {
+        if (this.timerMode === 'overall') {
+            this.timeLeftP1 = this.timerMinutes * 60 + this.timerSeconds;
+            this.timeLeftP2 = this.timeLeftP1;
+        }
+        this.initGame();
+    },
+
+    /** From the end screen back to the menu (online, the room is left). */
+    leaveGame() {
+        document.getElementById('game-over-modal').classList.add('hidden');
+        clearInterval(this.timerInterval);
+        if (session.isOnline && socket) {
+            if (session.currentRoomCode) socket.emit('leaveRoom', { roomCode: session.currentRoomCode });
+            session.currentRoomCode = null;
+            session.isOnline = false;
+        }
+        this.showScreen('main-menu');
     },
 
     toggleTabletopMode() {
@@ -116,9 +167,7 @@ export const app = /** @type {any} */ ({
         if (screenId === 'player-select-screen') {
             this.updatePlayerSelects();
         }
-        if (screenId !== 'deck-builder') {
-            this.editingDeckForProfileId = null; // Clear context if leaving deck builder
-        }
+        if (screenId === 'deck-builder') this.openDeckBuilder();
     },
 
     startGame(skipDraft) {
@@ -222,8 +271,8 @@ export const app = /** @type {any} */ ({
         clearInterval(this.timerInterval);
         if (session.isOnline) return; // Online, the server keeps the clock and decides
         if (this.timerMode === 'overall') {
-            alert(`Game Over! ${player === 'white' ? 'Black' : 'White'} wins on time!`);
-            this.showScreen('main-menu');
+            engine.winner = player === 'white' ? 'Black' : 'White';
+            engine.showGameOver('time');
         } else {
             // Skip turn
             engine.endTurn();

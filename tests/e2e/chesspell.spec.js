@@ -150,11 +150,51 @@ test.describe("Ches'spell", () => {
     await clickMove(page, [6, 6], [4, 6]); // g4
     await clickMove(page, [0, 3], [4, 7]); // Qh4
     await clickMove(page, [6, 1], [5, 1]); // b3
-    const gameOver = page.waitForEvent('dialog');
     await clickMove(page, [4, 7], [7, 4]); // Qxe1
-    const dialog = await gameOver;
-    expect(dialog.message()).toBe('Game Over! Black wins!');
-    await dialog.accept();
+
+    // The end screen: who won and how, over the final board.
+    const end = page.getByRole('dialog', { name: 'Guest 2 wins' });
+    await expect(end).toBeVisible();
+    await expect(end).toContainText('The white king has fallen.');
+    // The game is over: no more moves, no more spells.
+    await page.evaluate(() => chesspell.engine.move(6, 0, 5, 0));
+    expect(await pieceAt(page, 6, 0)).toBe('P');
+    expect(await turn(page)).toBe('black'); // No next turn after the king falls
+    // Both profiles keep the result.
+    const stats = await page.evaluate(() => JSON.parse(localStorage.getItem('spellChessProfiles') || '[]')
+      .map((p) => `${p.name}: ${p.stats.played} played, ${p.stats.wins} won`));
+    expect(stats).toEqual(['Guest 1: 1 played, 0 won', 'Guest 2: 1 played, 1 won']);
+
+    // Rematch: same decks, a fresh board.
+    await end.getByRole('button', { name: 'Rematch' }).click();
+    await expect(end).toBeHidden();
+    expect(await pieceAt(page, 7, 4)).toBe('K');
+    expect(await pieceAt(page, 4, 0)).toBe(null);
+    await expect(page.locator('#player1-cards .in-game-card.used')).toHaveCount(0);
+    await clickMove(page, [6, 4], [4, 4]); // e4: the board plays again
+    expect(await turn(page)).toBe('black');
+    expect(errors).toEqual([]);
+  });
+
+  test('campaign: a defeat on time ends the game, from the player\'s side', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await seedProfiles(page);
+    await page.goto('/chesspell/');
+    await page.getByRole('button', { name: 'Local Game' }).click();
+    await page.getByRole('button', { name: 'Play Campaign Mode' }).click();
+    await page.getByRole('button', { name: 'Start Match' }).click();
+    await expect(page.locator('#game-board')).toHaveClass(/active/);
+    await page.evaluate(() => {
+      const { app } = chesspell;
+      app.timerMode = 'overall';
+      app.timeLeftP1 = 1;
+    });
+    const end = page.getByRole('dialog', { name: 'Defeat' });
+    await expect(end).toBeVisible({ timeout: 5000 });
+    await expect(end).toContainText('Guest 1 ran out of time.');
+    await expect(end.getByRole('button', { name: 'Rematch' })).toBeVisible();
+    await end.getByRole('button', { name: 'Main menu' }).click();
+    await expect(page.locator('#main-menu')).toHaveClass(/active/);
     expect(errors).toEqual([]);
   });
 

@@ -104,8 +104,9 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
         });
 
         socket.on('opponentLeft', () => {
-            alert("Your opponent left the game.");
             session.currentRoomCode = null;
+            if (engine.winner) return; // The game is over: the end screen stays up
+            alert("Your opponent left the game.");
             session.isOnline = false;
             this.showScreen('main-menu');
         });

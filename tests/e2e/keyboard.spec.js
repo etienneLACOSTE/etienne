@@ -124,11 +124,17 @@ test.describe("Keyboard: Ches'spell", () => {
     await keyMove(page, [6, 6], [4, 6]); // g4
     await keyMove(page, [0, 3], [4, 7]); // Qh4
     await keyMove(page, [6, 1], [5, 1]); // b3
-    const gameOver = page.waitForEvent('dialog');
     await keyMove(page, [4, 7], [7, 4]); // Qxe1
-    const dialog = await gameOver;
-    expect(dialog.message()).toBe('Game Over! Black wins!');
-    await dialog.accept();
+    // The end screen takes the focus, on Rematch; Escape does not close it.
+    const end = page.getByRole('dialog', { name: 'Guest 2 wins' });
+    await expect(end).toBeVisible();
+    await expect(page.locator('#game-over-rematch')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(end).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#game-over-menu')).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#main-menu')).toHaveClass(/active/);
   });
 });
 

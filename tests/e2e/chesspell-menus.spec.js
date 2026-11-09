@@ -78,15 +78,52 @@ test.describe("Ches'spell menus", () => {
 
     await card.getByRole('button', { name: 'Build Deck' }).click();
     await expect(active(page)).toHaveId('deck-builder');
+    await expect(page.locator('#deck-profile-select option:checked')).toHaveText('Ana');
+    const save = page.locator('#save-deck-btn');
+    await expect(save).toBeDisabled();
     const unlocked = page.locator('#deck-grid .spell-card:not(.locked)');
     for (let i = 0; i < 3; i++) await unlocked.nth(i).click();
-    // The alert opens during the click itself, so answer it from a handler set beforehand.
-    let message = '';
-    page.once('dialog', async (dialog) => { message = dialog.message(); await dialog.accept(); });
-    await page.locator('#save-deck-btn').click();
-    await expect.poll(() => message).toBe('Deck saved for Ana!');
-    await expect(active(page)).toHaveId('profiles-screen');
+    await save.click();
+    await expect(page.locator('#deck-status')).toHaveText('Deck saved for Ana.');
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Manage Profiles' }).click();
     await expect(card).toContainText('Deck: Ready');
+    expect(errors).toEqual([]);
+  });
+
+  test('deck builder: shows the saved deck of each profile and changes it', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await page.addInitScript(() => localStorage.setItem('spellChessProfiles', JSON.stringify([
+      { id: 'a', name: 'Ana', avatar: '', stats: { played: 0, wins: 0 }, deck: [1, 5, 8] },
+      { id: 'b', name: 'Bo', avatar: '', stats: { played: 0, wins: 0 }, deck: [9, 11, 12] },
+    ])));
+    await page.goto('/chesspell/');
+    await page.getByRole('button', { name: 'Deck Builder' }).click();
+
+    // From the menu: the first profile's deck, in the slots and glowing in the grid.
+    const slots = page.locator('#deck-slots li');
+    await expect(page.locator('#deck-profile-select option:checked')).toHaveText('Ana');
+    await expect(slots).toHaveText([/Cannibalism/, /Ghost/, /Wall/]);
+    await expect(page.locator('#deck-grid .spell-card.selected')).toHaveCount(3);
+    await expect(page.locator('#deck-grid .spell-card[data-id="8"] .card-main')).toHaveAttribute('aria-pressed', 'true');
+
+    // Another profile: its own deck.
+    await page.locator('#deck-profile-select').selectOption('b');
+    await expect(slots).toHaveText([/Revive/, /Shield/, /Leap Frog/]);
+
+    // A slot takes its card out; the deck cannot be saved short of three cards.
+    await page.getByRole('button', { name: 'Remove Shield from the deck' }).click();
+    await expect(slots).toHaveText([/Revive/, /Leap Frog/, 'Empty slot']);
+    await expect(page.locator('#save-deck-btn')).toBeDisabled();
+    // A full deck: one more card is refused, with a message.
+    await page.locator('#deck-grid .spell-card[data-id="1"]').click();
+    await page.locator('#deck-grid .spell-card[data-id="5"]').click();
+    await expect(page.locator('#deck-status')).toContainText('Your deck is full');
+    await expect(slots).toHaveText([/Revive/, /Leap Frog/, /Cannibalism/]);
+    await page.locator('#save-deck-btn').click();
+
+    const decks = await page.evaluate(() => JSON.parse(localStorage.getItem('spellChessProfiles') || '[]').map((p) => p.deck));
+    expect(decks).toEqual([[1, 5, 8], [9, 12, 1]]);
     expect(errors).toEqual([]);
   });
 });

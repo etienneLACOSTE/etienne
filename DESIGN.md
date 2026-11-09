@@ -131,14 +131,21 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
   ring outlined in ink (both read on either square).
 - Dialogs: a vellum card held up to the light (gold frame, bronze inner frame) over a
   night veil at 78%.
+- End screen: the same dialog, headed "✦ Finis ✦": the fallen king (it topples) or an
+  hourglass (time) in the medallion, then Victory / Defeat (facing the bot or online) or
+  "<name> wins" (two players), the reason, Rematch and Main menu. Defeat: lilac glow,
+  ink-soft title.
+- Deck builder: a panel above the cards: "Deck of [profile]", count and Save (disabled
+  until three cards), then three slots (a small vellum arcana with ✕, or a dashed
+  "Empty slot") and a hint line that also carries the messages.
 - Sky (`js/sky.js`): a canvas behind the app; stars twinkle slowly (a few bright ones
   with a cross of light) and gold and lilac motes drift upwards. Still under reduced
   motion and while the tab is hidden.
 - Spell effects (`js/spell-fx.js`): when a spell resolves, an overlay over the board
   plays its effect: frost (Freeze), whirl (Tornado, Domi Reversi, Swap), beam (Sniper),
   burst (Kamikaze, Sacrifice), lightning (Double Trouble), ward (Shield), rising light
-  (Revive), runes for the others. Online, the opponent only sees a board-wide flash, so
-  where a Trap lies stays secret. None under reduced motion.
+  (Revive), runes for the others. Online, the opponent only sees a board-wide flash (their
+  page does not get the squares). None under reduced motion.
 
 **Stade**
 - Header bar: black, white wordmark in Big Shoulders 900 uppercase.

@@ -90,7 +90,7 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
 
     /** The bot's turn: maybe a spell, then a move (bot.js decides, within BOT_THINKING_MS). */
     playBotTurn() {
-        if (engine.isGameOver || this.winner) return;
+        if (engine.winner) return;
         if (engine.turn !== 'black' || this.isOnlineMultiplayer) return;
 
         setTimeout(() => {

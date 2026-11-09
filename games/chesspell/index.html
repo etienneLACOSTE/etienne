@@ -26,21 +26,25 @@
                 <button class="btn btn-quiet" data-action="showScreen" data-screen="timer-modal">Timer</button>
                 <button class="btn btn-quiet" data-action="toggleTabletopMode">Tabletop Mode</button>
             </div>
-            <div class="deck-status" id="deck-status-display">
-                Deck: 0/3 cards selected
-            </div>
         </section>
 
         <!-- Deck Builder -->
         <section id="deck-builder" class="screen">
             <header>
                 <h2>Deck Builder</h2>
-                <div class="header-controls">
-                    <span class="selection-count" id="selection-count">0/3 Cards Selected</span>
-                    <button class="btn btn-small btn-primary" id="save-deck-btn" style="display: none;" data-action="saveDeck">Save Deck</button>
-                    <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back</button>
-                </div>
+                <button class="btn btn-small" data-action="showScreen" data-screen="main-menu">Back</button>
             </header>
+            <div class="deck-bar">
+                <div class="deck-bar-top">
+                    <label class="deck-owner" for="deck-profile-select">Deck of
+                        <select id="deck-profile-select"></select>
+                    </label>
+                    <span class="selection-count" id="selection-count">0/3 cards</span>
+                    <button class="btn btn-small btn-primary" id="save-deck-btn" data-action="saveDeck" disabled>Save Deck</button>
+                </div>
+                <ol class="deck-slots" id="deck-slots" aria-label="Cards in the deck"></ol>
+                <p class="deck-hint" id="deck-status" role="status"></p>
+            </div>
             <div class="cards-grid" id="deck-grid">
                 <!-- Cards injected via JS -->
             </div>
@@ -225,6 +229,20 @@
         </div>
 
         <!-- Timer Selection Modal -->
+        <!-- End of the game: shown over the final board -->
+        <div id="game-over-modal" class="modal hidden">
+            <div class="modal-content end-content">
+                <span class="card-numeral" aria-hidden="true">Finis</span>
+                <div id="game-over-icon" class="modal-icon" aria-hidden="true"></div>
+                <h3 id="game-over-title"></h3>
+                <p id="game-over-reason"></p>
+                <div class="modal-buttons">
+                    <button id="game-over-rematch" class="btn btn-primary" data-action="rematch">Rematch</button>
+                    <button id="game-over-menu" class="btn" data-action="leaveGame">Main menu</button>
+                </div>
+            </div>
+        </div>
+
         <section id="timer-modal" class="screen">
             <header>
                 <h2>Timer Options</h2>

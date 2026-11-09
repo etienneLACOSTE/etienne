@@ -175,6 +175,7 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
             });
             
             cardEl.addEventListener('click', () => {
+                if (engine.winner) return; // The game is over
                 if (this.isBotGame && playerColor === 'black') return alert("You cannot use the bot's spells!");
                 if (!cardEl.classList.contains('used') && engine.turn === playerColor && !engine.targetingState) {
                     this.showCardModal(card, cardEl);
@@ -226,6 +227,32 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
         newCancel.addEventListener('click', () => {
             modal.classList.add('hidden');
         });
+    },
+
+    /**
+     * The end of the game, over the final board: who won and how, then a rematch or the menu.
+     * Facing the bot or online, from the player's side (Victory or Defeat).
+     * @param {'white' | 'black'} winner
+     * @param {'king' | 'time'} reason
+     */
+    showEndScreen(winner, reason) {
+        const loser = winner === 'white' ? 'black' : 'white';
+        const names = { white: this.p1Profile?.name || 'White', black: this.p2Profile?.name || 'Black' };
+        const me = session.isOnline ? session.myPlayerColor : this.isBotGame ? 'white' : null;
+        const title = me ? (me === winner ? 'Victory' : 'Defeat') : `${names[winner]} wins`;
+        const how = reason === 'time' ? `${names[loser]} ran out of time.` : `The ${loser} king has fallen.`;
+        const icon = document.getElementById('game-over-icon');
+        const sign = document.createElement('span');
+        sign.className = reason === 'time' ? 'end-sign' : 'end-sign fallen';
+        sign.textContent = reason === 'time' ? '⌛' : PIECE_MAP[loser === 'white' ? 'K' : 'k'];
+        icon.replaceChildren(sign);
+        document.getElementById('game-over-title').textContent = title;
+        document.getElementById('game-over-reason').textContent =
+            me ? `${how} ${names[winner]} defeats ${names[loser]}.` : how;
+        document.getElementById('game-over-rematch').classList.toggle('hidden', session.isOnline);
+        const modal = document.getElementById('game-over-modal');
+        modal.classList.toggle('end-defeat', Boolean(me) && me !== winner);
+        modal.classList.remove('hidden');
     },
 
     showInfoModal(card) {
@@ -345,7 +372,7 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
                         }
                     });
 
-                    if (engine.getColor(p) === engine.turn && !engine.targetingState) {
+                    if (engine.getColor(p) === engine.turn && !engine.targetingState && !engine.winner) {
                         if (!session.isOnline || engine.turn === session.myPlayerColor) {
                             this.setupDrag(pieceEl, r, c);
                         }
@@ -549,38 +576,63 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
     },
 
     toggleCardSelection(cardId, cardElement, isLocked) {
-        if (isLocked) {
-            alert("This card is locked! Complete the objective to unlock it.");
-            return;
-        }
-
+        if (isLocked) return this.deckMessage('This card is locked: complete its objective to unlock it.');
         if (this.selectedCards.has(cardId)) {
             this.selectedCards.delete(cardId);
-            cardElement.classList.remove('selected');
+        } else if (this.selectedCards.size >= this.maxCards) {
+            return this.deckMessage(`Your deck is full: remove a card first (click it, or its slot above).`);
         } else {
-            if (this.selectedCards.size >= this.maxCards) {
-                alert(`You can only select up to ${this.maxCards} cards.`);
-                return;
-            }
             this.selectedCards.add(cardId);
-            cardElement.classList.add('selected');
         }
-        
         this.updateSelectionUI();
     },
 
+    /** A short message under the deck (also read out by screen readers). */
+    deckMessage(text) {
+        document.getElementById('deck-status').textContent = text;
+    },
+
+    /** The deck being built: chosen cards glow in the grid and fill the three slots. */
     updateSelectionUI() {
+        const count = this.selectedCards.size;
         const countEl = document.getElementById('selection-count');
-        countEl.textContent = `${this.selectedCards.size}/${this.maxCards} Cards Selected`;
-        countEl.classList.toggle('complete', this.selectedCards.size === this.maxCards);
-        
-        const saveBtn = document.getElementById('save-deck-btn');
-        if (saveBtn) {
-            if (this.editingDeckForProfileId && this.selectedCards.size === this.maxCards) {
-                saveBtn.style.display = 'inline-block';
-            } else {
-                saveBtn.style.display = 'none';
+        countEl.textContent = `${count}/${this.maxCards} cards`;
+        countEl.classList.toggle('complete', count === this.maxCards);
+        /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('#deck-grid .spell-card')).forEach((el) => {
+            const chosen = this.selectedCards.has(Number(el.dataset.id));
+            el.classList.toggle('selected', chosen);
+            el.querySelector('.card-main').setAttribute('aria-pressed', String(chosen));
+        });
+
+        const slots = document.getElementById('deck-slots');
+        const chosen = [...this.selectedCards].map((id) => cardsData.find((c) => c.id === id)).filter(Boolean);
+        slots.replaceChildren(...Array.from({ length: this.maxCards }, (_, i) => {
+            const li = document.createElement('li');
+            const card = chosen[i];
+            if (!card) {
+                li.className = 'deck-slot empty';
+                li.textContent = 'Empty slot';
+                return li;
             }
-        }
+            li.className = 'deck-slot';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'deck-slot-card';
+            btn.setAttribute('aria-label', `Remove ${card.name} from the deck`);
+            btn.innerHTML = `<span class="deck-slot-icon" aria-hidden="true">${card.icon}</span>
+                <span class="deck-slot-text"><span class="card-numeral" aria-hidden="true">${roman(card.id)}</span>
+                <span class="deck-slot-name">${card.name}</span></span>
+                <span class="deck-slot-remove" aria-hidden="true">✕</span>`;
+            btn.addEventListener('click', () => {
+                this.selectedCards.delete(card.id);
+                this.updateSelectionUI();
+                document.getElementById('deck-slots').querySelector('button')?.focus();
+            });
+            li.appendChild(btn);
+            return li;
+        }));
+
+        const saveBtn = /** @type {HTMLButtonElement} */ (document.getElementById('save-deck-btn'));
+        saveBtn.disabled = !this.editingDeckForProfileId || count !== this.maxCards;
     },
 }));

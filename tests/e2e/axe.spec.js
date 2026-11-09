@@ -75,6 +75,14 @@ const CHESSPELL = {
     }
     await expect(page.locator('#game-board')).toHaveClass(/active/);
   },
+  'end screen': async (page) => {
+    await CHESSPELL.match(page);
+    await page.evaluate(() => { // A white queen on e7 takes the black king
+      chesspell.engine.board[1][4] = 'Q';
+      chesspell.engine.move(1, 4, 0, 4);
+    });
+    await expect(page.locator('#game-over-modal')).toBeVisible();
+  },
 };
 
 test.describe('axe audit', () => {
