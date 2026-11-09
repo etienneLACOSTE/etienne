@@ -31,6 +31,7 @@ test.describe('Visual baseline', () => {
 
   test("ches'spell main menu", async ({ page }) => {
     await page.goto('/chesspell/');
+    await expect(page.locator('#account-line')).toBeVisible(); // Filled after asking the server
     await expect(page).toHaveScreenshot('chesspell-menu.png');
   });
 

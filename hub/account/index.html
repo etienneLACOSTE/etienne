@@ -90,6 +90,16 @@
             <div class="panels">
                 <div class="panel">
                     <h2><span class="chip chip-lilac">Account</span></h2>
+                    <div class="avatar-row">
+                        <span class="avatar" id="account-avatar" aria-hidden="true"></span>
+                        <div class="avatar-actions">
+                            <label class="pill avatar-pick" for="avatar-input">Change picture</label>
+                            <input class="visually-hidden" id="avatar-input" type="file" accept="image/png, image/jpeg, image/webp" aria-describedby="avatar-hint">
+                            <button class="link-button" type="button" id="avatar-remove" hidden>Remove picture</button>
+                            <p class="hint" id="avatar-hint">Shown to your opponents online.</p>
+                        </div>
+                    </div>
+                    <p class="form-error" id="avatar-error" role="alert" hidden></p>
                     <dl class="facts">
                         <div><dt>Username</dt><dd id="fact-username"></dd></div>
                         <div><dt>Email</dt><dd id="fact-email"></dd></div>

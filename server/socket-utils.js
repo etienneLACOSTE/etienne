@@ -60,13 +60,13 @@ function addressFrom(headers, address) {
  * the handshake, same origin) and keep the signed-in user in socket.data.user (or null).
  * A database hiccup only makes the player a guest.
  * @param {{ use: Function }} namespace
- * @param {{ userFor: (cookie: string) => Promise<{ id: number, username: string } | null> } | null} sessions
+ * @param {{ userFor: (cookie: string, options?: { withAvatar?: boolean }) => Promise<{ id: number, username: string, avatar?: string } | null> } | null} sessions
  */
 function identifyPlayers(namespace, sessions) {
     namespace.use(async (socket, next) => {
         socket.data.user = null;
         if (sessions) {
-            try { socket.data.user = await sessions.userFor(socket.handshake.headers.cookie); } catch { /* guest */ }
+            try { socket.data.user = await sessions.userFor(socket.handshake.headers.cookie, { withAvatar: true }); } catch { /* guest */ }
         }
         next();
     });

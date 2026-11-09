@@ -367,6 +367,7 @@ header h2 {
 .deck-slot-remove { margin-left: auto; color: var(--ink-soft); font-weight: 700; }
 
 .deck-hint { color: var(--muted); font-size: 1rem; line-height: 1.5; }
+.deck-invite a { color: var(--gold); }
 
 @media (max-width: 600px) {
     .deck-slots { grid-template-columns: 1fr; }

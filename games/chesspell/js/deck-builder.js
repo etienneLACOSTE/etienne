@@ -31,9 +31,11 @@ export function buildDeckForProfile(profileId) {
 /** Fill the profile list and show the deck of the profile being edited (or the first). */
 export function openDeckBuilder() {
     const select = /** @type {HTMLSelectElement} */ (document.getElementById('deck-profile-select'));
-    select.replaceChildren(...ProfileManager.profiles.map((p) => new Option(p.name, p.id)));
+    const profiles = ProfileManager.all();
+    select.replaceChildren(...profiles.map((p) => new Option(p === ProfileManager.account ? `${p.name} (you)` : p.name, p.id)));
     const known = ProfileManager.find(builder.profileId);
-    loadDeck(known ? builder.profileId : ProfileManager.profiles[0]?.id);
+    loadDeck(known ? builder.profileId : profiles[0]?.id);
+    showAccountInvite(!ProfileManager.account);
 }
 
 /** Show a profile's saved deck, ready to change. */
@@ -48,10 +50,22 @@ function loadDeck(profileId) {
     updateSelectionUI();
 }
 
-export function saveDeckForProfile() {
+export async function saveDeckForProfile() {
     if (builder.cards.size !== DECK_SIZE) return;
-    const profile = ProfileManager.saveDeck(builder.profileId, builder.cards);
-    if (profile) deckMessage(`Deck saved for ${profile.name}.`);
+    try {
+        const profile = await ProfileManager.saveDeck(builder.profileId, builder.cards);
+        if (!profile) return;
+        deckMessage(profile === ProfileManager.account
+            ? 'Deck saved on your account: it follows you on every device.'
+            : `Deck saved for ${profile.name}, on this device.`);
+    } catch (err) {
+        deckMessage(err.message);
+    }
+}
+
+/** Without an account, the deck stays on this device: say how to keep it everywhere. */
+function showAccountInvite(show) {
+    document.getElementById('deck-account-invite').hidden = !show;
 }
 
 function toggleCard(cardId, isLocked) {

@@ -1,12 +1,19 @@
 // @ts-check
-// The signed-in player's own account, under /api/account: see it, download every piece
-// of data the site keeps about it, delete it.
+// The signed-in player's own account, under /api/account: see it, its picture, each
+// game's saved deck, download every piece of data the site keeps about it, delete it.
 
 const express = require('express');
 const { verifyPassword } = require('./passwords');
 const { COOKIE, cookieOptions, sessionStore } = require('./sessions');
 const { sameOrigin } = require('./routes');
 const { rateLimit } = require('./rate-limit');
+const { avatarProblem } = require('./avatar');
+const { sanitizeDeck } = require('../chesspell');
+
+/** What each game may save on the account, checked like the game server checks it. */
+const DECK_CHECKS = {
+    chesspell: (data) => sanitizeDeck(data),
+};
 
 /**
  * @param {import('../db').Db} db
@@ -15,7 +22,9 @@ const { rateLimit } = require('./rate-limit');
 function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 } = {}) {
     const sessions = sessionStore(db);
     const router = express.Router();
-    router.use(express.json({ limit: '4kb' }));
+    const smallBody = express.json({ limit: '4kb' });
+    const pictureBody = express.json({ limit: '48kb' });
+    router.use((req, res, next) => (req.path === '/avatar' ? pictureBody : smallBody)(req, res, next));
     router.use(sameOrigin);
     router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
@@ -29,7 +38,7 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
 
     const loadAccount = async (userId) => {
         const { rows } = await db.query(
-            'SELECT id, username, email, created_at, password_hash IS NOT NULL AS has_password FROM users WHERE id = $1',
+            'SELECT id, username, email, avatar, created_at, password_hash IS NOT NULL AS has_password FROM users WHERE id = $1',
             [userId],
         );
         const providers = (await db.query(
@@ -41,9 +50,40 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
     router.get('/', async (req, res) => {
         const a = await loadAccount(res.locals.user.id);
         res.json({ account: {
-            username: a.username, email: a.email, createdAt: a.created_at,
+            username: a.username, email: a.email, avatar: a.avatar || '', createdAt: a.created_at,
             hasPassword: a.has_password, providers: a.providers.map((p) => p.provider),
         } });
+    });
+
+    /** The account picture: set it (a small image, checked), or remove it with null. */
+    router.put('/avatar', async (req, res) => {
+        const { avatar } = req.body || {};
+        if (avatar !== null) {
+            const problem = avatarProblem(avatar);
+            if (problem) return res.status(400).json({ error: problem });
+        }
+        await db.query('UPDATE users SET avatar = $1 WHERE id = $2', [avatar, res.locals.user.id]);
+        res.json({ ok: true });
+    });
+
+    /** A game's saved deck (null when none). */
+    router.get('/decks/:game', async (req, res) => {
+        if (!DECK_CHECKS[req.params.game]) return res.status(404).json({ error: 'Not found.' });
+        const { rows } = await db.query('SELECT data FROM game_decks WHERE user_id = $1 AND game = $2', [res.locals.user.id, req.params.game]);
+        res.json({ deck: rows[0] ? rows[0].data : null });
+    });
+
+    router.put('/decks/:game', async (req, res) => {
+        const check = DECK_CHECKS[req.params.game];
+        if (!check) return res.status(404).json({ error: 'Not found.' });
+        const deck = check((req.body || {}).deck);
+        if (!deck) return res.status(400).json({ error: 'This deck is not valid.' });
+        await db.query(
+            `INSERT INTO game_decks (user_id, game, data) VALUES ($1, $2, $3::jsonb)
+             ON CONFLICT (user_id, game) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+            [res.locals.user.id, req.params.game, JSON.stringify(deck)],
+        );
+        res.json({ deck });
     });
 
     /** Everything stored about the player, as a JSON file (right of access, GDPR art. 15 and 20). */
@@ -52,10 +92,12 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
         const signedIn = (await db.query(
             'SELECT created_at, expires_at FROM sessions WHERE user_id = $1 ORDER BY created_at', [a.id],
         )).rows;
+        const decks = (await db.query('SELECT game, data, updated_at FROM game_decks WHERE user_id = $1 ORDER BY game', [a.id])).rows;
         res.attachment(`pawnet-account-${a.username}.json`);
         res.json({
             exportedAt: new Date().toISOString(),
-            account: { username: a.username, email: a.email, createdAt: a.created_at, hasPassword: a.has_password },
+            account: { username: a.username, email: a.email, createdAt: a.created_at, hasPassword: a.has_password, avatar: a.avatar || null },
+            decks: decks.map((d) => ({ game: d.game, deck: d.data, savedAt: d.updated_at })),
             linkedSignIns: a.providers.map((p) => ({ provider: p.provider, linkedAt: p.created_at })),
             sessions: signedIn.map((s) => ({ signedInAt: s.created_at, expiresAt: s.expires_at })),
             note: 'The password itself is never stored, only a one-way hash of it, which is not included.',

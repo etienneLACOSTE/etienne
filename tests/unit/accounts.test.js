@@ -215,3 +215,47 @@ test('account: another site cannot delete it (CSRF)', async () => {
     assert.equal(res.status, 403);
     assert.equal((await api('/api/auth/me', { cookie })).json.user.username, 'Ken');
 });
+
+const { avatarProblem } = require('../../server/accounts/avatar');
+const PNG_1PX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+test('avatar: only a small real JPEG, PNG or WebP image is accepted', () => {
+    assert.equal(avatarProblem(PNG_1PX), null);
+    const jpeg = `data:image/jpeg;base64,${Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, ...Array(20).fill(1)]).toString('base64')}`;
+    assert.equal(avatarProblem(jpeg), null);
+    assert.match(avatarProblem(PNG_1PX.replace('image/png', 'image/jpeg')), /JPEG, PNG or WebP/, 'type and bytes must agree');
+    assert.match(avatarProblem('data:image/svg+xml;base64,PHN2Zz4='), /JPEG, PNG or WebP/);
+    assert.match(avatarProblem('javascript:alert(1)'), /JPEG, PNG or WebP/);
+    assert.match(avatarProblem(`data:image/png;base64,${Buffer.alloc(30_000, 1).toString('base64')}`), /too large/);
+    assert.match(avatarProblem(42), /too large/);
+});
+
+test('account: set and remove the picture; refused when not an image', async () => {
+    const { cookie } = await signup('Liam');
+    const put = (avatar) => api('/api/account/avatar', { method: 'PUT', body: { avatar }, cookie });
+    assert.equal((await put('data:image/png;base64,AAAA')).status, 400);
+    assert.equal((await put(PNG_1PX)).status, 200);
+    assert.equal((await api('/api/account', { cookie })).json.account.avatar, PNG_1PX);
+    assert.equal((await put(null)).status, 200);
+    assert.equal((await api('/api/account', { cookie })).json.account.avatar, '');
+});
+
+test('account: a game deck is checked, saved, read back, exported and deleted with the account', async () => {
+    const { cookie } = await signup('Mona');
+    const deckApi = (body, game = 'chesspell') => api(`/api/account/decks/${game}`, body ? { method: 'PUT', body, cookie } : { cookie });
+    assert.deepEqual((await deckApi()).json, { deck: null });
+    assert.equal((await deckApi({ deck: [1, 1, 2] })).status, 400);
+    assert.equal((await deckApi({ deck: [1, 2, 99] })).status, 400);
+    assert.equal((await deckApi({ deck: [1, 2, 3, 4] })).status, 400);
+    assert.equal((await deckApi({ deck: [8, 16, 10] }, 'poker')).status, 404);
+    assert.equal((await deckApi({ deck: [8, 16, 10] })).status, 200);
+    assert.equal((await deckApi({ deck: [8, 16, 12] })).status, 200);
+    assert.deepEqual((await deckApi()).json, { deck: [8, 16, 12] });
+
+    const res = await fetch(`${base}/api/account/export`, { headers: { cookie } });
+    assert.deepEqual((await res.json()).decks.map((d) => [d.game, d.deck]), [['chesspell', [8, 16, 12]]]);
+
+    await api('/api/account', { method: 'DELETE', body: { confirm: 'Mona', password: 'correct horse battery' }, cookie });
+    const { rows } = await db.query('SELECT count(*)::int AS n FROM game_decks');
+    assert.equal(rows[0].n, 0);
+});

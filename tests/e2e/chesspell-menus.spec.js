@@ -84,7 +84,7 @@ test.describe("Ches'spell menus", () => {
     const unlocked = page.locator('#deck-grid .spell-card:not(.locked)');
     for (let i = 0; i < 3; i++) await unlocked.nth(i).click();
     await save.click();
-    await expect(page.locator('#deck-status')).toHaveText('Deck saved for Ana.');
+    await expect(page.locator('#deck-status')).toHaveText('Deck saved for Ana, on this device.');
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Manage Profiles' }).click();
     await expect(card).toContainText('Deck: Ready');

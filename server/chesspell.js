@@ -43,13 +43,13 @@ function sanitizeDeck(deck) {
 const count = (n) => (Number.isInteger(n) && n >= 0 ? n : 0);
 
 /**
- * The profile shown to the opponent. A signed-in player's name is their account's,
- * set here: online, nobody can take another player's name.
+ * The profile shown to the opponent. A signed-in player's name and picture are their
+ * account's, set here: online, nobody can take another player's name.
  */
 function playerProfile(socket, profile, deck) {
     const safe = sanitizeProfile(profile, deck);
     const user = socket.data.user;
-    return user ? { ...safe, id: `u${user.id}`, name: user.username } : safe;
+    return user ? { ...safe, id: `u${user.id}`, name: user.username, avatar: user.avatar || '' } : safe;
 }
 
 /** Keep only the profile fields the opponent needs, with safe values. */

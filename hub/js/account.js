@@ -86,10 +86,54 @@ const NOTICES = {
     taken: 'That account is already linked to another player.',
 };
 
+/** Size of the account picture, in pixels (square, like the games' profiles). */
+const AVATAR_SIZE = 150;
+
+/**
+ * The chosen image, cropped to a centred square and made a small JPEG data URL. Read as
+ * a data: URL (the site's CSP allows data: images, not blob: ones).
+ */
+function shrinkPicture(file) {
+    return new Promise((resolve, reject) => {
+        const notAPicture = () => reject(new Error('This file is not a picture.'));
+        const reader = new FileReader();
+        reader.onerror = notAPicture;
+        reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = AVATAR_SIZE;
+                canvas.height = AVATAR_SIZE;
+                const side = Math.min(img.width, img.height);
+                canvas.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+                resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.onerror = notAPicture;
+            img.src = /** @type {string} */ (reader.result);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+/** The account picture, or the first letter of the username on lilac. */
+function showAvatar(account) {
+    const box = $('account-avatar');
+    if (account.avatar) {
+        const img = document.createElement('img');
+        img.src = account.avatar; // A checked data URL (server/accounts/avatar.js)
+        img.alt = '';
+        box.replaceChildren(img);
+    } else {
+        box.replaceChildren(account.username.charAt(0).toUpperCase());
+    }
+    $('avatar-remove').hidden = !account.avatar;
+}
+
 /** What the page shows for a signed-in player: their account and its data. */
 async function showAccount() {
     const { account } = await send('GET', '/api/account');
     $('account-title').textContent = `Hello, ${account.username}`;
+    showAvatar(account);
     $('fact-username').textContent = account.username;
     $('fact-email').textContent = account.email || 'None';
     // Each way to sign in; a linked provider can be unlinked if another way remains.
@@ -164,6 +208,33 @@ handleForm($('finish-form'), 'finish-error', async (data) => {
     await send('POST', '/api/auth/finish', { username: data.get('username') });
     afterSignIn();
 });
+
+/** Change or remove the picture; errors show under it. */
+async function setAvatar(avatar) {
+    const error = $('avatar-error');
+    error.hidden = true;
+    try {
+        await send('PUT', '/api/account/avatar', { avatar });
+        await showAccount();
+    } catch (err) {
+        error.textContent = err.message;
+        error.hidden = false;
+    }
+}
+
+$('avatar-input').addEventListener('change', async (e) => {
+    const input = /** @type {HTMLInputElement} */ (e.target);
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    try {
+        await setAvatar(await shrinkPicture(file));
+    } catch (err) {
+        $('avatar-error').textContent = err.message;
+        $('avatar-error').hidden = false;
+    }
+});
+$('avatar-remove').addEventListener('click', () => setAvatar(null));
 
 handleForm($('delete-form'), 'delete-error', async (data) => {
     await send('DELETE', '/api/account', { confirm: data.get('confirm'), password: data.get('password') || undefined });

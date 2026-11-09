@@ -124,6 +124,8 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
   Forms: bold label above the field; fields with a 2px ink border, radius 12px; hint lines
   in 1rem ink; errors in a coral box with an ink border (role="alert"). Dangerous action
   (account deletion): folded in a `<details>`, coral button.
+- Account picture: a 4.5rem circle with a 3px ink border (the first letter of the
+  username on lilac when there is none), "Change picture" pill and "Remove picture" link.
 - Top bar: game pills, then the account pill (ink): "Sign in", or the player's name.
   The pills wrap on narrow screens.
 
@@ -148,6 +150,9 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
   hourglass (time) in the medallion, then Victory / Defeat (facing the bot or online) or
   "<name> wins" (two players), the reason, Rematch and Main menu. Defeat: lilac glow,
   ink-soft title.
+- Account line (main menu): muted text, the name in mist, the link in gold ("Sign in to
+  keep your deck and stats on every device", or "Signed in as <name>"). Stade: muted on
+  black, name in white, link in amber. The deck builder repeats the invitation.
 - Deck builder: a panel above the cards: "Deck of [profile]", count and Save (disabled
   until three cards), then three slots (a small vellum arcana with ✕, or a dashed
   "Empty slot") and a hint line that also carries the messages.

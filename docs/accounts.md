@@ -28,7 +28,7 @@ player on every device. Playing without an account stays possible everywhere.
 2. **Accounts** (done): `/account/` (sign in, create, account, data download, deletion),
    `/privacy/`, Google sign-in with a username chosen on first sign-in, top-bar button,
    "Play as a guest".
-3. **The games on the account** (in progress)
+3. **The games on the account** (in progress: 3a and 3b done)
    - 3a. The game servers know the signed-in player (session cookie read at the Socket.io
      handshake); online, the name shown to the opponent is the account's, set by the
      server. Each game's menu shows who is signed in, or a sign-in button that comes

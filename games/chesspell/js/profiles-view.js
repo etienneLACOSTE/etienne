@@ -49,14 +49,20 @@ export function setupPlayerBanner(containerId, profile) {
 }
 
 /** Fill the player lists of the menus (local game, online) with the profiles. */
+/**
+ * Fill the player lists of the menus. Signed in, player 1 is the account (first and
+ * chosen); player 2 on the same screen is always a guest profile.
+ */
 export function updatePlayerSelects() {
-    const options = () => ProfileManager.profiles.map((p) => new Option(p.name, p.id));
+    const label = (p) => (p === ProfileManager.account ? `${p.name} (you)` : p.name);
+    const options = (profiles) => profiles.map((p) => new Option(label(p), p.id));
     const p1Select = /** @type {HTMLSelectElement} */ (document.getElementById('p1-select'));
     const p2Select = /** @type {HTMLSelectElement} */ (document.getElementById('p2-select'));
-    p1Select.replaceChildren(...options());
-    p2Select.replaceChildren(...options());
-    if (ProfileManager.profiles.length > 1) p2Select.value = ProfileManager.profiles[1].id;
-    document.getElementById('online-p1-select')?.replaceChildren(...options());
+    p1Select.replaceChildren(...options(ProfileManager.all()));
+    p2Select.replaceChildren(...options(ProfileManager.profiles));
+    const guests = ProfileManager.profiles;
+    if (!ProfileManager.account && guests.length > 1) p2Select.value = guests[1].id;
+    document.getElementById('online-p1-select')?.replaceChildren(...options(ProfileManager.all()));
 }
 
 export function renderProfilesList() {

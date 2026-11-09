@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentUser().then((user) => {
         session.account = user;
         showAccountLine(document.getElementById('account-line'), user, { game: '/chesspell/', perk: 'deck and stats' });
+        if (user) ProfileManager.loadAccount(user).catch(() => {}); // Guests only if the account cannot be read
     });
     ProfileManager.loadProfiles();
     renderProfilesList();

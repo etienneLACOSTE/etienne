@@ -44,12 +44,15 @@ function sessionStore(db) {
             return token;
         },
 
-        /** The signed-in user for a Cookie header, or null. */
-        async userFor(cookieHeader) {
+        /**
+         * The signed-in user for a Cookie header, or null. withAvatar: also their picture
+         * (the game servers show it to the opponent).
+         */
+        async userFor(cookieHeader, { withAvatar = false } = {}) {
             const token = readCookie(cookieHeader, COOKIE);
             if (!token || token.length > 100) return null;
             const { rows } = await db.query(
-                `SELECT u.id, u.username FROM sessions s JOIN users u ON u.id = s.user_id
+                `SELECT u.id, u.username${withAvatar ? ', u.avatar' : ''} FROM sessions s JOIN users u ON u.id = s.user_id
                  WHERE s.token_hash = $1 AND s.expires_at > now()`,
                 [sha256(token)],
             );

@@ -1,9 +1,14 @@
 // @ts-check
-// Player profiles: data only, kept in localStorage. Saving announces `profilesChanged`;
-// the profile screen and the player lists (profiles-view.js) redraw themselves on it.
+// Player profiles: data only. The signed-in player's account is a profile of its own
+// (deck saved on the server, /api/account); guest profiles are kept in localStorage, for
+// playing without an account and for player 2 on the same screen. Every change
+// announces `profilesChanged`; the profile screen and the player lists
+// (profiles-view.js) redraw themselves on it.
 import { emit } from './events.js';
 
 const STORAGE_KEY = 'spellChessProfiles';
+/** The account's profile id (guest ids are 'guest1', 'p_<time>'...). */
+export const ACCOUNT_ID = 'account';
 
 /** Both guests, on a first visit. */
 const GUESTS = [
@@ -11,9 +16,43 @@ const GUESTS = [
     { id: 'guest2', name: 'Guest 2', avatar: '', stats: { played: 0, wins: 0 }, deck: [] },
 ];
 
+/** @typedef {{ id: string, name: string, avatar: string, stats: { played: number, wins: number }, deck: number[] }} Profile */
+
+/** Send JSON to the account API; throws its error message. */
+async function accountApi(method, url, body) {
+    const res = await fetch(url, {
+        method, credentials: 'same-origin',
+        headers: body ? { 'content-type': 'application/json' } : {},
+        body: body && JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'The deck could not be saved. Try again.');
+    return data;
+}
+
 export const ProfileManager = {
-    /** @type {{ id: string, name: string, avatar: string, stats: { played: number, wins: number }, deck: number[] }[]} */
+    /** Guest profiles, on this device. @type {Profile[]} */
     profiles: [],
+    /** The signed-in player's profile, or null. @type {Profile | null} */
+    account: null,
+
+    /** The account first (when signed in), then the guests. */
+    all() {
+        return this.account ? [this.account, ...this.profiles] : [...this.profiles];
+    },
+
+    /** Signed in: the account becomes a profile, with its picture and saved deck. */
+    async loadAccount(user) {
+        const [{ account }, { deck }] = await Promise.all([
+            accountApi('GET', '/api/account'),
+            accountApi('GET', '/api/account/decks/chesspell'),
+        ]);
+        this.account = {
+            id: ACCOUNT_ID, name: user.username, avatar: account.avatar || '',
+            stats: { played: 0, wins: 0 }, deck: deck || [],
+        };
+        emit('profilesChanged');
+    },
 
     loadProfiles() {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -32,7 +71,7 @@ export const ProfileManager = {
     },
 
     find(id) {
-        return this.profiles.find((p) => p.id === id);
+        return this.all().find((p) => p.id === id);
     },
 
     addProfile(name, avatar) {
@@ -54,9 +93,16 @@ export const ProfileManager = {
         this.saveProfiles();
     },
 
-    saveDeck(id, deck) {
+    /** Save a profile's deck: on the server for the account, on this device for a guest. */
+    async saveDeck(id, deck) {
         const p = this.find(id);
         if (!p) return null;
+        if (p === this.account) {
+            await accountApi('PUT', '/api/account/decks/chesspell', { deck: [...deck] });
+            p.deck = [...deck];
+            emit('profilesChanged');
+            return p;
+        }
         p.deck = [...deck];
         this.saveProfiles();
         return p;
