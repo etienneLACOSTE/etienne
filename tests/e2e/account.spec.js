@@ -35,7 +35,7 @@ test.describe('Account', () => {
     await expect(page.locator('#fact-methods')).toHaveText('Password');
 
     // Sign out, then back in with the email
-    await page.getByRole('button', { name: 'Sign out' }).click();
+    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Your account');
     await expect(page.locator('#account-link')).toHaveText('Sign in');
     await page.getByLabel('Username or email').fill(`${name.toUpperCase()}@EXAMPLE.COM`);
@@ -81,7 +81,7 @@ test.describe('Account', () => {
     await expect(page).toHaveURL(/127\.0\.0\.1:\d+\/$/); // Not the other site: the games
 
     await page.goto('/account/');
-    await page.getByRole('button', { name: 'Sign out' }).click();
+    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await page.goto('/account/?next=/chesspell/');
     await page.getByLabel('Username or email').fill(name);
     await page.locator('#login-password').fill('correct horse battery');

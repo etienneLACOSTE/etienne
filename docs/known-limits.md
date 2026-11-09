@@ -40,6 +40,11 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 - **Chessdown n'a pas de profil local :** sans compte, pas de stats du tout ; avec un
   compte, pas encore d'armées sauvegardées (prévu « plus tard » dans `docs/accounts.md`).
 - **Connexion Google seulement :** GitHub abandonné (choix du 2026-11-09).
+- **Blocage temporaire d'un compte après 10 mauvais mots de passe en 15 minutes** (étape
+  5) : protège contre les essais depuis plusieurs adresses, mais quelqu'un qui connaît un
+  pseudo peut bloquer sa connexion par mot de passe pendant 15 minutes (la connexion
+  Google reste possible). Compteur en mémoire, remis à zéro au redémarrage. Piste : une
+  vérification type CAPTCHA au lieu d'un blocage, si ça arrive.
 
 ## Amis et présence (étape 4, 2026-11-09)
 
@@ -58,9 +63,6 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 
 ## Divers (relevés avant les comptes)
 
-- **Socket.io n'a pas de contrôle d'origine.** Une page d'un autre site pourrait ouvrir
-  une connexion de jeu (sans le cookie de session grâce à SameSite=Lax, donc en invité).
-  Piste : option `allowRequest` qui vérifie l'en-tête `Origin`.
 - **Pas de test e2e de l'écran de fin Ches'spell en ligne.**
 - **Le tutoriel (`games/chesspell/js/demo.js`) enveloppe `engine.move` et
   `engine.activateSpell`** pour guider le joueur : dernier endroit où une fonction d'un

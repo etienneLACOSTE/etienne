@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const { registerChesspell } = require('./chesspell');
 const { registerChessdown } = require('./chessdown');
-const { securityHeaders } = require('./security');
+const { securityHeaders, sameOriginHandshake } = require('./security');
 const { openDb } = require('./db');
 const { authRouter } = require('./accounts/routes');
 const { accountRouter } = require('./accounts/account-routes');
@@ -22,7 +22,8 @@ app.disable('x-powered-by');
 app.use(securityHeaders);
 const server = http.createServer(app);
 // Largest legitimate message: a Ches'spell profile with its avatar (40 KB at most).
-const io = new Server(server, { maxHttpBufferSize: 64_000 });
+// Only this site's pages may open a game or presence connection.
+const io = new Server(server, { maxHttpBufferSize: 64_000, allowRequest: sameOriginHandshake });
 
 // Serve the portfolio hub
 app.use(express.static(path.join(ROOT, 'hub')));

@@ -9,6 +9,9 @@ const { usernameProblem, emailProblem, passwordProblem } = require('./validate')
 const { rateLimit } = require('./rate-limit');
 
 const WRONG_LOGIN = 'Wrong username, email or password.';
+/** Failed sign-ins allowed on one account (by username or email) per window, from any address. */
+const FAILURES_PER_LOGIN = 10;
+const TOO_MANY_ON_LOGIN = 'Too many wrong passwords for this account. Try again in 15 minutes, or sign in with Google.';
 const UNIQUE_VIOLATION = '23505';
 
 /**
@@ -27,12 +30,32 @@ function sameOrigin(req, res, next) {
 
 /**
  * @param {import('../db').Db} db
- * @param {{ attemptsPerWindow?: number, windowMs?: number }} [options]
+ * @param {{ attemptsPerWindow?: number, windowMs?: number, failuresPerLogin?: number }} [options]
  */
-function authRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 } = {}) {
+function authRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, failuresPerLogin = FAILURES_PER_LOGIN } = {}) {
     const sessions = sessionStore(db);
     const router = express.Router();
     const attempts = rateLimit({ max: attemptsPerWindow, windowMs });
+    // Guessing one account's password from many addresses is slowed down too: failed
+    // sign-ins are counted per account (its username and email count together), or per
+    // login typed when no account has it; in memory, per window.
+    /** @type {Map<string, { count: number, resetAt: number }>} */
+    const failures = new Map();
+    const failureKey = (user, login) => (user ? `user:${user.id}` : `login:${login.trim().toLowerCase()}`);
+    const tooManyFailures = (key) => {
+        const f = failures.get(key);
+        return Boolean(f && f.resetAt > Date.now() && f.count >= failuresPerLogin);
+    };
+    const recordFailure = (key) => {
+        const now = Date.now();
+        const f = failures.get(key);
+        if (!f || f.resetAt <= now) failures.set(key, { count: 1, resetAt: now + windowMs });
+        else f.count++;
+    };
+    setInterval(() => {
+        const now = Date.now();
+        for (const [key, f] of failures) if (f.resetAt <= now) failures.delete(key);
+    }, windowMs).unref();
 
     router.use(express.json({ limit: '4kb' }));
     router.use(sameOrigin);
@@ -79,9 +102,15 @@ function authRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 } = 
             [login],
         );
         const user = rows[0];
+        const key = failureKey(user, login);
+        if (tooManyFailures(key)) return res.status(429).json({ error: TOO_MANY_ON_LOGIN });
         // Checked even when nobody has this login, so that the answer takes as long.
         const ok = await verifyPassword(password, user && user.password_hash);
-        if (!user || !ok) return res.status(401).json({ error: WRONG_LOGIN });
+        if (!user || !ok) {
+            recordFailure(key);
+            return res.status(401).json({ error: WRONG_LOGIN });
+        }
+        failures.delete(key);
         await signIn(res, user);
     });
 

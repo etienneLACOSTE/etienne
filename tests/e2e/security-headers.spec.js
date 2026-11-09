@@ -52,3 +52,10 @@ test.describe('Security headers', () => {
     expect(external).toEqual([]);
   });
 });
+
+test('game and presence connections only open from this site', async ({ request, baseURL }) => {
+  const handshake = (origin) => request.get('/socket.io/?EIO=4&transport=polling', { headers: origin ? { origin } : {} });
+  expect((await handshake(baseURL)).status()).toBe(200);
+  expect((await handshake(null)).status()).toBe(200);
+  expect((await handshake('https://evil.example')).status()).toBe(403);
+});

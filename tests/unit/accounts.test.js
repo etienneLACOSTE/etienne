@@ -259,3 +259,42 @@ test('account: a game deck is checked, saved, read back, exported and deleted wi
     const { rows } = await db.query('SELECT count(*)::int AS n FROM game_decks');
     assert.equal(rows[0].n, 0);
 });
+
+const { sameOriginHandshake } = require('../../server/security');
+
+test('Socket.io handshakes: refused from another site, accepted from this one or without an Origin', () => {
+    const decide = (headers) => { let answer; sameOriginHandshake({ headers }, (err, ok) => { answer = ok; }); return answer; };
+    assert.equal(decide({ host: 'pawnet.example', origin: 'https://pawnet.example' }), true);
+    assert.equal(decide({ host: 'pawnet.example' }), true, 'same-site polling may send no Origin');
+    assert.equal(decide({ host: 'pawnet.example', origin: 'https://evil.example' }), false);
+    assert.equal(decide({ host: 'pawnet.example', origin: 'null' }), false);
+    assert.equal(decide({ host: 'pawnet.example', origin: 'https://pawnet.example.evil.example' }), false);
+});
+
+test('many wrong passwords on one account, from any address, are slowed down for that account only', async () => {
+    const app = express();
+    app.use('/api/auth', authRouter(db, { attemptsPerWindow: 1000, failuresPerLogin: 3, windowMs: 60_000 }));
+    const limited = http.createServer(app).listen(0);
+    const url = `http://localhost:${limited.address().port}`;
+    const login = async (who, password) => (await fetch(`${url}/api/auth/login`, {
+        method: 'POST', headers: { 'content-type': 'application/json', origin: url },
+        body: JSON.stringify({ login: who, password }),
+    })).status;
+    await signup('Nora');
+    await signup('Otto');
+    const tries = [];
+    for (let i = 0; i < 4; i++) tries.push(await login('nora', 'wrong horse battery'));
+    assert.deepEqual(tries, [401, 401, 401, 429]);
+    assert.equal(await login('NORA@example.com', 'correct horse battery'), 429, 'the email counts for the same account');
+    assert.equal(await login('Nora', 'correct horse battery'), 429, 'even the right password waits');
+    assert.equal(await login('otto', 'correct horse battery'), 200, 'other accounts are not affected');
+    limited.close();
+});
+
+test('sign out on every device', async () => {
+    const first = await signup('Pia');
+    const second = await api('/api/auth/login', { body: { login: 'pia', password: 'correct horse battery' } });
+    assert.equal((await api('/api/account/sessions/logout-all', { body: {}, cookie: second.cookie })).status, 200);
+    assert.equal((await api('/api/auth/me', { cookie: first.cookie })).json.user, null);
+    assert.equal((await api('/api/auth/me', { cookie: second.cookie })).json.user, null);
+});

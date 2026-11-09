@@ -272,6 +272,14 @@ handleForm($('delete-form'), 'delete-error', async (data) => {
     $('account-title').focus();
 });
 
+$('logout-all-button').addEventListener('click', async () => {
+    if (!confirm('Sign out on every device where you are signed in, this one included?')) return;
+    await send('POST', '/api/account/sessions/logout-all', {}).catch(() => {});
+    showUserInTopbar(null);
+    showSignedOut();
+    $('account-title').focus();
+});
+
 $('logout-button').addEventListener('click', async () => {
     await send('POST', '/api/auth/logout', {}).catch(() => {});
     showUserInTopbar(null);

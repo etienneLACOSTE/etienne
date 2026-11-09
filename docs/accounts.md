@@ -52,7 +52,13 @@ Known limits to fix later: `docs/known-limits.md`.
      only, page sent in `auth`): friends see who is online and where; from a room they
      created, a player invites a friend who is online; the invitation reaches any page
      (`assets/js/presence.js`) and joins in place or through `/<game>/?join=CODE`.
-5. **Hardening**: limits on friend requests, end-to-end review (`/tribunal`).
+5. **Hardening** (done, review to come)
+   - Socket.io handshakes from this site only (`allowRequest`, `server/security.js`).
+   - Failed password sign-ins counted per account as well as per address: 10 in 15
+     minutes, then that account waits (username and email count together).
+   - "Sign out on every device" on the account page.
+   - Limits already in place: friend requests, invitations, results sent by pages.
+   - Review: `/tribunal` on the whole accounts work (launched by the owner).
 
 ## Where the code is
 

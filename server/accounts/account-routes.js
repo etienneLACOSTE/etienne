@@ -134,6 +134,13 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
         });
     });
 
+    /** Sign out on every device (this one included). */
+    router.post('/sessions/logout-all', async (req, res) => {
+        await sessions.destroyAllFor(res.locals.user.id);
+        res.clearCookie(COOKIE, { ...cookieOptions(), maxAge: undefined });
+        res.json({ ok: true });
+    });
+
     /** Unlink Google, as long as another way to sign in remains. */
     router.delete('/providers/:provider', async (req, res) => {
         const account = await loadAccount(res.locals.user.id);
