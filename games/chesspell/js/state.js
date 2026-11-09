@@ -1,5 +1,7 @@
 // @ts-check
-// Ches'spell client state: socket, online session, card catalogue, piece glyphs, Zobrist keys.
+// Ches'spell client state: socket, online session, the match on this page, its clock,
+// the campaign bot's settings, the card catalogue and the piece glyphs.
+// The rules state (board, turn, spells) is `engine`, in game-engine.js.
 // Socket.io client (absent when the page is opened without the server).
 export const socket = typeof io !== 'undefined' ? io('/chesspell') : null;
 
@@ -12,6 +14,42 @@ export const session = {
     myPlayerColor: null,
     /** @type {number|null} */
     myPlayerNumber: null,
+};
+
+/** The match on this page: who plays, with which cards, and the piece being moved. */
+export const match = {
+    /** White's and black's profiles (black is the bot in the campaign). */
+    p1Profile: null,
+    p2Profile: null,
+    /** @type {number[]} */
+    p1Deck: [],
+    /** @type {number[]} */
+    p2Deck: [],
+    isBotGame: false,
+    /** The piece picked by a tap or the keyboard, with its moves. */
+    /** @type {{ r: number, c: number, validMoves: { r: number, c: number, capture?: boolean }[] } | null} */
+    selectedPiece: null,
+};
+
+/** The clock: per turn (reset each turn) or for the whole game. Times in seconds. */
+export const clock = {
+    /** @type {'turn' | 'overall'} */
+    mode: 'turn',
+    minutes: 0,
+    seconds: 10,
+    leftP1: 10,
+    leftP2: 10,
+    /** @type {ReturnType<typeof setInterval> | null} */
+    interval: null,
+};
+
+/** The campaign bot: its deck type, its ELO (slider) and its trained profile. */
+export const botSettings = {
+    deckType: 'random',
+    /** @type {number | null} */
+    elo: null,
+    profile: null,
+    profileRequested: false,
 };
 
 export const cardsData = [

@@ -184,10 +184,11 @@ test.describe("Ches'spell", () => {
     await page.getByRole('button', { name: 'Play Campaign Mode' }).click();
     await page.getByRole('button', { name: 'Start Match' }).click();
     await expect(page.locator('#game-board')).toHaveClass(/active/);
-    await page.evaluate(() => {
-      const { app } = chesspell;
-      app.timerMode = 'overall';
-      app.timeLeftP1 = 1;
+    await expect(page.locator('#player2-banner')).toContainText('Bot (1500 ELO)'); // Not a human profile
+    await page.evaluate(async () => {
+      const { clock } = await import('/chesspell/js/state.js');
+      clock.mode = 'overall';
+      clock.leftP1 = 1;
     });
     const end = page.getByRole('dialog', { name: 'Defeat' });
     await expect(end).toBeVisible({ timeout: 5000 });
@@ -233,19 +234,22 @@ test.describe("Ches'spell", () => {
     await page.getByRole('button', { name: 'Play Campaign Mode' }).click();
     await page.locator('#btn-confirm-campaign').click();
     await expect(page.locator('#game-board')).toHaveClass(/active/);
-    await page.evaluate(([e, p, deck]) => {
-      const { engine, app } = chesspell;
-      app.botElo = e;
+    await page.evaluate(async ([e, p, deck]) => {
+      const { engine, match, botSettings } = chesspell;
+      const { renderInGameDeck } = await import('/chesspell/js/cards-view.js');
+      const { renderChessboard } = await import('/chesspell/js/board-view.js');
+      const { playBotTurn } = await import('/chesspell/js/bot-player.js');
+      botSettings.elo = e;
       engine.board = Array.from({ length: 8 }, () => Array(8).fill(null));
       for (const [key, piece] of Object.entries(p)) {
         const [r, c] = key.split(',').map(Number);
         engine.board[r][c] = piece;
       }
-      app.p2Deck = deck;
-      app.renderInGameDeck(app.p2Deck, 'player2-cards', 'black');
+      match.p2Deck = deck;
+      renderInGameDeck(match.p2Deck, 'player2-cards', 'black');
       engine.turn = 'black';
-      app.renderChessboard();
-      app.playBotTurn();
+      renderChessboard();
+      playBotTurn();
     }, [elo, pieces, botDeck]);
   }
 
@@ -268,7 +272,7 @@ test.describe("Ches'spell", () => {
       await page.getByRole('button', { name: 'Play Campaign Mode' }).click();
       await page.locator('#btn-confirm-campaign').click();
       await expect(page.locator('#game-board')).toHaveClass(/active/);
-      await page.evaluate((e) => { chesspell.app.botElo = e; }, elo);
+      await page.evaluate((e) => { chesspell.botSettings.elo = e; }, elo);
       // White plays the first legal move it finds, three times; the bot answers each time.
       for (let i = 0; i < 3; i++) {
         await page.evaluate(() => {
@@ -292,8 +296,8 @@ test.describe("Ches'spell", () => {
   test('campaign: the ELO slider sets how the bot picks spells, how far it searches and how often it blunders', async ({ page }) => {
     await page.goto('/chesspell/');
     const strength = await page.evaluate(() => [400, 800, 1200, 1500, 3000].map((elo) => {
-      chesspell.app.botElo = elo;
-      return chesspell.app.botStrength();
+      chesspell.botSettings.elo = elo;
+      return chesspell.botStrength();
     }));
     expect(strength).toEqual([
       { spells: 'heuristic', depth: 1, randomMoveRate: 0.3 },

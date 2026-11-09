@@ -9,7 +9,7 @@ const PAGES = ['/', '/chessdown/', '/chessdown/?demo=true', '/chesspell/', '/che
 
 test.describe('Security headers', () => {
   test('pages send CSP and hardening headers', async ({ request }) => {
-    for (const url of ['/', '/chessdown/', '/chesspell/', '/chesspell/js/app.js']) {
+    for (const url of ['/', '/chessdown/', '/chesspell/', '/chesspell/js/match.js']) {
       const res = await request.get(url);
       const h = res.headers();
       const csp = h['content-security-policy'] ?? '';

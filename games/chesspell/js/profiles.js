@@ -1,178 +1,79 @@
 // @ts-check
-// Player profiles stored in localStorage.
-import { app } from './app.js';
+// Player profiles: data only, kept in localStorage. Saving announces `profilesChanged`;
+// the profile screen and the player lists (profiles-view.js) redraw themselves on it.
+import { emit } from './events.js';
 
-// Player data (names, avatars) may come from another player: it is only ever
-// written with textContent or as an image src, never as HTML.
-export const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,/;
+const STORAGE_KEY = 'spellChessProfiles';
 
-export function createAvatarElement(avatar) {
-    if (typeof avatar === 'string' && AVATAR_DATA_URL.test(avatar)) {
-        const img = document.createElement('img');
-        img.src = avatar;
-        img.alt = '';
-        img.className = 'player-avatar';
-        return img;
-    }
-    const placeholder = document.createElement('div');
-    placeholder.className = 'player-avatar';
-    return placeholder;
-}
-
-export function createPlayerInfoElement(name, statsText) {
-    const info = document.createElement('div');
-    info.className = 'player-info';
-    const nameEl = document.createElement('span');
-    nameEl.className = 'player-name';
-    nameEl.textContent = name;
-    const statsEl = document.createElement('span');
-    statsEl.className = 'player-stats';
-    statsEl.textContent = statsText;
-    info.append(nameEl, statsEl);
-    return info;
-}
+/** Both guests, on a first visit. */
+const GUESTS = [
+    { id: 'guest1', name: 'Guest 1', avatar: '', stats: { played: 0, wins: 0 }, deck: [] },
+    { id: 'guest2', name: 'Guest 2', avatar: '', stats: { played: 0, wins: 0 }, deck: [] },
+];
 
 export const ProfileManager = {
+    /** @type {{ id: string, name: string, avatar: string, stats: { played: number, wins: number }, deck: number[] }[]} */
     profiles: [],
-    editingProfileId: null,
-    
+
     loadProfiles() {
-        const stored = localStorage.getItem('spellChessProfiles');
+        const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             this.profiles = JSON.parse(stored);
-            // Ensure old profiles have a deck array
-            this.profiles.forEach(p => { if (!p.deck) p.deck = []; });
+            this.profiles.forEach(p => { if (!p.deck) p.deck = []; }); // Old profiles had no deck
         } else {
-            this.profiles = [
-                { id: 'guest1', name: 'Guest 1', avatar: '', stats: { played: 0, wins: 0 }, deck: [] },
-                { id: 'guest2', name: 'Guest 2', avatar: '', stats: { played: 0, wins: 0 }, deck: [] }
-            ];
+            this.profiles = GUESTS.map((p) => ({ ...p, stats: { ...p.stats }, deck: [] }));
             this.saveProfiles();
         }
     },
-    
+
     saveProfiles() {
-        localStorage.setItem('spellChessProfiles', JSON.stringify(this.profiles));
-    },
-    
-    submitProfile() {
-        const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('new-profile-name'));
-        const fileInput = /** @type {HTMLInputElement} */ (document.getElementById('new-profile-avatar'));
-        const name = nameInput.value.trim();
-        
-        if (!name) return alert("Please enter a username.");
-        
-        const processAvatar = (callback) => {
-            if (fileInput.files && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 150;
-                        canvas.height = 150;
-                        const ctx = canvas.getContext('2d');
-                        
-                        const size = Math.min(img.width, img.height);
-                        const sx = (img.width - size) / 2;
-                        const sy = (img.height - size) / 2;
-                        
-                        ctx.drawImage(img, sx, sy, size, size, 0, 0, canvas.width, canvas.height);
-                        
-                        callback(canvas.toDataURL('image/jpeg', 0.8));
-                    };
-                    img.src = /** @type {string} */ (e.target.result); // readAsDataURL gives a string
-                };
-                reader.readAsDataURL(file);
-            } else {
-                callback(null);
-            }
-        };
-
-        processAvatar((avatarData) => {
-            if (this.editingProfileId) {
-                const p = this.profiles.find(p => p.id === this.editingProfileId);
-                if (p) {
-                    p.name = name;
-                    if (avatarData) p.avatar = avatarData;
-                }
-                this.cancelEdit();
-            } else {
-                this.addProfile(name, avatarData || '');
-                nameInput.value = '';
-                fileInput.value = '';
-            }
-            this.saveProfiles();
-            this.renderProfilesList();
-            app.updatePlayerSelects();
-        });
-    },
-    
-    editProfile(id) {
-        const p = this.profiles.find(p => p.id === id);
-        if (!p) return;
-        this.editingProfileId = id;
-        /** @type {HTMLInputElement} */ (document.getElementById('new-profile-name')).value = p.name;
-        document.getElementById('profile-form-title').textContent = "Edit Profile";
-        document.getElementById('profile-submit-btn').textContent = "Save Changes";
-        document.getElementById('profile-cancel-btn').style.display = 'inline-block';
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.profiles));
+        emit('profilesChanged');
     },
 
-    cancelEdit() {
-        this.editingProfileId = null;
-        /** @type {HTMLInputElement} */ (document.getElementById('new-profile-name')).value = '';
-        /** @type {HTMLInputElement} */ (document.getElementById('new-profile-avatar')).value = '';
-        document.getElementById('profile-form-title').textContent = "Create New Profile";
-        document.getElementById('profile-submit-btn').textContent = "Create";
-        document.getElementById('profile-cancel-btn').style.display = 'none';
-    },
-
-    deleteProfile(id) {
-        if (confirm("Are you sure you want to delete this profile?")) {
-            this.profiles = this.profiles.filter(p => p.id !== id);
-            this.saveProfiles();
-            this.renderProfilesList();
-            app.updatePlayerSelects();
-        }
+    find(id) {
+        return this.profiles.find((p) => p.id === id);
     },
 
     addProfile(name, avatar) {
-        this.profiles.push({
-            id: 'p_' + Date.now(),
-            name: name,
-            avatar: avatar,
-            stats: { played: 0, wins: 0 },
-            deck: []
-        });
+        this.profiles.push({ id: 'p_' + Date.now(), name, avatar, stats: { played: 0, wins: 0 }, deck: [] });
+        this.saveProfiles();
     },
-    
-    renderProfilesList() {
-        const container = document.getElementById('profiles-list');
-        container.replaceChildren();
-        this.profiles.forEach(p => {
-            const el = document.createElement('div');
-            el.className = 'profile-card';
-            const isDeckValid = p.deck && p.deck.length === 3;
-            const statsText = `Games: ${p.stats.played} | Wins: ${p.stats.wins} | Deck: ${isDeckValid ? 'Ready' : 'Incomplete'}`;
 
-            const actions = document.createElement('div');
-            actions.className = 'profile-actions';
-            const addButton = (label, className, onClick) => {
-                const btn = document.createElement('button');
-                btn.className = className;
-                btn.textContent = label;
-                btn.addEventListener('click', onClick);
-                actions.appendChild(btn);
-                return btn;
-            };
-            addButton('Build Deck', 'btn btn-secondary', () => app.buildDeckForProfile(p.id));
-            addButton('Edit', 'btn', () => ProfileManager.editProfile(p.id));
-            addButton('Delete', 'btn btn-danger', () => ProfileManager.deleteProfile(p.id));
+    /** A new name, and a new avatar when one is given. */
+    updateProfile(id, name, avatar) {
+        const p = this.find(id);
+        if (!p) return;
+        p.name = name;
+        if (avatar) p.avatar = avatar;
+        this.saveProfiles();
+    },
 
-            el.append(createAvatarElement(p.avatar), createPlayerInfoElement(p.name, statsText), actions);
-            container.appendChild(el);
-        });
-    }
+    deleteProfile(id) {
+        this.profiles = this.profiles.filter((p) => p.id !== id);
+        this.saveProfiles();
+    },
+
+    saveDeck(id, deck) {
+        const p = this.find(id);
+        if (!p) return null;
+        p.deck = [...deck];
+        this.saveProfiles();
+        return p;
+    },
+
+    /**
+     * A finished game counts in the players' own profiles (not the bot's, not the
+     * opponent's online, which are not in this list).
+     * @param {[string, any][]} players [color, profile] pairs
+     * @param {string} winner 'white' or 'black'
+     */
+    recordResult(players, winner) {
+        const mine = players.filter(([, profile]) => this.profiles.includes(profile));
+        for (const [color, profile] of mine) {
+            profile.stats.played++;
+            if (color === winner) profile.stats.wins++;
+        }
+        if (mine.length) this.saveProfiles();
+    },
 };

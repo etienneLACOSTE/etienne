@@ -3,22 +3,17 @@
 // - Spell cards are keyboard-ready by design: their title is a <button> whose click
 //   reaches the card (see .card-main in style.css), next to the "i" info button.
 // - The board is one tab stop: arrow keys move between squares, Enter/Space select a
-//   piece, play a move or pick a spell target, with the same rules as the mouse.
+//   piece, play a move or pick a spell target: the same squareAction() as a tap.
 // - Every square says what it holds and what it can do.
-import { cardsData, session } from './state.js';
+// - It follows the game through events.js (board drawn, screen shown, turn started...),
+//   never by changing the other modules' functions.
+import { cardsData, match, session } from './state.js';
 import { engine } from './game-engine.js';
-import { app } from './app.js';
+import { on } from './events.js';
+import { boardFlipped, squareAction, squareAt } from './board-view.js';
 
 export const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 export const FILES = 'abcdefgh';
-
-/** The board is shown upside down for the online black player. */
-export const boardFlipped = () => session.isOnline && session.myPlayerColor === 'black';
-
-/** @returns {HTMLElement} */
-export function squareAt(r, c) {
-    return /** @type {HTMLElement} */ (document.getElementById('chessboard').children[r * 8 + c]);
-}
 
 export function describeSquare(r, c, sq) {
     const p = engine.board[r][c];
@@ -71,33 +66,11 @@ export function selectedSquareCleanup() {
     document.querySelectorAll('#chessboard .kbd-selected').forEach(sq => sq.classList.remove('kbd-selected'));
 }
 
-/** Same outcomes as the mouse: target a spell, play a highlighted move, or select a piece. */
-export function keyboardSquareAction(r, c) {
-    if (engine.targetingState) {
-        engine.handleSquareClick(r, c);
-        return;
-    }
-    const selected = app.selectedPiece;
-    if (selected && selected.validMoves.some(m => m.r === r && m.c === c)) {
-        app.selectedPiece = null;
-        engine.move(selected.r, selected.c, r, c);
-        app.clearHighlights();
-        return;
-    }
-    const p = engine.board[r][c];
-    const canPlay = p && p !== 'W' && ChesspellRules.getColor(p) === engine.turn
-        && (!session.isOnline || engine.turn === session.myPlayerColor)
-        && !(app.isBotGame && engine.turn === 'black');
-    app.clearHighlights();
-    if (!canPlay || (selected && selected.r === r && selected.c === c)) {
-        app.selectedPiece = null;
-        refreshSquareLabels();
-        return;
-    }
-    const validMoves = engine.getValidMoves(r, c);
-    app.selectedPiece = { r, c, validMoves };
-    squareAt(r, c).classList.add('kbd-selected');
-    validMoves.forEach(m => squareAt(m.r, m.c).classList.add(m.capture ? 'valid-capture' : 'valid-move'));
+/** Enter or Space: the same action as a tap; the picked square is also marked. */
+function keyboardSquareAction(r, c) {
+    squareAction(r, c);
+    const selected = match.selectedPiece;
+    if (selected && selected.r === r && selected.c === c) squareAt(r, c).classList.add('kbd-selected');
     refreshSquareLabels();
 }
 
@@ -195,28 +168,13 @@ export function setupAccessibility() {
     DIALOGS.forEach(setupDialog);
     document.getElementById('chessboard').addEventListener('keydown', onBoardKeydown);
 
-    // The board DOM is rebuilt on every render: re-enhance it and keep the keyboard focus.
-    const render = app.renderChessboard;
-    app.renderChessboard = function (...args) {
-        const board = document.getElementById('chessboard');
-        const hadFocus = board.contains(document.activeElement);
-        const result = render.apply(this, args);
-        enhanceBoard(hadFocus);
-        return result;
-    };
-    const show = app.showScreen;
-    app.showScreen = function (screenId, ...rest) {
-        const result = show.call(this, screenId, ...rest);
-        focusScreen(document.getElementById(screenId));
-        return result;
-    };
-    const clear = app.clearHighlights;
-    app.clearHighlights = function (...args) {
-        const result = clear.apply(this, args);
+    // The board is drawn again after every move: label it and keep the keyboard focus.
+    on('boardRendered', ({ hadFocus }) => enhanceBoard(hadFocus));
+    on('screenShown', ({ screen }) => focusScreen(screen));
+    on('highlightsCleared', () => {
         selectedSquareCleanup();
         refreshSquareLabels();
-        return result;
-    };
+    });
 }
 
 // --- Announcements: after each turn, screen readers hear the spell cast, the move or
@@ -241,7 +199,7 @@ export function describePiece(p) {
 
 export function whoseTurn() {
     if (session.isOnline) return engine.turn === session.myPlayerColor ? 'Your turn.' : "Opponent's turn.";
-    if (app.isBotGame) return engine.turn === 'white' ? 'Your turn.' : "Bot's turn.";
+    if (match.isBotGame) return engine.turn === 'white' ? 'Your turn.' : "Bot's turn.";
     return `${capitalize(engine.turn)} to move.`;
 }
 
@@ -291,43 +249,16 @@ export function setupAnnouncer() {
     announcer.setAttribute('aria-atomic', 'true');
     document.body.appendChild(announcer);
 
-    const init = engine.init;
-    engine.init = function (...args) {
-        const result = init.apply(this, args);
+    on('gameStarted', () => {
         previousBoard = snapshot();
         pendingSpell = '';
-        return result;
-    };
-    const activate = engine.activateSpell;
-    engine.activateSpell = function (cardId, ...rest) {
+    });
+    on('spellCast', ({ cardId, by }) => {
         const card = cardsData.find(c => c.id === cardId);
-        if (card) pendingSpell = `${capitalize(this.turn)} casts ${card.name}.`;
-        return activate.call(this, cardId, ...rest);
-    };
-    const endTurn = engine.endTurn;
-    engine.endTurn = function (...args) {
-        const result = endTurn.apply(this, args);
-        announceTurn();
-        return result;
-    };
-    // Online: the server sends the state after each action.
-    const applyServerState = engine.applyServerState;
-    engine.applyServerState = function (state, action) {
-        if (action && action.type === 'spell' && action.status !== 'refused') {
-            const card = cardsData.find(c => c.id === action.cardId);
-            if (card) pendingSpell = `${capitalize(action.by)} casts ${card.name}.`;
-        } else if (action && action.type === 'timeout') {
-            pendingSpell = "Time's up.";
-        }
-        const result = applyServerState.call(this, state, action);
-        if (action && action.turnEnded) announceTurn();
-        return result;
-    };
-    // The first turn (local games): announced once the board is on screen.
-    const initGame = app.initGame;
-    app.initGame = function (...args) {
-        const result = initGame.apply(this, args);
-        announce(`Match starts. ${whoseTurn()}`);
-        return result;
-    };
+        if (card) pendingSpell = `${capitalize(by)} casts ${card.name}.`;
+    });
+    on('turnTimedOut', () => { pendingSpell = "Time's up."; });
+    on('turnStarted', announceTurn);
+    // The first turn of a local game: announced once the board is on screen.
+    on('matchStarted', () => announce(`Match starts. ${whoseTurn()}`));
 }

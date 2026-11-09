@@ -1,35 +1,72 @@
 // @ts-check
-// Entry point.
-// These add their methods to `app` (online play, tutorial, bot, rendering).
-import { session } from './state.js';
+// Entry point: wires the game flow (who reacts to which event), the buttons of
+// index.html and the start of the page.
+//
+// Modules, from the bottom up (each one imports only the ones above it):
+//   state.js, events.js        shared state; the list of events
+//   profiles.js                profiles (data, localStorage)
+//   spell-fx.js, sky.js        spell effects; the starry sky
+//   game-engine.js             the game on this page (rules in game.js)
+//   screens.js                 one screen at a time
+//   board-view.js              the board: drawing, taps, drag and drop
+//   cards-view.js              spell cards, hands and card dialogs
+//   deck-builder.js            building a profile's deck
+//   profiles-view.js           the profile screen, player lists and banners
+//   draft.js, clock.js         the card draft; the clock
+//   bot-player.js              the campaign bot on the page (decisions in bot.js)
+//   match.js                   a match from start to end screen
+//   online.js, demo.js         online play; the tutorial
+//   a11y.js                    keyboard and screen reader
+import { botSettings, match, session } from './state.js';
+import { on } from './events.js';
 import { engine } from './game-engine.js';
 import { ProfileManager } from './profiles.js';
-import { app } from './app.js';
+import { showScreen, toggleTabletopMode, watchFullscreenExit } from './screens.js';
+import { renderChessboard } from './board-view.js';
+import { renderCards } from './cards-view.js';
+import { openDeckBuilder, saveDeckForProfile, setupDeckBuilder } from './deck-builder.js';
+import { cancelEdit, renderProfilesList, submitProfile, updatePlayerSelects } from './profiles-view.js';
+import { setTimerMode, startTimer } from './clock.js';
+import { botStrength, playBotTurn, selectBotDeck } from './bot-player.js';
+import { endGame, leaveGame, rematch, startCampaign, startGame } from './match.js';
+import { setupOnline } from './online.js';
+import { startDemo } from './demo.js';
 import { setupAccessibility } from './a11y.js';
 import { startSky } from './sky.js';
 
-import './app-online.js';
-import './app-demo.js';
-import './app-bot.js';
-import './app-view.js';
+// --- Game flow: what happens after each event (a11y.js adds its own announcements).
+on('boardChanged', renderChessboard);
+on('turnStarted', () => {
+    startTimer();
+    if (match.isBotGame && engine.turn === 'black') setTimeout(playBotTurn, 500);
+});
+on('gameOver', endGame);
+on('profilesChanged', () => {
+    renderProfilesList();
+    updatePlayerSelects();
+});
+on('screenShown', ({ screenId }) => {
+    if (screenId === 'player-select-screen') updatePlayerSelects();
+    if (screenId === 'deck-builder') openDeckBuilder();
+});
 
 // The live game, for the console and the end-to-end tests.
 // Nothing secret: online games are refereed by the server.
-Object.assign(window, { chesspell: { engine, app, session } });
+Object.assign(window, { chesspell: { engine, session, match, botSettings, botStrength } });
 
 // Buttons in index.html declare what they do with data-action (no inline handlers).
 export const UI_ACTIONS = {
-    showScreen: (el) => app.showScreen(el.dataset.screen),
-    toggleTabletopMode: () => app.toggleTabletopMode(),
-    startDraftGame: () => app.startGame(false),
-    startCampaign: () => app.startCampaign(),
-    saveDeck: () => app.saveDeckForProfile(),
-    rematch: () => app.rematch(),
-    leaveGame: () => app.leaveGame(),
-    setTimerMode: (el) => app.setTimerMode(el.dataset.mode),
-    selectBotDeck: (el) => app.selectBotDeck(el.dataset.deck),
-    submitProfile: () => ProfileManager.submitProfile(),
-    cancelProfileEdit: () => ProfileManager.cancelEdit(),
+    showScreen: (el) => showScreen(el.dataset.screen),
+    toggleTabletopMode: () => toggleTabletopMode(),
+    startDraftGame: () => startGame(false),
+    startCampaign: () => startCampaign(),
+    saveDeck: () => saveDeckForProfile(),
+    rematch: () => rematch(),
+    leaveGame: () => leaveGame(),
+    setTimerMode: (el) => setTimerMode(el.dataset.mode),
+    selectBotDeck: (el) => selectBotDeck(el.dataset.deck),
+    submitProfile: () => submitProfile(),
+    cancelProfileEdit: () => cancelEdit(),
 };
 
 document.addEventListener('click', (e) => {
@@ -37,23 +74,23 @@ document.addEventListener('click', (e) => {
     if (el && UI_ACTIONS[el.dataset.action]) UI_ACTIONS[el.dataset.action](el);
 });
 
-// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    setupAccessibility(); // a11y.js
+    setupAccessibility();
     startSky(/** @type {HTMLCanvasElement} */ (document.getElementById('sky')));
-    app.init();
-
+    watchFullscreenExit();
     const eloSlider = /** @type {HTMLInputElement} */ (document.getElementById('bot-elo-slider'));
     eloSlider.addEventListener('input', () => {
         document.getElementById('elo-display').textContent = eloSlider.value + ' ELO';
     });
-});
 
-document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) {
-        document.body.classList.remove('tabletop-mode');
-        if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-        }
+    if (new URLSearchParams(window.location.search).get('demo') === 'true') {
+        startDemo();
+        return;
     }
+    ProfileManager.loadProfiles();
+    renderProfilesList();
+    updatePlayerSelects();
+    renderCards('index-grid');
+    setupDeckBuilder();
+    setupOnline();
 });

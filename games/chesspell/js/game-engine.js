@@ -1,10 +1,12 @@
 // @ts-check
 // Game engine for the page: the rules of play live in game.js (ChesspellGame, shared
 // with the server); this object holds the game state and adds what the page needs:
-// spell instructions, alerts, card marks, rendering, timer, bot turns and online play.
-// It is itself the state that ChesspellGame and ChesspellRules work on.
+// spell instructions, alerts, card marks and online play. It is itself the state that
+// ChesspellGame and ChesspellRules work on.
+// It never draws the board or runs the clock: it announces what happened (events.js:
+// boardChanged, turnStarted, spellCast, gameOver...) and main.js wires who reacts.
 import { session, socket } from './state.js';
-import { app } from './app.js';
+import { emit } from './events.js';
 import { spellFx } from './spell-fx.js';
 
 export const engine = {
@@ -19,6 +21,7 @@ export const engine = {
         this.gameOverShown = false;
         this.cancelSpell();
         document.getElementById('game-over-modal').classList.add('hidden');
+        emit('gameStarted');
     },
 
     destroyPiece(p) {
@@ -27,20 +30,15 @@ export const engine = {
     },
 
     /**
-     * Once there is a winner (a king captured, or a player out of time): the game stops,
-     * the profiles keep the result, and the end screen comes up after the last move.
+     * Once there is a winner (a king captured, or a player out of time), say so once:
+     * the game stops and the end screen comes up (match.js).
      * @param {'king' | 'time'} reason
      */
     showGameOver(reason = 'king') {
         if (!this.winner || this.gameOverShown) return;
         this.gameOverShown = true;
-        clearInterval(app.timerInterval);
         document.getElementById('spell-instruction').classList.add('hidden');
-        app.recordResult(this.winner.toLowerCase());
-        const winner = this.winner;
-        setTimeout(() => {
-            if (this.winner === winner && this.gameOverShown) app.showEndScreen(winner.toLowerCase(), reason);
-        }, 700);
+        emit('gameOver', { winner: this.winner.toLowerCase(), reason });
     },
 
     getColor(p) {
@@ -58,32 +56,29 @@ export const engine = {
     endTurn() {
         if (this.winner) return; // No next turn once the game is over
         ChesspellGame.endTurn(this);
-        app.startTimer();
-        if (this.turn === 'black' && app.isBotGame) {
-            setTimeout(() => app.playBotTurn(), 500);
-        }
+        emit('turnStarted');
     },
 
     move(r1, c1, r2, c2, isFromNetwork = false) {
         if (this.winner) return; // The game is over
         if (session.isOnline && !isFromNetwork) {
             socket.emit('makeMove', { roomCode: session.currentRoomCode, from: { r: r1, c: c1 }, to: { r: r2, c: c2 } });
-            app.renderChessboard(); // Snap back visually and clear highlights
+            emit('boardChanged'); // Snap back visually and clear highlights
             return;
         }
         const result = ChesspellGame.move(this, r1, c1, r2, c2);
         this.showGameOver();
         if (result === 'reverted') {
-            app.renderChessboard();
+            emit('boardChanged');
             return 'reverted';
         }
         if (result === 'assassin_kill') {
-            app.renderChessboard();
+            emit('boardChanged');
             this.showInstruction(ChesspellGame.INSTRUCTIONS.select_assassin_kill);
             return 'assassin_kill';
         }
         this.endTurn();
-        app.renderChessboard();
+        emit('boardChanged');
     },
 
     showInstruction(text) {
@@ -100,6 +95,7 @@ export const engine = {
 
     activateSpell(cardId, cardEl, isFromNetwork = false) {
         if (this.winner) return;
+        emit('spellCast', { cardId, by: this.turn });
         this.activeCardEl = cardEl;
         spellFx.begin(cardId);
         if (cardEl) { // The card flares up as it is cast
@@ -114,7 +110,7 @@ export const engine = {
             this.flashInstruction(result.message);
         } else {
             this.showInstruction(result.instruction);
-            app.renderChessboard(); // Re-render to disable drags
+            emit('boardChanged'); // Drawn again to disable drags
         }
     },
 
@@ -139,7 +135,7 @@ export const engine = {
         if (result.status === 'next' || result.status === 'done') spellFx.target(r, c);
         if (result.status === 'next') {
             document.getElementById('spell-instruction').textContent = result.instruction;
-            app.renderChessboard();
+            emit('boardChanged');
         } else if (result.status === 'done') {
             this.showGameOver();
             if (result.endTurn) this.endTurn();
@@ -151,7 +147,7 @@ export const engine = {
         if (this.activeCardEl) this.activeCardEl.classList.add('used');
         ChesspellGame.completeSpell(this);
         this.cancelSpell();
-        app.renderChessboard();
+        emit('boardChanged');
         spellFx.finish();
     },
 
@@ -161,6 +157,11 @@ export const engine = {
      */
     applyServerState(state, action) {
         const wasTargeting = this.targetingState;
+        if (action && action.type === 'spell' && action.status !== 'refused') {
+            emit('spellCast', { cardId: action.cardId, by: action.by });
+        } else if (action && action.type === 'timeout') {
+            emit('turnTimedOut');
+        }
         Object.assign(this, state);
         this.activeCardEl = null;
         const decks = { white: 'player1-cards', black: 'player2-cards' };
@@ -180,8 +181,7 @@ export const engine = {
             this.showInstruction(action.message);
             setTimeout(() => document.getElementById('spell-instruction').classList.add('hidden'), 2000);
         }
-        if (action && action.turnEnded) app.startTimer();
-        app.renderChessboard();
+        emit('boardChanged');
         // Spell effects: when a spell is cast, and when it resolves.
         if (action && action.type === 'spell' && action.status !== 'refused') {
             spellFx.begin(action.cardId);
@@ -190,6 +190,7 @@ export const engine = {
             spellFx.finish();
         }
         this.showGameOver(action && action.type === 'timeout' ? 'time' : 'king');
+        if (action && action.turnEnded && !this.winner) emit('turnStarted');
         return action;
     },
 };
