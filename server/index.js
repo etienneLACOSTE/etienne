@@ -12,6 +12,7 @@ const { accountRouter } = require('./accounts/account-routes');
 const { oauthRouter, deleteExpiredPending } = require('./accounts/oauth');
 const { sessionStore } = require('./accounts/sessions');
 const { statsStore } = require('./stats');
+const { friendsRouter } = require('./friends');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -45,6 +46,7 @@ async function start() {
     app.use('/api/auth', oauthRouter(db));
     app.use('/api/auth', authRouter(db));
     app.use('/api/account', accountRouter(db));
+    app.use('/api/friends', friendsRouter(db));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
     setInterval(() => {
         sessions.deleteExpired().catch(() => {});

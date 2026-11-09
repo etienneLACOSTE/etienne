@@ -6,6 +6,24 @@
 
 /** @typedef {{ id: number, username: string }} User */
 
+/** Send JSON to the site's API; returns the answer, or throws its error message. */
+export async function api(method, url, body) {
+    let res;
+    try {
+        res = await fetch(url, {
+            method,
+            credentials: 'same-origin',
+            headers: body ? { 'content-type': 'application/json' } : {},
+            body: body && JSON.stringify(body),
+        });
+    } catch {
+        throw new Error('The site cannot be reached. Check your connection and try again.');
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Something went wrong. Try again.');
+    return data;
+}
+
 /** The signed-in player, or null (also null when the server cannot be reached). */
 export async function currentUser() {
     try {

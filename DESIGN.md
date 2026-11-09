@@ -127,6 +127,10 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
 - Stats (account page): a wide card "Your games": per game, a Bagel title, "N games, time
   played", and a table Mode / Won / Lost / Drawn (2px ink rules, tabular figures); then
   "Last games", one line each with a result pill (Won lime, Lost coral, Draw lilac).
+- Friends (account page): a wide card: "Add a friend by their username" (field + ink
+  pill), then lists ("Asking to be your friend", "Your friends", "Waiting for an
+  answer", "Blocked"): a 2.25rem face (picture or initial on lilac), the name in bold,
+  the actions on the right (Accept as a small pill, the others as underlined links).
 - Account picture: a 4.5rem circle with a 3px ink border (the first letter of the
   username on lilac when there is none), "Change picture" pill and "Remove picture" link.
 - Top bar: game pills, then the account pill (ink): "Sign in", or the player's name.

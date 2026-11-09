@@ -10,6 +10,7 @@ const { rateLimit } = require('./rate-limit');
 const { avatarProblem } = require('./avatar');
 const { sanitizeDeck } = require('../chesspell');
 const { statsStore, resultProblem } = require('../stats');
+const { friendStore } = require('../friends');
 
 /** What each game may save on the account, checked like the game server checks it. */
 const DECK_CHECKS = {
@@ -118,6 +119,15 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
             account: { username: a.username, email: a.email, createdAt: a.created_at, hasPassword: a.has_password, avatar: a.avatar || null },
             decks: decks.map((d) => ({ game: d.game, deck: d.data, savedAt: d.updated_at })),
             games: await stats.all(a.id),
+            friends: await (async () => {
+                const f = await friendStore(db).list(a.id);
+                return {
+                    friends: f.friends.map((x) => ({ username: x.username, since: x.since })),
+                    requestsReceived: f.incoming.map((x) => ({ from: x.username, sentAt: x.sentAt })),
+                    requestsSent: f.outgoing.map((x) => ({ to: x.username, sentAt: x.sentAt })),
+                    blocked: f.blocked,
+                };
+            })(),
             linkedSignIns: a.providers.map((p) => ({ provider: p.provider, linkedAt: p.created_at })),
             sessions: signedIn.map((s) => ({ signedInAt: s.created_at, expiresAt: s.expires_at })),
             note: 'The password itself is never stored, only a one-way hash of it, which is not included.',

@@ -95,6 +95,38 @@
                 <ol class="recent" id="recent-games" aria-labelledby="recent-title"></ol>
             </section>
 
+            <section class="panel panel-wide" aria-labelledby="friends-title">
+                <h2 id="friends-title"><span class="chip chip-lilac">Friends</span></h2>
+                <form class="friend-add" id="friend-form" novalidate>
+                    <label for="friend-name">Add a friend by their username</label>
+                    <div class="friend-add-row">
+                        <input id="friend-name" name="username" type="text" required maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false">
+                        <button class="pill pill-ink" type="submit">Send request</button>
+                    </div>
+                    <p class="form-error" id="friend-error" role="alert" hidden></p>
+                    <p class="notice" id="friend-notice" role="status" hidden></p>
+                </form>
+                <div class="friend-lists">
+                    <div id="incoming-block" hidden>
+                        <h3>Asking to be your friend</h3>
+                        <ul class="people" id="incoming-list"></ul>
+                    </div>
+                    <div>
+                        <h3>Your friends</h3>
+                        <p id="friends-empty">No friends yet: add one by their username.</p>
+                        <ul class="people" id="friends-list"></ul>
+                    </div>
+                    <div id="outgoing-block" hidden>
+                        <h3>Waiting for an answer</h3>
+                        <ul class="people" id="outgoing-list"></ul>
+                    </div>
+                    <div id="blocked-block" hidden>
+                        <h3>Blocked</h3>
+                        <ul class="people" id="blocked-list"></ul>
+                    </div>
+                </div>
+            </section>
+
             <div class="panels">
                 <div class="panel">
                     <h2><span class="chip chip-lilac">Account</span></h2>

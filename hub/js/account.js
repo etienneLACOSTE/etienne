@@ -1,7 +1,8 @@
 // @ts-check
 // The account page: sign in or create an account; once signed in, the account, its
 // data and its deletion. Every check is redone by the server (server/accounts/).
-import { currentUser, showUserInTopbar } from '../../assets/js/session.js'; // Served as /assets/js/session.js
+import { api as send, currentUser, showUserInTopbar } from '../../assets/js/session.js'; // Served as /assets/js/session.js
+import { showFriends } from './friends.js';
 
 /** @param {string} id */
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -13,24 +14,6 @@ const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 function nextPage() {
     const next = new URLSearchParams(location.search).get('next');
     return next && /^\/(?![/\\])/.test(next) ? next : null;
-}
-
-/** Send JSON to the account API; returns the answer, or throws its error message. */
-async function send(method, url, body) {
-    let res;
-    try {
-        res = await fetch(url, {
-            method,
-            credentials: 'same-origin',
-            headers: { 'content-type': 'application/json' },
-            body: body && JSON.stringify(body),
-        });
-    } catch {
-        throw new Error('The site cannot be reached. Check your connection and try again.');
-    }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Something went wrong. Try again.');
-    return data;
 }
 
 /** Run a form's action, with its button busy and its error shown under the fields. */
@@ -177,6 +160,7 @@ async function showStats() {
 async function showAccount() {
     const { account } = await send('GET', '/api/account');
     showStats().catch(() => {}); // The account shows even if the stats cannot be read
+    showFriends().catch(() => {});
     $('account-title').textContent = `Hello, ${account.username}`;
     showAvatar(account);
     $('fact-username').textContent = account.username;
