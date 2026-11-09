@@ -110,7 +110,7 @@ test.describe('axe audit', () => {
   test('account: signed in, deletion open', async ({ page }) => {
     await page.goto('/account/');
     const name = `axe${Date.now() % 1e6}`;
-    await page.getByLabel('Username', { exact: true }).fill(name);
+    await page.locator('#signup-name').fill(name);
     await page.getByLabel('Email', { exact: true }).fill(`${name}@example.com`);
     await page.locator('#signup-password').fill('correct horse battery');
     await page.getByRole('button', { name: 'Create my account' }).click();

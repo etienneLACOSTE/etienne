@@ -19,7 +19,7 @@ test.describe('Account', () => {
     await expect(page).toHaveURL(/\/account\/$/);
 
     // Create
-    await page.getByLabel('Username', { exact: true }).fill(name);
+    await page.locator('#signup-name').fill(name);
     await page.getByLabel('Email', { exact: true }).fill(`${name}@example.com`);
     await page.locator('#signup-password').fill('correct horse battery');
     await page.getByRole('button', { name: 'Create my account' }).click();
@@ -59,7 +59,7 @@ test.describe('Account', () => {
 
   test('an invalid username is explained, and the form keeps what was typed', async ({ page }) => {
     await page.goto('/account/');
-    await page.getByLabel('Username', { exact: true }).fill('ab');
+    await page.locator('#signup-name').fill('ab');
     await page.getByLabel('Email', { exact: true }).fill('ab@example.com');
     await page.locator('#signup-password').fill('correct horse battery');
     await page.getByRole('button', { name: 'Create my account' }).click();
@@ -70,7 +70,7 @@ test.describe('Account', () => {
   test('after signing in, ?next= returns to a page of this site only', async ({ page }) => {
     const name = unique();
     await page.goto('/account/?next=https://evil.example/');
-    await page.getByLabel('Username', { exact: true }).fill(name);
+    await page.locator('#signup-name').fill(name);
     await page.getByLabel('Email', { exact: true }).fill(`${name}@example.com`);
     await page.locator('#signup-password').fill('correct horse battery');
     await page.getByRole('button', { name: 'Create my account' }).click();
@@ -83,5 +83,26 @@ test.describe('Account', () => {
     await page.locator('#login-password').fill('correct horse battery');
     await page.locator('#login-form').getByRole('button', { name: 'Sign in' }).click();
     await expect(page).toHaveURL(/\/chesspell\/$/);
+  });
+
+  test('Google and GitHub buttons, and the username step after a first sign-in', async ({ page }) => {
+    // The test server has no Google or GitHub keys: their answers are simulated here.
+    await page.route('**/api/auth/providers', (r) => r.fulfill({ json: { providers: ['google', 'github'] } }));
+    await page.goto('/account/?next=/chesspell/');
+    await expect(page.getByRole('link', { name: 'Continue with Google' })).toHaveAttribute('href', '/api/auth/google/start?next=%2Fchesspell%2F');
+    await expect(page.getByRole('link', { name: 'Continue with GitHub' })).toHaveAttribute('href', '/api/auth/github/start?next=%2Fchesspell%2F');
+
+    await page.route('**/api/auth/pending', (r) => r.fulfill({ json: { pending: { provider: 'google', suggestedUsername: 'Zoe' } } }));
+    await page.route('**/api/auth/finish', (r) => r.fulfill({ status: 409, json: { error: 'This username is taken.' } }));
+    await page.goto('/account/?finish=google');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Choose your username');
+    await expect(page.locator('#finish-name')).toHaveValue('Zoe');
+    await page.getByRole('button', { name: 'Create my account' }).click();
+    await expect(page.locator('#finish-error')).toHaveText('This username is taken.');
+  });
+
+  test('coming back from a cancelled sign-in says so', async ({ page }) => {
+    await page.goto('/account/?error=cancelled');
+    await expect(page.locator('#account-notice')).toHaveText('Sign-in was cancelled. Try again whenever you like.');
   });
 });

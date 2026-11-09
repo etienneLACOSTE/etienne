@@ -9,6 +9,7 @@ const { securityHeaders } = require('./security');
 const { openDb } = require('./db');
 const { authRouter } = require('./accounts/routes');
 const { accountRouter } = require('./accounts/account-routes');
+const { oauthRouter, deleteExpiredPending } = require('./accounts/oauth');
 const { sessionStore } = require('./accounts/sessions');
 
 const ROOT = path.join(__dirname, '..');
@@ -38,10 +39,14 @@ const HOUR = 60 * 60 * 1000;
 
 async function start() {
     const db = await openDb(); // Tables are brought up to date first
+    app.use('/api/auth', oauthRouter(db));
     app.use('/api/auth', authRouter(db));
     app.use('/api/account', accountRouter(db));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
-    setInterval(() => sessionStore(db).deleteExpired().catch(() => {}), HOUR).unref();
+    setInterval(() => {
+        sessionStore(db).deleteExpired().catch(() => {});
+        deleteExpiredPending(db).catch(() => {});
+    }, HOUR).unref();
     server.listen(PORT, '0.0.0.0', () => {
         console.log(`Server listening on port ${PORT} (0.0.0.0)`);
     });

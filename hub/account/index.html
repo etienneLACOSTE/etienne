@@ -27,6 +27,23 @@
     <main class="page">
         <h1 id="account-title" tabindex="-1">Your account</h1>
         <p id="account-loading" class="page-intro">Loading your account…</p>
+        <p class="notice" id="account-notice" role="status" hidden></p>
+
+        <!-- First sign-in with Google or GitHub: choose a username. -->
+        <section id="finish" hidden aria-labelledby="account-title">
+            <p class="page-intro">Welcome! One last step: choose the name other players will see.</p>
+            <div class="panels">
+                <form class="panel" id="finish-form" novalidate>
+                    <h2><span class="chip chip-lime">Almost there</span></h2>
+                    <label for="finish-name">Username</label>
+                    <input id="finish-name" name="username" type="text" autocomplete="username" required minlength="3" maxlength="20" autocapitalize="none" spellcheck="false" aria-describedby="finish-name-hint">
+                    <p class="hint" id="finish-name-hint">3 to 20 letters, digits, - or _. Other players see it.</p>
+                    <p class="form-error" id="finish-error" role="alert" hidden></p>
+                    <button class="pill pill-ink" type="submit">Create my account</button>
+                    <p class="hint">By creating an account you accept the <a href="/privacy/">privacy notice</a>.</p>
+                </form>
+            </div>
+        </section>
 
         <!-- Signed out: sign in, or create an account. -->
         <section id="signed-out" hidden aria-labelledby="account-title">
@@ -35,6 +52,10 @@
             <div class="panels">
                 <form class="panel" id="login-form" novalidate aria-labelledby="login-title">
                     <h2 id="login-title"><span class="chip chip-lilac">Sign in</span></h2>
+                    <div class="providers" id="provider-buttons" hidden>
+                        <p class="hint">New or returning, one click:</p>
+                    </div>
+                    <p class="hint" id="password-divider" hidden>Or with a password:</p>
                     <label for="login-name">Username or email</label>
                     <input id="login-name" name="login" type="text" autocomplete="username" required maxlength="254" autocapitalize="none" spellcheck="false">
                     <label for="login-password">Password</label>
@@ -72,6 +93,7 @@
                         <div><dt>Username</dt><dd id="fact-username"></dd></div>
                         <div><dt>Email</dt><dd id="fact-email"></dd></div>
                         <div><dt>Signs in with</dt><dd id="fact-methods"></dd></div>
+                        <div id="fact-links-row" hidden><dt>Link</dt><dd id="fact-links"></dd></div>
                         <div><dt>Member since</dt><dd id="fact-since"></dd></div>
                     </dl>
                     <button class="pill" type="button" id="logout-button">Sign out</button>

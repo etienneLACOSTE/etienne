@@ -62,6 +62,18 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
         });
     });
 
+    /** Unlink Google or GitHub, as long as another way to sign in remains. */
+    router.delete('/providers/:provider', async (req, res) => {
+        const account = await loadAccount(res.locals.user.id);
+        const linked = account.providers.map((p) => p.provider);
+        if (!linked.includes(req.params.provider)) return res.status(404).json({ error: 'Not linked.' });
+        if (!account.has_password && linked.length === 1) {
+            return res.status(400).json({ error: 'This is your only way to sign in: link another one first.' });
+        }
+        await db.query('DELETE FROM identities WHERE user_id = $1 AND provider = $2', [account.id, req.params.provider]);
+        res.json({ ok: true });
+    });
+
     /** Delete the account and everything linked to it. Asks for the username, and the password if there is one. */
     router.delete('/', rateLimit({ max: attemptsPerWindow, windowMs }), async (req, res) => {
         const { confirm, password } = req.body || {};

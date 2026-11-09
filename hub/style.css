@@ -331,6 +331,22 @@ button.pill:disabled { opacity: 0.55; cursor: progress; transform: none; box-sha
 .danger form { display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; margin-top: 1rem; }
 .danger form > div { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; }
 
+.notice {
+    max-width: 46rem;
+    background: var(--lime);
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    padding: 0.6rem 0.9rem;
+    margin: 1rem 0 0;
+    font-weight: 700;
+}
+.notice-error { background: var(--coral); }
+.providers { display: flex; flex-direction: column; align-items: stretch; gap: 0.6rem; width: 100%; margin-bottom: 0.75rem; }
+.providers .pill { text-align: center; }
+#fact-links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.method { display: block; }
+.link-button { font: inherit; font-size: 1rem; background: none; border: none; padding: 0; text-decoration: underline; cursor: pointer; color: inherit; }
+
 .prose { max-width: 46rem; }
 .prose h2 { font-family: var(--display); font-weight: 400; font-size: 1.75rem; margin: 2.5rem 0 0.5rem; }
 .prose ul { padding-left: 1.25rem; }
