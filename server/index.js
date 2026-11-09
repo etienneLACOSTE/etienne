@@ -12,7 +12,8 @@ const { accountRouter } = require('./accounts/account-routes');
 const { oauthRouter, deleteExpiredPending } = require('./accounts/oauth');
 const { sessionStore } = require('./accounts/sessions');
 const { statsStore } = require('./stats');
-const { friendsRouter } = require('./friends');
+const { friendsRouter, friendStore } = require('./friends');
+const { registerPresence } = require('./presence');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -41,12 +42,15 @@ async function start() {
     const db = await openDb(); // Tables are brought up to date first
     const sessions = sessionStore(db);
     const stats = statsStore(db);
-    registerChesspell(io, { sessions, stats });
-    registerChessdown(io, { sessions, stats });
+    const chesspell = registerChesspell(io, { sessions, stats });
+    const chessdown = registerChessdown(io, { sessions, stats });
+    const presence = registerPresence(io, {
+        sessions, friends: friendStore(db), rooms: { chesspell: chesspell.rooms, chessdown: chessdown.rooms },
+    });
     app.use('/api/auth', oauthRouter(db));
     app.use('/api/auth', authRouter(db));
     app.use('/api/account', accountRouter(db));
-    app.use('/api/friends', friendsRouter(db));
+    app.use('/api/friends', friendsRouter(db, { onChange: (ids) => presence.friendsChanged(ids).catch(() => {}) }));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
     setInterval(() => {
         sessions.deleteExpired().catch(() => {});

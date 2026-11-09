@@ -144,10 +144,12 @@ function sweepIdleRooms(rooms, close) {
 function safeOn(socket, event, handler) {
     socket.on(event, (...args) => {
         if (event !== 'disconnect' && !allowMessage(socket)) return;
+        const ignored = (err) => console.error(`Ignored malformed "${event}" message: ${err.message}`);
         try {
-            handler(...args);
+            const result = handler(...args);
+            if (result && typeof result.catch === 'function') result.catch(ignored); // Async handlers
         } catch (err) {
-            console.error(`Ignored malformed "${event}" message: ${err.message}`);
+            ignored(err);
         }
     });
 }

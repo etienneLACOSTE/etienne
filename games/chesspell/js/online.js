@@ -9,6 +9,7 @@ import { renderInGameDeck } from './cards-view.js';
 import { renderChessboard } from './board-view.js';
 import { startTimer } from './clock.js';
 import { leaveGame } from './match.js';
+import { refreshInvites } from './invites.js';
 
 /** The online buttons and the server's messages. */
 export function setupOnline() {
@@ -62,6 +63,7 @@ export function setupOnline() {
         session.isOnline = true;
         document.getElementById('waiting-room-code').textContent = code;
         showScreen('waiting-screen');
+        refreshInvites();
     });
 
     socket.on('roomJoined', (data) => {
@@ -126,4 +128,22 @@ export function setupOnline() {
     socket.on('errorMsg', (msg) => {
         alert(msg);
     });
+}
+
+/**
+ * Join a room from an invitation: the online screen, the code filled in, and the
+ * account (its deck) as the profile. Without a deck of three cards, the player is told
+ * to build one first.
+ */
+export function joinFromInvite(roomCode) {
+    showScreen('online-screen');
+    /** @type {HTMLInputElement} */ (document.getElementById('room-code-input')).value = roomCode;
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select'));
+    if (ProfileManager.account) select.value = ProfileManager.account.id;
+    const profile = ProfileManager.find(select.value);
+    if (!profile || !profile.deck || profile.deck.length !== 3) {
+        alert('Build your deck of three cards first (Deck Builder), then join with this code.');
+        return;
+    }
+    document.getElementById('btn-join-room').click();
 }

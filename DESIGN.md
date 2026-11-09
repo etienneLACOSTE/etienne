@@ -131,6 +131,12 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
   pill), then lists ("Asking to be your friend", "Your friends", "Waiting for an
   answer", "Blocked"): a 2.25rem face (picture or initial on lilac), the name in bold,
   the actions on the right (Accept as a small pill, the others as underlined links).
+- Invitation (every page, `assets/js/presence.js`): a card fixed at the bottom right
+  ("<name> invites you to play <game>." then Join / Not now), in the page's style:
+  Boîte de jeu (paper, ink border, hard shadow, ink and paper pills), Grimoire (vellum,
+  gold frame, gold and plum plates), Stade (black, amber edge, amber and white pills).
+  Waiting rooms list the friends online as buttons ("Invite a friend who is online").
+  Friends card: "Online, playing <game>" in a lime pill, or "Offline".
 - Account picture: a 4.5rem circle with a 3px ink border (the first letter of the
   username on lilac when there is none), "Change picture" pill and "Remove picture" link.
 - Top bar: game pills, then the account pill (ink): "Sign in", or the player's name.

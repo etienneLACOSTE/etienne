@@ -10,6 +10,7 @@ import { startCrowd } from './crowd.js';
 import { movePiece, skipTurn } from './gameplay.js';
 import { generateAllMoves, getValidMoves } from './rules-bridge.js';
 import { currentUser, showAccountLine } from '../../../assets/js/session.js';
+import { joinFromInvite, setupInvites } from './invites.js';
 
 // Initialization
 export function init() {
@@ -33,6 +34,11 @@ export function init() {
     currentUser().then((user) => {
         state.account = user;
         showAccountLine(document.getElementById('account-line'), user, { game: '/chessdown/', perk: 'stats' });
+        if (!user) return;
+        setupInvites();
+        // Arriving from an invitation on another page: /chessdown/?join=CODE
+        const code = new URLSearchParams(location.search).get('join');
+        if (code && /^[A-Z]{6}$/.test(code)) joinFromInvite(code);
     });
     
     // Fetch AI training data once at startup

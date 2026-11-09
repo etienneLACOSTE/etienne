@@ -10,6 +10,7 @@
     <meta name="description" content="What the site keeps about players, why, where, for how long, and how to get it or delete it.">
     <link rel="stylesheet" href="/assets/fonts/fonts.css">
     <link rel="stylesheet" href="/style.css">
+    <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="/assets/js/session.js"></script>
 </head>
 <body>
@@ -45,7 +46,7 @@
             <li>your <strong>sign-ins</strong>: for each signed-in browser, when it signed in and when that ends (30 days);</li>
             <li>your <strong>picture</strong>, if you add one, shown to your opponents online;</li>
             <li>your saved <strong>Ches'spell deck</strong> (three cards), so that it follows you on every device;</li>
-            <li>your <strong>friends</strong>: the requests you send and receive, your friends and the players you blocked. Your friends see your username and picture;</li>
+            <li>your <strong>friends</strong>: the requests you send and receive, your friends and the players you blocked. Your friends see your username, your picture, and while you have a page of the site open, that you are online and in which game (this is kept in the server's memory only, never written down);</li>
 <li>your <strong>finished games</strong>: which game, online, against the bot or on the same screen, the result and how it ended, the opponent's name as shown in the game, how long it lasted and when. It gives your stats and time played on your account page;</li>
             <li>if you sign in with Google, the <strong>account number</strong> Google gives for you. The site does not receive your Google password, email or contacts.</li>
         </ul>

@@ -269,6 +269,8 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
             }
         });
     });
+
+    return { rooms: chesspellRooms }; // For invitations (server/presence.js)
 }
 
 module.exports = { registerChesspell, sanitizeProfile, sanitizeDeck };

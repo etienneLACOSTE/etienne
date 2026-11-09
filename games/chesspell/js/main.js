@@ -16,6 +16,7 @@
 //   bot-player.js              the campaign bot on the page (decisions in bot.js)
 //   match.js                   a match from start to end screen
 //   online.js, demo.js         online play; the tutorial
+//   invites.js                 friends: the waiting room's invite list, joining from an invitation
 //   a11y.js                    keyboard and screen reader
 //   ../../../assets/js/session.js   who is signed in (shared with the hub)
 import { botSettings, match, session } from './state.js';
@@ -30,7 +31,8 @@ import { cancelEdit, renderProfilesList, submitProfile, updatePlayerSelects } fr
 import { setTimerMode, startTimer } from './clock.js';
 import { botStrength, playBotTurn, selectBotDeck } from './bot-player.js';
 import { endGame, leaveGame, rematch, startCampaign, startGame } from './match.js';
-import { setupOnline } from './online.js';
+import { joinFromInvite, setupOnline } from './online.js';
+import { setupInvites } from './invites.js';
 import { startDemo } from './demo.js';
 import { setupAccessibility } from './a11y.js';
 import { startSky } from './sky.js';
@@ -92,7 +94,12 @@ document.addEventListener('DOMContentLoaded', () => {
     currentUser().then((user) => {
         session.account = user;
         showAccountLine(document.getElementById('account-line'), user, { game: '/chesspell/', perk: 'deck and stats' });
-        if (user) ProfileManager.loadAccount(user).catch(() => {}); // Guests only if the account cannot be read
+        if (!user) return;
+        const account = ProfileManager.loadAccount(user).catch(() => {}); // Guests only if the account cannot be read
+        setupInvites(joinFromInvite);
+        // Arriving from an invitation on another page: /chesspell/?join=CODE
+        const code = new URLSearchParams(location.search).get('join');
+        if (code && /^[A-Z]{6}$/.test(code)) account.then(() => joinFromInvite(code));
     });
     ProfileManager.loadProfiles();
     renderProfilesList();

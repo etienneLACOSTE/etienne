@@ -291,6 +291,8 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
             }
         });
     });
+
+    return { rooms: chessdownRooms }; // For invitations (server/presence.js)
 }
 
 module.exports = { registerChessdown };

@@ -84,7 +84,11 @@ export function showAccountLine(el, user, { game, perk }) {
     el.hidden = false;
 }
 
-// On every hub page, the button follows who is signed in.
+// On every hub page, the button follows who is signed in, and a signed-in player is
+// online for their friends (presence.js).
 if (document.getElementById('account-link')) {
-    currentUser().then(showUserInTopbar);
+    currentUser().then((user) => {
+        showUserInTopbar(user);
+        if (user) import('./presence.js').then((m) => m.startPresence({ page: 'site' }));
+    });
 }

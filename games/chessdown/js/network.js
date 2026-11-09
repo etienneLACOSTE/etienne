@@ -6,6 +6,7 @@ import { clearHighlights, renderBoard, showScreen } from './board-view.js';
 import { setupColorPicker, startDraftPhase } from './draft.js';
 import { endGame, resetGame, startGameplay, startTurn } from './gameplay.js';
 import { makeVirtualMove } from './rules-bridge.js';
+import { refreshInvites } from './invites.js';
 
 export function setupNetwork() {
     // Socket Events
@@ -15,6 +16,7 @@ export function setupNetwork() {
         state.myPlayerNumber = 1;
         document.getElementById('waiting-room-code').textContent = code;
         showScreen(document.getElementById('waiting-screen'));
+        refreshInvites();
     });
 
     socket.on('roomJoined', (data) => {

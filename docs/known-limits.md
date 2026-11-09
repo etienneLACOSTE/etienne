@@ -41,6 +41,21 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   compte, pas encore d'armées sauvegardées (prévu « plus tard » dans `docs/accounts.md`).
 - **Connexion Google seulement :** GitHub abandonné (choix du 2026-11-09).
 
+## Amis et présence (étape 4, 2026-11-09)
+
+- **Présence en mémoire du serveur :** qui est en ligne n'est connu que du processus
+  Node en cours. Avec plusieurs instances (ou après un redémarrage), la liste repart de
+  zéro ; les pages se reconnectent seules, mais il faudrait un stockage partagé (Redis)
+  pour plusieurs instances.
+- **Invitation seulement à un ami en ligne,** et seulement depuis une salle que l'on vient
+  de créer. Un ami hors ligne ne la reçoit pas (pas de boîte de réception). Piste :
+  garder les invitations quelques minutes, ou une notification sur la page compte.
+- **Rejoindre Ches'spell par invitation demande un deck de trois cartes** sur le compte ;
+  sinon, un message renvoie au Deck Builder. Piste : proposer de le construire tout de
+  suite puis rejoindre.
+- **Recherche d'amis par pseudo exact seulement** (pas de suggestions), voulu pour ne pas
+  exposer la liste des joueurs.
+
 ## Divers (relevés avant les comptes)
 
 - **Socket.io n'a pas de contrôle d'origine.** Une page d'un autre site pourrait ouvrir

@@ -24,6 +24,11 @@ function friendStore(db) {
             return rows[0] || null;
         },
 
+        async userById(id) {
+            const { rows } = await db.query('SELECT id, username FROM users WHERE id = $1', [id]);
+            return rows[0] || null;
+        },
+
         async blocked(blocker, blocked) {
             const { rows } = await db.query('SELECT 1 FROM blocks WHERE blocker = $1 AND blocked = $2', [blocker, blocked]);
             return rows.length > 0;

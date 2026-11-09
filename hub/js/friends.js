@@ -2,6 +2,7 @@
 // The friends card of the account page: add a friend by username, answer requests,
 // remove or block a friend, unblock. The server checks everything (server/friends.js).
 import { api } from '../../assets/js/session.js'; // Served as /assets/js/session.js
+import { onFriendsOnline, whereText } from '../../assets/js/presence.js';
 
 /** @param {string} id */
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -20,6 +21,11 @@ function face(person) {
     else box.textContent = person.username.charAt(0).toUpperCase();
     return box;
 }
+
+/** Friends online now (presence.js), by username. */
+let online = new Map();
+/** The last lists from the server, redrawn when someone comes online or leaves. */
+let lists = null;
 
 /** A button that runs an action, then redraws the card (errors show above the lists). */
 function action(label, accessibleName, run, className = 'link-button') {
@@ -48,16 +54,36 @@ const path = (username) => encodeURIComponent(username);
 /** One line of a list: picture, name, then the buttons. */
 const person = (p, ...buttons) => el('li', {}, face(p), el('span', { className: 'who', textContent: p.username }), el('span', { className: 'acts' }, ...buttons));
 
-/** Draw the whole card from the server's lists. */
+/** A friend's line also says whether they are online, and where. */
+function friendLine(p, ...buttons) {
+    const line = person(p, ...buttons);
+    const here = online.get(p.username);
+    const status = el('span', { className: here ? 'presence presence-on' : 'presence', textContent: here ? `Online, ${whereText(here.where)}` : 'Offline' });
+    line.querySelector('.who').after(status);
+    return line;
+}
+
+/** Fetch the lists, then draw the card. */
 export async function showFriends() {
-    const { friends, incoming, outgoing, blocked } = await api('GET', '/api/friends');
+    lists = await api('GET', '/api/friends');
+    draw();
+}
+
+onFriendsOnline((friends) => {
+    online = new Map(friends.map((f) => [f.username, f]));
+    if (lists) draw();
+});
+
+/** Draw the whole card from the server's lists and who is online. */
+function draw() {
+    const { friends, incoming, outgoing, blocked } = lists;
 
     $('incoming-list').replaceChildren(...incoming.map((p) => person(p,
         action('Accept', `Accept ${p.username}`, () => api('POST', `/api/friends/requests/${path(p.username)}/accept`), 'pill pill-small'),
         action('Decline', `Decline ${p.username}`, () => api('DELETE', `/api/friends/requests/${path(p.username)}`)))));
     $('incoming-block').hidden = !incoming.length;
 
-    $('friends-list').replaceChildren(...friends.map((p) => person(p,
+    $('friends-list').replaceChildren(...friends.map((p) => friendLine(p,
         action('Remove', `Remove ${p.username} from your friends`, async () => {
             if (confirm(`Remove ${p.username} from your friends?`)) await api('DELETE', `/api/friends/${path(p.username)}`);
         }),

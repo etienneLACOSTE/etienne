@@ -44,11 +44,14 @@ player on every device. Playing without an account stays possible everywhere.
      flip, names in the end texts), stats as in 3c. Later: saved armies.
 
 Known limits to fix later: `docs/known-limits.md`.
-4. **Friends** (in progress)
+4. **Friends** (done)
    - 4a (done). `server/friends.js`, `/api/friends`: requests by exact username, accept,
      decline / cancel, remove, block (the blocked player's requests look sent but are
      dropped), unblock; friends card on the account page; in the data download.
-   - 4b. Who is online and in which game; invite a friend straight into a game.
+   - 4b (done). `server/presence.js` (Socket.io namespace `/presence`, signed-in players
+     only, page sent in `auth`): friends see who is online and where; from a room they
+     created, a player invites a friend who is online; the invitation reaches any page
+     (`assets/js/presence.js`) and joins in place or through `/<game>/?join=CODE`.
 5. **Hardening**: limits on friend requests, end-to-end review (`/tribunal`).
 
 ## Where the code is

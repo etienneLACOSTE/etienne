@@ -1439,3 +1439,33 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* --- Friends online (assets/js/presence.js): invite list and invitation card --- */
+.invite-friends { margin-top: 1.25rem; }
+.invite-title { color: var(--muted); margin: 0 0 0.5rem; }
+.invite-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+.invite-list button, .invite-actions button {
+    font: inherit; font-weight: 700; cursor: pointer;
+    padding: 0.5rem 1.1rem; border-radius: 6px; border: 1.5px solid var(--gold);
+    background: var(--plum); color: var(--mist);
+}
+.invite-status { color: var(--muted); min-height: 1.5em; margin: 0.5rem 0 0; }
+.invite-toast {
+    position: fixed;
+    z-index: 3000;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    width: min(24rem, calc(100vw - 32px));
+    background: var(--vellum);
+    color: var(--ink);
+    border: 2px solid var(--gold);
+    outline: 1px solid var(--bronze);
+    outline-offset: -7px;
+    border-radius: 12px;
+    box-shadow: 0 16px 36px rgba(5, 3, 12, 0.6);
+    padding: 1.1rem 1.25rem;
+}
+.invite-toast p { margin: 0 0 0.75rem; }
+.invite-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.invite-actions .invite-join { background: var(--gold); color: var(--ink); }
+.invite-toast :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
