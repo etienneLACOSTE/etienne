@@ -20,6 +20,12 @@ light, Grimoire is dark on purpose.
 
 Original explorations: `design-explorations/` (references: figma for Boîte de jeu, nike for Stade).
 
+Logo (owner's, 2026-11-09): a black pawn-planet with rings, pieces in orbit and stars.
+Source in `design-explorations/logo/logo-source.png`; served files in `assets/brand/`:
+`logo.webp` (transparent, 44px next to the wordmark on the hub pages) and the tab icons
+(`favicon-32.png`, `icon-192.png`, `apple-touch-icon.png`), where the logo sits on a white
+die-cut token with an ink ring so that it reads on dark tabs. Every page links the icons.
+
 ## Fonts
 
 All fonts are self-hosted in `assets/fonts/` (SIL Open Font License), declared in

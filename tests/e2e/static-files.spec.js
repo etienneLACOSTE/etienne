@@ -6,7 +6,7 @@ const { test, expect } = require('@playwright/test');
 
 const PUBLIC = ['/', '/style.css', '/account/', '/privacy/', '/js/session.js', '/js/account.js', '/chessdown/', '/chessdown/js/main.js', '/chessdown/js/state.js', '/chessdown/engine.js', '/chessdown/bot-search.js', '/chessdown/training_data.json',
   '/chesspell/', '/chesspell/js/match.js', '/chesspell/rules.js', '/chesspell/bot.js', '/chesspell/training_data.json',
-  '/assets/fonts/fonts.css', '/assets/fonts/bagel-fat-one.woff2', '/assets/fonts/noto-sans-symbols-2-chess.woff2'];
+  '/assets/fonts/fonts.css', '/assets/brand/logo.webp', '/assets/brand/favicon-32.png', '/assets/brand/apple-touch-icon.png', '/assets/fonts/bagel-fat-one.woff2', '/assets/fonts/noto-sans-symbols-2-chess.woff2'];
 
 const PRIVATE = [
   '/server.js', '/package.json', '/CLAUDE.md', '/playwright.config.js', '/.gitignore', '/.git/config',
