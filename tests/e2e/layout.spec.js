@@ -25,7 +25,7 @@ test.describe('Layout', () => {
     await blockExternalRequests(page);
   });
 
-  for (const url of ['/', '/chessdown/', '/chesspell/']) {
+  for (const url of ['/', '/account/', '/privacy/', '/chessdown/', '/chesspell/']) {
     test(`${url} does not scroll sideways`, async ({ page }) => {
       await page.goto(url);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(await page.evaluate(() => innerWidth));
@@ -34,7 +34,7 @@ test.describe('Layout', () => {
   }
 
   // Before the web fonts arrive (slow network) or if they fail, fallback fonts are wider.
-  for (const url of ['/', '/chessdown/', '/chesspell/']) {
+  for (const url of ['/', '/account/', '/privacy/', '/chessdown/', '/chesspell/']) {
     test(`${url} does not scroll sideways with fallback fonts`, async ({ page }) => {
       await page.route('**/assets/fonts/*.woff2', (route) => route.abort());
       await page.goto(url);

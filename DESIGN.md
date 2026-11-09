@@ -113,6 +113,13 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
 - Cards and panels: paper, 3px ink border, radius 16px, hard shadow `6px 6px 0 var(--ink)`.
   Large sections: radius 40px, no border, colour fill.
 - Dialogs: paper card, 3px ink border, hard shadow, over a navy veil at 60%.
+- Inner pages (account, privacy): Bagel title, then paper cards (panels) side by side, one
+  column on phones. Each card opens with a die-cut chip (lilac, lime or coral pill in Bagel).
+  Forms: bold label above the field; fields with a 2px ink border, radius 12px; hint lines
+  in 1rem ink; errors in a coral box with an ink border (role="alert"). Dangerous action
+  (account deletion): folded in a `<details>`, coral button.
+- Top bar: game pills, then the account pill (ink): "Sign in", or the player's name.
+  The pills wrap on narrow screens.
 
 **Grimoire**
 - Buttons: plates with 6px corners, 1.5px gold edge. Primary = gold fill, ink text.

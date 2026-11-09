@@ -5,7 +5,7 @@ const { blockExternalRequests } = require('./helpers');
 // Every page is served with a strict Content-Security-Policy (no inline or
 // injected scripts) and the usual hardening headers, and runs without violating it.
 
-const PAGES = ['/', '/chessdown/', '/chessdown/?demo=true', '/chesspell/', '/chesspell/?demo=true&v=2'];
+const PAGES = ['/', '/account/', '/privacy/', '/chessdown/', '/chessdown/?demo=true', '/chesspell/', '/chesspell/?demo=true&v=2'];
 
 test.describe('Security headers', () => {
   test('pages send CSP and hardening headers', async ({ request }) => {

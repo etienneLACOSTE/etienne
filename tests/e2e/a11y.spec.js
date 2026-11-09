@@ -11,7 +11,7 @@ test.describe('Accessible names', () => {
     await blockExternalRequests(page);
   });
 
-  for (const url of ['/', '/chessdown/', '/chesspell/']) {
+  for (const url of ['/', '/account/', '/privacy/', '/chessdown/', '/chesspell/']) {
     test(`${url}: every control, button, link and image has a name`, async ({ page }) => {
       await page.goto(url);
       const issues = await page.evaluate(() => {

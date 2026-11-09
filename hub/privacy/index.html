@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy · Etienne's chess variants</title>
+    <meta name="description" content="What the site keeps about players, why, where, for how long, and how to get it or delete it.">
+    <link rel="stylesheet" href="/assets/fonts/fonts.css">
+    <link rel="stylesheet" href="/style.css">
+    <script type="module" src="/js/session.js"></script>
+</head>
+<body>
+    <header class="topbar">
+        <a class="wordmark" href="/">Etienne's chess variants</a>
+        <nav aria-label="Site">
+            <a class="pill" href="/#chessdown">Chessdown</a>
+            <a class="pill" href="/#chesspell">Ches'spell</a>
+            <a class="pill pill-ink" id="account-link" href="/account/">Sign in</a>
+        </nav>
+    </header>
+
+    <main class="page prose">
+        <h1>Privacy</h1>
+        <p class="page-intro">The site keeps as little as it can. Without an account, nothing about you is stored on the server. Last updated: 9 November 2026.</p>
+
+        <h2>Who is responsible</h2>
+        <p>Etienne Lacoste, who makes and runs this site on his own. To ask anything about your data, open an issue on the <a href="https://github.com/etienneLACOSTE/etienne/issues">site's GitHub page</a>.</p>
+
+        <h2>Playing without an account</h2>
+        <ul>
+            <li>Your Ches'spell profiles, decks and stats stay in your browser (local storage). They never reach the server, except your profile's name, avatar and deck during an online game, which are shown to your opponent.</li>
+            <li>Online games are kept in the server's memory while they last, then forgotten.</li>
+            <li>Your IP address is used in memory to stop abuse (too many connections or rooms from one address). It is never written down.</li>
+        </ul>
+
+        <h2>With an account</h2>
+        <p>When you create an account, the site keeps:</p>
+        <ul>
+            <li>your <strong>username</strong>, shown to other players;</li>
+            <li>your <strong>email</strong>, only to send you a password reset link. It is never shown or shared;</li>
+            <li>a one-way <strong>hash of your password</strong> (scrypt). The password itself is never stored;</li>
+            <li>your <strong>sign-ins</strong>: for each signed-in browser, when it signed in and when that ends (30 days);</li>
+            <li>if you sign in with Google or GitHub, the <strong>account number</strong> they give for you. The site does not receive your password there.</li>
+        </ul>
+        <p>Why: to give you an account that works on every device (the legal basis is the service you ask for). Nothing is sold, shared for advertising or used to profile you.</p>
+
+        <h2>Cookie</h2>
+        <p>One cookie, <code>sid</code>, keeps you signed in. It is needed for the account to work, so it is set without a consent banner. There are no advertising or tracking cookies, and no analytics.</p>
+
+        <h2>Where it is kept</h2>
+        <ul>
+            <li>The site runs on <a href="https://render.com/privacy">Render</a>, in Frankfurt (Germany), behind Cloudflare's network.</li>
+            <li>Accounts are stored in a PostgreSQL database at <a href="https://neon.com/privacy-policy">Neon</a>, in Frankfurt.</li>
+        </ul>
+
+        <h2>How long</h2>
+        <p>Until you delete your account. Expired sign-ins are removed automatically.</p>
+
+        <h2>Your rights</h2>
+        <p>On your <a href="/account/">account page</a> you can download everything the site keeps about you and delete your account, which removes all of it at once. You can also ask for a correction, or complain to your data protection authority (in France, the <a href="https://www.cnil.fr/">CNIL</a>).</p>
+    </main>
+
+    <footer>Made by Etienne. <span>Two games, one board.</span> <a href="/privacy/" aria-current="page">Privacy</a></footer>
+</body>
+</html>

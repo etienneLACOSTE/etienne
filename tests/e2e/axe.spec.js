@@ -95,6 +95,30 @@ test.describe('axe audit', () => {
     expect(await audit(page)).toEqual([]);
   });
 
+  test('privacy', async ({ page }) => {
+    await page.goto('/privacy/');
+    expect(await audit(page)).toEqual([]);
+  });
+
+  test('account: signed out, with an error shown', async ({ page }) => {
+    await page.goto('/account/');
+    await page.locator('#login-form button[type="submit"]').click();
+    await expect(page.locator('#login-error')).toBeVisible();
+    expect(await audit(page)).toEqual([]);
+  });
+
+  test('account: signed in, deletion open', async ({ page }) => {
+    await page.goto('/account/');
+    const name = `axe${Date.now() % 1e6}`;
+    await page.getByLabel('Username', { exact: true }).fill(name);
+    await page.getByLabel('Email', { exact: true }).fill(`${name}@example.com`);
+    await page.locator('#signup-password').fill('correct horse battery');
+    await page.getByRole('button', { name: 'Create my account' }).click();
+    await page.getByText('Delete my account', { exact: true }).click();
+    await expect(page.locator('#delete-confirm')).toBeVisible();
+    expect(await audit(page)).toEqual([]);
+  });
+
   for (const [name, open] of Object.entries(CHESSDOWN)) {
     test(`chessdown: ${name}`, async ({ page }) => {
       await page.goto('/chessdown/');

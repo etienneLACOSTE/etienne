@@ -8,6 +8,7 @@ const { openDb } = require('../../server/db');
 const { migrate } = require('../../server/db/migrate');
 const { hashPassword, verifyPassword } = require('../../server/accounts/passwords');
 const { authRouter } = require('../../server/accounts/routes');
+const { accountRouter } = require('../../server/accounts/account-routes');
 const { readCookie } = require('../../server/accounts/sessions');
 
 let db;
@@ -18,6 +19,7 @@ before(async () => {
     db = await openDb({ url: '' });
     const app = express();
     app.use('/api/auth', authRouter(db, { attemptsPerWindow: 1000 }));
+    app.use('/api/account', accountRouter(db, { attemptsPerWindow: 1000 }));
     server = http.createServer(app).listen(0);
     base = `http://localhost:${server.address().port}`;
 });
@@ -160,4 +162,54 @@ test('too many attempts from one address are slowed down', async () => {
     }
     limited.close();
     assert.deepEqual(statuses, [401, 401, 401, 429, 429]);
+});
+
+test('account: only for a signed-in player', async () => {
+    assert.equal((await api('/api/account')).status, 401);
+    assert.equal((await api('/api/account/export')).status, 401);
+    assert.equal((await api('/api/account', { method: 'DELETE', body: { confirm: 'x' } })).status, 401);
+});
+
+test('account: shows the account, never the password hash', async () => {
+    const { cookie } = await signup('Heidi');
+    const { status, json } = await api('/api/account', { cookie });
+    assert.equal(status, 200);
+    assert.equal(json.account.username, 'Heidi');
+    assert.equal(json.account.email, 'Heidi@example.com');
+    assert.equal(json.account.hasPassword, true);
+    assert.deepEqual(json.account.providers, []);
+    assert.ok(!JSON.stringify(json).includes('scrypt'));
+});
+
+test('account: the export is a JSON file with the account and its sign-ins, no secret', async () => {
+    const { cookie } = await signup('Ivan');
+    const res = await fetch(`${base}/api/account/export`, { headers: { cookie } });
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-disposition'), /attachment; filename="etienne-account-Ivan.json"/);
+    const text = await res.text();
+    const data = JSON.parse(text);
+    assert.equal(data.account.username, 'Ivan');
+    assert.equal(data.sessions.length, 1);
+    assert.ok(!/scrypt|token_hash|password_hash/.test(text));
+});
+
+test('account: deleting needs the username and the password, then removes everything', async () => {
+    const { cookie } = await signup('Judy');
+    const del = (body) => api('/api/account', { method: 'DELETE', body, cookie });
+    assert.equal((await del({ confirm: 'someone', password: 'correct horse battery' })).status, 400);
+    assert.equal((await del({ confirm: 'judy', password: 'wrong horse battery' })).status, 401);
+    assert.equal((await del({ confirm: 'judy' })).status, 401);
+    const ok = await del({ confirm: 'judy', password: 'correct horse battery' });
+    assert.equal(ok.status, 200);
+    assert.match(ok.setCookie, /^sid=;/);
+    assert.equal((await api('/api/auth/me', { cookie })).json.user, null);
+    const left = await db.query("SELECT (SELECT count(*) FROM users WHERE username = 'Judy') AS users, (SELECT count(*) FROM sessions s WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = s.user_id)) AS orphans");
+    assert.deepEqual(left.rows[0], { users: 0, orphans: 0 });
+});
+
+test('account: another site cannot delete it (CSRF)', async () => {
+    const { cookie } = await signup('Ken');
+    const res = await api('/api/account', { method: 'DELETE', body: { confirm: 'Ken', password: 'correct horse battery' }, cookie, origin: 'https://evil.example' });
+    assert.equal(res.status, 403);
+    assert.equal((await api('/api/auth/me', { cookie })).json.user.username, 'Ken');
 });
