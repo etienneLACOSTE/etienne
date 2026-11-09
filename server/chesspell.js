@@ -58,7 +58,7 @@ function sanitizeProfile(profile, deck) {
 function registerChesspell(io) {
     const ioChesspell = io.of('/chesspell');
 
-    /** Each player gets the new state (their own traps only) and what just happened. */
+    /** Each player gets the new state and what just happened. */
     function sendState(room, action) {
         const game = room.game;
         if (game.winner) {
@@ -68,7 +68,7 @@ function registerChesspell(io) {
             room.clock.start(game.turn);
         }
         for (const player of [1, 2]) {
-            ioChesspell.to(room.players[player]).emit('gameState', { state: Game.snapshot(game, COLORS[player]), action });
+            ioChesspell.to(room.players[player]).emit('gameState', { state: Game.snapshot(game), action });
         }
     }
 

@@ -272,7 +272,7 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
                 square.dataset.c = String(c);
                 
                 const trap = engine.traps.find(t => t.r === r && t.c === c);
-                if (trap && (!session.isOnline || trap.owner === session.myPlayerColor)) {
+                if (trap) { // Traps are visible to both players
                     const trapEl = document.createElement('div');
                     trapEl.innerHTML = '🕸️';
                     trapEl.style.position = 'absolute';

@@ -500,13 +500,13 @@
     // --- Board search (no spells: they are only tried at the root) ---
 
     /** A light copy of the game for the board search: one-turn spells are over. */
-    function searchPosition(state, me) {
+    function searchPosition(state) {
         return {
             board: state.board.map((row) => [...row]),
             turn: state.turn,
             frozenPieces: state.frozenPieces.map((f) => ({ ...f })),
             shieldedPieces: state.shieldedPieces.map((s) => ({ ...s })),
-            traps: state.traps.filter((t) => t.owner === me).map((t) => ({ ...t })),
+            traps: state.traps.map((t) => ({ ...t })), // Traps are visible to both players
             hasMoved: { ...state.hasMoved },
             doubleTroubleState: null,
             domiReversiPiece: null,
@@ -635,14 +635,14 @@
 
     const SPELL_FIELDS = ['activeSpellId', 'spellCard', 'spellCaster', 'targetingState', 'tpSource', 'sacrificePiece', 'swapPiece1', 'sidestepFrom', 'sniperBishop'];
 
-    /** A copy of the game as `me` sees it: the opponent's traps are hidden. */
-    function cloneGame(state, me) {
+    /** A copy of the game for `me` to try its spells on. */
+    function cloneGame(state) {
         const copy = {
             board: state.board.map((row) => [...row]),
             turn: state.turn,
             frozenPieces: state.frozenPieces.map((f) => ({ ...f })),
             shieldedPieces: state.shieldedPieces.map((s) => ({ ...s })),
-            traps: state.traps.filter((t) => t.owner === me).map((t) => ({ ...t })),
+            traps: state.traps.map((t) => ({ ...t })), // Traps are visible to both players
             leapFrogActive: state.leapFrogActive, promotionActive: state.promotionActive, assassinActive: state.assassinActive,
             ghostActive: state.ghostActive, cannibalismActive: state.cannibalismActive,
             history: [],
@@ -665,10 +665,10 @@
         if (game.winner) return (game.winner.toLowerCase() === me ? 1 : -1) * (WIN + plies + 1);
         ctx.cards = hands(game, ctx.decks);
         if (game.turn === me) {
-            if (plies <= 0) return quiesce(searchPosition(game, me), me, alpha, INF, ctx);
+            if (plies <= 0) return quiesce(searchPosition(game), me, alpha, INF, ctx);
             return bestRootMove(game, me, plies, alpha, ctx).value;
         }
-        return -negamax(searchPosition(game, me), other(me), plies, -INF, -alpha, ctx);
+        return -negamax(searchPosition(game), other(me), plies, -INF, -alpha, ctx);
     }
 
     /** All moves of the player to move in a game copy, as { fr, fc, tr, tc }, captures first. */
@@ -687,12 +687,12 @@
 
     /** Play a move on a copy of the game; returns the copies after it (one per Assassin victim). */
     function afterMove(game, me, m) {
-        const child = cloneGame(game, me);
+        const child = cloneGame(game);
         const result = Game.move(child, m.fr, m.fc, m.tr, m.tc);
         if (result === 'reverted') return [{ game: child }];
         if (result === 'assassin_kill') {
             return child.assassinTargets.map((t) => {
-                const g = cloneGame(child, me);
+                const g = cloneGame(child);
                 Game.clickSquare(g, t.r, t.c);
                 Game.endTurn(g);
                 return { game: g, kill: { r: t.r, c: t.c } };
@@ -720,7 +720,7 @@
         const options = [];
         const pick = (g, cardId, targets) => {
             for (const [r, c] of squares()) {
-                const next = cloneGame(g, me);
+                const next = cloneGame(g);
                 const res = Game.clickSquare(next, r, c, random);
                 const chosen = [...targets, { r, c }];
                 if (res.status === 'next') pick(next, cardId, chosen);
@@ -732,7 +732,7 @@
             }
         };
         for (const cardId of new Set(cards)) {
-            const g = cloneGame(game, me);
+            const g = cloneGame(game);
             const res = Game.activateSpell(g, cardId);
             if (res.status === 'instant') options.push({ cardId, targets: [], game: g });
             else if (res.status === 'targeting') pick(g, cardId, []);
@@ -748,7 +748,7 @@
      */
     function chooseTurn(state, me, decks, profile = DEFAULT_PROFILE, random = Math.random, timeLimitMs = Infinity) {
         const ctx = { profile, decks, cards: null, random, nodes: 0, deadline: Date.now() + timeLimitMs };
-        const game = cloneGame(state, me);
+        const game = cloneGame(state);
         game.turn = me;
         const mine = hands(game, decks)[me];
         const options = profile.spells === 'search' && mine.length ? spellOptions(game, me, mine, random) : [];

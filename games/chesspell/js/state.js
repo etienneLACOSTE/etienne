@@ -46,7 +46,7 @@ export const cardsData = [
     { id: 15, name: "Freeze", icon: "🧊", effect: "Freeze an enemy piece for 1 turn. (Free action: you can move a piece afterwards)", unlock: "Unlocked by default.", isLocked: false,
       details: { timing: "Anytime on your turn", conditions: "Target an enemy piece.", inputs: "Select the enemy piece." } },
     { id: 16, name: "Trap", icon: "🕸️", effect: "Select an empty square; the first enemy piece to land there is destroyed.", unlock: "Win in under 20 moves.", isLocked: true,
-      details: { timing: "Play instead of your normal move.", conditions: "None.", inputs: "Click on an empty square to place the hidden trap." } },
+      details: { timing: "Play instead of your normal move.", conditions: "None.", inputs: "Click on an empty square to place the trap. Both players can see it." } },
     { id: 17, name: "Teleport", icon: "🌀", effect: "Move a piece to any empty square on your starting rank.", unlock: "Unlocked by default.", isLocked: false,
       details: { timing: "Play instead of your normal move.", conditions: "You must have an empty square on your back rank.", inputs: "Click your piece, then click the destination square on your back rank." } },
     { id: 18, name: "Kamikaze", icon: "💥", effect: "Destroy one of your pieces and all pieces in the 9 squares around it (except Kings).", unlock: "Play 50 games.", isLocked: true,

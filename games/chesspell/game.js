@@ -501,8 +501,8 @@
         return ignored;
     }
 
-    /** Plain copy of the state for a player: the opponent's traps stay hidden. */
-    function snapshot(state, viewer) {
+    /** Plain copy of the state for a player (traps are visible to both players). */
+    function snapshot(state) {
         const copy = JSON.parse(JSON.stringify({
             board: state.board, turn: state.turn, frozenPieces: state.frozenPieces, shieldedPieces: state.shieldedPieces,
             traps: state.traps, leapFrogActive: state.leapFrogActive, promotionActive: state.promotionActive,
@@ -512,7 +512,6 @@
             hasMoved: state.hasMoved, usedCards: state.usedCards, winner: state.winner,
             activeSpellId: state.activeSpellId, targetingState: state.targetingState, assassinTargets: state.assassinTargets || null,
         }));
-        copy.traps = copy.traps.filter((t) => t.owner === viewer);
         return copy;
     }
 

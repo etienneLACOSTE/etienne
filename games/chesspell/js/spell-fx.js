@@ -6,7 +6,7 @@
 //
 // The engine calls begin(cardId) when a spell is cast, target(r, c) for each square
 // picked, and finish() when the spell is done. Online, the opponent only learns that a
-// spell was cast, not where: their effect covers the whole board (so a Trap stays hidden).
+// spell was cast, not where it was aimed: their effect covers the whole board.
 import { session } from './state.js';
 
 const DURATION_MS = 1400;
@@ -71,7 +71,7 @@ export const spellFx = {
             effect(fx, cells);
         } else if (cells.length) { // Mirror, or a spell without its own effect: runes
             cells.forEach((cell) => { rune(fx, cell, 'gold'); burst(fx, cell, 'lilac', 10, 0.8); });
-        } else { // The opponent's spell online: where it landed stays secret
+        } else { // The opponent's spell online: the page does not get its squares
             flash(fx, 'lilac');
             rune(fx, { r: 3.5, c: 3.5 }, 'gold', 4);
         }

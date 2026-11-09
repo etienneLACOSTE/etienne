@@ -228,7 +228,7 @@ test.describe('Server authority', () => {
     expect(result.again).toBeUndefined();
   });
 
-  test("ches'spell: a trap stays hidden from the opponent", async ({ page }) => {
+  test("ches'spell: both players see a trap", async ({ page }) => {
     const result = await page.evaluate(async () => {
       const g = await T.chesspellRoom();
       await g.act(g.white, 'spellActivated', { cardId: 16 });
@@ -236,7 +236,7 @@ test.describe('Server authority', () => {
       return { white: forWhite.state.traps, black: forBlack.state.traps };
     });
     expect(result.white).toEqual([{ r: 4, c: 4, owner: 'white' }]);
-    expect(result.black).toEqual([]);
+    expect(result.black).toEqual([{ r: 4, c: 4, owner: 'white' }]);
   });
 
   test("ches'spell: Tornado is shuffled once, by the server, for both players", async ({ page }) => {

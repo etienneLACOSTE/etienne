@@ -230,13 +230,12 @@ test('flag spells (Cannibalism, Ghost, Leap Frog, Promotion) act at once and use
     }
 });
 
-test("snapshot: plain data, and each player only sees their own traps", () => {
+test("snapshot: plain data, and both players see every trap", () => {
     const s = G.newGame();
     s.traps.push({ r: 4, c: 4, owner: 'white' }, { r: 3, c: 3, owner: 'black' });
-    const forWhite = G.snapshot(s, 'white');
-    assert.deepEqual(forWhite.traps, [{ r: 4, c: 4, owner: 'white' }]);
-    assert.deepEqual(G.snapshot(s, 'black').traps, [{ r: 3, c: 3, owner: 'black' }]);
-    forWhite.board[0][0] = null;
+    const copy = G.snapshot(s);
+    assert.deepEqual(copy.traps, [{ r: 4, c: 4, owner: 'white' }, { r: 3, c: 3, owner: 'black' }]);
+    copy.board[0][0] = null;
     assert.equal(s.board[0][0], 'r'); // a copy, not the live state
 });
 
