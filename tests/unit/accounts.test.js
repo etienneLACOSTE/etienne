@@ -45,8 +45,10 @@ const signup = (username, extra = {}) => api('/api/auth/signup', {
 
 test('migrations: applied once, a second run changes nothing', async () => {
     await migrate(db);
-    const { rows } = await db.query('SELECT name FROM schema_migrations');
-    assert.deepEqual(rows.map((r) => r.name), ['001_accounts.sql']);
+    const { rows } = await db.query('SELECT name FROM schema_migrations ORDER BY name');
+    const files = require('node:fs').readdirSync(require('node:path').join(__dirname, '../../server/db/migrations')).sort();
+    assert.ok(files.length >= 2);
+    assert.deepEqual(rows.map((r) => r.name), files);
 });
 
 test('passwords: scrypt hash, only the right password matches', async () => {
