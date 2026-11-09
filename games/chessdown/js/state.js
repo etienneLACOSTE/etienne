@@ -60,6 +60,9 @@ export const state = {
     account: null,
     /** When the current match started (Date.now()), for the time played. */
     matchStartedAt: 0,
+    /** Online: each player's username (null for a guest), sent by the server. */
+    /** @type {Record<number, string | null>} */
+    playerNames: { 1: null, 2: null },
 
     // Play
     /** @type {any} */
@@ -127,3 +130,8 @@ export const ui = {
     timerSecInput: /** @type {HTMLInputElement} */ (document.getElementById('timer-sec')),
     timerTextOverlay: /** @type {HTMLElement} */ (document.getElementById('timer-text-overlay'))
 };
+
+/** A player's name: their username online when signed in, else "Player 1" / "Player 2". */
+export function playerName(player) {
+    return state.playerNames[player] || `Player ${player}`;
+}

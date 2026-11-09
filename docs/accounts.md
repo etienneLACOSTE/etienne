@@ -28,7 +28,7 @@ player on every device. Playing without an account stays possible everywhere.
 2. **Accounts** (done): `/account/` (sign in, create, account, data download, deletion),
    `/privacy/`, Google sign-in with a username chosen on first sign-in, top-bar button,
    "Play as a guest".
-3. **The games on the account** (in progress: 3a, 3b and 3c done)
+3. **The games on the account** (done)
    - 3a. The game servers know the signed-in player (session cookie read at the Socket.io
      handshake); online, the name shown to the opponent is the account's, set by the
      server. Each game's menu shows who is signed in, or a sign-in button that comes
@@ -40,7 +40,10 @@ player on every device. Playing without an account stays possible everywhere.
      duration, date). The account page shows, per game, games played, wins by mode,
      time played and the last 20 games. In the data download; deleted with the account;
      privacy notice updated.
-   - 3d. Chessdown: account name online, stats as in 3c. Later: saved armies.
+   - 3d. Chessdown: account names online (sent by the server; "Alice vs Bob" on the coin
+     flip, names in the end texts), stats as in 3c. Later: saved armies.
+
+Known limits to fix later: `docs/known-limits.md`.
 4. **Friends**: find a username, request / accept / remove / block, who is online,
    invite a friend straight into a game.
 5. **Hardening**: limits on friend requests, end-to-end review (`/tribunal`).

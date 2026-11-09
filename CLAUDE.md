@@ -30,7 +30,7 @@ Communication : réponds en français ; code, noms de variables et commits en an
 - `ai/chesspell/` : IA Python mise de côté, conservée comme projet de recherche (modèles `.pth`, venv et logs non versionnés)
 - `tools/<jeu>/` : scripts d'entraînement des bots JS
 - `tests/unit/` : tests unitaires des règles (`node:test`) ; `tests/e2e/` : tests Playwright et captures de référence
-- `docs/` : specs, décisions, rapports de revue (Tribunal écrit dans `docs/reviews/`) ; plan de refonte : `docs/strategy.md`
+- `docs/` : specs, décisions, rapports de revue (Tribunal écrit dans `docs/reviews/`) ; plan de refonte : `docs/strategy.md` ; comptes : `docs/accounts.md` ; limites connues à corriger : `docs/known-limits.md`
 
 ## Façon de travailler
 - Une demande = un objectif vérifiable. Pour une tâche de plus de 3 fichiers, propose d'abord un plan et attends mon accord.

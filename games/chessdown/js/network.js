@@ -1,7 +1,7 @@
 // @ts-check
 // Online play: Socket.io event handlers, registered by setupEventListeners().
 import { fireConfetti } from '../confetti.js';
-import { COLOR_HEX, MAX_POINTS, socket, state, ui } from './state.js';
+import { COLOR_HEX, MAX_POINTS, playerName, socket, state, ui } from './state.js';
 import { clearHighlights, renderBoard, showScreen } from './board-view.js';
 import { setupColorPicker, startDraftPhase } from './draft.js';
 import { endGame, resetGame, startGameplay, startTurn } from './gameplay.js';
@@ -29,6 +29,7 @@ export function setupNetwork() {
             state.timerMode = timer.mode;
             state.timerBaseSeconds = timer.seconds;
         }
+        state.playerNames = (data && data.roomState && data.roomState.names) || { 1: null, 2: null };
         startDraftPhase(state.myPlayerNumber);
     });
 
@@ -70,7 +71,7 @@ export function setupNetwork() {
                 fireConfetti([winnerColorHex, '#f1c40f']);
                 endGame('Victory!', `You captured the King!`, winner);
             } else {
-                endGame('Defeat...', `Player ${winner} captured your King.`, winner);
+                endGame('Defeat...', `${playerName(winner)} captured your King.`, winner);
             }
             return;
         }

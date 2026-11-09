@@ -20,7 +20,7 @@ async function signedInContext(browser) {
 }
 
 test.describe('Stats', () => {
-  test('an online Chessdown game is recorded by the server for both signed-in players', async ({ browser }) => {
+  test('an online Chessdown game names both players and is recorded by the server for each', async ({ browser }) => {
     const a = await signedInContext(browser);
     const b = await signedInContext(browser);
     const [pa, pb] = [await a.context.newPage(), await b.context.newPage()];
@@ -42,9 +42,14 @@ test.describe('Stats', () => {
     await pb.evaluate((c) => {
       const s = io('/chessdown', { forceNew: true });
       window.s = s;
-      s.once('gameStarted', () => s.emit('draftComplete', { roomCode: c, player: 2, color: 'red', pieces: [{ r: 0, c: 3, type: 'k' }] }));
+      window.names = new Promise((r) => s.once('gameStarted', (d) => {
+        r(d.roomState.names);
+        s.emit('draftComplete', { roomCode: c, player: 2, color: 'red', pieces: [{ r: 0, c: 3, type: 'k' }] });
+      }));
       s.emit('joinRoom', c);
     }, code);
+    // Both players' usernames come from the server (Chessdown shows them online)
+    expect(await pb.evaluate(() => window.names)).toEqual({ 1: a.name, 2: b.name });
     const starter = await pa.evaluate(() => window.ended);
     if (starter === 2) { // Black's king steps forward, still on the rook's column
       const moved = pa.evaluate(() => new Promise((r) => window.s.once('moveMade', () => r(true))));

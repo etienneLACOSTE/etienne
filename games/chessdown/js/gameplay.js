@@ -1,7 +1,7 @@
 // @ts-check
 // Gameplay: turns, timer, moves, end of game.
 import { fireConfetti } from '../confetti.js';
-import { COLOR_HEX, COLS, MAX_POINTS, ROWS, socket, state, ui } from './state.js';
+import { COLOR_HEX, COLS, MAX_POINTS, ROWS, playerName, socket, state, ui } from './state.js';
 import { clearHighlights, createBoardDOM, getSquareElement, highlightValidMoves, renderBoard, showScreen, startCoinFlip } from './board-view.js';
 import { getBoardCoords, getViewCoords } from './coords.js';
 import { chooseBotMove } from './bot.js';
@@ -27,7 +27,17 @@ export function startGameplay(winner) {
     ui.gameLayout.classList.remove('hidden');
     createBoardDOM(false);
     renderBoard();
+    showMatchup();
     startCoinFlip(winner, finalizeGameplayStart);
+}
+
+/** Online, the coin flip shows who plays whom: "Alice vs Bob" (a guest is "Player N"). */
+function showMatchup() {
+    const matchup = document.getElementById('matchup');
+    if (!matchup) return;
+    matchup.hidden = !state.currentRoomCode;
+    const me = state.myPlayerNumber;
+    matchup.textContent = `${playerName(me)} vs ${playerName(me === 1 ? 2 : 1)}`;
 }
 
 export function finalizeGameplayStart() {
@@ -53,7 +63,7 @@ export function startTurn() {
                 fireConfetti([winnerColorHex, '#f1c40f']);
                 endGame('Victory!', `TOUCHDOWN! Player ${winner} survived in the endzone!`, winner, 'touchdown');
             } else {
-                endGame('Defeat...', `TOUCHDOWN! Player ${winner} survived in the endzone!`, winner, 'touchdown');
+                endGame('Defeat...', `TOUCHDOWN! ${playerName(winner)} survived in the endzone!`, winner, 'touchdown');
             }
         }
         return;
@@ -300,4 +310,5 @@ export function resetGame() {
     state.lastMove = null;
     state.currentDraftIndex = 0;
     state.positionHistory = {};
+    state.playerNames = { 1: null, 2: null };
 }

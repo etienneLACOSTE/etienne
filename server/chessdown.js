@@ -31,6 +31,8 @@ function getChessdownPublicRoomState(room) {
         playerColors: room.playerColors,
         board: room.board,
         timer: room.clock.settings,
+        // Signed-in players' usernames (set by the server), null for a guest.
+        names: { 1: room.accounts[1] ? room.accounts[1].username : null, 2: room.accounts[2] ? room.accounts[2].username : null },
     };
 }
 
