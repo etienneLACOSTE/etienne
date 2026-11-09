@@ -4,8 +4,7 @@
 // button produces a `click` instead. This file bridges the two, makes the draft shop,
 // the colour swatches and the board operable from the keyboard, and labels the board.
 import { COLS, ROWS, state, ui } from './state.js';
-import { getBoardCoords, getViewCoords } from './board-view.js';
-import { handleSquareClick } from './draft.js';
+import { getBoardCoords, getViewCoords } from './coords.js';
 
 export const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 export const COLUMN_LETTERS = 'abcdefgh';
@@ -125,7 +124,7 @@ export function onBoardKeydown(e) {
         focusSquare(index - col + (e.key === 'End' ? COLS - 1 : 0));
     } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        handleSquareClick(Number(sq.dataset.vr), Number(sq.dataset.vc));
+        activateWithPointerdown(sq); // Same path as a tap (events.js routes it)
     }
 }
 

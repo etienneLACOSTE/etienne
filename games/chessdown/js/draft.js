@@ -1,8 +1,9 @@
 // @ts-check
 // Draft phase: buying and placing pieces, colours, validation.
 import { COLS, MAX_POINTS, PIECES, socket, state, ui } from './state.js';
-import { createBoardDOM, getBoardCoords, getDraftZoneView, renderBoard, showScreen } from './board-view.js';
-import { handleGameplaySquareClick, startGameplay } from './gameplay.js';
+import { createBoardDOM, renderBoard, showScreen } from './board-view.js';
+import { getBoardCoords, getDraftZoneView } from './coords.js';
+import { startGameplay } from './gameplay.js';
 import { autoDraftBot } from './bot.js';
 
 // --- Draft Logic ---
@@ -131,14 +132,6 @@ export function updateDraftUI() {
     }
 
     ui.btnValidateDraft.disabled = !state.kingsPlaced[state.currentPlayer];
-}
-
-export function handleSquareClick(viewR, viewC) {
-    if (state.gameState.startsWith('draft')) {
-        (draftHooks.squareClick || handleDraftSquareClick)(viewR, viewC);
-    } else if (state.gameState === 'gameplay') {
-        handleGameplaySquareClick(viewR, viewC);
-    }
 }
 
 /** The tutorial (demo.js) can take over the draft square clicks. */

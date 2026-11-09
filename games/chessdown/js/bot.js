@@ -2,7 +2,6 @@
 // Campaign bot: difficulty profiles; the draft and the search live in bot-search.js
 // (shared with the trainer, tools/chessdown/train.js).
 import { Bot, COLOR_HEX, MAX_POINTS, state } from './state.js';
-import { movePiece, skipTurn } from './gameplay.js';
 
 /**
  * Difficulty: the profile of an earlier or later generation of training_data.json
@@ -49,13 +48,8 @@ export function autoDraftBot() {
     state.draftPoints[2] = pointsLeft;
 }
 
-export function playBotTurn() {
-    if (state.gameState === 'over') return;
+/** The bot's move (gameplay.js plays it), or null when it has none. */
+export function chooseBotMove() {
     // Deepens up to the level's depth, within the thinking time.
-    const bestMove = Bot.bestMove(state, 2, state.botProfile.depth, state.botProfile, Math.random, BOT_THINKING_MS);
-    if (bestMove) {
-        movePiece(bestMove.fromR, bestMove.fromC, bestMove.toR, bestMove.toC);
-    } else {
-        skipTurn();
-    }
+    return Bot.bestMove(state, 2, state.botProfile.depth, state.botProfile, Math.random, BOT_THINKING_MS) || null;
 }

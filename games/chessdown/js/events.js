@@ -1,13 +1,28 @@
 // @ts-check
-// UI event wiring for menus, modals, draft shop and buttons.
+// Input wiring: menus, modals, draft shop, buttons and board squares (one listener).
 import { socket, state, ui } from './state.js';
 import { enterFullscreen, renderBoard, showScreen } from './board-view.js';
-import { clearCurrentDraft, handleTransitionReady, startDraftPhase, toggleRemoveMode, updateShopColors, validateDraft } from './draft.js';
-import { resetGame } from './gameplay.js';
+import { clearCurrentDraft, draftHooks, handleDraftSquareClick, handleTransitionReady, startDraftPhase, toggleRemoveMode, updateShopColors, validateDraft } from './draft.js';
+import { handleGameplaySquareClick, resetGame } from './gameplay.js';
 import { loadBotProfileForDifficulty } from './bot.js';
 import { setupNetwork } from './network.js';
 
+/** A tap on a board square (or Enter on it, see a11y.js) goes to the draft or the match. */
+function onBoardPointerdown(e) {
+    const square = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest('.square'));
+    if (!square) return;
+    const viewR = Number(square.dataset.vr);
+    const viewC = Number(square.dataset.vc);
+    if (state.gameState.startsWith('draft')) {
+        (draftHooks.squareClick || handleDraftSquareClick)(viewR, viewC);
+    } else if (state.gameState === 'gameplay') {
+        handleGameplaySquareClick(viewR, viewC);
+    }
+}
+
 export function setupEventListeners() {
+    ui.chessboard.addEventListener('pointerdown', onBoardPointerdown);
+
     const btnStartLocal = document.getElementById('btn-start-local');
     if (btnStartLocal) {
         btnStartLocal.addEventListener('pointerdown', () => {

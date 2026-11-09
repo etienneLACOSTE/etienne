@@ -2,8 +2,9 @@
 // Gameplay: turns, timer, moves, end of game.
 import { fireConfetti } from '../confetti.js';
 import { COLOR_HEX, COLS, MAX_POINTS, ROWS, socket, state, ui } from './state.js';
-import { clearHighlights, createBoardDOM, getBoardCoords, getSquareElement, getViewCoords, highlightValidMoves, renderBoard, showScreen, startCoinFlip } from './board-view.js';
-import { playBotTurn } from './bot.js';
+import { clearHighlights, createBoardDOM, getSquareElement, highlightValidMoves, renderBoard, showScreen, startCoinFlip } from './board-view.js';
+import { getBoardCoords, getViewCoords } from './coords.js';
+import { chooseBotMove } from './bot.js';
 import { announceTurn, resetAnnouncements } from './a11y.js';
 import { checkTouchdownWin, makeVirtualMove, serializeBoard } from './rules-bridge.js';
 
@@ -24,7 +25,7 @@ export function startGameplay(winner) {
     ui.gameLayout.classList.remove('hidden');
     createBoardDOM(false);
     renderBoard();
-    startCoinFlip(winner);
+    startCoinFlip(winner, finalizeGameplayStart);
 }
 
 export function finalizeGameplayStart() {
@@ -74,6 +75,13 @@ export function startTurn() {
 
     // Screen readers hear the move just played and whose turn it is (a11y.js).
     if (state.gameState === 'gameplay') announceTurn();
+}
+
+function playBotTurn() {
+    if (state.gameState === 'over') return;
+    const move = chooseBotMove();
+    if (move) movePiece(move.fromR, move.fromC, move.toR, move.toC);
+    else skipTurn();
 }
 
 export function formatTime(ms) {
