@@ -9,7 +9,7 @@ Communication : réponds en français ; code, noms de variables et commits en an
 ## Stack
 - Langage / framework : JavaScript vanilla, modules ES côté navigateur, `@ts-check` partout (vérifié par `npm run typecheck`) ; serveur Node (CommonJS) + Express 5 + Socket.io 4
 - IA Python de Ches'spell (`ai/chesspell/`, PyTorch + Flask) : mise de côté le 2026-11-07, plus appelée par le jeu (règles d'échecs classiques, non hébergeable chez le visiteur) ; la campagne utilise le bot JS
-- Style : CSS vanilla par jeu — toute interface suit `DESIGN.md` (accueil et Ches'spell : « Boîte de jeu » ; Chessdown : « Stade ») ; polices auto-hébergées dans `assets/fonts/`, aucune ressource tierce (CSP)
+- Style : CSS vanilla par jeu — toute interface suit `DESIGN.md` (accueil : « Boîte de jeu » ; Ches'spell : « Grimoire » ; Chessdown : « Stade ») ; polices auto-hébergées dans `assets/fonts/`, aucune ressource tierce (CSP)
 - Base de données : aucune (profils Ches'spell dans le localStorage du navigateur)
 - Authentification : aucune
 - Hébergement : non décidé (local uniquement pour l'instant)

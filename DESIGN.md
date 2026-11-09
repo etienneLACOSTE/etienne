@@ -4,14 +4,19 @@ Every interface follows this file. No new colour or font without asking the proj
 
 ## Concept: a shelf of game boxes
 
-The site is a shelf of board games. The **hub** and **Ches'spell** use the house style,
+The site is a shelf of board games. The **hub** uses the house style,
 **Boîte de jeu**: thick black outlines, die-cut tokens, cards with a hard shadow, soft colours.
-**Chessdown** comes in its own box, styled **Stade**: turf, stadium signage, scoreboard clock.
+Each game comes in its own box:
+- **Chessdown**, styled **Stade**: turf, stadium signage, scoreboard clock.
+- **Ches'spell**, styled **Grimoire** (owner's choice, 2026-11-09): a book of spells opened
+  at night. The spell cards are numbered arcana (I to XX, like a tarot's major arcana) on
+  vellum in gold frames, the board is an engraved plate, a starry sky drifts behind.
 
 On the hub, each game is shown as a box in its own style: the Chessdown box is turf and
-stadium type, the Ches'spell box is lilac Boîte de jeu.
+stadium type, the Ches'spell box is a grimoire cover (night, gold, three arcana).
 
-Both styles are light, single-theme designs (no dark mode): they are colour on purpose.
+Each style is a single-theme design (no light/dark switch): Boîte de jeu and Stade are
+light, Grimoire is dark on purpose.
 
 Original explorations: `design-explorations/` (references: figma for Boîte de jeu, nike for Stade).
 
@@ -20,11 +25,14 @@ Original explorations: `design-explorations/` (references: figma for Boîte de j
 All fonts are self-hosted in `assets/fonts/` (SIL Open Font License), declared in
 `assets/fonts/fonts.css`. No request to Google: visitors' IP addresses stay on the site.
 
-| Role | Boîte de jeu (hub, Ches'spell) | Stade (Chessdown) |
-|---|---|---|
-| Display (titles, big numbers) | Bagel Fat One 400 | Big Shoulders Display 700 / 900, uppercase |
-| Text, buttons, forms | Atkinson Hyperlegible 400 / 700 | Archivo 400 / 600 / 800 |
-| Chess pieces (both games) | Noto Sans Symbols 2 (chess glyphs only, 7 KB) | same |
+| Role | Boîte de jeu (hub) | Grimoire (Ches'spell) | Stade (Chessdown) |
+|---|---|---|---|
+| Display (titles, card names, big numbers) | Bagel Fat One 400 | IM Fell English 400, roman and italic | Big Shoulders Display 700 / 900, uppercase |
+| Text, buttons, forms | Atkinson Hyperlegible 400 / 700 | Atkinson Hyperlegible 400 / 700 | Archivo 400 / 600 / 800 |
+| Chess pieces (all) | Noto Sans Symbols 2 (chess glyphs only, 7 KB) | same | same |
+
+IM Fell English is a 17th-century English printing type: it gives the old-book voice.
+Running text stays in Atkinson Hyperlegible for legibility.
 
 Pieces use the **filled** glyphs (♚♛♜♝♞♟) for both sides; CSS gives the colour and an
 ink outline. Never the hollow glyphs, never emoji presentation.
@@ -45,6 +53,24 @@ body), line-height 1.5. Uppercase only in Stade display type.
 | `--coral` | #F6B9A3 | warnings, locked, delete, timer low |
 | `--navy` | #1F1D3D | footer, dark surfaces, timer bar |
 | `--muted-on-lilac` | #2F2A3D | secondary text on lilac |
+
+### Grimoire (Ches'spell)
+
+| Token | Hex | Use |
+|---|---|---|
+| `--night` / `--night-deep` | #1B1530 / #110D20 | page (radial glow towards the edges), input fields |
+| `--plum` | #2C2250 | panels, secondary buttons, card medallions |
+| `--vellum` | #EDE4CF | spell cards, dialogs, spell instruction |
+| `--gold` | #D4AF62 | frames, titles, primary buttons, focus ring |
+| `--bronze` | #7A5A1E | arcana numbers and inner frame on vellum |
+| `--mist` | #ECE6F7 | text on night |
+| `--muted` | #A99CC9 | secondary text on night |
+| `--ink` | #120E20 | text on vellum, gold, spectral and ember |
+| `--ink-soft` | #5B4E72 | secondary text on vellum |
+| `--lilac` | #C9B6F2 | glows, timer flame |
+| `--square-light` / `--square-dark` | #D9CDEB / #5A4889 | board |
+| `--spectral` | #9FE3B5 | selection, success, "your turn" |
+| `--ember` | #F2876A | warnings, locked, delete, timer low |
 
 ### Stade
 
@@ -72,6 +98,12 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
 | black | amber | 12.1 |
 | muted | white | 7.6 |
 | black | turf | 3.3 (large display type and graphics only) |
+| mist / muted / gold | night | 14.4 / 6.9 / 8.4 |
+| mist / gold | plum | 11.9 / 7.0 |
+| ink / ink-soft / bronze | vellum | 15.0 / 6.0 / 5.0 |
+| ink | gold / spectral / ember | 9.1 / 12.7 / 7.6 |
+| ink | square-light | 12.5 |
+| gold (black pieces' outline) | square-dark | 3.7 (graphics) |
 
 ## Components
 
@@ -80,11 +112,33 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
   paper text. Secondary = paper fill. Selected toggle = lime fill.
 - Cards and panels: paper, 3px ink border, radius 16px, hard shadow `6px 6px 0 var(--ink)`.
   Large sections: radius 40px, no border, colour fill.
-- Spell cards: the emoji sits in a lilac "art" box. Selected: lime fill + ✓ badge.
-  Locked: coral "Locked" badge, card dimmed. Used (in game): struck through, dimmed.
-- Board: paper and lilac squares, 4px ink frame, hard shadow. Moves: ink dots; captures:
-  ink ring; selected square: lime.
 - Dialogs: paper card, 3px ink border, hard shadow, over a navy veil at 60%.
+
+**Grimoire**
+- Buttons: plates with 6px corners, 1.5px gold edge. Primary = gold fill, ink text.
+  Secondary = plum fill, mist text. Selected toggle = spectral fill + ✓. Hover: gold glow.
+- Titles in IM Fell English, gold; chapter headers over a 1px gold rule. The main title
+  has an engraved rule (line, star, line) and an italic subtitle.
+- Spell cards (arcana): vellum, 2px gold border and a 1px bronze inner frame, radius 12px,
+  soft deep shadow. Top to bottom: roman number between two small stars (bronze), the
+  emoji in a round night medallion with a gold ring, the name in IM Fell English, the
+  effect, the unlock condition under a bronze rule. Hover: lifted, gold glow. Selected
+  (deck builder): spectral glow + gold seal with ✓. Locked: dashed, faded, ember badge.
+  In hand: a small horizontal arcana; a card being cast flares up; used: faded, struck.
+- Board: light and dark squares (lilac tones) in a frame of gold, a band of plum and a
+  gold hairline, with the glow of the book around it. White pieces vellum outlined in
+  ink, black pieces ink outlined in gold. Moves: ink dot ringed in gold; captures: gold
+  ring outlined in ink (both read on either square).
+- Dialogs: a vellum card held up to the light (gold frame, bronze inner frame) over a
+  night veil at 78%.
+- Sky (`js/sky.js`): a canvas behind the app; stars twinkle slowly (a few bright ones
+  with a cross of light) and gold and lilac motes drift upwards. Still under reduced
+  motion and while the tab is hidden.
+- Spell effects (`js/spell-fx.js`): when a spell resolves, an overlay over the board
+  plays its effect: frost (Freeze), whirl (Tornado, Domi Reversi, Swap), beam (Sniper),
+  burst (Kamikaze, Sacrifice), lightning (Double Trouble), ward (Shield), rising light
+  (Revive), runes for the others. Online, the opponent only sees a board-wide flash, so
+  where a Trap lies stays secret. None under reduced motion.
 
 **Stade**
 - Header bar: black, white wordmark in Big Shoulders 900 uppercase.
@@ -108,13 +162,17 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
 
 - Mobile first; tested at 375 px. No horizontal scroll (see `tests/e2e/layout.spec.js`).
 - Side gutter: at least 16px (`--app-pad`).
-- Motion only to answer an action (selection, move, dialog). No decorative animation.
-  `prefers-reduced-motion` turns transitions off.
-- Hard shadows only (no blur), no gradients except the turf stripes, no glassmorphism.
+- Boîte de jeu and Stade: motion only to answer an action (selection, move, dialog), no
+  decorative animation; hard shadows only (no blur), no gradients except the turf
+  stripes, no glassmorphism.
+- Grimoire: ambient motion is part of the style (sky, spell effects, card glow), soft
+  shadows and glows, gradients for the night and the medallions; still no glassmorphism.
+- Everywhere, `prefers-reduced-motion` turns transitions and animations off.
 
 ## Accessibility (WCAG 2.2 AA)
 
-- Focus ring: 3px ink (Boîte de jeu) or amber (Stade, on dark) outline, offset 3px.
+- Focus ring: 3px ink (Boîte de jeu), amber (Stade, on dark) or gold (Grimoire; ink inside
+  vellum cards and dialogs) outline, offset 3px.
 - Every control has a visible label or `aria-label`; colour is never the only signal
   (selected = colour + border or ✓, locked = badge text).
 - Keyboard play and dialogs: see `games/<game>/js/a11y.js` and the tests in `tests/e2e/`.
