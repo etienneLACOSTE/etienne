@@ -103,7 +103,7 @@ function realProviders(env = process.env) {
                     pkceCodeVerifier: codeVerifier, expectedState: state,
                 });
                 const res = await fetch('https://api.github.com/user', {
-                    headers: { authorization: `Bearer ${tokens.access_token}`, accept: 'application/vnd.github+json', 'user-agent': 'etienne-chess' },
+                    headers: { authorization: `Bearer ${tokens.access_token}`, accept: 'application/vnd.github+json', 'user-agent': 'pawnet' },
                 });
                 if (!res.ok) throw new Error(`GitHub profile request failed (${res.status})`);
                 const user = await res.json();

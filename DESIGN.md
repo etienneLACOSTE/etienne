@@ -4,7 +4,7 @@ Every interface follows this file. No new colour or font without asking the proj
 
 ## Concept: a shelf of game boxes
 
-The site is a shelf of board games. The **hub** uses the house style,
+The site, **Pawnet** (pawn + planet: "one chess board, a galaxy of games"), is a shelf of board games. The **hub** uses the house style,
 **Boîte de jeu**: thick black outlines, die-cut tokens, cards with a hard shadow, soft colours.
 Each game comes in its own box:
 - **Chessdown**, styled **Stade**: turf, stadium signage, scoreboard clock.

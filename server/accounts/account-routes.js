@@ -52,7 +52,7 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
         const signedIn = (await db.query(
             'SELECT created_at, expires_at FROM sessions WHERE user_id = $1 ORDER BY created_at', [a.id],
         )).rows;
-        res.attachment(`etienne-account-${a.username}.json`);
+        res.attachment(`pawnet-account-${a.username}.json`);
         res.json({
             exportedAt: new Date().toISOString(),
             account: { username: a.username, email: a.email, createdAt: a.created_at, hasPassword: a.has_password },

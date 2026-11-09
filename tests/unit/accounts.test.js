@@ -187,7 +187,7 @@ test('account: the export is a JSON file with the account and its sign-ins, no s
     const { cookie } = await signup('Ivan');
     const res = await fetch(`${base}/api/account/export`, { headers: { cookie } });
     assert.equal(res.status, 200);
-    assert.match(res.headers.get('content-disposition'), /attachment; filename="etienne-account-Ivan.json"/);
+    assert.match(res.headers.get('content-disposition'), /attachment; filename="pawnet-account-Ivan.json"/);
     const text = await res.text();
     const data = JSON.parse(text);
     assert.equal(data.account.username, 'Ivan');
