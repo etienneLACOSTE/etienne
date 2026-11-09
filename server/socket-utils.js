@@ -48,12 +48,16 @@ const PER_IP_LIMITS = process.env.PER_IP_LIMITS !== 'off';
  * the visitor cannot set. On Render: cf-connecting-ip (written by Cloudflare). Never
  * X-Forwarded-For, whose entries can be written by the visitor.
  */
+function addressFrom(headers, address) {
+    const header = process.env.CLIENT_IP_HEADER;
+    const value = header && headers && headers[header.toLowerCase()];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    return address || '';
+}
+
 function clientIp(socket) {
     const handshake = socket.handshake || {};
-    const header = process.env.CLIENT_IP_HEADER;
-    const value = header && handshake.headers && handshake.headers[header.toLowerCase()];
-    if (typeof value === 'string' && value.trim()) return value.trim();
-    return handshake.address || '';
+    return addressFrom(handshake.headers, handshake.address);
 }
 
 /**
@@ -147,7 +151,7 @@ function playerOf(room, socket) {
 }
 
 module.exports = {
-    generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp,
+    generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom,
     limitConnections, idleRooms, sweepIdleRooms,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST,
 };

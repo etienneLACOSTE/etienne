@@ -6,6 +6,9 @@ const path = require('path');
 const { registerChesspell } = require('./chesspell');
 const { registerChessdown } = require('./chessdown');
 const { securityHeaders } = require('./security');
+const { openDb } = require('./db');
+const { authRouter } = require('./accounts/routes');
+const { sessionStore } = require('./accounts/sessions');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -30,6 +33,19 @@ registerChesspell(io);
 registerChessdown(io);
 
 const PORT = Number(process.env.PORT) || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server listening on port ${PORT} (0.0.0.0)`);
+const HOUR = 60 * 60 * 1000;
+
+async function start() {
+    const db = await openDb(); // Tables are brought up to date first
+    app.use('/api/auth', authRouter(db));
+    app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
+    setInterval(() => sessionStore(db).deleteExpired().catch(() => {}), HOUR).unref();
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server listening on port ${PORT} (0.0.0.0)`);
+    });
+}
+
+start().catch((err) => {
+    console.error(`Server could not start: ${err.message}`);
+    process.exit(1);
 });
