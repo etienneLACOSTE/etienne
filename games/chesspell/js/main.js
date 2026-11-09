@@ -6,6 +6,7 @@ import { engine } from './game-engine.js';
 import { ProfileManager } from './profiles.js';
 import { app } from './app.js';
 import { setupAccessibility } from './a11y.js';
+import { startSky } from './sky.js';
 
 import './app-online.js';
 import './app-demo.js';
@@ -37,6 +38,7 @@ document.addEventListener('click', (e) => {
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     setupAccessibility(); // a11y.js
+    startSky(/** @type {HTMLCanvasElement} */ (document.getElementById('sky')));
     app.init();
 
     const eloSlider = /** @type {HTMLInputElement} */ (document.getElementById('bot-elo-slider'));

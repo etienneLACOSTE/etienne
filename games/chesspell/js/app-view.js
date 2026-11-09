@@ -5,6 +5,28 @@ import { engine } from './game-engine.js';
 import { createAvatarElement, createPlayerInfoElement } from './profiles.js';
 import { app } from './app.js';
 
+/** The arcana number of a spell card: I to XX. */
+export function roman(n) {
+    /** @type {[number, string][]} */
+    const parts = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+    let out = '';
+    for (const [value, letters] of parts) {
+        while (n >= value) { out += letters; n -= value; }
+    }
+    return out;
+}
+
+/** The top of a tarot-like spell card: its number and its picture. */
+const cardArt = (card) => `
+    <span class="card-numeral" aria-hidden="true">${roman(card.id)}</span>
+    <div class="card-art" aria-hidden="true">${card.icon}</div>`;
+
+/** The card's number and picture in the spell dialogs. */
+function fillModalArt(numeralId, iconId, card) {
+    document.getElementById(numeralId).textContent = roman(card.id);
+    if (iconId) document.getElementById(iconId).textContent = card.icon;
+}
+
 Object.assign(app, /** @type {ThisType<any>} */ ({
     setupPlayerBanner(containerId, profile) {
         const container = document.getElementById(containerId);
@@ -23,15 +45,10 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
             cardEl.className = 'spell-card';
             cardEl.dataset.id = String(card.id);
 
-            cardEl.innerHTML = `
-                <div class="card-header">
-                    <button type="button" class="card-title card-main">${card.icon} ${card.name}</button>
-                    <div class="card-meta">
-                        <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
-                        <span class="card-id">#${card.id}</span>
-                    </div>
-                </div>
+            cardEl.innerHTML = `${cardArt(card)}
+                <button type="button" class="card-title card-main">${card.name}</button>
                 <div class="card-effect">${card.effect}</div>
+                <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
             `;
             
             cardEl.querySelector('.btn-info').addEventListener('click', (e) => {
@@ -46,7 +63,7 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
 
     showDraftModal(card) {
         const modal = document.getElementById('card-modal');
-        document.getElementById('modal-icon').textContent = card.icon;
+        fillModalArt('modal-numeral', 'modal-icon', card);
         document.getElementById('modal-title').textContent = card.name;
         document.getElementById('modal-effect').textContent = card.effect;
         
@@ -143,8 +160,9 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
             cardEl.className = 'in-game-card';
             cardEl.dataset.cardId = cardId;
             cardEl.innerHTML = `
-                <div class="card-icon-large">${card.icon}</div>
+                <div class="card-icon-large" aria-hidden="true">${card.icon}</div>
                 <div class="card-info">
+                    <span class="card-numeral" aria-hidden="true">${roman(card.id)}</span>
                     <button type="button" class="card-title card-main">${card.name}</button>
                     <div class="card-effect">${card.effect}</div>
                 </div>
@@ -170,7 +188,7 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
 
     showCardModal(card, cardEl, playerColor) {
         const modal = document.getElementById('card-modal');
-        document.getElementById('modal-icon').textContent = card.icon;
+        fillModalArt('modal-numeral', 'modal-icon', card);
         document.getElementById('modal-title').textContent = card.name;
         document.getElementById('modal-effect').textContent = card.effect;
         
@@ -212,7 +230,8 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
 
     showInfoModal(card) {
         const modal = document.getElementById('info-modal');
-        document.getElementById('info-modal-title').textContent = `${card.icon} ${card.name}`;
+        fillModalArt('info-modal-numeral', 'info-modal-icon', card);
+        document.getElementById('info-modal-title').textContent = card.name;
         document.getElementById('info-modal-effect').textContent = card.effect;
         document.getElementById('info-modal-timing').textContent = card.details.timing;
         document.getElementById('info-modal-conditions').textContent = card.details.conditions;
@@ -507,18 +526,13 @@ Object.assign(app, /** @type {ThisType<any>} */ ({
             cardEl.className = `spell-card ${lockedClass}`;
             cardEl.dataset.id = String(card.id);
 
-            cardEl.innerHTML = `
-                <div class="card-header">
-                    <button type="button" class="card-title card-main"${card.isLocked && isDeckBuilder ? ' aria-disabled="true"' : ''}>${card.icon} ${card.name}</button>
-                    <div class="card-meta">
-                        <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
-                        <span class="card-id">#${card.id}</span>
-                    </div>
-                </div>
+            cardEl.innerHTML = `${cardArt(card)}
+                <button type="button" class="card-title card-main"${card.isLocked && isDeckBuilder ? ' aria-disabled="true"' : ''}>${card.name}</button>
                 <div class="card-effect">${card.effect}</div>
                 <div class="card-unlock">
                     ${card.isLocked && isDeckBuilder ? '🔒 Unlock: ' : '🔓 '}${card.unlock}
                 </div>
+                <button class="btn-info" title="More info" aria-label="More about ${card.name}">i</button>
             `;
             
             cardEl.querySelector('.btn-info').addEventListener('click', (e) => {

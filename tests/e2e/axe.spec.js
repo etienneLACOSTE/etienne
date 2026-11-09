@@ -10,6 +10,10 @@ const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 /** Run axe on the page and list violations as "rule: target (summary)". */
 async function audit(page) {
+  // Audit the settled screen: text in the middle of a fade-in has a lower contrast.
+  await page.evaluate(() => Promise.all(document.getAnimations()
+    .filter((a) => a.effect && a.effect.getComputedTiming().iterations !== Infinity)
+    .map((a) => a.finished.catch(() => {}))));
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   return violations.flatMap((v) => v.nodes.map((n) => `${v.id}: ${n.target.join(' ')} (${v.help})`));
 }

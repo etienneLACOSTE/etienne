@@ -5,4 +5,5 @@ All under the SIL Open Font License 1.1 (https://openfontlicense.org).
 - Atkinson Hyperlegible (Braille Institute of America)
 - Big Shoulders Display (Patric King), variable weight
 - Archivo (Omnibus-Type), variable weight
+- IM Fell English (Igino Marini), regular and italic: Ches'spell titles and cards
 - Noto Sans Symbols 2 (Google), chess glyphs U+2654-265F only, saved as "Chess Pieces"

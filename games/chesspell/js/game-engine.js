@@ -5,6 +5,7 @@
 // It is itself the state that ChesspellGame and ChesspellRules work on.
 import { session, socket } from './state.js';
 import { app } from './app.js';
+import { spellFx } from './spell-fx.js';
 
 export const engine = {
     activeCardEl: null,
@@ -95,6 +96,11 @@ export const engine = {
 
     activateSpell(cardId, cardEl, isFromNetwork = false) {
         this.activeCardEl = cardEl;
+        spellFx.begin(cardId);
+        if (cardEl) { // The card flares up as it is cast
+            cardEl.classList.add('casting');
+            setTimeout(() => cardEl.classList.remove('casting'), 900);
+        }
         const result = ChesspellGame.activateSpell(this, cardId);
         if (result.status === 'instant') {
             this.completeSpell();
@@ -118,12 +124,14 @@ export const engine = {
 
         if (session.isOnline && !isFromNetwork) {
             if (session.myPlayerColor !== engine.turn) return; // Only active player can click targets
+            spellFx.target(r, c);
             socket.emit('spellSquareClicked', { roomCode: session.currentRoomCode, r: r, c: c });
             return; // Wait for the server
         }
 
         const result = ChesspellGame.clickSquare(this, r, c);
         if (result.status === 'invalid') return alert(result.message);
+        if (result.status === 'next' || result.status === 'done') spellFx.target(r, c);
         if (result.status === 'next') {
             document.getElementById('spell-instruction').textContent = result.instruction;
             app.renderChessboard();
@@ -139,6 +147,7 @@ export const engine = {
         ChesspellGame.completeSpell(this);
         this.cancelSpell();
         app.renderChessboard();
+        spellFx.finish();
     },
 
     /**
@@ -146,6 +155,7 @@ export const engine = {
      * The page shows it as is; `action` says what happened, for the announcements.
      */
     applyServerState(state, action) {
+        const wasTargeting = this.targetingState;
         Object.assign(this, state);
         this.activeCardEl = null;
         const decks = { white: 'player1-cards', black: 'player2-cards' };
@@ -167,6 +177,13 @@ export const engine = {
         }
         if (action && action.turnEnded) app.startTimer();
         app.renderChessboard();
+        // Spell effects: when a spell is cast, and when it resolves.
+        if (action && action.type === 'spell' && action.status !== 'refused') {
+            spellFx.begin(action.cardId);
+            if (action.status === 'instant') spellFx.finish();
+        } else if (action && action.type === 'target' && wasTargeting && !state.targetingState) {
+            spellFx.finish();
+        }
         this.showGameOver();
         return action;
     },
