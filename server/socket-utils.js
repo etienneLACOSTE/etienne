@@ -43,16 +43,16 @@ const MAX_CONNECTIONS_PER_IP = 20;
 const PER_IP_LIMITS = process.env.PER_IP_LIMITS !== 'off';
 
 /**
- * The visitor's address. Behind a host's proxy (Render, Fly.io), every connection comes
- * from the proxy: set TRUST_PROXY=1 there to read the address the proxy adds last
- * (the earlier ones are written by the client and could be forged).
+ * The visitor's address. Behind a host's proxy, every connection comes from the proxy:
+ * CLIENT_IP_HEADER names the header where the host writes the visitor's address, one
+ * the visitor cannot set. On Render: cf-connecting-ip (written by Cloudflare). Never
+ * X-Forwarded-For, whose entries can be written by the visitor.
  */
 function clientIp(socket) {
     const handshake = socket.handshake || {};
-    const forwarded = handshake.headers && handshake.headers['x-forwarded-for'];
-    if (process.env.TRUST_PROXY === '1' && typeof forwarded === 'string') {
-        return forwarded.split(',').pop().trim();
-    }
+    const header = process.env.CLIENT_IP_HEADER;
+    const value = header && handshake.headers && handshake.headers[header.toLowerCase()];
+    if (typeof value === 'string' && value.trim()) return value.trim();
     return handshake.address || '';
 }
 

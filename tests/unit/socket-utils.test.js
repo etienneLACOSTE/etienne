@@ -70,14 +70,15 @@ test('one address cannot hold more than a few rooms', () => {
     assert.equal(makeRoomFor(rooms, fakeSocket('neighbour', '10.0.0.10')), true);
 });
 
-test('the address comes from the proxy only when TRUST_PROXY=1, and is the last one it added', () => {
-    const socket = fakeSocket('me', '10.1.1.1', { 'x-forwarded-for': '6.6.6.6, 203.0.113.7' });
-    assert.equal(clientIp(socket), '10.1.1.1');
-    process.env.TRUST_PROXY = '1';
+test("the address comes from the host's header only when CLIENT_IP_HEADER names it", () => {
+    const socket = fakeSocket('me', '10.1.1.1', { 'x-forwarded-for': '6.6.6.6', 'cf-connecting-ip': '203.0.113.7' });
+    assert.equal(clientIp(socket), '10.1.1.1'); // Headers ignored by default
+    process.env.CLIENT_IP_HEADER = 'CF-Connecting-IP';
     try {
         assert.equal(clientIp(socket), '203.0.113.7');
+        assert.equal(clientIp(fakeSocket('me', '10.1.1.1')), '10.1.1.1'); // Header missing: the connection
     } finally {
-        delete process.env.TRUST_PROXY;
+        delete process.env.CLIENT_IP_HEADER;
     }
 });
 

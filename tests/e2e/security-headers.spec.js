@@ -21,6 +21,7 @@ test.describe('Security headers', () => {
       expect(h['x-content-type-options'], url).toBe('nosniff');
       expect(h['referrer-policy'], url).toBe('no-referrer');
       expect(h['x-frame-options'], url).toBe('DENY');
+      expect(h['strict-transport-security'], url).toBe('max-age=31536000');
       expect(h['x-powered-by'], url).toBeUndefined();
     }
   });

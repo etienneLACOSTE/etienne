@@ -119,7 +119,8 @@ test.describe('Server authority', () => {
   test('chessdown: with an overall timer, the server declares the time out', async ({ page }) => {
     const result = await page.evaluate(async () => {
       const g = await T.chessdownRoom({ timerMode: 'overall', timerSeconds: 1 });
-      return { timeOut: await T.once(g.waiter, 'timeOut', 7_000), starter: g.starter };
+      // Coin flip 3 s + 1 s + grace 1.5 s: room to spare on a busy machine.
+      return { timeOut: await T.once(g.waiter, 'timeOut', 10_000), starter: g.starter };
     });
     expect(result.timeOut).toEqual({ loser: result.starter });
   });

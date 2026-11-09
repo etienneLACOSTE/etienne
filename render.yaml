@@ -1,0 +1,20 @@
+# Render Blueprint: the whole site (hub, both games, the Socket.io server) as one
+# Node web service. Render builds it from the GitHub repo on every push to main.
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: etienne
+    runtime: node
+    plan: free # Sleeps after 15 minutes without visitors; the next one waits ~30 s
+    region: frankfurt # Closest to France
+    branch: main
+    buildCommand: npm ci --omit=dev # Only express and socket.io: no test tools
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      # Visitor address for the per-address limits (server/socket-utils.js):
+      # Cloudflare, in front of Render, writes it in this header.
+      - key: CLIENT_IP_HEADER
+        value: cf-connecting-ip
+      - key: NODE_ENV
+        value: production

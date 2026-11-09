@@ -12,7 +12,7 @@ Communication : réponds en français ; code, noms de variables et commits en an
 - Style : CSS vanilla par jeu — toute interface suit `DESIGN.md` (accueil : « Boîte de jeu » ; Ches'spell : « Grimoire » ; Chessdown : « Stade ») ; polices auto-hébergées dans `assets/fonts/`, aucune ressource tierce (CSP)
 - Base de données : aucune (profils Ches'spell dans le localStorage du navigateur)
 - Authentification : aucune
-- Hébergement : non décidé (local uniquement pour l'instant)
+- Hébergement : Render, un seul service web Node (`render.yaml`, voir `docs/deploy.md`) ; déploiement à chaque push sur `main`
 
 ## Commandes
 - Installer : `npm install` (puis `npx playwright install chromium` pour les tests)

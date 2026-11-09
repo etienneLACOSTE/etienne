@@ -23,6 +23,8 @@ function securityHeaders(req, res, next) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Frame-Options', 'DENY');
+    // HTTPS only from now on (browsers ignore this header over plain HTTP, e.g. localhost).
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000');
     next();
 }
 
