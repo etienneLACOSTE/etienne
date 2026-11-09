@@ -15,7 +15,7 @@ Le mode Campagne oppose le joueur au bot JavaScript `games/chesspell/bot.js` (sa
 - sous 1000 ELO, il choisit ses sorts avec les règles d'origine (`heuristicSpell`, une règle par sort) et joue parfois au hasard ;
 - à partir de 1000 ELO, il essaie chaque carte et chaque cible sur une copie de la partie (via `game.js`, donc avec les vraies règles), puis cherche les réponses (alpha-bêta, quiescence) ; une carte en main a une valeur, il ne la joue que si elle rapporte plus. Profondeur 2 à 4 selon l'ELO, 1,5 s de réflexion au plus.
 
-Un profil entraîné est lu dans `games/chesspell/training_data.json` s'il a été adopté ; sinon le bot utilise le profil standard (`DEFAULT_PROFILE`).
+Le profil entraîné est lu dans `games/chesspell/training_data.json` (sans lui, le bot utilise le profil standard `DEFAULT_PROFILE`). Profil adopté le 2026-11-09 : 97 générations à profondeur 2, puis 50 à profondeur 3. À profondeur 3, sur les mêmes 400 parties, il marque 65,8 % contre le profil standard et 84,1 % contre le bot d'origine, où le profil standard marque 80,6 %.
 
 ### 1. Démarrer le serveur web (interface et multijoueur)
 Depuis la racine du projet :

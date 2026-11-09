@@ -1,5 +1,2552 @@
 {
-  "note": "No trained profile adopted yet: the campaign bot uses the standard profile of bot.js (DEFAULT_PROFILE).",
-  "generations": [],
-  "validation": null
+  "note": "Adopted 2026-11-09: best bot of phase 2 (50 generations at depth 3, started from the best of phase 1). Validation at depth 3 on the same 400 games (decks and seeds): 65.8% against the standard profile; 84.1% against the original bot, where the standard profile scores 80.6%.",
+  "settings": {
+    "generations": 50,
+    "population": 16,
+    "games": 8,
+    "standardGames": 4,
+    "legacyGames": 2,
+    "depth": 3,
+    "validationDepth": 3,
+    "validation": 400,
+    "workers": 15,
+    "seed": 12,
+    "from": "phase 1: 97 generations at depth 2 (population 32, seed 11), best bot 3041",
+    "maxPlies": 160,
+    "openingPlies": 4,
+    "bounds": {
+      "p": [
+        70,
+        130
+      ],
+      "n": [
+        250,
+        420
+      ],
+      "b": [
+        250,
+        420
+      ],
+      "r": [
+        400,
+        650
+      ],
+      "q": [
+        750,
+        1150
+      ],
+      "pstScale": [
+        0,
+        2
+      ],
+      "pawnScale": [
+        0,
+        2
+      ],
+      "kingScale": [
+        0,
+        2
+      ],
+      "developmentScale": [
+        0,
+        2
+      ],
+      "adjacencyThreat": [
+        0,
+        0.8
+      ],
+      "domiThreat": [
+        0,
+        0.5
+      ],
+      "card": [
+        -50,
+        500
+      ]
+    }
+  },
+  "generations": [
+    {
+      "generation": 1,
+      "bestBot": {
+        "id": 0,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 89,
+          "n": 261,
+          "b": 372,
+          "r": 422,
+          "q": 1106
+        },
+        "cardValues": {
+          "1": 46,
+          "2": 132,
+          "3": 243,
+          "4": 174,
+          "5": 57,
+          "6": 70,
+          "7": 259,
+          "8": 36,
+          "9": 221,
+          "10": 207,
+          "11": 173,
+          "12": 166,
+          "13": 13,
+          "14": 30,
+          "15": 451,
+          "16": -41,
+          "17": 95,
+          "18": 213,
+          "19": 55,
+          "20": 108
+        },
+        "pstScale": 1.15,
+        "pawnScale": 0.53,
+        "kingScale": 0.29,
+        "developmentScale": 0.17,
+        "adjacencyThreat": 0.02,
+        "domiThreat": 0.13
+      },
+      "fitness": 48,
+      "record": {
+        "wins": 9,
+        "draws": 3,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 2,
+      "bestBot": {
+        "id": 20,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 90,
+          "n": 250,
+          "b": 359,
+          "r": 439,
+          "q": 1144
+        },
+        "cardValues": {
+          "1": 17,
+          "2": 132,
+          "3": 166,
+          "4": 174,
+          "5": 57,
+          "6": 70,
+          "7": 274,
+          "8": 36,
+          "9": 221,
+          "10": 207,
+          "11": 132,
+          "12": 213,
+          "13": 3,
+          "14": 19,
+          "15": 451,
+          "16": -41,
+          "17": 63,
+          "18": 198,
+          "19": 46,
+          "20": 108
+        },
+        "pstScale": 1.06,
+        "pawnScale": 0.58,
+        "kingScale": 0.41,
+        "developmentScale": 0.17,
+        "adjacencyThreat": 0.02,
+        "domiThreat": 0.13
+      },
+      "fitness": 55,
+      "record": {
+        "wins": 8,
+        "draws": 2,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 3,
+      "bestBot": {
+        "id": 41,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 77,
+          "n": 251,
+          "b": 375,
+          "r": 511,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 112,
+          "2": 173,
+          "3": 262,
+          "4": 136,
+          "5": 189,
+          "6": 38,
+          "7": 230,
+          "8": 36,
+          "9": 221,
+          "10": 305,
+          "11": 144,
+          "12": 116,
+          "13": -7,
+          "14": 82,
+          "15": 500,
+          "16": -50,
+          "17": -10,
+          "18": 243,
+          "19": 21,
+          "20": 135
+        },
+        "pstScale": 1.26,
+        "pawnScale": 0.54,
+        "kingScale": 0.12,
+        "developmentScale": 0,
+        "adjacencyThreat": 0.02,
+        "domiThreat": 0.13
+      },
+      "fitness": 51,
+      "record": {
+        "wins": 6,
+        "draws": 2,
+        "losses": 6
+      }
+    },
+    {
+      "generation": 4,
+      "bestBot": {
+        "id": 50,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 92,
+          "n": 250,
+          "b": 365,
+          "r": 432,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 106,
+          "2": 180,
+          "3": 247,
+          "4": 198,
+          "5": 97,
+          "6": 51,
+          "7": 230,
+          "8": 36,
+          "9": 221,
+          "10": 305,
+          "11": 232,
+          "12": 152,
+          "13": -7,
+          "14": 65,
+          "15": 377,
+          "16": -41,
+          "17": 65,
+          "18": 243,
+          "19": 29,
+          "20": 108
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.49,
+        "kingScale": 0.12,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.02,
+        "domiThreat": 0.13
+      },
+      "fitness": 51,
+      "record": {
+        "wins": 7,
+        "draws": 3,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 5,
+      "bestBot": {
+        "id": 66,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 90,
+          "n": 250,
+          "b": 307,
+          "r": 400,
+          "q": 1084
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 131,
+          "3": 244,
+          "4": 168,
+          "5": 65,
+          "6": 51,
+          "7": 258,
+          "8": 123,
+          "9": 272,
+          "10": 207,
+          "11": 132,
+          "12": 95,
+          "13": 27,
+          "14": 82,
+          "15": 459,
+          "16": -50,
+          "17": 131,
+          "18": 185,
+          "19": 46,
+          "20": 78
+        },
+        "pstScale": 1.34,
+        "pawnScale": 0.53,
+        "kingScale": 0.16,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.13
+      },
+      "fitness": 63,
+      "record": {
+        "wins": 10,
+        "draws": 2,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 6,
+      "bestBot": {
+        "id": 82,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 90,
+          "n": 297,
+          "b": 337,
+          "r": 423,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": -48,
+          "2": 74,
+          "3": 244,
+          "4": 182,
+          "5": 65,
+          "6": 38,
+          "7": 258,
+          "8": 120,
+          "9": 330,
+          "10": 207,
+          "11": 151,
+          "12": 95,
+          "13": 27,
+          "14": 16,
+          "15": 459,
+          "16": -50,
+          "17": 131,
+          "18": 171,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.65,
+        "pawnScale": 0.54,
+        "kingScale": 0.4,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.15
+      },
+      "fitness": 45,
+      "record": {
+        "wins": 10,
+        "draws": 3,
+        "losses": 1
+      }
+    },
+    {
+      "generation": 7,
+      "bestBot": {
+        "id": 66,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 90,
+          "n": 250,
+          "b": 307,
+          "r": 400,
+          "q": 1084
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 131,
+          "3": 244,
+          "4": 168,
+          "5": 65,
+          "6": 51,
+          "7": 258,
+          "8": 123,
+          "9": 272,
+          "10": 207,
+          "11": 132,
+          "12": 95,
+          "13": 27,
+          "14": 82,
+          "15": 459,
+          "16": -50,
+          "17": 131,
+          "18": 185,
+          "19": 46,
+          "20": 78
+        },
+        "pstScale": 1.34,
+        "pawnScale": 0.53,
+        "kingScale": 0.16,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.13
+      },
+      "fitness": 53,
+      "record": {
+        "wins": 9,
+        "draws": 1,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 8,
+      "bestBot": {
+        "id": 66,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 90,
+          "n": 250,
+          "b": 307,
+          "r": 400,
+          "q": 1084
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 131,
+          "3": 244,
+          "4": 168,
+          "5": 65,
+          "6": 51,
+          "7": 258,
+          "8": 123,
+          "9": 272,
+          "10": 207,
+          "11": 132,
+          "12": 95,
+          "13": 27,
+          "14": 82,
+          "15": 459,
+          "16": -50,
+          "17": 131,
+          "18": 185,
+          "19": 46,
+          "20": 78
+        },
+        "pstScale": 1.34,
+        "pawnScale": 0.53,
+        "kingScale": 0.16,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.13
+      },
+      "fitness": 48,
+      "record": {
+        "wins": 8,
+        "draws": 1,
+        "losses": 5
+      }
+    },
+    {
+      "generation": 9,
+      "bestBot": {
+        "id": 97,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 90,
+          "n": 297,
+          "b": 337,
+          "r": 423,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": -48,
+          "2": 74,
+          "3": 244,
+          "4": 182,
+          "5": 35,
+          "6": 38,
+          "7": 258,
+          "8": 120,
+          "9": 330,
+          "10": 191,
+          "11": 151,
+          "12": 95,
+          "13": -4,
+          "14": 16,
+          "15": 492,
+          "16": -50,
+          "17": 131,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.54,
+        "kingScale": 0.47,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.15
+      },
+      "fitness": 59,
+      "record": {
+        "wins": 11,
+        "draws": 0,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 10,
+      "bestBot": {
+        "id": 155,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 70,
+          "n": 307,
+          "b": 373,
+          "r": 454,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 276,
+          "3": 244,
+          "4": 188,
+          "5": 113,
+          "6": 38,
+          "7": 263,
+          "8": 131,
+          "9": 330,
+          "10": 224,
+          "11": 151,
+          "12": 95,
+          "13": 0,
+          "14": 18,
+          "15": 409,
+          "16": -50,
+          "17": 131,
+          "18": 291,
+          "19": 21,
+          "20": 128
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.52,
+        "kingScale": 0.44,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.15
+      },
+      "fitness": 44,
+      "record": {
+        "wins": 9,
+        "draws": 2,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 11,
+      "bestBot": {
+        "id": 168,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 70,
+          "n": 332,
+          "b": 375,
+          "r": 425,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": -48,
+          "2": 169,
+          "3": 200,
+          "4": 188,
+          "5": 35,
+          "6": 12,
+          "7": 258,
+          "8": 151,
+          "9": 330,
+          "10": 191,
+          "11": 168,
+          "12": 87,
+          "13": -49,
+          "14": 16,
+          "15": 409,
+          "16": 8,
+          "17": 65,
+          "18": 322,
+          "19": 21,
+          "20": 118
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.52,
+        "kingScale": 0.47,
+        "developmentScale": 0.14,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.07
+      },
+      "fitness": 52,
+      "record": {
+        "wins": 9,
+        "draws": 1,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 12,
+      "bestBot": {
+        "id": 184,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 78,
+          "n": 250,
+          "b": 373,
+          "r": 425,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": -50,
+          "2": 169,
+          "3": 244,
+          "4": 182,
+          "5": 35,
+          "6": 38,
+          "7": 263,
+          "8": 151,
+          "9": 349,
+          "10": 191,
+          "11": 151,
+          "12": 92,
+          "13": 0,
+          "14": 35,
+          "15": 374,
+          "16": -50,
+          "17": 188,
+          "18": 314,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.54,
+        "kingScale": 0.41,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.15
+      },
+      "fitness": 50,
+      "record": {
+        "wins": 10,
+        "draws": 1,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 13,
+      "bestBot": {
+        "id": 196,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 70,
+          "n": 307,
+          "b": 270,
+          "r": 454,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 98,
+          "2": 276,
+          "3": 229,
+          "4": 188,
+          "5": 158,
+          "6": 38,
+          "7": 308,
+          "8": 131,
+          "9": 330,
+          "10": 218,
+          "11": 158,
+          "12": 95,
+          "13": 8,
+          "14": 18,
+          "15": 409,
+          "16": -50,
+          "17": 168,
+          "18": 291,
+          "19": 21,
+          "20": 128
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.52,
+        "kingScale": 0.44,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.12
+      },
+      "fitness": 50,
+      "record": {
+        "wins": 10,
+        "draws": 1,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 14,
+      "bestBot": {
+        "id": 215,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 307,
+          "b": 373,
+          "r": 425,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 276,
+          "3": 229,
+          "4": 188,
+          "5": 158,
+          "6": 62,
+          "7": 308,
+          "8": 131,
+          "9": 310,
+          "10": 191,
+          "11": 116,
+          "12": 95,
+          "13": 8,
+          "14": 35,
+          "15": 409,
+          "16": -50,
+          "17": 243,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.54,
+        "kingScale": 0.41,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.15
+      },
+      "fitness": 56,
+      "record": {
+        "wins": 9,
+        "draws": 1,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 15,
+      "bestBot": {
+        "id": 235,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 360,
+          "b": 383,
+          "r": 433,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 260,
+          "3": 244,
+          "4": 188,
+          "5": 158,
+          "6": 62,
+          "7": 263,
+          "8": 131,
+          "9": 310,
+          "10": 191,
+          "11": 116,
+          "12": 95,
+          "13": 8,
+          "14": 35,
+          "15": 409,
+          "16": -50,
+          "17": 188,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.67,
+        "pawnScale": 0.54,
+        "kingScale": 0.41,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.15
+      },
+      "fitness": 52,
+      "record": {
+        "wins": 10,
+        "draws": 0,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 16,
+      "bestBot": {
+        "id": 235,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 360,
+          "b": 383,
+          "r": 433,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 260,
+          "3": 244,
+          "4": 188,
+          "5": 158,
+          "6": 62,
+          "7": 263,
+          "8": 131,
+          "9": 310,
+          "10": 191,
+          "11": 116,
+          "12": 95,
+          "13": 8,
+          "14": 35,
+          "15": 409,
+          "16": -50,
+          "17": 188,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.67,
+        "pawnScale": 0.54,
+        "kingScale": 0.41,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.15
+      },
+      "fitness": 52,
+      "record": {
+        "wins": 12,
+        "draws": 0,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 17,
+      "bestBot": {
+        "id": 235,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 360,
+          "b": 383,
+          "r": 433,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 260,
+          "3": 244,
+          "4": 188,
+          "5": 158,
+          "6": 62,
+          "7": 263,
+          "8": 131,
+          "9": 310,
+          "10": 191,
+          "11": 116,
+          "12": 95,
+          "13": 8,
+          "14": 35,
+          "15": 409,
+          "16": -50,
+          "17": 188,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.67,
+        "pawnScale": 0.54,
+        "kingScale": 0.41,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.15
+      },
+      "fitness": 49,
+      "record": {
+        "wins": 9,
+        "draws": 3,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 18,
+      "bestBot": {
+        "id": 280,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 86,
+          "n": 294,
+          "b": 348,
+          "r": 452,
+          "q": 964
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 346,
+          "3": 223,
+          "4": 188,
+          "5": 158,
+          "6": 30,
+          "7": 263,
+          "8": 187,
+          "9": 396,
+          "10": 224,
+          "11": 151,
+          "12": 92,
+          "13": 0,
+          "14": 73,
+          "15": 460,
+          "16": -48,
+          "17": 213,
+          "18": 308,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.42,
+        "kingScale": 0.38,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.18
+      },
+      "fitness": 51,
+      "record": {
+        "wins": 8,
+        "draws": 1,
+        "losses": 5
+      }
+    },
+    {
+      "generation": 19,
+      "bestBot": {
+        "id": 294,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 86,
+          "n": 300,
+          "b": 348,
+          "r": 452,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 260,
+          "3": 244,
+          "4": 188,
+          "5": 158,
+          "6": 62,
+          "7": 263,
+          "8": 187,
+          "9": 396,
+          "10": 224,
+          "11": 61,
+          "12": 92,
+          "13": 8,
+          "14": 73,
+          "15": 409,
+          "16": -50,
+          "17": 213,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.54,
+        "kingScale": 0.38,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.18
+      },
+      "fitness": 52,
+      "record": {
+        "wins": 9,
+        "draws": 0,
+        "losses": 5
+      }
+    },
+    {
+      "generation": 20,
+      "bestBot": {
+        "id": 294,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 86,
+          "n": 300,
+          "b": 348,
+          "r": 452,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 260,
+          "3": 244,
+          "4": 188,
+          "5": 158,
+          "6": 62,
+          "7": 263,
+          "8": 187,
+          "9": 396,
+          "10": 224,
+          "11": 61,
+          "12": 92,
+          "13": 8,
+          "14": 73,
+          "15": 409,
+          "16": -50,
+          "17": 213,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.54,
+        "kingScale": 0.38,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.18
+      },
+      "fitness": 53,
+      "record": {
+        "wins": 11,
+        "draws": 1,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 21,
+      "bestBot": {
+        "id": 294,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 86,
+          "n": 300,
+          "b": 348,
+          "r": 452,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 260,
+          "3": 244,
+          "4": 188,
+          "5": 158,
+          "6": 62,
+          "7": 263,
+          "8": 187,
+          "9": 396,
+          "10": 224,
+          "11": 61,
+          "12": 92,
+          "13": 8,
+          "14": 73,
+          "15": 409,
+          "16": -50,
+          "17": 213,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.54,
+        "kingScale": 0.38,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.18
+      },
+      "fitness": 55,
+      "record": {
+        "wins": 10,
+        "draws": 3,
+        "losses": 1
+      }
+    },
+    {
+      "generation": 22,
+      "bestBot": {
+        "id": 343,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 250,
+          "b": 367,
+          "r": 426,
+          "q": 1150
+        },
+        "cardValues": {
+          "1": 54,
+          "2": 169,
+          "3": 291,
+          "4": 188,
+          "5": 67,
+          "6": 40,
+          "7": 255,
+          "8": 131,
+          "9": 359,
+          "10": 224,
+          "11": 172,
+          "12": 95,
+          "13": 10,
+          "14": 88,
+          "15": 460,
+          "16": -21,
+          "17": 132,
+          "18": 291,
+          "19": 26,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.42,
+        "kingScale": 0.56,
+        "developmentScale": 0.13,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.18
+      },
+      "fitness": 52,
+      "record": {
+        "wins": 7,
+        "draws": 1,
+        "losses": 6
+      }
+    },
+    {
+      "generation": 23,
+      "bestBot": {
+        "id": 342,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 294,
+          "b": 348,
+          "r": 448,
+          "q": 852
+        },
+        "cardValues": {
+          "1": 54,
+          "2": 169,
+          "3": 264,
+          "4": 188,
+          "5": 216,
+          "6": 30,
+          "7": 310,
+          "8": 131,
+          "9": 330,
+          "10": 257,
+          "11": 172,
+          "12": 95,
+          "13": 2,
+          "14": 35,
+          "15": 460,
+          "16": -50,
+          "17": 132,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.42,
+        "kingScale": 0.28,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 46,
+      "record": {
+        "wins": 10,
+        "draws": 1,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 24,
+      "bestBot": {
+        "id": 371,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 250,
+          "b": 348,
+          "r": 448,
+          "q": 941
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 169,
+          "3": 264,
+          "4": 144,
+          "5": 36,
+          "6": 74,
+          "7": 269,
+          "8": 169,
+          "9": 200,
+          "10": 298,
+          "11": 172,
+          "12": 101,
+          "13": 2,
+          "14": 64,
+          "15": 460,
+          "16": -50,
+          "17": 102,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.42,
+        "kingScale": 0.47,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 52,
+      "record": {
+        "wins": 10,
+        "draws": 3,
+        "losses": 1
+      }
+    },
+    {
+      "generation": 25,
+      "bestBot": {
+        "id": 371,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 250,
+          "b": 348,
+          "r": 448,
+          "q": 941
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 169,
+          "3": 264,
+          "4": 144,
+          "5": 36,
+          "6": 74,
+          "7": 269,
+          "8": 169,
+          "9": 200,
+          "10": 298,
+          "11": 172,
+          "12": 101,
+          "13": 2,
+          "14": 64,
+          "15": 460,
+          "16": -50,
+          "17": 102,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.42,
+        "kingScale": 0.47,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 45,
+      "record": {
+        "wins": 11,
+        "draws": 1,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 26,
+      "bestBot": {
+        "id": 371,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 107,
+          "n": 250,
+          "b": 348,
+          "r": 448,
+          "q": 941
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 169,
+          "3": 264,
+          "4": 144,
+          "5": 36,
+          "6": 74,
+          "7": 269,
+          "8": 169,
+          "9": 200,
+          "10": 298,
+          "11": 172,
+          "12": 101,
+          "13": 2,
+          "14": 64,
+          "15": 460,
+          "16": -50,
+          "17": 102,
+          "18": 291,
+          "19": 21,
+          "20": 166
+        },
+        "pstScale": 1.55,
+        "pawnScale": 0.42,
+        "kingScale": 0.47,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 55,
+      "record": {
+        "wins": 12,
+        "draws": 2,
+        "losses": 0
+      }
+    },
+    {
+      "generation": 27,
+      "bestBot": {
+        "id": 425,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 101,
+          "n": 250,
+          "b": 297,
+          "r": 448,
+          "q": 852
+        },
+        "cardValues": {
+          "1": 40,
+          "2": 169,
+          "3": 264,
+          "4": 115,
+          "5": 25,
+          "6": 88,
+          "7": 269,
+          "8": 111,
+          "9": 359,
+          "10": 298,
+          "11": 131,
+          "12": 154,
+          "13": 2,
+          "14": 36,
+          "15": 500,
+          "16": -50,
+          "17": 213,
+          "18": 291,
+          "19": 4,
+          "20": 149
+        },
+        "pstScale": 1.46,
+        "pawnScale": 0.42,
+        "kingScale": 0.47,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.13
+      },
+      "fitness": 58,
+      "record": {
+        "wins": 8,
+        "draws": 0,
+        "losses": 6
+      }
+    },
+    {
+      "generation": 28,
+      "bestBot": {
+        "id": 433,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 89,
+          "n": 250,
+          "b": 348,
+          "r": 448,
+          "q": 1025
+        },
+        "cardValues": {
+          "1": 66,
+          "2": 147,
+          "3": 208,
+          "4": 144,
+          "5": 31,
+          "6": -4,
+          "7": 263,
+          "8": 180,
+          "9": 143,
+          "10": 340,
+          "11": 230,
+          "12": 129,
+          "13": 14,
+          "14": 59,
+          "15": 472,
+          "16": -50,
+          "17": 132,
+          "18": 321,
+          "19": 31,
+          "20": 214
+        },
+        "pstScale": 1.3,
+        "pawnScale": 0.42,
+        "kingScale": 0.53,
+        "developmentScale": 0.11,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.13
+      },
+      "fitness": 50,
+      "record": {
+        "wins": 6,
+        "draws": 2,
+        "losses": 6
+      }
+    },
+    {
+      "generation": 29,
+      "bestBot": {
+        "id": 448,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 88,
+          "n": 250,
+          "b": 382,
+          "r": 448,
+          "q": 941
+        },
+        "cardValues": {
+          "1": 143,
+          "2": 169,
+          "3": 264,
+          "4": 86,
+          "5": 36,
+          "6": 74,
+          "7": 269,
+          "8": 157,
+          "9": 200,
+          "10": 295,
+          "11": 196,
+          "12": 63,
+          "13": 2,
+          "14": 42,
+          "15": 460,
+          "16": -50,
+          "17": 97,
+          "18": 240,
+          "19": 31,
+          "20": 166
+        },
+        "pstScale": 1.46,
+        "pawnScale": 0.4,
+        "kingScale": 0.59,
+        "developmentScale": 0.08,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 46,
+      "record": {
+        "wins": 7,
+        "draws": 3,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 30,
+      "bestBot": {
+        "id": 425,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 101,
+          "n": 250,
+          "b": 297,
+          "r": 448,
+          "q": 852
+        },
+        "cardValues": {
+          "1": 40,
+          "2": 169,
+          "3": 264,
+          "4": 115,
+          "5": 25,
+          "6": 88,
+          "7": 269,
+          "8": 111,
+          "9": 359,
+          "10": 298,
+          "11": 131,
+          "12": 154,
+          "13": 2,
+          "14": 36,
+          "15": 500,
+          "16": -50,
+          "17": 213,
+          "18": 291,
+          "19": 4,
+          "20": 149
+        },
+        "pstScale": 1.46,
+        "pawnScale": 0.42,
+        "kingScale": 0.47,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.13
+      },
+      "fitness": 51,
+      "record": {
+        "wins": 10,
+        "draws": 2,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 31,
+      "bestBot": {
+        "id": 485,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 101,
+          "n": 272,
+          "b": 341,
+          "r": 448,
+          "q": 852
+        },
+        "cardValues": {
+          "1": 124,
+          "2": 110,
+          "3": 288,
+          "4": 144,
+          "5": 36,
+          "6": 88,
+          "7": 269,
+          "8": 229,
+          "9": 309,
+          "10": 398,
+          "11": 207,
+          "12": 129,
+          "13": 2,
+          "14": 101,
+          "15": 460,
+          "16": -14,
+          "17": 132,
+          "18": 274,
+          "19": 31,
+          "20": 214
+        },
+        "pstScale": 1.43,
+        "pawnScale": 0.42,
+        "kingScale": 0.42,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 50,
+      "record": {
+        "wins": 8,
+        "draws": 1,
+        "losses": 5
+      }
+    },
+    {
+      "generation": 32,
+      "bestBot": {
+        "id": 499,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 100,
+          "n": 250,
+          "b": 267,
+          "r": 448,
+          "q": 941
+        },
+        "cardValues": {
+          "1": 124,
+          "2": 169,
+          "3": 264,
+          "4": 198,
+          "5": 110,
+          "6": 17,
+          "7": 238,
+          "8": 111,
+          "9": 363,
+          "10": 285,
+          "11": 192,
+          "12": 151,
+          "13": 10,
+          "14": 26,
+          "15": 481,
+          "16": -50,
+          "17": 90,
+          "18": 270,
+          "19": 31,
+          "20": 199
+        },
+        "pstScale": 1.46,
+        "pawnScale": 0.42,
+        "kingScale": 0.47,
+        "developmentScale": 0.08,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 49,
+      "record": {
+        "wins": 8,
+        "draws": 3,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 33,
+      "bestBot": {
+        "id": 514,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 100,
+          "n": 250,
+          "b": 267,
+          "r": 504,
+          "q": 865
+        },
+        "cardValues": {
+          "1": 124,
+          "2": 169,
+          "3": 224,
+          "4": 232,
+          "5": 110,
+          "6": 17,
+          "7": 238,
+          "8": 157,
+          "9": 158,
+          "10": 285,
+          "11": 263,
+          "12": 151,
+          "13": 10,
+          "14": 26,
+          "15": 481,
+          "16": -37,
+          "17": 90,
+          "18": 270,
+          "19": 1,
+          "20": 131
+        },
+        "pstScale": 1.46,
+        "pawnScale": 0.42,
+        "kingScale": 0.47,
+        "developmentScale": 0.08,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 54,
+      "record": {
+        "wins": 10,
+        "draws": 2,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 34,
+      "bestBot": {
+        "id": 522,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 105,
+          "n": 274,
+          "b": 302,
+          "r": 400,
+          "q": 852
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 169,
+          "3": 264,
+          "4": 165,
+          "5": 110,
+          "6": 74,
+          "7": 310,
+          "8": 232,
+          "9": 200,
+          "10": 261,
+          "11": 189,
+          "12": 96,
+          "13": 20,
+          "14": 29,
+          "15": 472,
+          "16": -50,
+          "17": 184,
+          "18": 274,
+          "19": 80,
+          "20": 131
+        },
+        "pstScale": 1.43,
+        "pawnScale": 0.42,
+        "kingScale": 0.59,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 46,
+      "record": {
+        "wins": 9,
+        "draws": 3,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 35,
+      "bestBot": {
+        "id": 536,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 101,
+          "n": 265,
+          "b": 297,
+          "r": 448,
+          "q": 941
+        },
+        "cardValues": {
+          "1": 124,
+          "2": 208,
+          "3": 264,
+          "4": 148,
+          "5": 62,
+          "6": 88,
+          "7": 238,
+          "8": 230,
+          "9": 385,
+          "10": 322,
+          "11": 192,
+          "12": 57,
+          "13": 2,
+          "14": 26,
+          "15": 500,
+          "16": -50,
+          "17": 59,
+          "18": 270,
+          "19": 4,
+          "20": 199
+        },
+        "pstScale": 1.21,
+        "pawnScale": 0.46,
+        "kingScale": 0.47,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 55,
+      "record": {
+        "wins": 7,
+        "draws": 1,
+        "losses": 6
+      }
+    },
+    {
+      "generation": 36,
+      "bestBot": {
+        "id": 568,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 78,
+          "n": 250,
+          "b": 302,
+          "r": 537,
+          "q": 852
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 195,
+          "3": 206,
+          "4": 198,
+          "5": 79,
+          "6": 17,
+          "7": 221,
+          "8": 109,
+          "9": 374,
+          "10": 364,
+          "11": 192,
+          "12": 72,
+          "13": 69,
+          "14": 42,
+          "15": 500,
+          "16": -50,
+          "17": 213,
+          "18": 274,
+          "19": 26,
+          "20": 187
+        },
+        "pstScale": 1.41,
+        "pawnScale": 0.42,
+        "kingScale": 0.6,
+        "developmentScale": 0.08,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.13
+      },
+      "fitness": 50,
+      "record": {
+        "wins": 8,
+        "draws": 2,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 37,
+      "bestBot": {
+        "id": 578,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 112,
+          "n": 339,
+          "b": 302,
+          "r": 400,
+          "q": 852
+        },
+        "cardValues": {
+          "1": 41,
+          "2": 210,
+          "3": 264,
+          "4": 169,
+          "5": 110,
+          "6": 67,
+          "7": 310,
+          "8": 89,
+          "9": 359,
+          "10": 261,
+          "11": 134,
+          "12": 106,
+          "13": -22,
+          "14": 92,
+          "15": 472,
+          "16": -50,
+          "17": 59,
+          "18": 274,
+          "19": 4,
+          "20": 131
+        },
+        "pstScale": 1.43,
+        "pawnScale": 0.4,
+        "kingScale": 0.54,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 49,
+      "record": {
+        "wins": 9,
+        "draws": 2,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 38,
+      "bestBot": {
+        "id": 564,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 105,
+          "n": 266,
+          "b": 302,
+          "r": 400,
+          "q": 805
+        },
+        "cardValues": {
+          "1": 181,
+          "2": 210,
+          "3": 235,
+          "4": 198,
+          "5": 133,
+          "6": 74,
+          "7": 203,
+          "8": 232,
+          "9": 174,
+          "10": 261,
+          "11": 192,
+          "12": 96,
+          "13": 43,
+          "14": 29,
+          "15": 417,
+          "16": -50,
+          "17": 184,
+          "18": 274,
+          "19": 4,
+          "20": 131
+        },
+        "pstScale": 1.15,
+        "pawnScale": 0.4,
+        "kingScale": 0.54,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 53,
+      "record": {
+        "wins": 10,
+        "draws": 1,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 39,
+      "bestBot": {
+        "id": 597,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 96,
+          "n": 250,
+          "b": 297,
+          "r": 448,
+          "q": 750
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 136,
+          "3": 271,
+          "4": 241,
+          "5": 110,
+          "6": 88,
+          "7": 310,
+          "8": 79,
+          "9": 359,
+          "10": 334,
+          "11": 134,
+          "12": 106,
+          "13": -22,
+          "14": 113,
+          "15": 500,
+          "16": -42,
+          "17": 59,
+          "18": 333,
+          "19": 34,
+          "20": 130
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.42,
+        "kingScale": 0.59,
+        "developmentScale": 0.06,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 53,
+      "record": {
+        "wins": 6,
+        "draws": 3,
+        "losses": 5
+      }
+    },
+    {
+      "generation": 40,
+      "bestBot": {
+        "id": 597,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 96,
+          "n": 250,
+          "b": 297,
+          "r": 448,
+          "q": 750
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 136,
+          "3": 271,
+          "4": 241,
+          "5": 110,
+          "6": 88,
+          "7": 310,
+          "8": 79,
+          "9": 359,
+          "10": 334,
+          "11": 134,
+          "12": 106,
+          "13": -22,
+          "14": 113,
+          "15": 500,
+          "16": -42,
+          "17": 59,
+          "18": 333,
+          "19": 34,
+          "20": 130
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.42,
+        "kingScale": 0.59,
+        "developmentScale": 0.06,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 51,
+      "record": {
+        "wins": 7,
+        "draws": 3,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 41,
+      "bestBot": {
+        "id": 597,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 96,
+          "n": 250,
+          "b": 297,
+          "r": 448,
+          "q": 750
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 136,
+          "3": 271,
+          "4": 241,
+          "5": 110,
+          "6": 88,
+          "7": 310,
+          "8": 79,
+          "9": 359,
+          "10": 334,
+          "11": 134,
+          "12": 106,
+          "13": -22,
+          "14": 113,
+          "15": 500,
+          "16": -42,
+          "17": 59,
+          "18": 333,
+          "19": 34,
+          "20": 130
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.42,
+        "kingScale": 0.59,
+        "developmentScale": 0.06,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 48,
+      "record": {
+        "wins": 9,
+        "draws": 1,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 42,
+      "bestBot": {
+        "id": 667,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 96,
+          "n": 250,
+          "b": 302,
+          "r": 412,
+          "q": 750
+        },
+        "cardValues": {
+          "1": 92,
+          "2": 139,
+          "3": 297,
+          "4": 187,
+          "5": 110,
+          "6": 65,
+          "7": 310,
+          "8": 79,
+          "9": 174,
+          "10": 334,
+          "11": 111,
+          "12": 14,
+          "13": -50,
+          "14": 113,
+          "15": 469,
+          "16": -50,
+          "17": 200,
+          "18": 274,
+          "19": 17,
+          "20": 149
+        },
+        "pstScale": 1.82,
+        "pawnScale": 0.42,
+        "kingScale": 0.57,
+        "developmentScale": 0.06,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 49,
+      "record": {
+        "wins": 9,
+        "draws": 3,
+        "losses": 2
+      }
+    },
+    {
+      "generation": 43,
+      "bestBot": {
+        "id": 675,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 96,
+          "n": 266,
+          "b": 352,
+          "r": 448,
+          "q": 849
+        },
+        "cardValues": {
+          "1": 41,
+          "2": 195,
+          "3": 235,
+          "4": 169,
+          "5": 56,
+          "6": 65,
+          "7": 276,
+          "8": 131,
+          "9": 441,
+          "10": 300,
+          "11": 210,
+          "12": 16,
+          "13": 55,
+          "14": 63,
+          "15": 463,
+          "16": -46,
+          "17": 238,
+          "18": 333,
+          "19": 34,
+          "20": 185
+        },
+        "pstScale": 1.43,
+        "pawnScale": 0.42,
+        "kingScale": 0.48,
+        "developmentScale": 0.1,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.14
+      },
+      "fitness": 51,
+      "record": {
+        "wins": 9,
+        "draws": 2,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 44,
+      "bestBot": {
+        "id": 689,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 83,
+          "n": 250,
+          "b": 311,
+          "r": 400,
+          "q": 750
+        },
+        "cardValues": {
+          "1": 181,
+          "2": 221,
+          "3": 220,
+          "4": 211,
+          "5": 135,
+          "6": 65,
+          "7": 235,
+          "8": 156,
+          "9": 359,
+          "10": 334,
+          "11": 90,
+          "12": 144,
+          "13": -22,
+          "14": 33,
+          "15": 423,
+          "16": -50,
+          "17": 151,
+          "18": 304,
+          "19": 34,
+          "20": 121
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.38,
+        "kingScale": 0.59,
+        "developmentScale": 0.06,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 45,
+      "record": {
+        "wins": 8,
+        "draws": 2,
+        "losses": 4
+      }
+    },
+    {
+      "generation": 45,
+      "bestBot": {
+        "id": 695,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 109,
+          "n": 250,
+          "b": 308,
+          "r": 464,
+          "q": 750
+        },
+        "cardValues": {
+          "1": 181,
+          "2": 221,
+          "3": 264,
+          "4": 211,
+          "5": 110,
+          "6": 65,
+          "7": 235,
+          "8": 128,
+          "9": 359,
+          "10": 391,
+          "11": 143,
+          "12": 106,
+          "13": -22,
+          "14": 33,
+          "15": 401,
+          "16": -50,
+          "17": 151,
+          "18": 333,
+          "19": 16,
+          "20": 95
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.38,
+        "kingScale": 0.59,
+        "developmentScale": 0.06,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 50,
+      "record": {
+        "wins": 10,
+        "draws": 1,
+        "losses": 3
+      }
+    },
+    {
+      "generation": 46,
+      "bestBot": {
+        "id": 726,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 109,
+          "n": 250,
+          "b": 308,
+          "r": 464,
+          "q": 750
+        },
+        "cardValues": {
+          "1": 19,
+          "2": 246,
+          "3": 223,
+          "4": 211,
+          "5": 57,
+          "6": 46,
+          "7": 215,
+          "8": 128,
+          "9": 359,
+          "10": 346,
+          "11": 143,
+          "12": 105,
+          "13": 55,
+          "14": 21,
+          "15": 460,
+          "16": -50,
+          "17": 151,
+          "18": 333,
+          "19": 16,
+          "20": 95
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.38,
+        "kingScale": 0.59,
+        "developmentScale": 0.06,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 57,
+      "record": {
+        "wins": 8,
+        "draws": 1,
+        "losses": 5
+      }
+    },
+    {
+      "generation": 47,
+      "bestBot": {
+        "id": 742,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 91,
+          "n": 252,
+          "b": 362,
+          "r": 495,
+          "q": 882
+        },
+        "cardValues": {
+          "1": 19,
+          "2": 246,
+          "3": 264,
+          "4": 211,
+          "5": 57,
+          "6": 121,
+          "7": 257,
+          "8": 128,
+          "9": 391,
+          "10": 346,
+          "11": 143,
+          "12": 105,
+          "13": 55,
+          "14": 113,
+          "15": 401,
+          "16": -50,
+          "17": 209,
+          "18": 333,
+          "19": 16,
+          "20": 89
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.38,
+        "kingScale": 0.67,
+        "developmentScale": 0.05,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.17
+      },
+      "fitness": 50,
+      "record": {
+        "wins": 9,
+        "draws": 0,
+        "losses": 5
+      }
+    },
+    {
+      "generation": 48,
+      "bestBot": {
+        "id": 759,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 109,
+          "n": 250,
+          "b": 308,
+          "r": 508,
+          "q": 750
+        },
+        "cardValues": {
+          "1": 210,
+          "2": 238,
+          "3": 228,
+          "4": 211,
+          "5": 76,
+          "6": 65,
+          "7": 228,
+          "8": 128,
+          "9": 359,
+          "10": 391,
+          "11": 136,
+          "12": 105,
+          "13": -44,
+          "14": 80,
+          "15": 401,
+          "16": -50,
+          "17": 209,
+          "18": 333,
+          "19": 16,
+          "20": 95
+        },
+        "pstScale": 1.56,
+        "pawnScale": 0.38,
+        "kingScale": 0.67,
+        "developmentScale": 0.05,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.17
+      },
+      "fitness": 51,
+      "record": {
+        "wins": 8,
+        "draws": 0,
+        "losses": 6
+      }
+    },
+    {
+      "generation": 49,
+      "bestBot": {
+        "id": 776,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 91,
+          "n": 250,
+          "b": 352,
+          "r": 495,
+          "q": 882
+        },
+        "cardValues": {
+          "1": 181,
+          "2": 260,
+          "3": 240,
+          "4": 211,
+          "5": 110,
+          "6": 69,
+          "7": 231,
+          "8": 128,
+          "9": 391,
+          "10": 346,
+          "11": 178,
+          "12": 51,
+          "13": 55,
+          "14": 21,
+          "15": 401,
+          "16": -50,
+          "17": 194,
+          "18": 289,
+          "19": -38,
+          "20": 95
+        },
+        "pstScale": 1.25,
+        "pawnScale": 0.37,
+        "kingScale": 0.59,
+        "developmentScale": 0.07,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.18
+      },
+      "fitness": 56,
+      "record": {
+        "wins": 7,
+        "draws": 2,
+        "losses": 5
+      }
+    },
+    {
+      "generation": 50,
+      "bestBot": {
+        "id": 786,
+        "spells": "search",
+        "spellCandidates": 6,
+        "weights": {
+          "p": 109,
+          "n": 250,
+          "b": 308,
+          "r": 464,
+          "q": 750
+        },
+        "cardValues": {
+          "1": -22,
+          "2": 295,
+          "3": 223,
+          "4": 211,
+          "5": 111,
+          "6": 27,
+          "7": 215,
+          "8": 69,
+          "9": 359,
+          "10": 346,
+          "11": 143,
+          "12": 163,
+          "13": 20,
+          "14": -14,
+          "15": 481,
+          "16": -50,
+          "17": 151,
+          "18": 333,
+          "19": 16,
+          "20": 105
+        },
+        "pstScale": 1.57,
+        "pawnScale": 0.38,
+        "kingScale": 0.59,
+        "developmentScale": 0.06,
+        "adjacencyThreat": 0.01,
+        "domiThreat": 0.16
+      },
+      "fitness": 51,
+      "record": {
+        "wins": 6,
+        "draws": 2,
+        "losses": 6
+      }
+    }
+  ],
+  "validation": {
+    "depth": 3,
+    "bestVsStandard": {
+      "games": 400,
+      "wins": 236,
+      "draws": 54,
+      "losses": 110,
+      "score": 65.8
+    },
+    "bestVsOriginal": {
+      "games": 400,
+      "wins": 321,
+      "draws": 31,
+      "losses": 48,
+      "score": 84.1
+    },
+    "standardVsOriginal": {
+      "games": 400,
+      "wins": 303,
+      "draws": 39,
+      "losses": 58,
+      "score": 80.6
+    },
+    "phase1BestVsStandard": {
+      "games": 400,
+      "wins": 231,
+      "draws": 42,
+      "losses": 127,
+      "score": 63,
+      "note": "other seeds (9000000+k)"
+    }
+  }
 }
