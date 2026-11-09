@@ -17,6 +17,24 @@ export async function currentUser() {
     }
 }
 
+/**
+ * A finished game against the bot or on the same screen counts in the signed-in
+ * player's stats (online games are recorded by the game servers). Never blocks the game:
+ * a failure only loses this one result.
+ * @param {{ game: 'chesspell' | 'chessdown', mode: 'bot' | 'local', result: 'win' | 'loss' | 'draw',
+ *   reason: string, opponent: string, startedAt: number }} r
+ */
+export async function reportResult({ startedAt, ...r }) {
+    try {
+        await fetch('/api/account/results', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ ...r, durationS: Math.max(0, Math.round((Date.now() - startedAt) / 1000)) }),
+        });
+    } catch { /* Offline: this result is not counted */ }
+}
+
 /** Show the player's name on the account button once signed in. */
 export function showUserInTopbar(user) {
     const link = document.getElementById('account-link');

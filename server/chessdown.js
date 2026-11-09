@@ -69,18 +69,30 @@ function isValidDraft(pieces, player) {
 
 /**
  * @param {import('socket.io').Server} io
- * @param {{ sessions?: any }} [options] sessions: who is signed in (server/accounts/sessions.js)
+ * @param {{ sessions?: any, stats?: any }} [options] sessions: who is signed in
+ *   (server/accounts/sessions.js); stats: where finished games are recorded (server/stats.js)
  */
-function registerChessdown(io, { sessions = null } = {}) {
+function registerChessdown(io, { sessions = null, stats = null } = {}) {
     const ioChessdown = io.of('/chessdown');
     limitConnections(ioChessdown);
-    identifyPlayers(ioChessdown, sessions);
+    identifyPlayers(ioChessdown, sessions, stats);
+
+    /** A finished game counts for each signed-in player. winner: 1 or 2. */
+    function recordResult(room, winner, reason) {
+        if (!stats) return;
+        const name = (p) => (room.accounts[p] ? room.accounts[p].username : `Player ${p}`);
+        stats.recordOnline({
+            game: 'chessdown', accounts: room.accounts, names: { 1: name(1), 2: name(2) },
+            winner, reason, startedAt: room.startedAt,
+        }).catch((err) => console.error(`Chessdown result not recorded: ${err.message}`));
+    }
 
     /** The player to move ran out of time. */
     function timeUp(room) {
         if (chessdownRooms[room.id] !== room || room.gameState !== 'playing') return;
         if (room.clock.timer.mode === 'overall') {
             room.gameState = 'over';
+            recordResult(room, room.currentPlayer === 1 ? 2 : 1, 'time');
             ioChessdown.to(room.id).emit('timeOut', { loser: room.currentPlayer });
             return;
         }
@@ -128,6 +140,8 @@ function registerChessdown(io, { sessions = null } = {}) {
                 playerColors: { 1: 'blue', 2: 'red' },
                 ...newGameState(),
                 gameState: 'waiting',
+                accounts: { 1: socket.data.user, 2: null }, // Signed-in players, for their stats
+                startedAt: 0,
                 clock: /** @type {TurnClock} */ (null),
                 ...roomOrigin(socket),
             };
@@ -145,6 +159,7 @@ function registerChessdown(io, { sessions = null } = {}) {
                 socket.emit('errorMsg', 'Room is already full.');
             } else {
                 room.players[2] = socket.id;
+                room.accounts[2] = socket.data.user;
                 socket.join(roomCode);
                 socket.emit('roomJoined', { roomCode, playerNumber: 2 });
 
@@ -171,6 +186,7 @@ function registerChessdown(io, { sessions = null } = {}) {
 
             if (room.drafted[1] && room.drafted[2]) {
                 room.gameState = 'playing';
+                room.startedAt = Date.now();
                 room.currentPlayer = Math.random() < 0.5 ? 1 : 2;
                 room.clock.reset();
                 room.clock.start(room.currentPlayer, COIN_FLIP_MS);
@@ -198,10 +214,15 @@ function registerChessdown(io, { sessions = null } = {}) {
             });
             room.clock.stop();
             room.idleTurns = 0;
+            const mover = room.currentPlayer;
             room.currentPlayer = room.currentPlayer === 1 ? 2 : 1;
             // King captured, or a piece survived a turn in the endzone: game over.
-            if ((targetPiece && targetPiece.type === 'k') || engine.hasPieceInEndzone(room.board, room.currentPlayer)) {
+            if (targetPiece && targetPiece.type === 'k') {
                 room.gameState = 'over';
+                recordResult(room, mover, 'king');
+            } else if (engine.hasPieceInEndzone(room.board, room.currentPlayer)) {
+                room.gameState = 'over';
+                recordResult(room, room.currentPlayer, 'touchdown');
             } else {
                 room.clock.start(room.currentPlayer);
             }

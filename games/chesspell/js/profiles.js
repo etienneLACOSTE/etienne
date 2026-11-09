@@ -43,13 +43,19 @@ export const ProfileManager = {
 
     /** Signed in: the account becomes a profile, with its picture and saved deck. */
     async loadAccount(user) {
-        const [{ account }, { deck }] = await Promise.all([
+        const [{ account }, { deck }, { games }] = await Promise.all([
             accountApi('GET', '/api/account'),
             accountApi('GET', '/api/account/decks/chesspell'),
+            accountApi('GET', '/api/account/stats'),
         ]);
+        const results = Object.values(games.chesspell.modes);
         this.account = {
             id: ACCOUNT_ID, name: user.username, avatar: account.avatar || '',
-            stats: { played: 0, wins: 0 }, deck: deck || [],
+            stats: {
+                played: results.reduce((n, m) => n + m.wins + m.losses + m.draws, 0),
+                wins: results.reduce((n, m) => n + m.wins, 0),
+            },
+            deck: deck || [],
         };
         emit('profilesChanged');
     },

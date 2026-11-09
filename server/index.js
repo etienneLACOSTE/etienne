@@ -11,6 +11,7 @@ const { authRouter } = require('./accounts/routes');
 const { accountRouter } = require('./accounts/account-routes');
 const { oauthRouter, deleteExpiredPending } = require('./accounts/oauth');
 const { sessionStore } = require('./accounts/sessions');
+const { statsStore } = require('./stats');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -38,8 +39,9 @@ const HOUR = 60 * 60 * 1000;
 async function start() {
     const db = await openDb(); // Tables are brought up to date first
     const sessions = sessionStore(db);
-    registerChesspell(io, { sessions });
-    registerChessdown(io, { sessions });
+    const stats = statsStore(db);
+    registerChesspell(io, { sessions, stats });
+    registerChessdown(io, { sessions, stats });
     app.use('/api/auth', oauthRouter(db));
     app.use('/api/auth', authRouter(db));
     app.use('/api/account', accountRouter(db));

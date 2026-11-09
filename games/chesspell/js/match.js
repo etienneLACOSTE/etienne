@@ -12,6 +12,7 @@ import { renderChessboard } from './board-view.js';
 import { resetClock, startTimer, stopTimer } from './clock.js';
 import { startDraft } from './draft.js';
 import { generateBotDeck, loadBotProfile } from './bot-player.js';
+import { reportResult } from '../../../assets/js/session.js';
 
 /** How long the last move stays on screen before the end screen comes up. */
 const END_SCREEN_DELAY_MS = 700;
@@ -60,6 +61,7 @@ export function startCampaign() {
 
 /** A fresh board with the chosen decks; the clock starts. */
 export function initGame() {
+    match.startedAt = Date.now();
     engine.init();
     showScreen('game-board');
     renderInGameDeck(match.p1Deck, 'player1-cards', 'white');
@@ -95,10 +97,33 @@ export function leaveGame() {
 export function endGame({ winner, reason }) {
     stopTimer();
     ProfileManager.recordResult([['white', match.p1Profile], ['black', match.p2Profile]], winner);
+    recordAccountResult(winner, reason);
     setTimeout(() => {
         // Still the same finished game (not a rematch started meanwhile).
         if (engine.winner && engine.winner.toLowerCase() === winner && engine.gameOverShown) showEndScreen(winner, reason);
     }, END_SCREEN_DELAY_MS);
+}
+
+/**
+ * Against the bot or on the same screen, the game counts in the account's stats when the
+ * account plays (online, the game server records it).
+ */
+function recordAccountResult(winner, reason) {
+    const account = ProfileManager.account;
+    if (session.isOnline || !account) return;
+    const color = match.p1Profile === account ? 'white' : match.p2Profile === account ? 'black' : null;
+    if (!color) return;
+    const opponent = color === 'white' ? match.p2Profile : match.p1Profile;
+    reportResult({
+        game: 'chesspell',
+        mode: match.isBotGame ? 'bot' : 'local',
+        result: winner === color ? 'win' : 'loss',
+        reason,
+        opponent: (opponent && opponent.name) || 'Opponent',
+        startedAt: match.startedAt,
+    });
+    account.stats.played++;
+    if (winner === color) account.stats.wins++;
 }
 
 /**

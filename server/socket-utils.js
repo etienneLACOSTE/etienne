@@ -59,14 +59,20 @@ function addressFrom(headers, address) {
  * Who is playing: before a socket connects, read the site's session cookie (sent with
  * the handshake, same origin) and keep the signed-in user in socket.data.user (or null).
  * A database hiccup only makes the player a guest.
+ * With `stats`, the user also carries their totals per game (shown to opponents).
  * @param {{ use: Function }} namespace
- * @param {{ userFor: (cookie: string, options?: { withAvatar?: boolean }) => Promise<{ id: number, username: string, avatar?: string } | null> } | null} sessions
+ * @param {{ userFor: (cookie: string, options?: { withAvatar?: boolean }) => Promise<any> } | null} sessions
+ * @param {{ totals: (userId: number) => Promise<Record<string, { played: number, wins: number }>> } | null} [stats]
  */
-function identifyPlayers(namespace, sessions) {
+function identifyPlayers(namespace, sessions, stats = null) {
     namespace.use(async (socket, next) => {
         socket.data.user = null;
         if (sessions) {
-            try { socket.data.user = await sessions.userFor(socket.handshake.headers.cookie, { withAvatar: true }); } catch { /* guest */ }
+            try {
+                const user = await sessions.userFor(socket.handshake.headers.cookie, { withAvatar: true });
+                if (user && stats) user.stats = await stats.totals(user.id);
+                socket.data.user = user;
+            } catch { /* guest */ }
         }
         next();
     });

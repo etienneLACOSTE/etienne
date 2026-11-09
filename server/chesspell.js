@@ -49,7 +49,9 @@ const count = (n) => (Number.isInteger(n) && n >= 0 ? n : 0);
 function playerProfile(socket, profile, deck) {
     const safe = sanitizeProfile(profile, deck);
     const user = socket.data.user;
-    return user ? { ...safe, id: `u${user.id}`, name: user.username, avatar: user.avatar || '' } : safe;
+    if (!user) return safe;
+    const stats = (user.stats && user.stats.chesspell) || { played: 0, wins: 0 };
+    return { ...safe, id: `u${user.id}`, name: user.username, avatar: user.avatar || '', stats };
 }
 
 /** Keep only the profile fields the opponent needs, with safe values. */
@@ -69,12 +71,26 @@ function sanitizeProfile(profile, deck) {
 
 /**
  * @param {import('socket.io').Server} io
- * @param {{ sessions?: any }} [options] sessions: who is signed in (server/accounts/sessions.js)
+ * @param {{ sessions?: any, stats?: any }} [options] sessions: who is signed in
+ *   (server/accounts/sessions.js); stats: where finished games are recorded (server/stats.js)
  */
-function registerChesspell(io, { sessions = null } = {}) {
+function registerChesspell(io, { sessions = null, stats = null } = {}) {
     const ioChesspell = io.of('/chesspell');
     limitConnections(ioChesspell);
-    identifyPlayers(ioChesspell, sessions);
+    identifyPlayers(ioChesspell, sessions, stats);
+
+    /** A finished game counts for each signed-in player. */
+    function recordResult(room, reason) {
+        if (!stats) return;
+        stats.recordOnline({
+            game: 'chesspell',
+            accounts: room.accounts,
+            names: { 1: room.profiles[1].name, 2: room.profiles[2].name },
+            winner: room.game.winner === 'White' ? 1 : 2,
+            reason,
+            startedAt: room.startedAt,
+        }).catch((err) => console.error(`Ches'spell result not recorded: ${err.message}`));
+    }
 
     /** Each player gets the new state and what just happened. */
     function sendState(room, action) {
@@ -82,6 +98,7 @@ function registerChesspell(io, { sessions = null } = {}) {
         if (game.winner) {
             room.gameState = 'over';
             room.clock.stop();
+            recordResult(room, action.type === 'timeout' ? 'time' : 'king');
         } else if (action.turnEnded) {
             room.clock.start(game.turn);
         }
@@ -142,6 +159,8 @@ function registerChesspell(io, { sessions = null } = {}) {
                 gameState: 'waiting',
                 decks: { 1: deck, 2: [] },
                 profiles: { 1: playerProfile(socket, data.profile, deck), 2: null },
+                accounts: { 1: socket.data.user, 2: null }, // Signed-in players, for their stats
+                startedAt: 0,
                 game: null,
                 clock: /** @type {TurnClock} */ (null),
                 idleTurns: 0,
@@ -167,11 +186,13 @@ function registerChesspell(io, { sessions = null } = {}) {
                 room.players[2] = socket.id;
                 room.decks[2] = deck;
                 room.profiles[2] = playerProfile(socket, data.profile, deck);
+                room.accounts[2] = socket.data.user;
 
                 socket.join(roomCode);
                 socket.emit('roomJoined', { roomCode, playerNumber: 2 });
 
                 room.gameState = 'playing';
+                room.startedAt = Date.now();
                 room.game = Game.newGame();
                 ioChesspell.to(roomCode).emit('gameStarted', {
                     roomState: getChesspellPublicRoomState(room)

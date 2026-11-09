@@ -58,6 +58,8 @@ export const state = {
     botTrainingData: null, // training_data.json
     /** @type {{ id: number, username: string } | null} The signed-in player (assets/js/session.js). */
     account: null,
+    /** When the current match started (Date.now()), for the time played. */
+    matchStartedAt: 0,
 
     // Play
     /** @type {any} */

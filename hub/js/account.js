@@ -129,9 +129,54 @@ function showAvatar(account) {
     $('avatar-remove').hidden = !account.avatar;
 }
 
+const GAME_NAMES = { chesspell: "Ches'spell", chessdown: 'Chessdown' };
+const MODE_NAMES = { online: 'Online', bot: 'Against the bot', local: 'Same screen' };
+const RESULT_NAMES = { win: 'Won', loss: 'Lost', draw: 'Draw' };
+const REASON_NAMES = { king: 'king taken', touchdown: 'touchdown', time: 'on time', repetition: 'repetition' };
+
+/** "1 h 05 min", "12 min", "under a minute". */
+function playTime(seconds) {
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 1) return 'under a minute';
+    const h = Math.floor(minutes / 60);
+    return h ? `${h} h ${String(minutes % 60).padStart(2, '0')} min` : `${minutes} min`;
+}
+
+const el = (tag, props = {}, ...children) => {
+    const node = Object.assign(document.createElement(tag), props);
+    node.append(...children);
+    return node;
+};
+
+/** Per game: wins, losses and draws by mode (online games are refereed), and time played. */
+async function showStats() {
+    const { games, recent } = await send('GET', '/api/account/stats');
+    const played = (g) => Object.values(g.modes).reduce((n, m) => n + m.wins + m.losses + m.draws, 0);
+    const blocks = Object.entries(games).filter(([, g]) => played(g) > 0).map(([game, g]) => {
+        const rows = Object.entries(g.modes)
+            .filter(([, m]) => m.wins + m.losses + m.draws > 0)
+            .map(([mode, m]) => el('tr', {}, el('th', { scope: 'row', textContent: MODE_NAMES[mode] }),
+                el('td', { textContent: String(m.wins) }), el('td', { textContent: String(m.losses) }), el('td', { textContent: String(m.draws) })));
+        const head = el('tr', {}, ...['Mode', 'Won', 'Lost', 'Drawn'].map((t) => el('th', { scope: 'col', textContent: t })));
+        return el('div', { className: 'stats-game' },
+            el('h3', { textContent: GAME_NAMES[game] }),
+            el('p', { textContent: `${played(g)} ${played(g) === 1 ? 'game' : 'games'}, ${playTime(g.seconds)} played` }),
+            el('table', {}, el('thead', {}, head), el('tbody', {}, ...rows)));
+    });
+    $('stats-games').replaceChildren(...blocks);
+    $('stats-empty').hidden = blocks.length > 0;
+    $('recent-title').hidden = !recent.length;
+    $('recent-games').replaceChildren(...recent.map((r) => el('li', {},
+        el('span', { className: `result result-${r.result}`, textContent: RESULT_NAMES[r.result] }),
+        el('span', { textContent: `${GAME_NAMES[r.game]} against ${r.opponent}` }),
+        el('span', { textContent: `${MODE_NAMES[r.mode].toLowerCase()}, ${REASON_NAMES[r.reason] || r.reason}, ${playTime(r.durationS)}` }),
+        el('span', { className: 'when', textContent: new Date(r.playedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) }))));
+}
+
 /** What the page shows for a signed-in player: their account and its data. */
 async function showAccount() {
     const { account } = await send('GET', '/api/account');
+    showStats().catch(() => {}); // The account shows even if the stats cannot be read
     $('account-title').textContent = `Hello, ${account.username}`;
     showAvatar(account);
     $('fact-username').textContent = account.username;

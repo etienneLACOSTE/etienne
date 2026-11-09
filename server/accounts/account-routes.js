@@ -9,6 +9,7 @@ const { sameOrigin } = require('./routes');
 const { rateLimit } = require('./rate-limit');
 const { avatarProblem } = require('./avatar');
 const { sanitizeDeck } = require('../chesspell');
+const { statsStore, resultProblem } = require('../stats');
 
 /** What each game may save on the account, checked like the game server checks it. */
 const DECK_CHECKS = {
@@ -21,6 +22,7 @@ const DECK_CHECKS = {
  */
 function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 } = {}) {
     const sessions = sessionStore(db);
+    const stats = statsStore(db);
     const router = express.Router();
     const smallBody = express.json({ limit: '4kb' });
     const pictureBody = express.json({ limit: '48kb' });
@@ -66,6 +68,23 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
         res.json({ ok: true });
     });
 
+    /** Results per game and mode, time played, and the last games. */
+    router.get('/stats', async (req, res) => {
+        res.json(await stats.summary(res.locals.user.id));
+    });
+
+    /**
+     * A game against the bot or on the same screen, sent by the page (online games are
+     * recorded by the game servers). Shown apart from online results on the account page.
+     */
+    router.post('/results', rateLimit({ max: 60, windowMs: 60 * 60 * 1000 }), async (req, res) => {
+        const r = req.body || {};
+        const problem = resultProblem(r);
+        if (problem) return res.status(400).json({ error: problem });
+        await stats.record({ userId: res.locals.user.id, game: r.game, mode: r.mode, result: r.result, reason: r.reason, opponent: r.opponent, durationS: r.durationS });
+        res.status(201).json({ ok: true });
+    });
+
     /** A game's saved deck (null when none). */
     router.get('/decks/:game', async (req, res) => {
         if (!DECK_CHECKS[req.params.game]) return res.status(404).json({ error: 'Not found.' });
@@ -98,6 +117,7 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
             exportedAt: new Date().toISOString(),
             account: { username: a.username, email: a.email, createdAt: a.created_at, hasPassword: a.has_password, avatar: a.avatar || null },
             decks: decks.map((d) => ({ game: d.game, deck: d.data, savedAt: d.updated_at })),
+            games: await stats.all(a.id),
             linkedSignIns: a.providers.map((p) => ({ provider: p.provider, linkedAt: p.created_at })),
             sessions: signedIn.map((s) => ({ signedInAt: s.created_at, expiresAt: s.expires_at })),
             note: 'The password itself is never stored, only a one-way hash of it, which is not included.',

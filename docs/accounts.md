@@ -28,7 +28,7 @@ player on every device. Playing without an account stays possible everywhere.
 2. **Accounts** (done): `/account/` (sign in, create, account, data download, deletion),
    `/privacy/`, Google sign-in with a username chosen on first sign-in, top-bar button,
    "Play as a guest".
-3. **The games on the account** (in progress: 3a and 3b done)
+3. **The games on the account** (in progress: 3a, 3b and 3c done)
    - 3a. The game servers know the signed-in player (session cookie read at the Socket.io
      handshake); online, the name shown to the opponent is the account's, set by the
      server. Each game's menu shows who is signed in, or a sign-in button that comes
@@ -51,4 +51,8 @@ player on every device. Playing without an account stays possible everywhere.
 - `server/accounts/`: passwords, sessions, validation, rate limit, routes (`/api/auth`,
   `/api/account`), Google (`oauth.js`).
 - `hub/account/`, `hub/privacy/`, `hub/js/session.js` (top-bar button), `hub/js/account.js`.
-- Tests: `tests/unit/accounts.test.js`, `tests/unit/oauth.test.js`, `tests/e2e/account.spec.js`.
+- `server/stats.js`: game results (online games written by `server/chesspell.js` and
+  `server/chessdown.js`, bot and same-screen games sent by the page through
+  `/api/account/results`, via `reportResult` in `assets/js/session.js`).
+- Tests: `tests/unit/accounts.test.js`, `tests/unit/oauth.test.js`, `tests/unit/stats.test.js`,
+  `tests/e2e/account.spec.js`, `tests/e2e/chesspell-account.spec.js`, `tests/e2e/stats.spec.js`.

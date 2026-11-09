@@ -372,6 +372,24 @@ button.pill:disabled { opacity: 0.55; cursor: progress; transform: none; box-sha
 .avatar-pick { cursor: pointer; padding: 0.45rem 1rem; }
 .avatar-actions:focus-within .avatar-pick { outline: 3px solid var(--ink); outline-offset: 3px; }
 
+.panel-wide { margin-bottom: 2rem; }
+.panel h3 { font-size: 1.2rem; margin: 1.25rem 0 0.25rem; }
+.stats-games { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1.5rem 2rem; width: 100%; }
+.stats-game h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1.5rem; }
+.stats-game p { margin: 0 0 0.5rem; }
+.stats-game table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.stats-game th, .stats-game td { text-align: right; padding: 0.4rem 0.5rem; border-bottom: 2px solid var(--ink); }
+.stats-game th:first-child, .stats-game td:first-child { text-align: left; padding-left: 0; }
+.stats-game thead th { font-size: 1rem; }
+.recent { list-style: none; margin: 0; padding: 0; width: 100%; }
+.recent li { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; padding: 0.5rem 0; border-bottom: 2px solid var(--ink); }
+.recent li:last-child { border-bottom: none; }
+.result { font-weight: 700; padding: 0 0.6rem; border: 2px solid var(--ink); border-radius: 999px; }
+.result-win { background: var(--lime); }
+.result-loss { background: var(--coral); }
+.result-draw { background: var(--lilac); }
+.recent .when { margin-left: auto; }
+
 .prose { max-width: 46rem; }
 .prose h2 { font-family: var(--display); font-weight: 400; font-size: 1.75rem; margin: 2.5rem 0 0.5rem; }
 .prose ul { padding-left: 1.25rem; }

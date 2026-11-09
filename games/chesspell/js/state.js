@@ -28,6 +28,8 @@ export const match = {
     /** @type {number[]} */
     p2Deck: [],
     isBotGame: false,
+    /** When the current game started (Date.now()), for the time played. */
+    startedAt: 0,
     /** The piece picked by a tap or the keyboard, with its moves. */
     /** @type {{ r: number, c: number, validMoves: { r: number, c: number, capture?: boolean }[] } | null} */
     selectedPiece: null,

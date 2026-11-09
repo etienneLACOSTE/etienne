@@ -124,6 +124,9 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
   Forms: bold label above the field; fields with a 2px ink border, radius 12px; hint lines
   in 1rem ink; errors in a coral box with an ink border (role="alert"). Dangerous action
   (account deletion): folded in a `<details>`, coral button.
+- Stats (account page): a wide card "Your games": per game, a Bagel title, "N games, time
+  played", and a table Mode / Won / Lost / Drawn (2px ink rules, tabular figures); then
+  "Last games", one line each with a result pill (Won lime, Lost coral, Draw lilac).
 - Account picture: a 4.5rem circle with a 3px ink border (the first letter of the
   username on lilac when there is none), "Change picture" pill and "Remove picture" link.
 - Top bar: game pills, then the account pill (ink): "Sign in", or the player's name.

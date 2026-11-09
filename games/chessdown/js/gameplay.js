@@ -7,12 +7,14 @@ import { getBoardCoords, getViewCoords } from './coords.js';
 import { chooseBotMove } from './bot.js';
 import { announceTurn, resetAnnouncements } from './a11y.js';
 import { checkTouchdownWin, makeVirtualMove, serializeBoard } from './rules-bridge.js';
+import { reportResult } from '../../../assets/js/session.js';
 
 // --- Gameplay Logic ---
 
 export function startGameplay(winner) {
     resetAnnouncements(); // a11y.js
     state.gameState = 'gameplay';
+    state.matchStartedAt = Date.now();
     state.positionHistory = {}; // Reset repetition history
     state.playerTimeRemaining[1] = state.timerBaseSeconds * 1000;
     state.playerTimeRemaining[2] = state.timerBaseSeconds * 1000;
@@ -45,13 +47,13 @@ export function startTurn() {
         
         if (state.myPlayerNumber === winner) {
             fireConfetti([winnerColorHex, '#f1c40f']);
-            endGame('Victory!', `TOUCHDOWN! You survived in the endzone!`, winner);
+            endGame('Victory!', `TOUCHDOWN! You survived in the endzone!`, winner, 'touchdown');
         } else {
             if (!state.currentRoomCode) {
                 fireConfetti([winnerColorHex, '#f1c40f']);
-                endGame('Victory!', `TOUCHDOWN! Player ${winner} survived in the endzone!`, winner);
+                endGame('Victory!', `TOUCHDOWN! Player ${winner} survived in the endzone!`, winner, 'touchdown');
             } else {
-                endGame('Defeat...', `TOUCHDOWN! Player ${winner} survived in the endzone!`, winner);
+                endGame('Defeat...', `TOUCHDOWN! Player ${winner} survived in the endzone!`, winner, 'touchdown');
             }
         }
         return;
@@ -63,7 +65,7 @@ export function startTurn() {
         const p1Color = COLOR_HEX[state.playerColors[1]];
         const p2Color = COLOR_HEX[state.playerColors[2]];
         fireConfetti([p1Color, p2Color], 30);
-        endGame('DRAW', "by 3 repetitions", 0);
+        endGame('DRAW', "by 3 repetitions", 0, 'repetition');
         return;
     }
     
@@ -135,7 +137,7 @@ export function startTimer() {
                 const winner = state.currentPlayer === 1 ? 2 : 1;
                 const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
                 fireConfetti([winnerColorHex, '#f1c40f']);
-                endGame('Time Out!', `Player ${state.currentPlayer} ran out of time!`, winner);
+                endGame('Time Out!', `Player ${state.currentPlayer} ran out of time!`, winner, 'time');
             }
         }
     }, 100);
@@ -240,7 +242,7 @@ export function movePiece(fromR, fromC, toR, toC) {
             const winner = state.currentPlayer;
             const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
             fireConfetti([winnerColorHex, '#f1c40f']);
-            endGame('Victory!', `Player ${winner} captured the King!`, winner);
+            endGame('Victory!', `Player ${winner} captured the King!`, winner, 'king');
             return;
         }
 
@@ -249,9 +251,26 @@ export function movePiece(fromR, fromC, toR, toC) {
     }, 300);
 }
 
-export function endGame(title, reason, winner) {
+/**
+ * @param {string} title @param {string} reason what the end screen says
+ * @param {number} winner 1 or 2, or 0 for a draw
+ * @param {'king' | 'touchdown' | 'time' | 'repetition'} [how] for the stats
+ */
+export function endGame(title, reason, winner, how) {
     state.gameState = 'over';
     clearInterval(state.timerInterval);
+    // Against the bot or on the same screen, the signed-in player is player 1 (online,
+    // the server records the result).
+    if (!state.currentRoomCode && state.account && how) {
+        reportResult({
+            game: 'chessdown',
+            mode: state.isBotMatch ? 'bot' : 'local',
+            result: winner === 0 ? 'draw' : winner === 1 ? 'win' : 'loss',
+            reason: how,
+            opponent: state.isBotMatch ? `Bot (${state.botDifficultyLevel || 'master'})` : 'Player 2',
+            startedAt: state.matchStartedAt,
+        });
+    }
     ui.victoryTitle.textContent = title;
     ui.victoryReason.textContent = reason;
     

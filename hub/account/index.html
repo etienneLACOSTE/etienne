@@ -85,7 +85,15 @@
 
         <!-- Signed in: the account, then its data. -->
         <section id="signed-in" hidden aria-labelledby="account-title">
-            <p class="page-intro">You are signed in. Your stats, decks and friends will appear here as the games join your account.</p>
+            <p class="page-intro">You are signed in. Your games, decks and picture follow you on every device.</p>
+
+            <section class="panel panel-wide" aria-labelledby="stats-title">
+                <h2 id="stats-title"><span class="chip chip-lime">Your games</span></h2>
+                <p id="stats-empty">No finished games yet. Your results appear here after each game, online, against the bot or on the same screen.</p>
+                <div class="stats-games" id="stats-games"></div>
+                <h3 id="recent-title" hidden>Last games</h3>
+                <ol class="recent" id="recent-games" aria-labelledby="recent-title"></ol>
+            </section>
 
             <div class="panels">
                 <div class="panel">
