@@ -1,6 +1,6 @@
 // @ts-check
 const {
-    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
+    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
@@ -42,6 +42,16 @@ function sanitizeDeck(deck) {
 
 const count = (n) => (Number.isInteger(n) && n >= 0 ? n : 0);
 
+/**
+ * The profile shown to the opponent. A signed-in player's name is their account's,
+ * set here: online, nobody can take another player's name.
+ */
+function playerProfile(socket, profile, deck) {
+    const safe = sanitizeProfile(profile, deck);
+    const user = socket.data.user;
+    return user ? { ...safe, id: `u${user.id}`, name: user.username } : safe;
+}
+
 /** Keep only the profile fields the opponent needs, with safe values. */
 function sanitizeProfile(profile, deck) {
     const p = profile && typeof profile === 'object' ? profile : {};
@@ -57,9 +67,14 @@ function sanitizeProfile(profile, deck) {
     };
 }
 
-function registerChesspell(io) {
+/**
+ * @param {import('socket.io').Server} io
+ * @param {{ sessions?: any }} [options] sessions: who is signed in (server/accounts/sessions.js)
+ */
+function registerChesspell(io, { sessions = null } = {}) {
     const ioChesspell = io.of('/chesspell');
     limitConnections(ioChesspell);
+    identifyPlayers(ioChesspell, sessions);
 
     /** Each player gets the new state and what just happened. */
     function sendState(room, action) {
@@ -126,7 +141,7 @@ function registerChesspell(io) {
                 players: { 1: socket.id, 2: null }, // P1 creates the room and plays white
                 gameState: 'waiting',
                 decks: { 1: deck, 2: [] },
-                profiles: { 1: sanitizeProfile(data.profile, deck), 2: null },
+                profiles: { 1: playerProfile(socket, data.profile, deck), 2: null },
                 game: null,
                 clock: /** @type {TurnClock} */ (null),
                 idleTurns: 0,
@@ -151,7 +166,7 @@ function registerChesspell(io) {
             } else {
                 room.players[2] = socket.id;
                 room.decks[2] = deck;
-                room.profiles[2] = sanitizeProfile(data.profile, deck);
+                room.profiles[2] = playerProfile(socket, data.profile, deck);
 
                 socket.join(roomCode);
                 socket.emit('roomJoined', { roomCode, playerNumber: 2 });

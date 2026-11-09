@@ -171,6 +171,9 @@ h1 {
 .menu-row { flex-direction: row; }
 .menu-row button { flex: 1; }
 .join-row { display: flex; gap: 8px; }
+.account-line { text-align: center; max-width: 320px; margin: 4px 0 0; }
+.account-line strong { color: var(--white); }
+.account-line a { color: var(--amber); }
 .join-row button { flex: 1; }
 
 #room-code-input {

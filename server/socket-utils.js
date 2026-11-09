@@ -55,6 +55,23 @@ function addressFrom(headers, address) {
     return address || '';
 }
 
+/**
+ * Who is playing: before a socket connects, read the site's session cookie (sent with
+ * the handshake, same origin) and keep the signed-in user in socket.data.user (or null).
+ * A database hiccup only makes the player a guest.
+ * @param {{ use: Function }} namespace
+ * @param {{ userFor: (cookie: string) => Promise<{ id: number, username: string } | null> } | null} sessions
+ */
+function identifyPlayers(namespace, sessions) {
+    namespace.use(async (socket, next) => {
+        socket.data.user = null;
+        if (sessions) {
+            try { socket.data.user = await sessions.userFor(socket.handshake.headers.cookie); } catch { /* guest */ }
+        }
+        next();
+    });
+}
+
 function clientIp(socket) {
     const handshake = socket.handshake || {};
     return addressFrom(handshake.headers, handshake.address);
@@ -151,7 +168,7 @@ function playerOf(room, socket) {
 }
 
 module.exports = {
-    generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom,
+    generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom, identifyPlayers,
     limitConnections, idleRooms, sweepIdleRooms,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST,
 };

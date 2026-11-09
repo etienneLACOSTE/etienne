@@ -1,7 +1,7 @@
 // @ts-check
 // The account page: sign in or create an account; once signed in, the account, its
 // data and its deletion. Every check is redone by the server (server/accounts/).
-import { currentUser, showUserInTopbar } from './session.js';
+import { currentUser, showUserInTopbar } from '../../assets/js/session.js'; // Served as /assets/js/session.js
 
 /** @param {string} id */
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));

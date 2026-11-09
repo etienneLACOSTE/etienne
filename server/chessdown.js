@@ -1,6 +1,6 @@
 // @ts-check
 const {
-    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
+    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
@@ -67,9 +67,14 @@ function isValidDraft(pieces, player) {
     return kings === 1 && cost <= MAX_POINTS;
 }
 
-function registerChessdown(io) {
+/**
+ * @param {import('socket.io').Server} io
+ * @param {{ sessions?: any }} [options] sessions: who is signed in (server/accounts/sessions.js)
+ */
+function registerChessdown(io, { sessions = null } = {}) {
     const ioChessdown = io.of('/chessdown');
     limitConnections(ioChessdown);
+    identifyPlayers(ioChessdown, sessions);
 
     /** The player to move ran out of time. */
     function timeUp(room) {

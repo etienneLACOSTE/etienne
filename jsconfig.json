@@ -20,6 +20,7 @@
   },
   "include": [
     "server/**/*.js",
+    "assets/js/**/*.js",
     "games/chessdown/engine.js",
     "games/chesspell/rules.js",
     "games/chesspell/game.js",

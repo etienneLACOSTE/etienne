@@ -9,6 +9,7 @@ import { setupAccessibility } from './a11y.js';
 import { startCrowd } from './crowd.js';
 import { movePiece, skipTurn } from './gameplay.js';
 import { generateAllMoves, getValidMoves } from './rules-bridge.js';
+import { currentUser, showAccountLine } from '../../../assets/js/session.js';
 
 // Initialization
 export function init() {
@@ -29,6 +30,10 @@ export function init() {
     
     showScreen(ui.mainMenu);
     ui.statusBar.textContent = "Welcome to Chessdown";
+    currentUser().then((user) => {
+        state.account = user;
+        showAccountLine(document.getElementById('account-line'), user, { game: '/chessdown/', perk: 'stats' });
+    });
     
     // Fetch AI training data once at startup
     fetch('training_data.json')

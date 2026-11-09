@@ -17,6 +17,7 @@
 //   match.js                   a match from start to end screen
 //   online.js, demo.js         online play; the tutorial
 //   a11y.js                    keyboard and screen reader
+//   ../../../assets/js/session.js   who is signed in (shared with the hub)
 import { botSettings, match, session } from './state.js';
 import { on } from './events.js';
 import { engine } from './game-engine.js';
@@ -33,6 +34,7 @@ import { setupOnline } from './online.js';
 import { startDemo } from './demo.js';
 import { setupAccessibility } from './a11y.js';
 import { startSky } from './sky.js';
+import { currentUser, showAccountLine } from '../../../assets/js/session.js';
 
 // --- Game flow: what happens after each event (a11y.js adds its own announcements).
 on('boardChanged', renderChessboard);
@@ -87,6 +89,10 @@ document.addEventListener('DOMContentLoaded', () => {
         startDemo();
         return;
     }
+    currentUser().then((user) => {
+        session.account = user;
+        showAccountLine(document.getElementById('account-line'), user, { game: '/chesspell/', perk: 'deck and stats' });
+    });
     ProfileManager.loadProfiles();
     renderProfilesList();
     updatePlayerSelects();

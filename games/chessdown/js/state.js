@@ -56,6 +56,8 @@ export const state = {
     botArchetype: 'normal', // normal, ecuries, citadelle, chapiteau, chair, sorcieres
     /** @type {any} */
     botTrainingData: null, // training_data.json
+    /** @type {{ id: number, username: string } | null} The signed-in player (assets/js/session.js). */
+    account: null,
 
     // Play
     /** @type {any} */

@@ -14,6 +14,8 @@ export const session = {
     myPlayerColor: null,
     /** @type {number|null} */
     myPlayerNumber: null,
+    /** @type {{ id: number, username: string } | null} The signed-in player (assets/js/session.js). */
+    account: null,
 };
 
 /** The match on this page: who plays, with which cards, and the piece being moved. */

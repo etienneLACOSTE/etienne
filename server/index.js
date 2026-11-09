@@ -31,20 +31,21 @@ app.use('/assets', express.static(path.join(ROOT, 'assets')));
 app.use('/chesspell', express.static(path.join(ROOT, 'games', 'chesspell')));
 app.use('/chessdown', express.static(path.join(ROOT, 'games', 'chessdown')));
 
-registerChesspell(io);
-registerChessdown(io);
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOUR = 60 * 60 * 1000;
 
 async function start() {
     const db = await openDb(); // Tables are brought up to date first
+    const sessions = sessionStore(db);
+    registerChesspell(io, { sessions });
+    registerChessdown(io, { sessions });
     app.use('/api/auth', oauthRouter(db));
     app.use('/api/auth', authRouter(db));
     app.use('/api/account', accountRouter(db));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
     setInterval(() => {
-        sessionStore(db).deleteExpired().catch(() => {});
+        sessions.deleteExpired().catch(() => {});
         deleteExpiredPending(db).catch(() => {});
     }, HOUR).unref();
     server.listen(PORT, '0.0.0.0', () => {
