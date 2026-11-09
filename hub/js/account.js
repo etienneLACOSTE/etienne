@@ -52,10 +52,10 @@ function handleForm(form, errorId, action) {
     });
 }
 
-const PROVIDER_NAMES = { google: 'Google', github: 'GitHub' };
+const PROVIDER_NAMES = { google: 'Google' };
 const query = new URLSearchParams(location.search);
 
-/** The providers the server offers (Google, GitHub), once. */
+/** The providers the server offers (Google), once. */
 let offered = null;
 const offeredProviders = async () => (offered ||= send('GET', '/api/auth/providers').then((d) => d.providers).catch(() => []));
 
@@ -72,7 +72,7 @@ function providerLink(provider, { link = false } = {}) {
     return a;
 }
 
-/** A message at the top of the page, after coming back from Google or GitHub. */
+/** A message at the top of the page, after coming back from Google. */
 function showNotice(text, isError) {
     const notice = $('account-notice');
     notice.textContent = text;
@@ -132,7 +132,7 @@ async function showSignedOut() {
     $('password-divider').hidden = !providers.length;
 }
 
-/** First sign-in with Google or GitHub: choose a username (suggested from the profile). */
+/** First sign-in with Google: choose a username (suggested from the profile). */
 async function showFinish() {
     const { pending } = await send('GET', '/api/auth/pending');
     if (!pending) return false;
@@ -143,31 +143,26 @@ async function showFinish() {
     return true;
 }
 
-/** After signing in or up: back to where the player came from, or their account. */
-async function afterSignIn(user) {
-    const next = nextPage();
-    if (next) return location.assign(next);
-    showUserInTopbar(user);
-    await showAccount();
-    $('account-title').focus();
+/** After signing in or up: on to the games, or back to the page the player came from. */
+function afterSignIn() {
+    location.assign(nextPage() || '/');
 }
 
 handleForm($('login-form'), 'login-error', async (data) => {
-    const { user } = await send('POST', '/api/auth/login', { login: data.get('login'), password: data.get('password') });
-    await afterSignIn(user);
+    await send('POST', '/api/auth/login', { login: data.get('login'), password: data.get('password') });
+    afterSignIn();
 });
 
 handleForm($('signup-form'), 'signup-error', async (data) => {
-    const { user } = await send('POST', '/api/auth/signup', {
+    await send('POST', '/api/auth/signup', {
         username: data.get('username'), email: data.get('email'), password: data.get('password'),
     });
-    await afterSignIn(user);
+    afterSignIn();
 });
 
 handleForm($('finish-form'), 'finish-error', async (data) => {
-    const { user } = await send('POST', '/api/auth/finish', { username: data.get('username') });
-    $('finish').hidden = true;
-    await afterSignIn(user);
+    await send('POST', '/api/auth/finish', { username: data.get('username') });
+    afterSignIn();
 });
 
 handleForm($('delete-form'), 'delete-error', async (data) => {
@@ -183,6 +178,9 @@ $('logout-button').addEventListener('click', async () => {
     showSignedOut();
     $('account-title').focus();
 });
+
+const next = nextPage();
+if (next) /** @type {HTMLAnchorElement} */ ($('guest-link')).href = next;
 
 currentUser().then(async (user) => {
     $('account-loading').hidden = true;

@@ -347,6 +347,9 @@ button.pill:disabled { opacity: 0.55; cursor: progress; transform: none; box-sha
 .method { display: block; }
 .link-button { font: inherit; font-size: 1rem; background: none; border: none; padding: 0; text-decoration: underline; cursor: pointer; color: inherit; }
 
+.guest { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; margin: -1rem 0 2.5rem; }
+.guest span { font-size: 1rem; }
+
 .prose { max-width: 46rem; }
 .prose h2 { font-family: var(--display); font-weight: 400; font-size: 1.75rem; margin: 2.5rem 0 0.5rem; }
 .prose ul { padding-left: 1.25rem; }

@@ -114,6 +114,8 @@ test.describe('axe audit', () => {
     await page.getByLabel('Email', { exact: true }).fill(`${name}@example.com`);
     await page.locator('#signup-password').fill('correct horse battery');
     await page.getByRole('button', { name: 'Create my account' }).click();
+    await expect(page).toHaveURL(/127\.0\.0\.1:\d+\/$/);
+    await page.goto('/account/');
     await page.getByText('Delete my account', { exact: true }).click();
     await expect(page.locator('#delete-confirm')).toBeVisible();
     expect(await audit(page)).toEqual([]);

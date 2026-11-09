@@ -62,7 +62,7 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
         });
     });
 
-    /** Unlink Google or GitHub, as long as another way to sign in remains. */
+    /** Unlink Google, as long as another way to sign in remains. */
     router.delete('/providers/:provider', async (req, res) => {
         const account = await loadAccount(res.locals.user.id);
         const linked = account.providers.map((p) => p.provider);

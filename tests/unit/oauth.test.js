@@ -126,7 +126,7 @@ test('?next= to another site is ignored', async () => {
     await signInWith(b, 'dan');
     await b('/api/auth/finish', { method: 'POST', body: { username: 'Dan' } });
     const c = browser();
-    assert.equal((await signInWith(c, 'dan', '?next=//evil.example/')).location, '/account/');
+    assert.equal((await signInWith(c, 'dan', '?next=//evil.example/')).location, '/');
 });
 
 test('link a provider to a password account, unlink it; one account per provider identity', async () => {

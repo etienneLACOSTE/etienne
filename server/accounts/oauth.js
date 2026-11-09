@@ -1,15 +1,15 @@
 // @ts-check
-// Sign in with Google or GitHub (OAuth 2 authorization code flow with PKCE and state;
-// OpenID Connect with a nonce for Google), through openid-client.
+// Sign in with Google (OpenID Connect: authorization code flow with PKCE, state and
+// a nonce), through openid-client. Written for any provider: Google is the only one.
 //
 //   GET  /api/auth/providers            which buttons to show (the configured providers)
-//   GET  /api/auth/:provider/start      off to Google / GitHub (?next=, ?link=1 to link)
+//   GET  /api/auth/:provider/start      off to Google (?next=, ?link=1 to link)
 //   GET  /api/auth/:provider/callback   back from it: sign in, link, or choose a username
 //   GET  /api/auth/pending              the first sign-in waiting for a username
 //   POST /api/auth/finish               { username }: create the account and sign in
 //
-// Credentials: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_ID /
-// GITHUB_CLIENT_SECRET (Render environment). A provider without them is not offered.
+// Credentials: GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET (Render environment). Without
+// them, Google is not offered.
 
 const express = require('express');
 const { COOKIE, cookieOptions, readCookie, sessionStore, sha256, newToken } = require('./sessions');
@@ -79,38 +79,6 @@ function realProviders(env = process.env) {
         };
     }
 
-    if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
-        let config = null;
-        const github = async () => {
-            const client = await oidc();
-            return (config ||= new client.Configuration({
-                issuer: 'https://github.com',
-                authorization_endpoint: 'https://github.com/login/oauth/authorize',
-                token_endpoint: 'https://github.com/login/oauth/access_token',
-            }, env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET));
-        };
-        providers.github = {
-            async authorizationUrl({ redirectUri, state, codeChallenge }) {
-                const client = await oidc();
-                // No scope: only the public profile (id and login) is needed.
-                return client.buildAuthorizationUrl(await github(), {
-                    redirect_uri: redirectUri, state, code_challenge: codeChallenge, code_challenge_method: 'S256',
-                });
-            },
-            async exchange(currentUrl, { codeVerifier, state }) {
-                const client = await oidc();
-                const tokens = await client.authorizationCodeGrant(await github(), currentUrl, {
-                    pkceCodeVerifier: codeVerifier, expectedState: state,
-                });
-                const res = await fetch('https://api.github.com/user', {
-                    headers: { authorization: `Bearer ${tokens.access_token}`, accept: 'application/vnd.github+json', 'user-agent': 'pawnet' },
-                });
-                if (!res.ok) throw new Error(`GitHub profile request failed (${res.status})`);
-                const user = await res.json();
-                return { subject: String(user.id), name: user.login };
-            },
-        };
-    }
     return providers;
 }
 
@@ -184,7 +152,7 @@ function oauthRouter(db, { providers = realProviders(), attemptsPerWindow = 30, 
         }
         if (owner) {
             res.cookie(COOKIE, await sessions.create(owner.id), cookieOptions());
-            return res.redirect(303, flow.next || '/account/');
+            return res.redirect(303, flow.next || '/');
         }
         // First time: the player chooses a username before the account exists.
         const token = newToken();
