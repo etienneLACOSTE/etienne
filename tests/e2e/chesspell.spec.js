@@ -88,6 +88,37 @@ test.describe("Ches'spell", () => {
     await blockExternalRequests(page);
   });
 
+  /** Draft a local game, then white casts Wall on a4. */
+  async function castWall(page) {
+    await page.goto('/chesspell/');
+    await page.getByRole('button', { name: 'Local Game' }).click();
+    await page.getByRole('button', { name: 'Play Draft Mode' }).click();
+    for (const id of [8, 1, 2, 12, 5, 15]) {
+      await page.locator(`#draft-grid .spell-card[data-id="${id}"]`).click();
+      await page.locator('#modal-confirm').click();
+    }
+    await page.locator('#player1-cards .in-game-card[data-card-id="8"]').click();
+    await page.locator('#modal-confirm').click();
+    const a4 = await cellCenter(page, 4, 0);
+    await page.mouse.click(a4.x, a4.y);
+  }
+
+  test('a spell plays its effect over the board, then the effect goes away', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await castWall(page);
+    await expect(page.locator('#spell-fx .fx-rune')).toHaveCount(1);
+    await expect(page.locator('#spell-fx')).toHaveCSS('pointer-events', 'none');
+    await expect(page.locator('#spell-fx > *')).toHaveCount(0, { timeout: 3000 });
+    expect(errors).toEqual([]);
+  });
+
+  test('no spell effect when the visitor asks for reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await castWall(page);
+    expect(await pieceAt(page, 4, 0)).toBe('W');
+    await expect(page.locator('#spell-fx > *')).toHaveCount(0);
+  });
+
   test('local game: draft spells, cast Wall, then capture the king', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.goto('/chesspell/');
