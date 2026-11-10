@@ -23,8 +23,13 @@ const FLOW_MINUTES = 10;
 const PENDING_MINUTES = 30;
 const UNIQUE_VIOLATION = '23505';
 
-/** Only a page of this site: "/x", never "//x" or another origin. */
-const safeNext = (next) => (typeof next === 'string' && /^\/(?![/\\])/.test(next) && next.length < 200 ? next : null);
+/**
+ * Only a page of this site: "/x", never "//x" or another origin. No whitespace, control
+ * character or backslash at all: browsers drop tabs and newlines from URLs and read "\"
+ * as "/", so "/<tab>/evil.example" would lead to another site.
+ */
+const safeNext = (next) => (typeof next === 'string' && next.length < 200
+    && /^\/(?!\/)/.test(next) && !/[\u0000-\u0020\u007f\\]/.test(next) ? next : null);
 
 /** The site's public address: behind Render's proxy, always HTTPS in production. */
 function baseUrl(req) {
@@ -152,7 +157,7 @@ function oauthRouter(db, { providers = realProviders(), attemptsPerWindow = 30, 
         }
         if (owner) {
             res.cookie(COOKIE, await sessions.create(owner.id), cookieOptions());
-            return res.redirect(303, flow.next || '/');
+            return res.redirect(303, safeNext(flow.next) || '/'); // Checked again: the cookie is not signed
         }
         // First time: the player chooses a username before the account exists.
         const token = newToken();
@@ -162,7 +167,7 @@ function oauthRouter(db, { providers = realProviders(), attemptsPerWindow = 30, 
             [sha256(token), name, who.subject, suggestUsername(who.name), PENDING_MINUTES],
         );
         res.cookie(PENDING_COOKIE, token, shortCookie(PENDING_MINUTES, '/api/auth'));
-        back(res, { finish: name, ...(flow.next ? { next: flow.next } : {}) });
+        back(res, { finish: name, ...(safeNext(flow.next) ? { next: flow.next } : {}) });
     });
 
     const pendingFor = async (req) => {

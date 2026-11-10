@@ -73,6 +73,11 @@ test('helpers: username suggestions and safe ?next=', () => {
     assert.equal(safeNext('//evil.example'), null);
     assert.equal(safeNext('https://evil.example'), null);
     assert.equal(safeNext('/\\evil.example'), null);
+    // Browsers drop tabs and newlines from URLs: these would lead to evil.example.
+    for (const tricky of ['/\t/evil.example', '/\n/evil.example', '/\r//evil.example', '/ /evil.example', '/\u0000/evil.example']) {
+        assert.equal(safeNext(tricky), null, JSON.stringify(tricky));
+    }
+    assert.equal(safeNext('/'), '/');
 });
 
 test('only configured providers are offered; unknown ones are 404', async () => {

@@ -13,7 +13,11 @@ const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
  */
 function nextPage() {
     const next = new URLSearchParams(location.search).get('next');
-    return next && /^\/(?![/\\])/.test(next) ? next : null;
+    // Same rule as the server (safeNext in server/accounts/oauth.js): a path of this site,
+    // with no whitespace, control character or backslash (browsers drop tabs and newlines
+    // and read "\\" as "/"), then checked once more against how the browser resolves it.
+    if (!next || next.length >= 200 || !/^\/(?!\/)/.test(next) || /[\u0000-\u0020\u007f\\]/.test(next)) return null;
+    return new URL(next, location.origin).origin === location.origin ? next : null;
 }
 
 /** Run a form's action, with its button busy and its error shown under the fields. */

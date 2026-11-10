@@ -109,3 +109,29 @@ test('changes from another site are refused (CSRF)', async () => {
     assert.equal(res.status, 403);
     assert.deepEqual((await jo.call('')).json.outgoing, []);
 });
+
+test('ids that come back as text (node-postgres) still pair correctly: ids 9 and 10', async () => {
+    const textDb = await openDb({ url: '', idsAsText: true });
+    const { friendStore } = require('../../server/friends');
+    const store = friendStore(textDb);
+    const ids = [];
+    for (let i = 1; i <= 10; i++) {
+        ids.push((await textDb.query('INSERT INTO users (username) VALUES ($1) RETURNING id', [`user${i}`])).rows[0].id);
+    }
+    assert.equal(typeof ids[8], 'string', 'this database returns ids as text, like pg by default');
+    const [nine, ten] = [{ id: ids[8], username: 'user9' }, { id: ids[9], username: 'user10' }];
+    assert.equal(await store.request(ten, nine), 'sent');
+    assert.equal(await store.request(nine, ten), 'friends', 'the crossing request befriends them');
+    assert.equal(await store.areFriends(ten.id, nine.id), true);
+    assert.deepEqual((await store.list(nine.id)).friends.map((f) => f.username), ['user10']);
+    await store.unfriend(nine.id, ten.id);
+    assert.equal(await store.areFriends(nine.id, ten.id), false);
+    await textDb.close();
+});
+
+test('the production driver returns bigint ids as numbers', () => {
+    const { useNumbersForBigint } = require('../../server/db');
+    const { types } = require('pg');
+    useNumbersForBigint();
+    assert.equal(types.getTypeParser(types.builtins.INT8)('12'), 12);
+});

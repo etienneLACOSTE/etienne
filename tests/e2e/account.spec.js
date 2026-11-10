@@ -73,7 +73,7 @@ test.describe('Account', () => {
 
   test('after signing in, ?next= returns to a page of this site only', async ({ page }) => {
     const name = unique();
-    await page.goto('/account/?next=https://evil.example/');
+    await page.goto('/account/?next=/%09/evil.example/'); // A tab: the browser would drop it and leave the site
     await page.locator('#signup-name').fill(name);
     await page.getByLabel('Email', { exact: true }).fill(`${name}@example.com`);
     await page.locator('#signup-password').fill('correct horse battery');

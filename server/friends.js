@@ -12,8 +12,11 @@ const { rateLimit } = require('./accounts/rate-limit');
 const MAX_PENDING_SENT = 50;
 const MAX_FRIENDS = 200;
 
-/** The pair as stored in friendships: smaller id first. */
-const pair = (a, b) => (a < b ? [a, b] : [b, a]);
+/** The pair as stored in friendships: smaller id first (compared as numbers, never as text). */
+const pair = (a, b) => {
+    const [x, y] = [Number(a), Number(b)];
+    return x < y ? [x, y] : [y, x];
+};
 
 /** @param {import('./db').Db} db */
 function friendStore(db) {

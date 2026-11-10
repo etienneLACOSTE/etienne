@@ -37,8 +37,9 @@ function registerPresence(io, { sessions, friends, rooms }) {
 
     /** Tell a player's online friends where they are now (null: gone). */
     async function announce(user) {
-        const where = whereIs(user.id);
-        for (const id of await friends.friendIds(user.id)) {
+        const ids = await friends.friendIds(user.id);
+        const where = whereIs(user.id); // After the wait: the player may have left meanwhile
+        for (const id of ids) {
             if (online.has(id)) ns.to(userRoom(id)).emit('friendPresence', { username: user.username, where });
         }
     }
@@ -56,23 +57,32 @@ function registerPresence(io, { sessions, friends, rooms }) {
 
     /** A friendship changed (server/friends.js): both players get fresh lists. */
     async function friendsChanged(userIds) {
-        for (const id of userIds) {
+        for (const id of userIds.map(Number)) {
             if (online.has(id)) ns.to(userRoom(id)).emit('friendsOnline', await onlineFriends(id));
         }
     }
 
-    ns.on('connection', async (socket) => {
+    ns.on('connection', (socket) => {
         const user = socket.data.user;
-        if (!user) return socket.disconnect(true); // Presence is for signed-in players only
+        // Presence is for signed-in players only. Not disconnect(true): that would also
+        // close the page's game connection, which shares the same underlying link.
+        if (!user) return socket.disconnect();
         const id = Number(user.id);
         const asked = socket.handshake.auth && socket.handshake.auth.page;
         const page = typeof asked === 'string' && PAGES.includes(asked) ? asked : 'site';
-        socket.join(userRoom(id));
-        const before = whereIs(id);
-        if (!online.has(id)) online.set(id, new Map());
-        online.get(id).set(socket.id, page);
-        if (whereIs(id) !== before) await announce({ id, username: user.username });
-        socket.emit('friendsOnline', await onlineFriends(id));
+
+        // Listeners first, before any wait on the database: a page that closes during the
+        // first query must still be removed from the players online.
+        socket.on('disconnect', () => {
+            const pages = online.get(id);
+            if (!pages) return;
+            const was = whereIs(id);
+            pages.delete(socket.id);
+            if (!pages.size) online.delete(id);
+            if (whereIs(id) !== was) {
+                announce({ id, username: user.username }).catch((err) => console.error(`Presence: announce failed: ${err.message}`));
+            }
+        });
 
         const sent = [];
         safeOn(socket, 'invite', async (data) => {
@@ -96,14 +106,17 @@ function registerPresence(io, { sessions, friends, rooms }) {
             socket.emit('inviteResult', { ok: true, username: friend.username });
         });
 
-        socket.on('disconnect', async () => {
-            const pages = online.get(id);
-            if (!pages) return;
-            const was = whereIs(id);
-            pages.delete(socket.id);
-            if (!pages.size) online.delete(id);
-            if (whereIs(id) !== was) await announce({ id, username: user.username }).catch(() => {});
-        });
+        socket.join(userRoom(id));
+        const before = whereIs(id);
+        if (!online.has(id)) online.set(id, new Map());
+        online.get(id).set(socket.id, page);
+        const changed = whereIs(id) !== before;
+
+        // The database may fail (a Neon outage): log it, never let it stop the server.
+        (async () => {
+            if (changed) await announce({ id, username: user.username });
+            if (socket.connected) socket.emit('friendsOnline', await onlineFriends(id));
+        })().catch((err) => console.error(`Presence: connection setup failed: ${err.message}`));
     });
 
     return { friendsChanged, isOnline: (id) => online.has(Number(id)) };
