@@ -71,6 +71,7 @@ const NOTICES = {
     cancelled: 'Sign-in was cancelled. Try again whenever you like.',
     failed: 'Sign-in did not work. Try again, or use another way to sign in.',
     taken: 'That account is already linked to another player.',
+    already: 'Another Google account is already linked: unlink it first.',
 };
 
 /** Size of the account picture, in pixels (square, like the games' profiles). */

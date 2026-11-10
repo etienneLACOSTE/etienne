@@ -65,6 +65,20 @@ test('passwords: scrypt hash, only the right password matches', async () => {
     assert.equal(await verifyPassword('anything', 'not a hash'), false);
 });
 
+test('passwords: a malformed stored hash never matches', async () => {
+    const [, N, r, p, salt] = (await hashPassword('correct horse battery')).split('$');
+    const key = 'A'.repeat(43) + '=';
+    for (const stored of [
+        ['scrypt', N, r, p, salt, ''], // An empty key would match every password
+        ['scrypt', N, r, p, '', ''],
+        ['scrypt', N, r, p, salt, 'AAAA'],
+        ['scrypt', 2 ** 30, r, p, salt, key], // A cost that would stall the server
+        ['scrypt', 'abc', r, p, salt, key],
+    ].map((parts) => parts.join('$'))) {
+        assert.equal(await verifyPassword('anything', stored), false, stored);
+    }
+});
+
 test('signup: creates the account and signs in with a safe cookie', async () => {
     const res = await signup('Alice');
     assert.equal(res.status, 201);
@@ -98,6 +112,8 @@ test('signup: invalid fields are refused with the reason', async () => {
         [{ username: 'carol', email: 'c@example.com', password: 'short' }, /password/],
         [{ username: 'carol', email: 'c@example.com', password: 'x'.repeat(129) }, /password/],
         [{ username: ['carol'], email: 'c@example.com', password: 'long enough pass' }, /username/],
+        [{ username: 'carol', email: 'c\u0000@example.com', password: 'long enough pass' }, /email/],
+        [{ username: 'carol', email: 'c@exam\u0085ple.com', password: 'long enough pass' }, /email/],
     ]) {
         const res = await api('/api/auth/signup', { body });
         assert.equal(res.status, 400, JSON.stringify(body));
@@ -223,17 +239,41 @@ test('account: another site cannot delete it (CSRF)', async () => {
 });
 
 const { avatarProblem } = require('../../server/accounts/avatar');
+const AVATARS = require('./fixtures/avatars.json');
 const PNG_1PX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
 test('avatar: only a small real JPEG, PNG or WebP image is accepted', () => {
     assert.equal(avatarProblem(PNG_1PX), null);
-    const jpeg = `data:image/jpeg;base64,${Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, ...Array(20).fill(1)]).toString('base64')}`;
-    assert.equal(avatarProblem(jpeg), null);
+    assert.equal(avatarProblem(AVATARS.jpeg), null);
+    assert.equal(avatarProblem(AVATARS.webp), null);
+    const headerOnly = `data:image/jpeg;base64,${Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, ...Array(20).fill(1)]).toString('base64')}`;
+    assert.match(avatarProblem(headerOnly), /JPEG, PNG or WebP/, 'a JPEG without its size is refused');
     assert.match(avatarProblem(PNG_1PX.replace('image/png', 'image/jpeg')), /JPEG, PNG or WebP/, 'type and bytes must agree');
     assert.match(avatarProblem('data:image/svg+xml;base64,PHN2Zz4='), /JPEG, PNG or WebP/);
     assert.match(avatarProblem('javascript:alert(1)'), /JPEG, PNG or WebP/);
     assert.match(avatarProblem(`data:image/png;base64,${Buffer.alloc(30_000, 1).toString('base64')}`), /too large/);
     assert.match(avatarProblem(42), /too large/);
+});
+
+test('avatar: a small file that declares a huge picture is refused', () => {
+    assert.match(avatarProblem(AVATARS.wideJpeg), /512 x 512/);
+    assert.match(avatarProblem(AVATARS.tallPng), /512 x 512/);
+    // A 1 x 1 PNG whose header claims 30000 x 30000 pixels (3.6 GB once shown)
+    const png = Buffer.from(PNG_1PX.split(',')[1], 'base64');
+    png.writeUInt32BE(30_000, 16);
+    png.writeUInt32BE(30_000, 20);
+    assert.match(avatarProblem(`data:image/png;base64,${png.toString('base64')}`), /512 x 512/);
+    // WebP, lossy (VP8) and lossless (VP8L) headers
+    const webp = (chunk, body) => {
+        const b = Buffer.alloc(40);
+        b.write('RIFF', 0, 'latin1'); b.write('WEBP', 8, 'latin1'); b.write(chunk, 12, 'latin1');
+        body(b);
+        return `data:image/webp;base64,${b.toString('base64')}`;
+    };
+    assert.equal(avatarProblem(webp('VP8 ', (b) => { b.writeUInt16LE(150, 26); b.writeUInt16LE(150, 28); })), null);
+    assert.match(avatarProblem(webp('VP8 ', (b) => { b.writeUInt16LE(9000, 26); b.writeUInt16LE(150, 28); })), /512 x 512/);
+    assert.equal(avatarProblem(webp('VP8L', (b) => { b[20] = 0x2F; b.writeUInt32LE(149 | (149 << 14), 21); })), null);
+    assert.match(avatarProblem(webp('VP8L', (b) => { b[20] = 0x2F; b.writeUInt32LE(9999 | (149 << 14), 21); })), /512 x 512/);
 });
 
 test('account: set and remove the picture; refused when not an image', async () => {
@@ -254,6 +294,10 @@ test('account: a game deck is checked, saved, read back, exported and deleted wi
     assert.equal((await deckApi({ deck: [1, 2, 99] })).status, 400);
     assert.equal((await deckApi({ deck: [1, 2, 3, 4] })).status, 400);
     assert.equal((await deckApi({ deck: [8, 16, 10] }, 'poker')).status, 404);
+    for (const game of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+        assert.equal((await deckApi({ deck: [8, 16, 10] }, game)).status, 404, game);
+        assert.equal((await deckApi(null, game)).status, 404, game);
+    }
     assert.equal((await deckApi({ deck: [8, 16, 10] })).status, 200);
     assert.equal((await deckApi({ deck: [8, 16, 12] })).status, 200);
     assert.deepEqual((await deckApi()).json, { deck: [8, 16, 12] });
@@ -277,10 +321,11 @@ test('Socket.io handshakes: refused from another site, accepted from this one or
     assert.equal(decide({ host: 'pawnet.example', origin: 'https://pawnet.example.evil.example' }), false);
 });
 
-test('many wrong passwords on one account, from any address, are slowed down for that account only', async () => {
+test('many wrong passwords on one account, from any address, are slowed down for that account only', async (t) => {
     const app = express();
     app.use('/api/auth', authRouter(db, { attemptsPerWindow: 1000, failuresPerLogin: 3, windowMs: 60_000 }));
     const limited = http.createServer(app).listen(0);
+    t.after(() => limited.closeAllConnections() || limited.close()); // Even when an assertion fails
     const url = `http://localhost:${limited.address().port}`;
     const login = async (who, password) => (await fetch(`${url}/api/auth/login`, {
         method: 'POST', headers: { 'content-type': 'application/json', origin: url },
@@ -294,7 +339,9 @@ test('many wrong passwords on one account, from any address, are slowed down for
     assert.equal(await login('NORA@example.com', 'correct horse battery'), 429, 'the email counts for the same account');
     assert.equal(await login('Nora', 'correct horse battery'), 429, 'even the right password waits');
     assert.equal(await login('otto', 'correct horse battery'), 200, 'other accounts are not affected');
-    limited.close();
+    // Sent all at once: the limit still holds (each check takes time, one at a time)
+    const burst = await Promise.all(Array.from({ length: 8 }, () => login('otto', 'wrong horse battery')));
+    assert.equal(burst.filter((s) => s === 401).length, 3, `${burst}`);
 });
 
 test('sign out on every device', async () => {

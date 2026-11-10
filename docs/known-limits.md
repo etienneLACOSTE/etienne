@@ -30,8 +30,8 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   (les services d'envoi refusent `onrender.com`). Piste : acheter `pawnet.<extension>`,
   le brancher sur Render et sur Resend, puis coder la réinitialisation (table
   `password_resets` déjà créée).
-- **Avatar vérifié mais pas ré-encodé.** Le serveur vérifie le type réel de l'image et son
-  poids, mais renvoie les octets tels quels. Piste : ré-encoder côté serveur (bibliothèque
+- **Avatar vérifié mais pas ré-encodé.** Le serveur vérifie le type réel de l'image, son
+  poids et ses dimensions déclarées (512 x 512 au plus), mais renvoie les octets tels quels. Piste : ré-encoder côté serveur (bibliothèque
   d'images, nouvelle dépendance à valider) ; modération si le site grandit (signaler un
   avatar).
 - **Une session reste valable jusqu'à 30 jours** après un changement de mot de passe sur
@@ -45,6 +45,18 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   pseudo peut bloquer sa connexion par mot de passe pendant 15 minutes (la connexion
   Google reste possible). Compteur en mémoire, remis à zéro au redémarrage. Piste : une
   vérification type CAPTCHA au lieu d'un blocage, si ça arrive.
+- **Suppression du compte : mot de passe limité par adresse seulement** (tribunal du
+  2026-11-10). Il faut déjà être connecté au compte ; quelqu'un qui a volé la session
+  pourrait essayer 10 mots de passe par 15 minutes et par adresse. Piste : compter ces
+  échecs avec ceux de la connexion (même compteur par compte).
+- **Adresse du visiteur : en-tête `cf-connecting-ip` cru sur parole** (tribunal du
+  2026-11-10). Si le serveur Render est joignable sans passer par Cloudflare, un visiteur
+  peut écrire cet en-tête lui-même et changer d'« adresse » à chaque essai, ce qui contourne
+  les limites par adresse (pas la limite par compte). Piste : vérifier sur Render si l'accès
+  direct est possible ; sinon, n'accepter l'en-tête que venant des adresses de Cloudflare.
+- **Un seul compte Google par compte Pawnet : vérifié par le code, pas par la base.** Deux
+  liaisons envoyées exactement en même temps pourraient passer. Piste : contrainte
+  `UNIQUE (user_id, provider)` sur `identities` (migration à valider).
 
 ## Amis et présence (étape 4, 2026-11-09)
 

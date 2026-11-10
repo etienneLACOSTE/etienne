@@ -97,11 +97,13 @@ function oauthRouter(db, { providers = realProviders(), attemptsPerWindow = 30, 
     const attempts = rateLimit({ max: attemptsPerWindow, windowMs });
     const shortCookie = (minutes, path) => ({ ...cookieOptions(), maxAge: minutes * 60 * 1000, path });
     const back = (res, query) => res.redirect(303, `/account/?${new URLSearchParams(query)}`);
+    /** A provider named in a URL: configured ones only, never Object's ("constructor"). */
+    const providerNamed = (name) => (Object.hasOwn(providers, name) ? providers[name] : null);
 
     router.get('/providers', (req, res) => res.json({ providers: Object.keys(providers) }));
 
     router.get('/:provider/start', attempts, async (req, res) => {
-        const provider = providers[req.params.provider];
+        const provider = providerNamed(req.params.provider);
         if (!provider) return res.status(404).json({ error: 'Not found.' });
         const client = await import('openid-client');
         const flow = {
@@ -125,7 +127,7 @@ function oauthRouter(db, { providers = realProviders(), attemptsPerWindow = 30, 
 
     router.get('/:provider/callback', attempts, async (req, res) => {
         const name = req.params.provider;
-        const provider = providers[name];
+        const provider = providerNamed(name);
         if (!provider) return res.status(404).json({ error: 'Not found.' });
         res.clearCookie(FLOW_COOKIE, { ...cookieOptions(), path: '/api/auth', maxAge: undefined });
         let flow = null;
@@ -152,6 +154,9 @@ function oauthRouter(db, { providers = realProviders(), attemptsPerWindow = 30, 
         if (flow.link) { // From the account page: add this sign-in to the signed-in account
             if (!current) return back(res, { error: 'failed' });
             if (owner && owner.id !== current.id) return back(res, { error: 'taken' });
+            // One sign-in per provider and account: unlinking removes the provider's sign-in.
+            const already = (await db.query('SELECT 1 FROM identities WHERE user_id = $1 AND provider = $2', [current.id, name])).rows.length;
+            if (!owner && already) return back(res, { error: 'already' });
             if (!owner) await db.query('INSERT INTO identities (provider, subject, user_id) VALUES ($1, $2, $3)', [name, who.subject, current.id]);
             return back(res, { linked: name });
         }

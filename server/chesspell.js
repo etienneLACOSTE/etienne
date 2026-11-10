@@ -5,6 +5,7 @@ const {
 } = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
 const Game = require('../games/chesspell/game.js');
+const { avatarProblem } = require('./accounts/avatar'); // The same check as account pictures
 
 // -----------------------------------------------------
 // CHES'SPELL SOCKET LOGIC (Namespace /chesspell)
@@ -18,8 +19,6 @@ const chesspellRooms = {};
 const CARD_COUNT = 20;
 const DECK_SIZE = 3;
 const NAME_MAX = 15;
-const AVATAR_MAX = 40_000; // The page makes 150 px JPEG avatars, about 20 KB as a data URL
-const AVATAR_RE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
 
 function getChesspellPublicRoomState(room) {
     return {
@@ -58,7 +57,7 @@ function playerProfile(socket, profile, deck) {
 function sanitizeProfile(profile, deck) {
     const p = profile && typeof profile === 'object' ? profile : {};
     const name = typeof p.name === 'string' ? p.name.trim().slice(0, NAME_MAX) : '';
-    const avatar = typeof p.avatar === 'string' && p.avatar.length <= AVATAR_MAX && AVATAR_RE.test(p.avatar) ? p.avatar : '';
+    const avatar = typeof p.avatar === 'string' && p.avatar && !avatarProblem(p.avatar) ? p.avatar : '';
     const stats = p.stats && typeof p.stats === 'object' ? p.stats : {};
     return {
         id: typeof p.id === 'string' ? p.id.slice(0, 40) : '',

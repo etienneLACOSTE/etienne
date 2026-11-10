@@ -16,6 +16,8 @@ const { friendStore } = require('../friends');
 const DECK_CHECKS = {
     chesspell: (data) => sanitizeDeck(data),
 };
+/** The check for a game named in a URL: its own entries only, never Object's ("constructor"). */
+const deckCheck = (game) => (Object.hasOwn(DECK_CHECKS, game) ? DECK_CHECKS[game] : null);
 
 /**
  * @param {import('../db').Db} db
@@ -89,13 +91,13 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, 
 
     /** A game's saved deck (null when none). */
     router.get('/decks/:game', async (req, res) => {
-        if (!DECK_CHECKS[req.params.game]) return res.status(404).json({ error: 'Not found.' });
+        if (!deckCheck(req.params.game)) return res.status(404).json({ error: 'Not found.' });
         const { rows } = await db.query('SELECT data FROM game_decks WHERE user_id = $1 AND game = $2', [res.locals.user.id, req.params.game]);
         res.json({ deck: rows[0] ? rows[0].data : null });
     });
 
     router.put('/decks/:game', async (req, res) => {
-        const check = DECK_CHECKS[req.params.game];
+        const check = deckCheck(req.params.game);
         if (!check) return res.status(404).json({ error: 'Not found.' });
         const deck = check((req.body || {}).deck);
         if (!deck) return res.status(400).json({ error: 'This deck is not valid.' });

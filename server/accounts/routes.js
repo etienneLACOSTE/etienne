@@ -106,12 +106,12 @@ function authRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, fai
         const user = rows[0];
         const key = failureKey(user, login);
         if (tooManyFailures(key)) return res.status(429).json({ error: TOO_MANY_ON_LOGIN });
+        // Counted as a failure before the check, which takes time: many attempts sent at
+        // once all count, instead of all passing the limit while the first ones wait.
+        recordFailure(key);
         // Checked even when nobody has this login, so that the answer takes as long.
         const ok = await verifyPassword(password, user && user.password_hash);
-        if (!user || !ok) {
-            recordFailure(key);
-            return res.status(401).json({ error: WRONG_LOGIN });
-        }
+        if (!user || !ok) return res.status(401).json({ error: WRONG_LOGIN });
         failures.delete(key);
         await signIn(res, user);
     });

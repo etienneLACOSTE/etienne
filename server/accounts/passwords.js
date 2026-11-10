@@ -35,19 +35,35 @@ function hashPassword(password) {
 }
 
 /**
+ * A stored hash, read back; null when it is not one this module wrote. A malformed hash
+ * (an empty key would match any password; a huge cost would stall the server) is
+ * treated like no hash at all.
+ */
+function parseHash(stored) {
+    const parts = typeof stored === 'string' ? stored.split('$') : [];
+    if (parts.length !== 6 || parts[0] !== 'scrypt') return null;
+    const [N, r, p] = parts.slice(1, 4).map(Number);
+    const powerOfTwo = Number.isInteger(N) && N >= 2 ** 14 && N <= 2 ** 20 && (N & (N - 1)) === 0;
+    if (!powerOfTwo || !Number.isInteger(r) || r < 1 || r > 16 || !Number.isInteger(p) || p < 1 || p > 4) return null;
+    const salt = Buffer.from(parts[4], 'base64');
+    const key = Buffer.from(parts[5], 'base64');
+    if (salt.length < SALT_LENGTH || key.length !== KEY_LENGTH) return null;
+    return { N, r, p, salt, key };
+}
+
+/**
  * Whether `password` matches `stored`. With no stored hash (unknown user), a hash is
  * still computed, so that the answer takes as long either way.
  * @param {string} password @param {string | null | undefined} stored
  */
 function verifyPassword(password, stored) {
     return oneAtATime(async () => {
-        const parts = typeof stored === 'string' ? stored.split('$') : [];
-        const valid = parts.length === 6 && parts[0] === 'scrypt';
-        const [N, r, p] = valid ? parts.slice(1, 4).map(Number) : [COST.N, COST.r, COST.p];
-        const salt = valid ? Buffer.from(parts[4], 'base64') : crypto.randomBytes(SALT_LENGTH);
-        const expected = valid ? Buffer.from(parts[5], 'base64') : crypto.randomBytes(KEY_LENGTH);
-        const key = await scrypt(password, salt, expected.length, { N, r, p, maxmem: maxmem(N, r) });
-        return valid && crypto.timingSafeEqual(key, expected);
+        const parsed = parseHash(stored);
+        const { N, r, p } = parsed || COST;
+        const salt = parsed ? parsed.salt : crypto.randomBytes(SALT_LENGTH);
+        const expected = parsed ? parsed.key : crypto.randomBytes(KEY_LENGTH);
+        const key = await scrypt(password, salt, KEY_LENGTH, { N, r, p, maxmem: maxmem(N, r) });
+        return Boolean(parsed) && crypto.timingSafeEqual(key, expected);
     });
 }
 

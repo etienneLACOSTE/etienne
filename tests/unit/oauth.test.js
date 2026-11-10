@@ -84,6 +84,8 @@ test('only configured providers are offered; unknown ones are 404', async () => 
     const b = browser();
     assert.deepEqual((await b('/api/auth/providers')).json, { providers: ['fake'] });
     assert.equal((await b('/api/auth/google/start')).status, 404);
+    assert.equal((await b('/api/auth/constructor/start')).status, 404);
+    assert.equal((await b('/api/auth/toString/callback')).status, 404);
 });
 
 test('first sign-in: choose a username, then the same person signs straight in', async () => {
@@ -143,6 +145,9 @@ test('link a provider to a password account, unlink it; one account per provider
     const other = browser();
     await other('/api/auth/signup', { method: 'POST', body: { username: 'Frank', email: 'frank@example.com', password: 'correct horse battery' } });
     assert.equal((await signInWith(other, 'erin', '?link=1')).location, '/account/?error=taken');
+    // A second identity of the same provider on Erin's account: refused (unlinking would remove both)
+    assert.equal((await signInWith(b, 'erin2', '?link=1')).location, '/account/?error=already');
+    assert.equal((await signInWith(b, 'erin', '?link=1')).location, '/account/?linked=fake', 'the same one again is fine');
 
     // Signing in with it now opens Erin's account
     const c = browser();

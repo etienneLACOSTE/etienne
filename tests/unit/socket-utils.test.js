@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
-    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitConnections, idleRooms, playerOf,
+    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitKey, limitConnections, idleRooms, playerOf,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, BURST,
 } = require('../../server/socket-utils');
 
@@ -145,4 +145,15 @@ test('a signed-in connection remembers its session, so that signing out can find
     await new Promise((resolve) => middleware(guest, resolve));
     assert.deepEqual(signedIn.data, { user: { id: 3, username: 'ivy' }, session: sessionKey('sid=abc') });
     assert.deepEqual(guest.data, { user: null, session: null });
+});
+
+test('per-address limits: one key per IPv4 address, per IPv6 /64', () => {
+    assert.equal(limitKey('203.0.113.7'), '203.0.113.7');
+    assert.equal(limitKey('::ffff:203.0.113.7'), '203.0.113.7', 'IPv4 written as IPv6');
+    const home = limitKey('2001:db8:abcd:12::1');
+    for (const other of ['2001:db8:abcd:12:ffff:1:2:3', '2001:DB8:ABCD:0012::9', '2001:db8:abcd:12:0:0:0:0']) {
+        assert.equal(limitKey(other), home, other);
+    }
+    assert.notEqual(limitKey('2001:db8:abcd:13::1'), home, 'the next /64 is someone else');
+    assert.equal(clientIp(fakeSocket('me', '2001:db8:abcd:12::77')), home);
 });

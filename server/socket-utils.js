@@ -2,6 +2,7 @@
 // Helpers shared by the game socket handlers.
 
 const crypto = require('crypto');
+const net = require('net');
 const { sessionKey } = require('./accounts/sessions');
 
 const ROOM_CODE_LENGTH = 6; // 26^6 ≈ 309 million codes: not practical to guess
@@ -48,12 +49,29 @@ const PER_IP_LIMITS = process.env.PER_IP_LIMITS !== 'off';
  * CLIENT_IP_HEADER names the header where the host writes the visitor's address, one
  * the visitor cannot set. On Render: cf-connecting-ip (written by Cloudflare). Never
  * X-Forwarded-For, whose entries can be written by the visitor.
+ * Used as the key of the per-address limits, so one visitor gets one key: see limitKey.
  */
 function addressFrom(headers, address) {
     const header = process.env.CLIENT_IP_HEADER;
     const value = header && headers && headers[header.toLowerCase()];
-    if (typeof value === 'string' && value.trim()) return value.trim();
-    return address || '';
+    if (typeof value === 'string' && value.trim()) return limitKey(value.trim());
+    return limitKey(address || '');
+}
+
+/**
+ * One key per visitor: an IPv4 address as is (also when written as IPv6, ::ffff:1.2.3.4);
+ * an IPv6 address by its first 64 bits, since one home or phone gets a whole /64 and
+ * could otherwise change address at each attempt.
+ */
+function limitKey(address) {
+    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(address);
+    if (mapped) return mapped[1];
+    if (!net.isIPv6(address)) return address;
+    const [head, tail = ''] = address.split('%')[0].split('::');
+    const left = head ? head.split(':') : [];
+    const right = address.includes('::') && tail ? tail.split(':') : [];
+    const groups = [...left, ...Array(8 - left.length - right.length).fill('0'), ...right];
+    return `${groups.slice(0, 4).map((g) => parseInt(g, 16).toString(16)).join(':')}::/64`;
 }
 
 /**
@@ -186,7 +204,7 @@ function playerOf(room, socket) {
 }
 
 module.exports = {
-    generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom, identifyPlayers,
+    generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom, limitKey, identifyPlayers,
     limitConnections, idleRooms, sweepIdleRooms,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST,
 };
