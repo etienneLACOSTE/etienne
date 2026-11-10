@@ -28,7 +28,7 @@
     <main class="page">
         <h1 id="account-title" tabindex="-1">Your account</h1>
         <p id="account-loading" class="page-intro">Loading your account…</p>
-        <p class="notice" id="account-notice" role="status" hidden></p>
+        <p class="notice" id="account-notice" role="status" tabindex="-1" hidden></p>
 
         <!-- First sign-in with Google: choose a username. -->
         <section id="finish" hidden aria-labelledby="account-title">
@@ -104,8 +104,8 @@
                         <input id="friend-name" name="username" type="text" required maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false">
                         <button class="pill pill-ink" type="submit">Send request</button>
                     </div>
-                    <p class="form-error" id="friend-error" role="alert" hidden></p>
-                    <p class="notice" id="friend-notice" role="status" hidden></p>
+                    <p class="form-error" id="friend-error" role="alert" tabindex="-1" hidden></p>
+                    <p class="notice" id="friend-notice" role="status" tabindex="-1" hidden></p>
                 </form>
                 <div class="friend-lists">
                     <div id="incoming-block" hidden>

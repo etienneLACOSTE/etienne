@@ -11,6 +11,27 @@ test.describe('Account', () => {
 
   const unique = () => `p${Date.now() % 1e7}${Math.floor(Math.random() * 100)}`;
 
+  test('a sign-out the server did not confirm says so, and the page stays signed in', async ({ page }) => {
+    const name = unique();
+    await page.context().request.post('/api/auth/signup', {
+      headers: { origin: 'http://127.0.0.1:3100' },
+      data: { username: name, email: `${name}@example.com`, password: 'correct horse battery' },
+    });
+    await page.goto('/account/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Hello, ${name}`);
+    for (const [url, button] of [['/api/account/sessions/logout-all', 'Sign out on every device'], ['/api/auth/logout', 'Sign out']]) {
+      await page.route(`**${url}`, (route) => route.abort());
+      if (button !== 'Sign out') page.once('dialog', (d) => d.accept());
+      await page.getByRole('button', { name: button, exact: true }).click();
+      const notice = page.locator('#account-notice');
+      await expect(notice).toContainText('You are still signed in');
+      await expect(notice).toBeFocused();
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Hello, ${name}`);
+      await page.unroute(`**${url}`);
+    }
+    expect((await (await page.context().request.get('/api/auth/me')).json()).user.username).toBe(name);
+  });
+
   test('create an account, sign out, sign in again, then delete it', async ({ page }) => {
     const errors = trackPageErrors(page);
     const name = unique();

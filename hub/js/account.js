@@ -181,8 +181,9 @@ async function showAccount() {
             const unlink = Object.assign(document.createElement('button'), { type: 'button', className: 'link-button', textContent: 'Unlink' });
             unlink.setAttribute('aria-label', `Unlink ${PROVIDER_NAMES[provider] || provider}`);
             unlink.addEventListener('click', async () => {
+                unlink.disabled = true; // One request, even on a double click
                 await send('DELETE', `/api/account/providers/${provider}`).catch((err) => showNotice(err.message, true));
-                await showAccount();
+                await showAccount().catch((err) => showNotice(err.message, true));
             });
             item.append(' ', unlink);
         }
@@ -277,20 +278,32 @@ handleForm($('delete-form'), 'delete-error', async (data) => {
     $('account-title').focus();
 });
 
-$('logout-all-button').addEventListener('click', async () => {
-    if (!confirm('Sign out on every device where you are signed in, this one included?')) return;
-    await send('POST', '/api/account/sessions/logout-all', {}).catch(() => {});
+/**
+ * Sign out through `url`. If the server did not confirm, the player is still signed in
+ * (here, or elsewhere for "every device"): the page says so instead of showing them out.
+ */
+async function signOut(button, url) {
+    /** @type {HTMLButtonElement} */ (button).disabled = true;
+    try {
+        await send('POST', url, {});
+    } catch (err) {
+        showNotice(`You are still signed in: ${err.message}`, true);
+        $('account-notice').focus(); // At the top of the page: brought into view
+        return;
+    } finally {
+        /** @type {HTMLButtonElement} */ (button).disabled = false;
+    }
     showUserInTopbar(null);
     showSignedOut();
     $('account-title').focus();
+}
+
+$('logout-all-button').addEventListener('click', () => {
+    if (!confirm('Sign out on every device where you are signed in, this one included?')) return;
+    signOut($('logout-all-button'), '/api/account/sessions/logout-all');
 });
 
-$('logout-button').addEventListener('click', async () => {
-    await send('POST', '/api/auth/logout', {}).catch(() => {});
-    showUserInTopbar(null);
-    showSignedOut();
-    $('account-title').focus();
-});
+$('logout-button').addEventListener('click', () => signOut($('logout-button'), '/api/auth/logout'));
 
 const next = nextPage();
 if (next) /** @type {HTMLAnchorElement} */ ($('guest-link')).href = next;

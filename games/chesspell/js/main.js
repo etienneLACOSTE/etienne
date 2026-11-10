@@ -26,7 +26,7 @@ import { ProfileManager } from './profiles.js';
 import { showScreen, toggleTabletopMode, watchFullscreenExit } from './screens.js';
 import { renderChessboard } from './board-view.js';
 import { renderCards } from './cards-view.js';
-import { openDeckBuilder, saveDeckForProfile, setupDeckBuilder } from './deck-builder.js';
+import { openDeckBuilder, refreshDeckBuilder, saveDeckForProfile, setupDeckBuilder } from './deck-builder.js';
 import { cancelEdit, renderProfilesList, submitProfile, updatePlayerSelects } from './profiles-view.js';
 import { setTimerMode, startTimer } from './clock.js';
 import { botStrength, playBotTurn, selectBotDeck } from './bot-player.js';
@@ -48,6 +48,7 @@ on('gameOver', endGame);
 on('profilesChanged', () => {
     renderProfilesList();
     updatePlayerSelects();
+    refreshDeckBuilder();
 });
 on('screenShown', ({ screenId }) => {
     if (screenId === 'player-select-screen') updatePlayerSelects();
@@ -96,7 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showAccountLine(document.getElementById('account-line'), user, { game: '/chesspell/', perk: 'deck and stats' });
         if (!user) return;
         const account = ProfileManager.loadAccount(user).catch(() => {}); // Guests only if the account cannot be read
-        setupInvites(joinFromInvite);
+        // An invitation joins with the account's deck: once the account is loaded.
+        setupInvites((code) => account.then(() => joinFromInvite(code)));
         // Arriving from an invitation on another page: /chesspell/?join=CODE
         const code = new URLSearchParams(location.search).get('join');
         if (code) history.replaceState(null, '', location.pathname); // Not joined again on reload

@@ -1,6 +1,6 @@
 // @ts-check
 // The deck builder: pick the three cards of a profile's deck and save them.
-import { cardsData } from './state.js';
+import { cardsData, session } from './state.js';
 import { ProfileManager } from './profiles.js';
 import { renderCards, roman } from './cards-view.js';
 import { showScreen } from './screens.js';
@@ -13,6 +13,8 @@ const builder = {
     cards: new Set(),
     /** @type {string|null} */
     profileId: null,
+    /** A save is on its way to the server. */
+    saving: false,
 };
 
 export function setupDeckBuilder() {
@@ -30,12 +32,29 @@ export function buildDeckForProfile(profileId) {
 
 /** Fill the profile list and show the deck of the profile being edited (or the first). */
 export function openDeckBuilder() {
-    const select = /** @type {HTMLSelectElement} */ (document.getElementById('deck-profile-select'));
-    const profiles = ProfileManager.all();
-    select.replaceChildren(...profiles.map((p) => new Option(p === ProfileManager.account ? `${p.name} (you)` : p.name, p.id)));
+    fillProfileList();
     const known = ProfileManager.find(builder.profileId);
-    loadDeck(known ? builder.profileId : profiles[0]?.id);
-    showAccountInvite(!ProfileManager.account);
+    loadDeck(known ? builder.profileId : ProfileManager.all()[0]?.id);
+}
+
+/**
+ * The profiles changed while the deck builder is open (the account arrived, a profile
+ * was renamed...): the list is redrawn; the cards being picked stay, unless their
+ * profile is gone.
+ */
+export function refreshDeckBuilder() {
+    if (!document.getElementById('deck-builder').classList.contains('active')) return;
+    fillProfileList();
+    if (!ProfileManager.find(builder.profileId)) return loadDeck(ProfileManager.all()[0]?.id);
+    /** @type {HTMLSelectElement} */ (document.getElementById('deck-profile-select')).value = builder.profileId;
+    updateSelectionUI();
+}
+
+function fillProfileList() {
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById('deck-profile-select'));
+    select.replaceChildren(...ProfileManager.all().map((p) => new Option(p === ProfileManager.account ? `${p.name} (you)` : p.name, p.id)));
+    // Signed in, the account is not "on this device only", even before its profile loads.
+    showAccountInvite(!ProfileManager.account && !session.account);
 }
 
 /** Show a profile's saved deck, ready to change. */
@@ -51,15 +70,24 @@ function loadDeck(profileId) {
 }
 
 export async function saveDeckForProfile() {
-    if (builder.cards.size !== DECK_SIZE) return;
+    if (builder.cards.size !== DECK_SIZE || builder.saving) return;
+    // What is saved is the deck as it is now: picking cards while it is on its way
+    // changes the next save, not this one.
+    const deck = [...builder.cards];
+    const profileId = builder.profileId;
+    builder.saving = true;
+    updateSelectionUI();
     try {
-        const profile = await ProfileManager.saveDeck(builder.profileId, builder.cards);
+        const profile = await ProfileManager.saveDeck(profileId, deck);
         if (!profile) return;
         deckMessage(profile === ProfileManager.account
             ? 'Deck saved on your account: it follows you on every device.'
             : `Deck saved for ${profile.name}, on this device.`);
     } catch (err) {
         deckMessage(err.message);
+    } finally {
+        builder.saving = false;
+        updateSelectionUI();
     }
 }
 
@@ -128,5 +156,5 @@ function updateSelectionUI() {
         ...Array.from({ length: DECK_SIZE }, (_, i) => deckSlot(chosen[i])));
 
     const saveBtn = /** @type {HTMLButtonElement} */ (document.getElementById('save-deck-btn'));
-    saveBtn.disabled = !builder.profileId || count !== DECK_SIZE;
+    saveBtn.disabled = !builder.profileId || count !== DECK_SIZE || builder.saving;
 }

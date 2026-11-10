@@ -46,3 +46,31 @@ test('send a request, accept it, then remove the friend', async ({ browser }) =>
   await a.context.close();
   await b.context.close();
 });
+
+test('after an action the focus stays useful and the result is read out; a failed load says so', async ({ browser }) => {
+  const a = await signedIn(browser);
+  const b = await signedIn(browser);
+  const errors = trackPageErrors(b.page);
+  await a.context.request.post('/api/friends/requests', { headers: { origin: ORIGIN }, data: { username: b.name } });
+
+  await b.page.goto('/account/');
+  await b.page.getByRole('button', { name: `Accept ${a.name}` }).focus();
+  await b.page.keyboard.press('Enter');
+  const notice = b.page.locator('#friend-notice');
+  await expect(notice).toHaveText(`You and ${a.name} are now friends.`);
+  await expect(notice).toBeFocused(); // The button is gone: the message that says what happened
+
+  // A button still there keeps the focus (Block is cancelled here)
+  b.page.once('dialog', (d) => d.dismiss());
+  await b.page.getByRole('button', { name: `Block ${a.name}` }).click();
+  await expect(b.page.getByRole('button', { name: `Block ${a.name}` })).toBeFocused();
+  await expect(notice).toBeHidden(); // The old message does not linger
+
+  await b.page.route('**/api/friends', (route) => route.fulfill({ status: 500, body: '{}' }));
+  await b.page.reload();
+  await expect(b.page.locator('#friend-error')).toContainText('Your friends could not be loaded');
+  await expect(b.page.locator('#friends-empty')).toBeHidden();
+  expect(errors.filter((e) => !/500/.test(e))).toEqual([]);
+  await a.context.close();
+  await b.context.close();
+});

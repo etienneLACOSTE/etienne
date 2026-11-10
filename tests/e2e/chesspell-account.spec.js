@@ -32,6 +32,48 @@ test.describe("Ches'spell with an account", () => {
     await expect(page.locator('#deck-profile-select option')).toHaveText(['Guest 1', 'Guest 2']);
   });
 
+  test('the account and its deck load even when the stats cannot be read', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    const name = await signUp(page.context());
+    await page.context().request.put('/api/account/decks/chesspell', { headers: { origin: ORIGIN }, data: { deck: [8, 15, 12] } });
+    await page.route('**/api/account/stats', (route) => route.fulfill({ status: 500, body: '{}' }));
+    await page.goto('/chesspell/');
+    await page.getByRole('button', { name: 'Deck Builder' }).click();
+    await expect(page.locator('#deck-profile-select option').first()).toHaveText(`${name} (you)`);
+    await expect(page.locator('#selection-count')).toHaveText('3/3 cards');
+    await expect(page.locator('#deck-account-invite')).toBeHidden();
+    expect(errors.filter((e) => !/500/.test(e))).toEqual([]);
+  });
+
+  test('a deck save sends the deck as it was when Save was pressed, once', async ({ page }) => {
+    await signUp(page.context());
+    let release = () => {};
+    const sent = [];
+    await page.route('**/api/account/decks/chesspell', async (route) => {
+      if (route.request().method() !== 'PUT') return route.continue();
+      sent.push(route.request().postDataJSON().deck);
+      await new Promise((resolve) => { release = resolve; });
+      await route.continue();
+    });
+    await page.goto('/chesspell/');
+    await page.getByRole('button', { name: 'Deck Builder' }).click();
+    await expect(page.locator('#deck-profile-select option').first()).toHaveText(/\(you\)$/);
+    for (const id of [8, 15, 12]) await page.locator(`#deck-grid .spell-card[data-id="${id}"] .card-main`).click();
+    await page.getByRole('button', { name: 'Save Deck' }).click();
+    await expect(page.getByRole('button', { name: 'Save Deck' })).toBeDisabled(); // No second save meanwhile
+    await expect.poll(() => sent.length).toBe(1);
+    // A card taken out while the save is on its way: not part of this save
+    await page.locator('#deck-grid .spell-card[data-id="12"] .card-main').click();
+    release();
+    await expect(page.locator('#deck-status')).toContainText('saved on your account');
+    expect(sent).toEqual([[8, 15, 12]]);
+    const saved = await (await page.context().request.get('/api/account/decks/chesspell')).json();
+    expect(saved.deck).toEqual([8, 15, 12]);
+    await page.goto('/chesspell/');
+    await page.getByRole('button', { name: 'Deck Builder' }).click();
+    await expect(page.locator('#selection-count')).toHaveText('3/3 cards'); // The account kept the saved deck
+  });
+
   test('signed in: build the deck on the account, find it again on another device, play as player 1', async ({ page, browser }) => {
     const errors = trackPageErrors(page);
     const name = await signUp(page.context());

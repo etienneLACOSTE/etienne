@@ -5,6 +5,7 @@
 // announces `profilesChanged`; the profile screen and the player lists
 // (profiles-view.js) redraw themselves on it.
 import { emit } from './events.js';
+import { api } from '../../../assets/js/session.js';
 
 const STORAGE_KEY = 'spellChessProfiles';
 /** The account's profile id (guest ids are 'guest1', 'p_<time>'...). */
@@ -18,17 +19,8 @@ const GUESTS = [
 
 /** @typedef {{ id: string, name: string, avatar: string, stats: { played: number, wins: number }, deck: number[] }} Profile */
 
-/** Send JSON to the account API; throws its error message. */
-async function accountApi(method, url, body) {
-    const res = await fetch(url, {
-        method, credentials: 'same-origin',
-        headers: body ? { 'content-type': 'application/json' } : {},
-        body: body && JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'The deck could not be saved. Try again.');
-    return data;
-}
+/** Send JSON to the account API; throws its error message (in words, also offline). */
+const accountApi = api;
 
 export const ProfileManager = {
     /** Guest profiles, on this device. @type {Profile[]} */
@@ -43,12 +35,13 @@ export const ProfileManager = {
 
     /** Signed in: the account becomes a profile, with its picture and saved deck. */
     async loadAccount(user) {
-        const [{ account }, { deck }, { games }] = await Promise.all([
+        // The account and its deck are needed; the stats only fill the profile's counters.
+        const [{ account }, { deck }, stats] = await Promise.all([
             accountApi('GET', '/api/account'),
             accountApi('GET', '/api/account/decks/chesspell'),
-            accountApi('GET', '/api/account/stats'),
+            accountApi('GET', '/api/account/stats').catch(() => null),
         ]);
-        const results = Object.values(games.chesspell.modes);
+        const results = stats ? Object.values(stats.games.chesspell.modes) : [];
         this.account = {
             id: ACCOUNT_ID, name: user.username, avatar: account.avatar || '',
             stats: {
@@ -99,8 +92,12 @@ export const ProfileManager = {
         this.saveProfiles();
     },
 
-    /** Save a profile's deck: on the server for the account, on this device for a guest. */
+    /**
+     * Save a profile's deck: on the server for the account, on this device for a guest.
+     * @param {string} id @param {Iterable<number>} deck
+     */
     async saveDeck(id, deck) {
+        deck = [...deck]; // A copy: what is saved does not change while it is on its way
         const p = this.find(id);
         if (!p) return null;
         if (p === this.account) {
