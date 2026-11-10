@@ -78,17 +78,25 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
     limitConnections(ioChesspell);
     identifyPlayers(ioChesspell, sessions, stats);
 
-    /** A finished game counts for each signed-in player. */
-    function recordResult(room, reason) {
+    /** A finished game counts for each signed-in player. winner: 1 or 2 (default: the game's). */
+    function recordResult(room, reason, winner = room.game.winner === 'White' ? 1 : 2) {
         if (!stats) return;
         stats.recordOnline({
             game: 'chesspell',
             accounts: room.accounts,
             names: { 1: room.profiles[1].name, 2: room.profiles[2].name },
-            winner: room.game.winner === 'White' ? 1 : 2,
+            winner,
             reason,
             startedAt: room.startedAt,
         }).catch((err) => console.error(`Ches'spell result not recorded: ${err.message}`));
+    }
+
+    /** A player leaves a game in progress: it counts as a win for the other one. */
+    function forfeit(room, leaver) {
+        if (room.gameState !== 'playing') return;
+        room.gameState = 'over';
+        room.clock.stop();
+        recordResult(room, 'forfeit', leaver === 1 ? 2 : 1);
     }
 
     /** Each player gets the new state and what just happened. */
@@ -252,7 +260,9 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
 
         safeOn(socket, 'leaveRoom', (data) => {
             const room = getRoom(chesspellRooms, data.roomCode);
-            if (room && playerOf(room, socket) !== null) {
+            const player = room && playerOf(room, socket);
+            if (room && player) {
+                forfeit(room, player);
                 socket.leave(data.roomCode);
                 socket.to(data.roomCode).emit('opponentLeft');
                 closeRoom(data.roomCode);
@@ -261,7 +271,9 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
 
         safeOn(socket, 'disconnect', () => {
             for (const [code, room] of Object.entries(chesspellRooms)) {
-                if (playerOf(room, socket) !== null) {
+                const player = playerOf(room, socket);
+                if (player) {
+                    forfeit(room, player);
                     ioChesspell.to(code).emit('opponentLeft');
                     closeRoom(code);
                 }

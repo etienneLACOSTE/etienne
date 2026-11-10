@@ -46,6 +46,8 @@ function statsStore(db) {
          *   winner: 0 | 1 | 2, reason: string, startedAt: number }} g winner 0: a draw
          */
         async recordOnline({ game, accounts, names, winner, reason, startedAt }) {
+            // One account on both sides (two tabs): not a real game, counted for nobody.
+            if (accounts[1] && accounts[2] && Number(accounts[1].id) === Number(accounts[2].id)) return;
             const durationS = (Date.now() - startedAt) / 1000;
             for (const player of [1, 2]) {
                 const account = accounts[player];
@@ -55,11 +57,14 @@ function statsStore(db) {
             }
         },
 
-        /** Played and won per game, all modes together (shown to opponents). */
+        /**
+         * Played and won per game, online only: shown to opponents, so only the games the
+         * server refereed (bot and same-screen games are declared by the page).
+         */
         async totals(userId) {
             const { rows } = await db.query(
                 `SELECT game, count(*)::int AS played, count(*) FILTER (WHERE result = 'win')::int AS wins
-                 FROM game_results WHERE user_id = $1 GROUP BY game`,
+                 FROM game_results WHERE user_id = $1 AND mode = 'online' GROUP BY game`,
                 [userId],
             );
             const totals = Object.fromEntries(GAMES.map((g) => [g, { played: 0, wins: 0 }]));

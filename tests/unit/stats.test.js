@@ -54,6 +54,21 @@ test('an online game counts for each signed-in player, from their side; guests a
     assert.deepEqual(await stats.totals(ana.id), { chesspell: { played: 0, wins: 0 }, chessdown: { played: 2, wins: 0 } });
 });
 
+test('one account on both sides of an online game: counted for nobody', async () => {
+    const dee = await user('Dee');
+    await stats.recordOnline({ game: 'chesspell', accounts: { 1: dee, 2: { ...dee, id: String(dee.id) } }, names: { 1: 'Dee', 2: 'Dee' }, winner: 1, reason: 'king', startedAt: Date.now() });
+    assert.deepEqual((await stats.summary(dee.id)).recent, []);
+});
+
+test('totals shown to opponents count online games only (the others are declared by the page)', async () => {
+    const [eve, fay] = [await user('Eve'), await user('Fay')];
+    await stats.record({ userId: eve.id, ...good }); // A bot game won
+    await stats.record({ userId: eve.id, ...good, mode: 'local' });
+    await stats.recordOnline({ game: 'chesspell', accounts: { 1: eve, 2: fay }, names: { 1: 'Eve', 2: 'Fay' }, winner: 2, reason: 'forfeit', startedAt: Date.now() });
+    assert.deepEqual((await stats.totals(eve.id)).chesspell, { played: 1, wins: 0 });
+    assert.deepEqual((await stats.totals(fay.id)).chesspell, { played: 1, wins: 1 });
+});
+
 test('durations are clamped: a forgotten tab does not add days', async () => {
     const cy = await user('Cy');
     await stats.record({ userId: cy.id, ...good, durationS: 999_999 });

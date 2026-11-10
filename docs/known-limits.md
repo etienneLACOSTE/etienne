@@ -5,17 +5,18 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 
 ## Statistiques (étape 3c, 2026-11-09)
 
-- **Partie en ligne abandonnée : comptée pour personne.** Si un joueur quitte (onglet
-  fermé, « Main menu », coupure) avant la fin, aucune ligne n'est écrite. Piste : sur
-  `opponentLeft` / déconnexion en partie, compter une victoire pour celui qui reste et une
-  défaite « abandon » pour celui qui part (raison `forfeit`), après un court délai de
-  reconnexion.
-- **Nul par répétition en ligne (Chessdown) : non compté.** Seuls les navigateurs
-  détectent la triple répétition ; le serveur ne la voit pas. Piste : tenir l'historique
-  des positions côté serveur (`engine.js` partagé) et déclarer le nul lui-même.
+- **Partie en ligne quittée : abandon immédiat, sans délai de reconnexion** (corrigé le
+  2026-11-10 : comptée comme victoire `forfeit` pour celui qui reste). Une simple coupure
+  réseau fait donc perdre la partie, comme avant (la salle se fermait déjà). Piste : garder
+  la salle 30 secondes et laisser le joueur revenir.
+- **Chessdown sur le même écran : le compte est toujours le joueur 1.** Sans profils
+  locaux, la page ne sait pas de quel côté est le joueur connecté ; s'il joue les rouges,
+  ses victoires sont comptées comme des défaites (seulement dans ses stats « Same screen »,
+  qui ne sont plus montrées aux adversaires). Piste : demander « Which side are you? » au
+  début d'une partie locale, comme Ches'spell choisit un profil par côté.
 - **Parties contre le bot et en local : déclarées par la page.** Quelqu'un qui modifie sa
   page peut s'ajouter des victoires, seulement dans ses propres stats, affichées à part
-  des parties en ligne. Piste : rejouer la partie côté serveur (envoyer les coups), ou
+  des parties en ligne (les totaux montrés aux adversaires ne comptent que l'en ligne). Piste : rejouer la partie côté serveur (envoyer les coups), ou
   n'utiliser que les parties en ligne pour un futur classement.
 - **Totaux montrés à l'adversaire : lus à la connexion.** Les stats « Games / Wins » que
   voit l'adversaire en ligne sont lues quand la page se connecte au serveur de jeu ; une

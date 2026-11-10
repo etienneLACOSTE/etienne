@@ -47,6 +47,7 @@ function newGameState() {
         drafted: { 1: false, 2: false },
         playAgain: { 1: false, 2: false },
         idleTurns: 0,
+        positionHistory: {}, // Position key -> times seen, for the draw by repetition
     };
 }
 
@@ -79,7 +80,7 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
     limitConnections(ioChessdown);
     identifyPlayers(ioChessdown, sessions, stats);
 
-    /** A finished game counts for each signed-in player. winner: 1 or 2. */
+    /** A finished game counts for each signed-in player. winner: 1 or 2, or 0 for a draw. */
     function recordResult(room, winner, reason) {
         if (!stats) return;
         const name = (p) => (room.accounts[p] ? room.accounts[p].username : `Player ${p}`);
@@ -87,6 +88,20 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
             game: 'chessdown', accounts: room.accounts, names: { 1: name(1), 2: name(2) },
             winner, reason, startedAt: room.startedAt,
         }).catch((err) => console.error(`Chessdown result not recorded: ${err.message}`));
+    }
+
+    /** Counts the position after a move; true on its third time (a draw, as on the pages). */
+    function seenThreeTimes(room) {
+        const key = engine.serializeBoard(room.board, room.currentPlayer);
+        room.positionHistory[key] = (room.positionHistory[key] || 0) + 1;
+        return room.positionHistory[key] >= 3;
+    }
+
+    /** A player leaves a game in progress: it counts as a win for the other one. */
+    function forfeit(room, leaver) {
+        if (room.gameState !== 'playing') return;
+        room.gameState = 'over';
+        recordResult(room, leaver === 1 ? 2 : 1, 'forfeit');
     }
 
     /** The player to move ran out of time. */
@@ -225,6 +240,9 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
             } else if (engine.hasPieceInEndzone(room.board, room.currentPlayer)) {
                 room.gameState = 'over';
                 recordResult(room, room.currentPlayer, 'touchdown');
+            } else if (seenThreeTimes(room)) {
+                room.gameState = 'over'; // The pages see it too and show the draw
+                recordResult(room, 0, 'repetition');
             } else {
                 room.clock.start(room.currentPlayer);
             }
@@ -265,7 +283,9 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
 
         safeOn(socket, 'leaveRoom', (data) => {
             const room = getRoom(chessdownRooms, data.roomCode);
-            if (room && playerOf(room, socket) !== null) {
+            const player = room && playerOf(room, socket);
+            if (room && player) {
+                forfeit(room, player);
                 socket.leave(data.roomCode);
                 socket.to(data.roomCode).emit('opponentLeft');
                 closeRoom(data.roomCode);
@@ -284,7 +304,9 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
 
         safeOn(socket, 'disconnect', () => {
             for (const [code, room] of Object.entries(chessdownRooms)) {
-                if (playerOf(room, socket) !== null) {
+                const player = playerOf(room, socket);
+                if (player) {
+                    forfeit(room, player);
                     ioChessdown.to(code).emit('opponentLeft');
                     closeRoom(code);
                 }
