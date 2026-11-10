@@ -94,6 +94,26 @@ test('too many connections from one address are refused, and freed on disconnect
     assert.equal(connect(fakeSocket('again', '10.0.0.7')), null);
 });
 
+test('a connection whose link closes before it is accepted is freed once', () => {
+    let middleware;
+    limitConnections({ use(fn) { middleware = fn; } });
+    const { EventEmitter } = require('node:events');
+    const connect = (socket) => { let error = null; middleware(socket, (e) => { error = e || null; }); return error; };
+    // The link closes while a later check waits: Socket.io never sends 'disconnect' then.
+    for (let i = 0; i < MAX_CONNECTIONS_PER_IP * 2; i++) {
+        const socket = Object.assign(fakeSocket(`gone${i}`, '10.0.0.9'), { conn: new EventEmitter() });
+        assert.equal(connect(socket), null, `connection ${i} accepted`);
+        socket.conn.emit('close');
+    }
+    // Both events for one socket count once: the other sockets' places are kept.
+    const sockets = Array.from({ length: MAX_CONNECTIONS_PER_IP }, (_, i) => Object.assign(fakeSocket(`s${i}`, '10.0.0.10'), { conn: new EventEmitter() }));
+    sockets.forEach((socket) => assert.equal(connect(socket), null));
+    sockets[0].emit('disconnect');
+    sockets[0].conn.emit('close');
+    assert.equal(connect(fakeSocket('one', '10.0.0.10')), null);
+    assert.ok(connect(fakeSocket('two', '10.0.0.10')) instanceof Error);
+});
+
 test('idle rooms: closed after 15 minutes, unless a game is being played', () => {
     const now = Date.now();
     const old = now - IDLE_ROOM_MS - 1;

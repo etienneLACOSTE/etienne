@@ -26,27 +26,48 @@ function useNumbersForBigint() {
     types.setTypeParser(types.builtins.INT8, (value) => Number(value));
 }
 
+/**
+ * Run `fn` in a transaction on one client of the pool. If it fails, the transaction is
+ * rolled back and the original error is thrown; a client whose rollback fails too is
+ * closed rather than reused.
+ * @param {{ connect: () => Promise<any> }} pool
+ */
+async function inTransaction(pool, fn) {
+    const client = await pool.connect();
+    let broken = null;
+    try {
+        await client.query('BEGIN');
+        const result = await fn({ query: (sql, params) => client.query(sql, params) });
+        await client.query('COMMIT');
+        return result;
+    } catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackError) {
+            broken = rollbackError;
+        }
+        throw err;
+    } finally {
+        client.release(broken || undefined);
+    }
+}
+
 /** @returns {Promise<Db>} */
 async function openPostgres(url) {
     const { Pool } = require('pg');
     useNumbersForBigint();
-    const pool = new Pool({ connectionString: url, max: 5 });
+    const pool = new Pool({
+        connectionString: url,
+        max: 5,
+        connectionTimeoutMillis: 10_000, // A request waits at most this long for the database
+        idleTimeoutMillis: 30_000,
+    });
+    // An idle connection that breaks (Neon restarts, network cut) is dropped by the pool;
+    // without this listener, the error would stop the whole server.
+    pool.on('error', (err) => console.error(`Database: idle connection lost: ${err.message}`));
     return {
         query: (sql, params) => pool.query(sql, params),
-        async transaction(fn) {
-            const client = await pool.connect();
-            try {
-                await client.query('BEGIN');
-                const result = await fn({ query: (sql, params) => client.query(sql, params) });
-                await client.query('COMMIT');
-                return result;
-            } catch (err) {
-                await client.query('ROLLBACK');
-                throw err;
-            } finally {
-                client.release();
-            }
-        },
+        transaction: (fn) => inTransaction(pool, fn),
         close: () => pool.end(),
     };
 }
@@ -81,4 +102,4 @@ async function openDb({ url = process.env.DATABASE_URL, idsAsText = false } = {}
     return db;
 }
 
-module.exports = { openDb, useNumbersForBigint };
+module.exports = { openDb, useNumbersForBigint, inTransaction };

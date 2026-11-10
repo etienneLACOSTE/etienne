@@ -37,6 +37,15 @@ app.use('/chessdown', express.static(path.join(ROOT, 'games', 'chessdown')));
 
 
 const PORT = Number(process.env.PORT) || 3000;
+
+/** A catch handler that logs the error, with what was being done. */
+const logError = (doing) => (err) => console.error(`${doing}: ${err.message}`);
+
+// Last safety net: a promise error that nothing caught is logged, instead of stopping
+// the server and every game in progress. Each one is a bug to fix.
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled promise error:', err instanceof Error ? err.stack : err);
+});
 const HOUR = 60 * 60 * 1000;
 
 async function start() {
@@ -51,12 +60,16 @@ async function start() {
     app.use('/api/auth', oauthRouter(db));
     app.use('/api/auth', authRouter(db));
     app.use('/api/account', accountRouter(db));
-    app.use('/api/friends', friendsRouter(db, { onChange: (ids) => presence.friendsChanged(ids).catch(() => {}) }));
+    app.use('/api/friends', friendsRouter(db, {
+        onChange: (ids) => presence.friendsChanged(ids).catch(logError('Presence: friends update failed')),
+    }));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
-    setInterval(() => {
-        sessions.deleteExpired().catch(() => {});
-        deleteExpiredPending(db).catch(() => {});
-    }, HOUR).unref();
+    const cleanUp = () => {
+        sessions.deleteExpired().catch(logError('Cleanup: expired sessions'));
+        deleteExpiredPending(db).catch(logError('Cleanup: expired Google sign-ins'));
+    };
+    cleanUp(); // At start too: a server that restarts often would otherwise never clean up
+    setInterval(cleanUp, HOUR).unref();
     server.listen(PORT, '0.0.0.0', () => {
         console.log(`Server listening on port ${PORT} (0.0.0.0)`);
     });

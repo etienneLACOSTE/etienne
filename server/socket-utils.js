@@ -112,11 +112,18 @@ function limitConnections(namespace) {
         const open = connections.get(ip) || 0;
         if (PER_IP_LIMITS && open >= MAX_CONNECTIONS_PER_IP) return next(new Error('Too many connections.'));
         connections.set(ip, open + 1);
-        socket.on('disconnect', () => {
+        let counted = true;
+        const release = () => {
+            if (!counted) return;
+            counted = false;
             const left = (connections.get(ip) || 1) - 1;
             if (left > 0) connections.set(ip, left);
             else connections.delete(ip);
-        });
+        };
+        // 'disconnect' never fires for a socket whose link closes while later checks
+        // (identifyPlayers) still wait on the database: the link's own close covers it.
+        socket.on('disconnect', release);
+        if (socket.conn) socket.conn.once('close', release);
         next();
     });
 }
