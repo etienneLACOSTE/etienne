@@ -136,6 +136,8 @@ export function setupOnline() {
  * to build one first.
  */
 export function joinFromInvite(roomCode) {
+    // Leave the room or game this page is in first (a game in progress counts as left).
+    if (session.currentRoomCode || document.querySelector('#game-board.active, #draft-phase.active')) leaveGame();
     showScreen('online-screen');
     /** @type {HTMLInputElement} */ (document.getElementById('room-code-input')).value = roomCode;
     const select = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select'));

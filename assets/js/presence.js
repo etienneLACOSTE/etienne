@@ -26,13 +26,18 @@ export function onFriendsOnline(fn) {
     fn([...onlineFriends.values()]);
 }
 
+/** How long an invitation waits for the server's answer. */
+const ANSWER_TIMEOUT_MS = 10_000;
+
 /**
  * Connect this page (signed-in players only).
- * @param {{ page: 'site' | 'chesspell' | 'chessdown', onJoin?: (game: string, roomCode: string) => void }} options
+ * @param {{ page: 'site' | 'chesspell' | 'chessdown', onJoin?: (game: string, roomCode: string) => void,
+ *   busy?: () => boolean }} options
  *   onJoin: how this page joins a room it is invited to (a game page joins in place;
- *   otherwise the player is taken to the game).
+ *   otherwise the player is taken to the game). busy: whether a game is being played
+ *   on this page: an invitation then shows without taking the keyboard focus.
  */
-export function startPresence({ page, onJoin }) {
+export function startPresence({ page, onJoin, busy = () => false }) {
     const io = /** @type {any} */ (globalThis).io;
     if (socket) {
         if (!socket.connected) socket.connect(); // Signed in again on this page
@@ -56,30 +61,46 @@ export function startPresence({ page, onJoin }) {
         else onlineFriends.delete(username);
         notify();
     });
-    socket.on('invited', ({ from, game, roomCode }) => showInvitation(from, game, roomCode, onJoin));
+    socket.on('invited', ({ from, game, roomCode }) => showInvitation(from, game, roomCode, onJoin, busy()));
 }
 
-/** Invite a friend into the room this player just created. Resolves to the server's answer. */
+/**
+ * Invite a friend into the room this player just created. Resolves to the server's
+ * answer to this invitation, or to an error if none comes in time.
+ */
 export function inviteFriend(username, game, roomCode) {
     return new Promise((resolve) => {
         if (!socket) return resolve({ ok: false, error: 'Sign in to invite friends.' });
-        socket.once('inviteResult', resolve);
-        socket.emit('invite', { username, game, roomCode });
+        socket.timeout(ANSWER_TIMEOUT_MS).emit('invite', { username, game, roomCode }, (err, answer) => {
+            resolve(err || !answer ? { ok: false, error: 'No answer from the server. Try again.' } : answer);
+        });
     });
 }
 
-/** "Alice invites you to play Ches'spell. [Join] [Not now]", until answered. */
-function showInvitation(from, game, roomCode, onJoin) {
+/**
+ * "Alice invites you to play Ches'spell. [Join] [Not now]", until answered. Escape is
+ * "Not now". During a game, it does not take the keyboard focus (the text is announced).
+ */
+function showInvitation(from, game, roomCode, onJoin, playing) {
     if (!/^[A-Z]{6}$/.test(roomCode) || !GAME_NAMES[game]) return;
     document.querySelector('.invite-toast')?.remove();
+    const before = /** @type {HTMLElement | null} */ (document.activeElement);
     const box = document.createElement('div');
     box.className = 'invite-toast';
-    box.setAttribute('role', 'alertdialog');
+    box.setAttribute('role', playing ? 'region' : 'alertdialog');
     box.setAttribute('aria-label', 'Invitation');
+    const close = () => {
+        const hadFocus = box.contains(document.activeElement);
+        box.remove();
+        if (hadFocus && before && before.isConnected) before.focus();
+    };
+    box.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.stopPropagation(); close(); }
+    });
     const text = document.createElement('p');
+    if (playing) text.setAttribute('role', 'status');
     const name = document.createElement('strong');
     name.textContent = from; // A username: text only
-    text.append(name, ` invites you to play ${GAME_NAMES[game]}.`);
     const join = document.createElement('button');
     join.type = 'button';
     join.className = 'invite-join';
@@ -88,7 +109,7 @@ function showInvitation(from, game, roomCode, onJoin) {
     later.type = 'button';
     later.className = 'invite-later';
     later.textContent = 'Not now';
-    later.addEventListener('click', () => box.remove());
+    later.addEventListener('click', close);
     join.addEventListener('click', () => {
         box.remove();
         if (onJoin) onJoin(game, roomCode);
@@ -99,7 +120,13 @@ function showInvitation(from, game, roomCode, onJoin) {
     actions.append(join, later);
     box.append(text, actions);
     document.body.append(box);
-    join.focus();
+    const words = () => text.append(name, ` invites you to play ${GAME_NAMES[game]}.`);
+    if (playing) {
+        setTimeout(words, 100); // Into the status once it is on the page, so that it is announced
+    } else {
+        words();
+        join.focus();
+    }
 }
 
 /**

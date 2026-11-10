@@ -41,7 +41,7 @@ test("a friend sees who is online and where, and joins a Ches'spell room from an
   const invitation = bob.page.getByRole('alertdialog', { name: 'Invitation' });
   await expect(invitation).toContainText(`${alice.name} invites you to play Ches'spell.`);
   await invitation.getByRole('button', { name: 'Join' }).click();
-  await expect(bob.page).toHaveURL(/\/chesspell\/\?join=[A-Z]{6}$/);
+  await expect(bob.page).toHaveURL(/\/chesspell\/$/); // ?join= is cleared once read
   for (const page of [alice.page, bob.page]) {
     await expect(page.locator('#game-board')).toHaveClass(/active/);
     await expect(page.locator('#player1-banner')).toContainText(alice.name);
@@ -85,6 +85,58 @@ test('signing out everywhere takes a player offline at once, even on a page left
 
   await expect(bob.page.locator('#friends-list')).toContainText(`${alice.name}Offline`);
   await other.close();
+  await alice.context.close();
+  await bob.context.close();
+});
+
+test("an invitation: no focus taken during a game, Escape dismisses it, Join leaves the player's own room", async ({ browser }) => {
+  const alice = await signedIn(browser);
+  const bob = await signedIn(browser);
+  await alice.post('/api/friends/requests', { username: bob.name });
+  await bob.post(`/api/friends/requests/${alice.name}/accept`, {});
+  const errors = [alice.page, bob.page].map(trackPageErrors);
+  const createRoom = async (page) => {
+    await page.locator('#btn-create-room').dispatchEvent('pointerdown');
+    await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
+    return page.locator('#waiting-room-code').textContent();
+  };
+  await bob.page.goto('/chessdown/');
+  await alice.page.goto('/chessdown/');
+  const bobRoom = await createRoom(bob.page);
+  const aliceRoom = await createRoom(alice.page);
+  const invite = async () => {
+    await alice.page.getByRole('button', { name: `Invite ${bob.name} (playing Chessdown)` }).click();
+    await expect(alice.page.locator('.invite-status')).toHaveText(`Invitation sent to ${bob.name}.`);
+  };
+
+  // During a game: shown and announced, but the keyboard stays where it was
+  await bob.page.evaluate(async () => { (await import('/chessdown/js/state.js')).state.gameState = 'gameplay'; });
+  await invite();
+  const quiet = bob.page.getByRole('region', { name: 'Invitation' });
+  await expect(quiet.getByRole('status')).toContainText(`${alice.name} invites you to play Chessdown.`);
+  expect(await bob.page.evaluate(() => Boolean(document.activeElement?.closest('.invite-toast')))).toBe(false);
+  await quiet.getByRole('button', { name: 'Not now' }).click();
+  await bob.page.evaluate(async () => { (await import('/chessdown/js/state.js')).state.gameState = 'mainMenu'; });
+
+  // Otherwise it takes the focus; Escape is "Not now"
+  await invite();
+  const dialog = bob.page.getByRole('alertdialog', { name: 'Invitation' });
+  await expect(dialog.getByRole('button', { name: 'Join' })).toBeFocused();
+  await bob.page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+
+  // Join: Bob's own waiting room is left, and he is in Alice's
+  await invite();
+  await dialog.getByRole('button', { name: 'Join' }).click();
+  await expect.poll(() => bob.page.evaluate(async () => (await import('/chessdown/js/state.js')).state.currentRoomCode)).toBe(aliceRoom);
+  const answer = await alice.page.evaluate((code) => new Promise((resolve) => {
+    const s = io('/chessdown', { forceNew: true });
+    s.once('errorMsg', resolve);
+    s.once('roomJoined', () => resolve('joined'));
+    s.emit('joinRoom', code);
+  }), bobRoom);
+  expect(answer).toBe('Room not found.');
+  expect(errors.flat()).toEqual([]);
   await alice.context.close();
   await bob.context.close();
 });

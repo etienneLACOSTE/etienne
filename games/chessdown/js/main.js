@@ -38,6 +38,7 @@ export function init() {
         setupInvites();
         // Arriving from an invitation on another page: /chessdown/?join=CODE
         const code = new URLSearchParams(location.search).get('join');
+        if (code) history.replaceState(null, '', location.pathname); // Not joined again on reload
         if (code && /^[A-Z]{6}$/.test(code)) joinFromInvite(code);
     });
     

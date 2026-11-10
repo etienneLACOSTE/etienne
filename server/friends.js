@@ -2,7 +2,8 @@
 // Friends, under /api/friends (signed-in players only): the list, requests (send by exact
 // username, accept, decline or cancel), removal, blocks.
 //
-// A blocked player is never told so: their requests look sent but are dropped.
+// A blocked player is never told so: their requests are kept, and look pending to them,
+// but the player who blocked them never sees them (like a request left unanswered).
 
 const express = require('express');
 const { sessionStore } = require('./accounts/sessions');
@@ -11,6 +12,7 @@ const { rateLimit } = require('./accounts/rate-limit');
 
 const MAX_PENDING_SENT = 50;
 const MAX_FRIENDS = 200;
+const FULL = `One of you already has ${MAX_FRIENDS} friends, the most there can be.`;
 
 /** The pair as stored in friendships: smaller id first (compared as numbers, never as text). */
 const pair = (a, b) => {
@@ -61,7 +63,9 @@ function friendStore(db) {
             )).rows;
             const incoming = (await db.query(
                 `SELECT u.username, u.avatar, r.created_at FROM friend_requests r JOIN users u ON u.id = r.from_user
-                 WHERE r.to_user = $1 ORDER BY r.created_at`, [userId],
+                 WHERE r.to_user = $1
+                   AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.blocker = $1 AND b.blocked = r.from_user)
+                 ORDER BY r.created_at`, [userId],
             )).rows;
             const outgoing = (await db.query(
                 `SELECT u.username, r.created_at FROM friend_requests r JOIN users u ON u.id = r.to_user
@@ -80,25 +84,41 @@ function friendStore(db) {
         },
 
         /**
-         * Ask to be friends. If they already asked, it becomes a friendship.
-         * @returns {Promise<'sent' | 'friends'>}
+         * Ask to be friends. If they already asked, it becomes a friendship (when both still
+         * have room for one more friend).
+         * @returns {Promise<'sent' | 'friends' | 'full'>} full: the other player has the most friends
          */
         async request(me, other) {
             if (await store.areFriends(me.id, other.id)) return 'friends';
-            if (await store.blocked(other.id, me.id)) return 'sent'; // Dropped, without saying why
-            const theyAsked = (await db.query('SELECT 1 FROM friend_requests WHERE from_user = $1 AND to_user = $2', [other.id, me.id])).rows.length > 0;
-            if (theyAsked) {
-                await store.befriend(me.id, other.id);
-                return 'friends';
+            // Kept even from a blocked player: they see it pending, the other one never sees it.
+            if (!(await store.blocked(other.id, me.id))) {
+                const accepted = await store.accept(other.id, me.id);
+                if (accepted !== 'none') return accepted;
             }
             await db.query('INSERT INTO friend_requests (from_user, to_user) VALUES ($1, $2) ON CONFLICT DO NOTHING', [me.id, other.id]);
             return 'sent';
         },
 
-        async befriend(a, b) {
-            await db.transaction(async (tx) => {
-                await tx.query('DELETE FROM friend_requests WHERE (from_user = $1 AND to_user = $2) OR (from_user = $2 AND to_user = $1)', [a, b]);
-                await tx.query('INSERT INTO friendships (user_a, user_b) VALUES ($1, $2) ON CONFLICT DO NOTHING', pair(a, b));
+        /**
+         * Accept the request `from` sent to `to`, in one step: if it was cancelled meanwhile,
+         * nothing happens. Both players must have room for one more friend.
+         * @returns {Promise<'friends' | 'none' | 'full'>} none: no such request
+         */
+        async accept(from, to) {
+            return db.transaction(async (tx) => {
+                const friendCount = async (id) => (await tx.query(
+                    'SELECT count(*)::int AS n FROM friendships WHERE user_a = $1 OR user_b = $1', [id],
+                )).rows[0].n;
+                const asked = await tx.query('SELECT 1 FROM friend_requests WHERE from_user = $1 AND to_user = $2', [from, to]);
+                if (!asked.rows.length) return 'none';
+                if (await friendCount(from) >= MAX_FRIENDS || await friendCount(to) >= MAX_FRIENDS) return 'full';
+                // The request is taken in the same step as it is checked: if it was cancelled
+                // meanwhile, no friendship is made.
+                const taken = await tx.query('DELETE FROM friend_requests WHERE from_user = $1 AND to_user = $2 RETURNING 1', [from, to]);
+                if (!taken.rows.length) return 'none';
+                await tx.query('DELETE FROM friend_requests WHERE from_user = $1 AND to_user = $2', [to, from]);
+                await tx.query('INSERT INTO friendships (user_a, user_b) VALUES ($1, $2) ON CONFLICT DO NOTHING', pair(from, to));
+                return 'friends';
             });
         },
 
@@ -120,8 +140,12 @@ function friendStore(db) {
             });
         },
 
+        /** Unblock; requests they sent while blocked are dropped (never seen, never shown). */
         async unblock(me, other) {
-            await db.query('DELETE FROM blocks WHERE blocker = $1 AND blocked = $2', [me, other]);
+            await db.transaction(async (tx) => {
+                await tx.query('DELETE FROM blocks WHERE blocker = $1 AND blocked = $2', [me, other]);
+                await tx.query('DELETE FROM friend_requests WHERE from_user = $1 AND to_user = $2', [other, me]);
+            });
         },
 
         async counts(userId) {
@@ -138,15 +162,20 @@ function friendStore(db) {
 
 /**
  * @param {import('./db').Db} db
- * @param {{ requestsPerWindow?: number, windowMs?: number, onChange?: (userIds: number[]) => void }} [options]
- *   onChange: called with the players whose friends panel changed (live updates, step 4b)
+ * @param {{ requestsPerWindow?: number, changesPerWindow?: number, windowMs?: number,
+ *   onChange?: (userIds: number[]) => void }} [options] requestsPerWindow: friend requests
+ *   sent; changesPerWindow: every change (accept, decline, remove, block...), since each one
+ *   also updates the other player's page. onChange: called with the players whose friends
+ *   panel changed (live updates)
  */
-function friendsRouter(db, { requestsPerWindow = 30, windowMs = 60 * 60 * 1000, onChange = () => {} } = {}) {
+function friendsRouter(db, { requestsPerWindow = 30, changesPerWindow = 300, windowMs = 60 * 60 * 1000, onChange = () => {} } = {}) {
     const sessions = sessionStore(db);
     const friends = friendStore(db);
     const router = express.Router();
     router.use(express.json({ limit: '1kb' }));
     router.use(sameOrigin);
+    const changes = rateLimit({ max: changesPerWindow, windowMs });
+    router.use((req, res, next) => (req.method === 'GET' ? next() : changes(req, res, next)));
     router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
     router.use(async (req, res, next) => {
         const user = await sessions.userFor(req.headers.cookie);
@@ -174,6 +203,7 @@ function friendsRouter(db, { requestsPerWindow = 30, windowMs = 60 * 60 * 1000, 
         if (sent >= MAX_PENDING_SENT) return res.status(400).json({ error: 'Too many requests waiting: cancel some first.' });
         if (count >= MAX_FRIENDS) return res.status(400).json({ error: `You have ${MAX_FRIENDS} friends, the most there can be.` });
         const status = await friends.request(me, them);
+        if (status === 'full') return res.status(400).json({ error: FULL });
         onChange([me.id, them.id]);
         res.status(201).json({ status, username: them.username });
     });
@@ -182,9 +212,10 @@ function friendsRouter(db, { requestsPerWindow = 30, windowMs = 60 * 60 * 1000, 
         const me = res.locals.user;
         const them = await other(req, res, req.params.username);
         if (!them) return;
-        const asked = (await db.query('SELECT 1 FROM friend_requests WHERE from_user = $1 AND to_user = $2', [them.id, me.id])).rows.length > 0;
-        if (!asked) return res.status(404).json({ error: 'No request from this player.' });
-        await friends.befriend(me.id, them.id);
+        // A blocked player's request is never shown: it cannot be accepted either.
+        const result = await friends.blocked(me.id, them.id) ? 'none' : await friends.accept(them.id, me.id);
+        if (result === 'none') return res.status(404).json({ error: 'No request from this player.' });
+        if (result === 'full') return res.status(400).json({ error: FULL });
         onChange([me.id, them.id]);
         res.json({ status: 'friends' });
     });

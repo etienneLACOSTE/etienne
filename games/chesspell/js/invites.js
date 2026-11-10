@@ -14,6 +14,7 @@ export function setupInvites(join) {
     startPresence({
         page: 'chesspell',
         onJoin: (game, roomCode) => (game === 'chesspell' ? join(roomCode) : location.assign(`/${game}/?join=${roomCode}`)),
+        busy: () => Boolean(document.querySelector('#game-board.active, #draft-phase.active')),
     });
     redraw = showInviteList(document.getElementById('invite-friends'), 'chesspell', () => session.currentRoomCode) || redraw;
 }

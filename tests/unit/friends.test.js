@@ -82,7 +82,7 @@ test('unknown players and yourself are refused', async () => {
     assert.equal((await gus.call('/requests', 'POST', { username: ['Gus'] })).status, 404);
 });
 
-test("a block ends the friendship; the blocked player's requests are dropped without telling them", async () => {
+test("a block ends the friendship; the blocked player's requests stay pending for them, unseen", async () => {
     const [hal, ivy] = [await player('Hal'), await player('Ivy')];
     await hal.call('/requests', 'POST', { username: 'Ivy' });
     await ivy.call('/requests/Hal/accept', 'POST');
@@ -92,11 +92,58 @@ test("a block ends the friendship; the blocked player's requests are dropped wit
 
     const again = await hal.call('/requests', 'POST', { username: 'Ivy' });
     assert.deepEqual([again.status, again.json.status], [201, 'sent'], 'looks sent to Hal');
+    assert.deepEqual(names((await hal.call('')).json.outgoing), ['Ivy'], 'and stays pending, like an unanswered one');
     assert.deepEqual((await ivy.call('')).json.incoming, [], 'but Ivy never receives it');
+    assert.equal((await ivy.call('/requests/Hal/accept', 'POST')).status, 404, 'nor can accept it');
     assert.match((await ivy.call('/requests', 'POST', { username: 'Hal' })).json.error, /unblock/);
 
     await ivy.call('/blocks/Hal', 'DELETE');
     assert.deepEqual((await ivy.call('')).json.blocked, []);
+    assert.deepEqual((await ivy.call('')).json.incoming, [], 'unblocking does not bring it back');
+    assert.deepEqual((await hal.call('')).json.outgoing, []);
+});
+
+test('a player with the most friends cannot gain one more, by accepting or by asking back', async () => {
+    const [max, una, val] = [await player('Max'), await player('Una'), await player('Val')];
+    // 200 friends for Max, straight in the database
+    const { rows } = await db.query("INSERT INTO users (username) SELECT 'pal' || g FROM generate_series(1, 200) g RETURNING id");
+    const maxId = (await db.query("SELECT id FROM users WHERE username = 'Max'")).rows[0].id;
+    for (const { id } of rows) {
+        await db.query('INSERT INTO friendships (user_a, user_b) VALUES ($1, $2)', [Math.min(id, maxId), Math.max(id, maxId)]);
+    }
+    await una.call('/requests', 'POST', { username: 'Max' });
+    const accept = await max.call('/requests/Una/accept', 'POST');
+    assert.equal(accept.status, 400);
+    assert.match(accept.json.error, /200 friends/);
+    assert.deepEqual(names((await max.call('')).json.incoming), ['Una'], 'the request waits');
+
+    assert.equal((await max.call('/requests', 'POST', { username: 'Val' })).status, 400, 'Max cannot ask anyone');
+    // Val asked Max before Max was full; now Val asks again, which would make them friends
+    await db.query('INSERT INTO friend_requests (from_user, to_user) SELECT id, (SELECT id FROM users WHERE username = $1) FROM users WHERE username = $2', ['Val', 'Max']);
+    const back = await val.call('/requests', 'POST', { username: 'Max' });
+    assert.equal(back.status, 400, 'asking back would make a friendship: refused too');
+    assert.equal((await val.call('')).json.friends.length, 0);
+});
+
+test('changes are limited per address, not only friend requests', async () => {
+    const app = express();
+    app.use('/api/auth', authRouter(db, { attemptsPerWindow: 1000 }));
+    app.use('/api/friends', friendsRouter(db, { changesPerWindow: 2 }));
+    const limited = http.createServer(app).listen(0);
+    try {
+        const url = `http://localhost:${limited.address().port}`;
+        const res = await fetch(`${url}/api/auth/signup`, {
+            method: 'POST', headers: { 'content-type': 'application/json', origin: url },
+            body: JSON.stringify({ username: 'Wes', email: 'wes@example.com', password: 'correct horse battery' }),
+        });
+        const cookie = res.headers.get('set-cookie').split(';')[0];
+        const unblock = async () => (await fetch(`${url}/api/friends/blocks/Max`, { method: 'DELETE', headers: { cookie, origin: url } })).status;
+        assert.deepEqual([await unblock(), await unblock(), await unblock()], [200, 200, 429]);
+        assert.equal((await fetch(`${url}/api/friends`, { headers: { cookie, origin: url } })).status, 200, 'reading is not limited');
+    } finally {
+        limited.closeAllConnections();
+        limited.close();
+    }
 });
 
 test('changes from another site are refused (CSRF)', async () => {

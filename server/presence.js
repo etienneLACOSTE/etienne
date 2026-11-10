@@ -85,25 +85,28 @@ function registerPresence(io, { sessions, friends, rooms }) {
         });
 
         const sent = [];
-        safeOn(socket, 'invite', async (data) => {
+        // The answer goes back as the acknowledgement when the page asks for one (it then
+        // knows which invitation it answers), else as an 'inviteResult' message.
+        safeOn(socket, 'invite', async (data, ack) => {
+            const answer = (result) => (typeof ack === 'function' ? ack(result) : socket.emit('inviteResult', result));
             const now = Date.now();
             while (sent.length && now - sent[0] > 60_000) sent.shift();
-            if (sent.length >= INVITES_PER_MINUTE) return socket.emit('inviteResult', { ok: false, error: 'Too many invitations: wait a minute.' });
+            if (sent.length >= INVITES_PER_MINUTE) return answer({ ok: false, error: 'Too many invitations: wait a minute.' });
             const game = data && data.game;
             const room = GAMES.includes(game) ? getRoom(rooms[game], data.roomCode) : null;
             // Only from a room this player created and that still waits for an opponent.
             if (!room || room.gameState !== 'waiting' || !room.accounts[1] || Number(room.accounts[1].id) !== id) {
-                return socket.emit('inviteResult', { ok: false, error: 'Create an online room first.' });
+                return answer({ ok: false, error: 'Create an online room first.' });
             }
             const friend = await friends.findUser(data.username);
             const friendId = friend && Number(friend.id);
             if (!friend || !(await friends.areFriends(id, friendId)) || await friends.blocked(friendId, id)) {
-                return socket.emit('inviteResult', { ok: false, error: 'You can only invite your friends.' });
+                return answer({ ok: false, error: 'You can only invite your friends.' });
             }
-            if (!online.has(friendId)) return socket.emit('inviteResult', { ok: false, error: `${friend.username} is not online.` });
+            if (!online.has(friendId)) return answer({ ok: false, error: `${friend.username} is not online.` });
             sent.push(now);
             ns.to(userRoom(friendId)).emit('invited', { from: user.username, game, roomCode: room.id });
-            socket.emit('inviteResult', { ok: true, username: friend.username });
+            answer({ ok: true, username: friend.username });
         });
 
         socket.join(userRoom(id));
