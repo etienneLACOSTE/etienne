@@ -2,6 +2,7 @@
 // Helpers shared by the game socket handlers.
 
 const crypto = require('crypto');
+const { sessionKey } = require('./accounts/sessions');
 
 const ROOM_CODE_LENGTH = 6; // 26^6 ≈ 309 million codes: not practical to guess
 
@@ -67,11 +68,13 @@ function addressFrom(headers, address) {
 function identifyPlayers(namespace, sessions, stats = null) {
     namespace.use(async (socket, next) => {
         socket.data.user = null;
+        socket.data.session = null;
         if (sessions) {
             try {
                 const user = await sessions.userFor(socket.handshake.headers.cookie, { withAvatar: true });
                 if (user && stats) user.stats = await stats.totals(user.id);
                 socket.data.user = user;
+                if (user) socket.data.session = sessionKey(socket.handshake.headers.cookie);
             } catch { /* guest */ }
         }
         next();

@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
-    safeOn, makeRoomFor, roomOrigin, clientIp, limitConnections, idleRooms, playerOf,
+    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitConnections, idleRooms, playerOf,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, BURST,
 } = require('../../server/socket-utils');
 
@@ -132,4 +132,17 @@ test("a player's message counts as activity in the room, an outsider's does not"
     assert.equal(room.lastActivity, 0);
     assert.equal(playerOf(room, fakeSocket('b')), 2);
     assert.ok(room.lastActivity > 0);
+});
+
+test('a signed-in connection remembers its session, so that signing out can find it', async () => {
+    const { sessionKey } = require('../../server/accounts/sessions');
+    let middleware;
+    const sessions = { userFor: async (cookie) => (cookie === 'sid=abc' ? { id: 3, username: 'ivy' } : null) };
+    identifyPlayers({ use(fn) { middleware = fn; } }, sessions);
+    const signedIn = fakeSocket('a', '10.0.0.1', { cookie: 'sid=abc' });
+    const guest = fakeSocket('b', '10.0.0.1', { cookie: 'sid=nope' });
+    await new Promise((resolve) => middleware(signedIn, resolve));
+    await new Promise((resolve) => middleware(guest, resolve));
+    assert.deepEqual(signedIn.data, { user: { id: 3, username: 'ivy' }, session: sessionKey('sid=abc') });
+    assert.deepEqual(guest.data, { user: null, session: null });
 });

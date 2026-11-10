@@ -56,7 +56,9 @@ Known limits to fix later: `docs/known-limits.md`.
    - Socket.io handshakes from this site only (`allowRequest`, `server/security.js`).
    - Failed password sign-ins counted per account as well as per address: 10 in 15
      minutes, then that account waits (username and email count together).
-   - "Sign out on every device" on the account page.
+   - "Sign out on every device" on the account page. Signing out (here or everywhere) or
+     deleting the account also reaches the pages still open (`server/sign-out.js`): their
+     games go on as a guest, no longer counted for the account, and friends see them offline.
    - Limits already in place: friend requests, invitations, results sent by pages.
    - Review: `/tribunal` on the whole accounts work (launched by the owner).
 

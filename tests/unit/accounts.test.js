@@ -9,7 +9,10 @@ const { migrate } = require('../../server/db/migrate');
 const { hashPassword, verifyPassword } = require('../../server/accounts/passwords');
 const { authRouter } = require('../../server/accounts/routes');
 const { accountRouter } = require('../../server/accounts/account-routes');
-const { readCookie } = require('../../server/accounts/sessions');
+const { readCookie, sessionKey } = require('../../server/accounts/sessions');
+
+/** What the routes reported as signed out (server/sign-out.js closes the connections). */
+const signOuts = [];
 
 let db;
 let server;
@@ -18,8 +21,9 @@ let base;
 before(async () => {
     db = await openDb({ url: '' });
     const app = express();
-    app.use('/api/auth', authRouter(db, { attemptsPerWindow: 1000 }));
-    app.use('/api/account', accountRouter(db, { attemptsPerWindow: 1000 }));
+    const onSignOut = (who) => signOuts.push(who);
+    app.use('/api/auth', authRouter(db, { attemptsPerWindow: 1000, onSignOut }));
+    app.use('/api/account', accountRouter(db, { attemptsPerWindow: 1000, onSignOut }));
     server = http.createServer(app).listen(0);
     base = `http://localhost:${server.address().port}`;
 });
@@ -120,6 +124,7 @@ test('logout: the session no longer works', async () => {
     const { cookie } = await signup('Erin');
     assert.equal((await api('/api/auth/logout', { body: {}, cookie })).status, 200);
     assert.equal((await api('/api/auth/me', { cookie })).json.user, null);
+    assert.deepEqual(signOuts.at(-1), { session: sessionKey(cookie) }, 'its open connections are told');
 });
 
 test('me: nobody without a cookie, or with a made-up one', async () => {
@@ -205,6 +210,7 @@ test('account: deleting needs the username and the password, then removes everyt
     assert.equal(ok.status, 200);
     assert.match(ok.setCookie, /^sid=;/);
     assert.equal((await api('/api/auth/me', { cookie })).json.user, null);
+    assert.equal(typeof signOuts.at(-1).userId, 'number', 'its open connections are told');
     const left = await db.query("SELECT (SELECT count(*) FROM users WHERE username = 'Judy') AS users, (SELECT count(*) FROM sessions s WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.id = s.user_id)) AS orphans");
     assert.deepEqual(left.rows[0], { users: 0, orphans: 0 });
 });
@@ -297,4 +303,6 @@ test('sign out on every device', async () => {
     assert.equal((await api('/api/account/sessions/logout-all', { body: {}, cookie: second.cookie })).status, 200);
     assert.equal((await api('/api/auth/me', { cookie: first.cookie })).json.user, null);
     assert.equal((await api('/api/auth/me', { cookie: second.cookie })).json.user, null);
+    const { rows } = await db.query("SELECT id FROM users WHERE username = 'Pia'");
+    assert.deepEqual(signOuts.at(-1), { userId: rows[0].id }, 'every open connection of the account is told');
 });

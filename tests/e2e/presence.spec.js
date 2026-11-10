@@ -66,3 +66,25 @@ test('only friends can be invited, and only into a room of your own', async ({ b
   await a.context.close();
   await b.context.close();
 });
+
+test('signing out everywhere takes a player offline at once, even on a page left open', async ({ browser }) => {
+  const alice = await signedIn(browser);
+  const bob = await signedIn(browser);
+  await alice.post('/api/friends/requests', { username: bob.name });
+  await bob.post(`/api/friends/requests/${alice.name}/accept`, {});
+
+  await bob.page.goto('/account/');
+  await alice.page.goto('/chesspell/');
+  await expect(bob.page.locator('#friends-list')).toContainText("Online, playing Ches'spell");
+
+  // From another device: a second session, which signs out everywhere
+  const other = await browser.newContext();
+  const login = await other.request.post('/api/auth/login', { headers: { origin: ORIGIN }, data: { login: alice.name, password: 'correct horse battery' } });
+  expect(login.status()).toBe(200);
+  expect((await other.request.post('/api/account/sessions/logout-all', { headers: { origin: ORIGIN }, data: {} })).status()).toBe(200);
+
+  await expect(bob.page.locator('#friends-list')).toContainText(`${alice.name}Offline`);
+  await other.close();
+  await alice.context.close();
+  await bob.context.close();
+});

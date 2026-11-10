@@ -19,9 +19,10 @@ const DECK_CHECKS = {
 
 /**
  * @param {import('../db').Db} db
- * @param {{ attemptsPerWindow?: number, windowMs?: number }} [options]
+ * @param {{ attemptsPerWindow?: number, windowMs?: number, onSignOut?: (who: { userId: number }) => void }} [options]
+ *   onSignOut: the account was signed out everywhere, or deleted (server/sign-out.js)
  */
-function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 } = {}) {
+function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, onSignOut = () => {} } = {}) {
     const sessions = sessionStore(db);
     const stats = statsStore(db);
     const router = express.Router();
@@ -137,6 +138,7 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
     /** Sign out on every device (this one included). */
     router.post('/sessions/logout-all', async (req, res) => {
         await sessions.destroyAllFor(res.locals.user.id);
+        onSignOut({ userId: res.locals.user.id });
         res.clearCookie(COOKIE, { ...cookieOptions(), maxAge: undefined });
         res.json({ ok: true });
     });
@@ -166,6 +168,7 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000 }
             return res.status(401).json({ error: 'Wrong password.' });
         }
         await db.query('DELETE FROM users WHERE id = $1', [res.locals.user.id]); // Sessions and links go with it
+        onSignOut({ userId: res.locals.user.id });
         res.clearCookie(COOKIE, { ...cookieOptions(), maxAge: undefined });
         res.json({ ok: true });
     });

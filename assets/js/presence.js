@@ -34,8 +34,18 @@ export function onFriendsOnline(fn) {
  */
 export function startPresence({ page, onJoin }) {
     const io = /** @type {any} */ (globalThis).io;
-    if (socket || typeof io !== 'function') return;
+    if (socket) {
+        if (!socket.connected) socket.connect(); // Signed in again on this page
+        return;
+    }
+    if (typeof io !== 'function') return;
     socket = io('/presence', { auth: { page } }); // auth, not query: the game's connection is shared
+    // Closed by the server when this account signs out (here or on another device).
+    socket.on('disconnect', (reason) => {
+        if (reason !== 'io server disconnect') return; // Network trouble: reconnects by itself
+        onlineFriends.clear();
+        notify();
+    });
     socket.on('friendsOnline', (list) => {
         onlineFriends.clear();
         for (const f of list) onlineFriends.set(f.username, f);

@@ -14,6 +14,7 @@ const { sessionStore } = require('./accounts/sessions');
 const { statsStore } = require('./stats');
 const { friendsRouter, friendStore } = require('./friends');
 const { registerPresence } = require('./presence');
+const { forgetSignedOut } = require('./sign-out');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -54,12 +55,12 @@ async function start() {
     const stats = statsStore(db);
     const chesspell = registerChesspell(io, { sessions, stats });
     const chessdown = registerChessdown(io, { sessions, stats });
-    const presence = registerPresence(io, {
-        sessions, friends: friendStore(db), rooms: { chesspell: chesspell.rooms, chessdown: chessdown.rooms },
-    });
+    const rooms = { chesspell: chesspell.rooms, chessdown: chessdown.rooms };
+    const presence = registerPresence(io, { sessions, friends: friendStore(db), rooms });
+    const onSignOut = (who) => forgetSignedOut(io, rooms, who);
     app.use('/api/auth', oauthRouter(db));
-    app.use('/api/auth', authRouter(db));
-    app.use('/api/account', accountRouter(db));
+    app.use('/api/auth', authRouter(db, { onSignOut }));
+    app.use('/api/account', accountRouter(db, { onSignOut }));
     app.use('/api/friends', friendsRouter(db, {
         onChange: (ids) => presence.friendsChanged(ids).catch(logError('Presence: friends update failed')),
     }));

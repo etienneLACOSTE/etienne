@@ -4,7 +4,7 @@
 
 const express = require('express');
 const { hashPassword, verifyPassword } = require('./passwords');
-const { COOKIE, cookieOptions, sessionStore } = require('./sessions');
+const { COOKIE, cookieOptions, sessionKey, sessionStore } = require('./sessions');
 const { usernameProblem, emailProblem, passwordProblem } = require('./validate');
 const { rateLimit } = require('./rate-limit');
 
@@ -30,9 +30,11 @@ function sameOrigin(req, res, next) {
 
 /**
  * @param {import('../db').Db} db
- * @param {{ attemptsPerWindow?: number, windowMs?: number, failuresPerLogin?: number }} [options]
+ * @param {{ attemptsPerWindow?: number, windowMs?: number, failuresPerLogin?: number,
+ *   onSignOut?: (who: { session: string }) => void }} [options] onSignOut: a session ended,
+ *   so its open connections stop acting for the account (server/sign-out.js)
  */
-function authRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, failuresPerLogin = FAILURES_PER_LOGIN } = {}) {
+function authRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, failuresPerLogin = FAILURES_PER_LOGIN, onSignOut = () => {} } = {}) {
     const sessions = sessionStore(db);
     const router = express.Router();
     const attempts = rateLimit({ max: attemptsPerWindow, windowMs });
@@ -116,6 +118,8 @@ function authRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, fai
 
     router.post('/logout', async (req, res) => {
         await sessions.destroy(req.headers.cookie);
+        const session = sessionKey(req.headers.cookie);
+        if (session) onSignOut({ session });
         res.clearCookie(COOKIE, { ...cookieOptions(), maxAge: undefined });
         res.json({ ok: true });
     });

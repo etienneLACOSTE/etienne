@@ -30,6 +30,12 @@ function readCookie(header, name) {
     return null;
 }
 
+/** Which session a Cookie header carries (the hash the database keeps), or null. */
+function sessionKey(cookieHeader) {
+    const token = readCookie(cookieHeader, COOKIE);
+    return token && token.length <= 100 ? sha256(token) : null;
+}
+
 /** @param {import('../db').Db} db */
 function sessionStore(db) {
     return {
@@ -75,4 +81,4 @@ function sessionStore(db) {
     };
 }
 
-module.exports = { COOKIE, cookieOptions, readCookie, sessionStore, sha256, newToken };
+module.exports = { COOKIE, cookieOptions, readCookie, sessionKey, sessionStore, sha256, newToken };
