@@ -15,6 +15,7 @@
 //   draft.js, clock.js         the card draft; the clock
 //   bot-player.js              the campaign bot on the page (decisions in bot.js)
 //   match.js                   a match from start to end screen
+//   draw.js                    draw offers (the game screen's button)
 //   online.js, demo.js         online play; the tutorial
 //   invites.js                 friends: the waiting room's invite list, joining from an invitation
 //   a11y.js                    keyboard and screen reader
@@ -32,6 +33,7 @@ import { setTimerMode, startTimer } from './clock.js';
 import { botStrength, playBotTurn, selectBotDeck } from './bot-player.js';
 import { endGame, leaveGame, rematch, startCampaign, startGame } from './match.js';
 import { joinFromInvite, setupOnline } from './online.js';
+import { drawTurnPlayed, resetDrawOffers, setupDraw, updateDrawButton } from './draw.js';
 import { setupInvites } from './invites.js';
 import { startDemo } from './demo.js';
 import { setupAccessibility } from './a11y.js';
@@ -41,16 +43,22 @@ import { currentUser, showAccountLine } from '../../../assets/js/session.js';
 // --- Game flow: what happens after each event (a11y.js adds its own announcements).
 on('boardChanged', renderChessboard);
 on('turnStarted', () => {
+    drawTurnPlayed();
     startTimer();
     if (match.isBotGame && engine.turn === 'black') setTimeout(playBotTurn, 500);
 });
-on('gameOver', endGame);
+on('gameOver', (result) => {
+    resetDrawOffers();
+    endGame(result);
+});
+on('gameStarted', resetDrawOffers);
 on('profilesChanged', () => {
     renderProfilesList();
     updatePlayerSelects();
     refreshDeckBuilder();
 });
 on('screenShown', ({ screenId }) => {
+    updateDrawButton();
     if (screenId === 'player-select-screen') updatePlayerSelects();
     if (screenId === 'deck-builder') openDeckBuilder();
 });
@@ -110,4 +118,5 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCards('index-grid');
     setupDeckBuilder();
     setupOnline();
+    setupDraw();
 });

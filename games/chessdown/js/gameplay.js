@@ -8,12 +8,14 @@ import { chooseBotMove } from './bot.js';
 import { announceTurn, resetAnnouncements } from './a11y.js';
 import { checkTouchdownWin, makeVirtualMove, serializeBoard } from './rules-bridge.js';
 import { reportResult } from '../../../assets/js/session.js';
+import { resetDrawOffers } from './draw.js';
 
 // --- Gameplay Logic ---
 
 export function startGameplay(winner) {
     resetAnnouncements(); // a11y.js
     state.gameState = 'gameplay';
+    resetDrawOffers();
     state.matchStartedAt = Date.now();
     state.positionHistory = {}; // Reset repetition history
     state.playerTimeRemaining[1] = state.timerBaseSeconds * 1000;
@@ -264,10 +266,11 @@ export function movePiece(fromR, fromC, toR, toC) {
 /**
  * @param {string} title @param {string} reason what the end screen says
  * @param {number} winner 1 or 2, or 0 for a draw
- * @param {'king' | 'touchdown' | 'time' | 'repetition'} [how] for the stats
+ * @param {'king' | 'touchdown' | 'time' | 'repetition' | 'agreement'} [how] for the stats
  */
 export function endGame(title, reason, winner, how) {
     state.gameState = 'over';
+    resetDrawOffers();
     clearInterval(state.timerInterval);
     // Against the bot or on the same screen, the signed-in player is player 1 (online,
     // the server records the result).
@@ -298,6 +301,8 @@ export function endGame(title, reason, winner, how) {
 
 export function resetGame() {
     clearInterval(state.timerInterval);
+    if (state.gameState === 'gameplay') state.gameState = 'over'; // No draw offer from the menu
+    resetDrawOffers();
     ui.sideStatus.classList.add('hidden');
     ui.gameContainer.classList.remove('rotate-180');
     ui.victoryScreen.classList.remove('rotate-180');

@@ -9,6 +9,7 @@ import { makeVirtualMove } from './rules-bridge.js';
 import { refreshInvites } from './invites.js';
 import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
+import { drawTurnPlayed } from './draw.js';
 
 export function setupNetwork() {
     // Socket Events
@@ -87,6 +88,7 @@ export function setupNetwork() {
         state.selectedBoardPiece = null;
         clearHighlights();
         renderBoard();
+        drawTurnPlayed();
         startTurn();
     });
 
@@ -106,7 +108,15 @@ export function setupNetwork() {
         state.currentPlayer = data.nextPlayer;
         state.selectedBoardPiece = null;
         clearHighlights();
+        drawTurnPlayed();
         startTurn();
+    });
+
+    // Both players agreed on a draw (offers: draw.js).
+    socket.on('drawAgreed', () => {
+        if (state.gameState === 'over') return;
+        fireConfetti([COLOR_HEX[state.playerColors[1]], COLOR_HEX[state.playerColors[2]]], 30);
+        endGame('DRAW', 'by agreement', 0, 'agreement');
     });
 
     socket.on('playAgainStatus', (data) => {

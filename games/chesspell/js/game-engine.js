@@ -33,7 +33,7 @@ export const engine = {
     /**
      * Once there is a winner (a king captured, or a player out of time), say so once:
      * the game stops and the end screen comes up (match.js).
-     * @param {'king' | 'time'} reason
+     * @param {'king' | 'time' | 'agreement'} reason
      */
     showGameOver(reason = 'king') {
         if (!this.winner || this.gameOverShown) return;
@@ -190,7 +190,7 @@ export const engine = {
         } else if (action && action.type === 'target' && wasTargeting && !state.targetingState) {
             spellFx.finish();
         }
-        this.showGameOver(action && action.type === 'timeout' ? 'time' : 'king');
+        this.showGameOver(action && action.type === 'timeout' ? 'time' : action && action.type === 'draw' ? 'agreement' : 'king');
         if (action && action.turnEnded && !this.winner) emit('turnStarted');
         return action;
     },

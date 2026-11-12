@@ -10,7 +10,7 @@ export const EVENTS = /** @type {const} */ ({
     turnStarted: 'a turn begins: clock, bot, announcement',
     spellCast: '{ cardId, by }: a spell is being cast',
     turnTimedOut: 'online: the server ended a turn on time',
-    gameOver: '{ winner, reason }: a king fell or a player ran out of time',
+    gameOver: "{ winner, reason }: a king fell, a player ran out of time, or a draw was agreed (winner 'draw')",
     matchStarted: 'the board of a local game is on screen',
     boardRendered: '{ hadFocus }: the board was drawn (the focus was on it before)',
     highlightsCleared: 'the move highlights were removed',

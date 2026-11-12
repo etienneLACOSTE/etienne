@@ -121,7 +121,7 @@ function showAvatar(account) {
 const GAME_NAMES = { chesspell: "Ches'spell", chessdown: 'Chessdown' };
 const MODE_NAMES = { online: 'Online', bot: 'Against the bot', local: 'Same screen' };
 const RESULT_NAMES = { win: 'Won', loss: 'Lost', draw: 'Draw' };
-const REASON_NAMES = { king: 'king taken', touchdown: 'touchdown', time: 'on time', repetition: 'repetition', forfeit: 'forfeit' };
+const REASON_NAMES = { king: 'king taken', touchdown: 'touchdown', time: 'on time', repetition: 'repetition', forfeit: 'forfeit', agreement: 'by agreement' };
 
 /** "1 h 05 min", "12 min", "under a minute". */
 function playTime(seconds) {

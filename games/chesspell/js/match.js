@@ -91,9 +91,9 @@ export function leaveGame() {
 }
 
 /**
- * A king fell or a player ran out of time: the clock stops, the profiles keep the
- * result, and the end screen comes up once the last move has been seen.
- * @param {{ winner: 'white' | 'black', reason: 'king' | 'time' }} result
+ * A king fell, a player ran out of time or both agreed on a draw: the clock stops, the
+ * profiles keep the result, and the end screen comes up once the last move has been seen.
+ * @param {{ winner: 'white' | 'black' | 'draw', reason: 'king' | 'time' | 'agreement' }} result
  */
 export function endGame({ winner, reason }) {
     stopTimer();
@@ -118,7 +118,7 @@ function recordAccountResult(winner, reason) {
     reportResult({
         game: 'chesspell',
         mode: match.isBotGame ? 'bot' : 'local',
-        result: winner === color ? 'win' : 'loss',
+        result: winner === 'draw' ? 'draw' : winner === color ? 'win' : 'loss',
         reason,
         opponent: (opponent && opponent.name) || 'Opponent',
         startedAt: match.startedAt,
@@ -130,10 +130,11 @@ function recordAccountResult(winner, reason) {
 /**
  * The end of the game, over the final board: who won and how, then a rematch or the menu.
  * Facing the bot or online, from the player's side (Victory or Defeat).
- * @param {'white' | 'black'} winner
- * @param {'king' | 'time'} reason
+ * @param {'white' | 'black' | 'draw'} winner
+ * @param {'king' | 'time' | 'agreement'} reason
  */
 function showEndScreen(winner, reason) {
+    if (winner === 'draw') return showDrawScreen();
     const loser = winner === 'white' ? 'black' : 'white';
     const names = { white: match.p1Profile?.name || 'White', black: match.p2Profile?.name || 'Black' };
     const me = session.isOnline ? session.myPlayerColor : match.isBotGame ? 'white' : null;
@@ -149,5 +150,17 @@ function showEndScreen(winner, reason) {
     document.getElementById('game-over-rematch').classList.toggle('hidden', session.isOnline);
     const modal = document.getElementById('game-over-modal');
     modal.classList.toggle('end-defeat', Boolean(me) && me !== winner);
+    modal.classList.remove('hidden');
+}
+
+/** Both players agreed on a draw: no winner, no fallen king. */
+function showDrawScreen() {
+    const sign = Object.assign(document.createElement('span'), { className: 'end-sign', textContent: '½' });
+    document.getElementById('game-over-icon').replaceChildren(sign);
+    document.getElementById('game-over-title').textContent = 'Draw';
+    document.getElementById('game-over-reason').textContent = 'Both players agreed to a draw.';
+    document.getElementById('game-over-rematch').classList.toggle('hidden', session.isOnline);
+    const modal = document.getElementById('game-over-modal');
+    modal.classList.remove('end-defeat');
     modal.classList.remove('hidden');
 }

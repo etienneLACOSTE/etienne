@@ -1,12 +1,14 @@
 // @ts-check
 // Input wiring: menus, modals, draft shop, buttons and board squares (one listener).
-import { socket, state, ui } from './state.js';
+import { COLOR_HEX, socket, state, ui } from './state.js';
 import { enterFullscreen, renderBoard, showScreen } from './board-view.js';
 import { clearCurrentDraft, draftHooks, handleDraftSquareClick, handleTransitionReady, startDraftPhase, toggleRemoveMode, updateShopColors, validateDraft } from './draft.js';
-import { handleGameplaySquareClick, resetGame } from './gameplay.js';
+import { endGame, handleGameplaySquareClick, resetGame } from './gameplay.js';
 import { loadBotProfileForDifficulty } from './bot.js';
 import { setupNetwork } from './network.js';
 import { notify } from '../../../assets/js/dialog.js';
+import { setupDraw } from './draw.js';
+import { fireConfetti } from '../confetti.js';
 
 /** A tap on a board square (or Enter on it, see a11y.js) goes to the draft or the match. */
 function onBoardPointerdown(e) {
@@ -149,6 +151,11 @@ export function setupEventListeners() {
     }
 
     setupNetwork(); // Socket.io handlers, see network.js
+    // Same screen: both players agreed on a draw (online, the server ends the game).
+    setupDraw(() => {
+        fireConfetti([COLOR_HEX[state.playerColors[1]], COLOR_HEX[state.playerColors[2]]], 30);
+        endGame('DRAW', 'by agreement', 0, 'agreement');
+    });
     
     ui.btnMainMenu.addEventListener('pointerdown', () => {
         if (state.currentRoomCode) {
