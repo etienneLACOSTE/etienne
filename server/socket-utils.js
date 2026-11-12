@@ -241,6 +241,62 @@ function seatKeeper(nsp, rooms, gone, { holdMs = SEAT_HOLD_MS } = {}) {
     };
 }
 
+/**
+ * Draw offers of one game: a player offers a draw, the other accepts or declines. Rules:
+ * - only while the game is in progress, one offer at a time;
+ * - a player offers at most once per turn played (no flood of offers);
+ * - the offer ends when the other player plays a turn (playing is declining), or when a
+ *   connection drops.
+ * Both players are told, each by their own socket id: 'drawOffered' { by }, then
+ * 'drawOfferEnded' { reason: 'declined' | 'played' | 'dropped' }, or the game's own end.
+ * State kept in room.draw.
+ * @param {{ to: (room: string) => { emit: Function } }} nsp the game's namespace
+ * @param {Record<string, any>} rooms the game's open rooms
+ * @param {(room: any) => void} agreed both players agree: end the game as a draw
+ */
+function drawOffers(nsp, rooms, agreed) {
+    const draw = (room) => room.draw || (room.draw = { offeredBy: null, turns: 0, lastOffer: { 1: -1, 2: -1 } });
+    const tellBoth = (room, event, data) => {
+        for (const player of [1, 2]) if (room.players[player]) nsp.to(room.players[player]).emit(event, data);
+    };
+    const end = (room, reason) => {
+        const d = draw(room);
+        if (!d.offeredBy) return;
+        d.offeredBy = null;
+        tellBoth(room, 'drawOfferEnded', { reason });
+    };
+    return {
+        /** @param {1 | 2} player */
+        offer(room, player) {
+            const d = draw(room);
+            if (room.gameState !== 'playing' || d.offeredBy || d.lastOffer[player] === d.turns) return;
+            d.offeredBy = player;
+            d.lastOffer[player] = d.turns;
+            tellBoth(room, 'drawOffered', { by: player });
+        },
+        /** @param {1 | 2} player @param {unknown} accept */
+        answer(room, player, accept) {
+            const d = draw(room);
+            if (room.gameState !== 'playing' || !d.offeredBy || d.offeredBy === player) return;
+            if (accept !== true) return end(room, 'declined');
+            d.offeredBy = null;
+            agreed(room);
+        },
+        /** `player` has played a turn (a move, or a turn lost on time). */
+        turnPlayed(room, player) {
+            const d = draw(room);
+            d.turns++;
+            if (d.offeredBy && d.offeredBy !== player) end(room, 'played');
+        },
+        /** A connection dropped: its offers, made or received, end. */
+        dropped(socket) {
+            for (const room of Object.values(rooms)) {
+                if (playerOf(room, socket)) end(room, 'dropped');
+            }
+        },
+    };
+}
+
 // A handler that throws would stop the whole server, so every handler is guarded,
 // and messages over the rate limit are ignored.
 function safeOn(socket, event, handler) {
@@ -279,6 +335,6 @@ function playerOf(room, socket) {
 
 module.exports = {
     generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom, limitKey, identifyPlayers,
-    limitConnections, idleRooms, sweepIdleRooms, seatKeeper,
+    limitConnections, idleRooms, sweepIdleRooms, seatKeeper, drawOffers,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST, SEAT_HOLD_MS,
 };

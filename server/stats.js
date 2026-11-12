@@ -7,8 +7,8 @@ const MODES = ['online', 'bot', 'local'];
 const RESULTS = ['win', 'loss', 'draw'];
 /** How each game can end. */
 const REASONS = {
-    chesspell: ['king', 'time'],
-    chessdown: ['king', 'touchdown', 'time', 'repetition'],
+    chesspell: ['king', 'time', 'agreement'],
+    chessdown: ['king', 'touchdown', 'time', 'repetition', 'agreement'],
 };
 /** Longest game counted (longer is clamped): a forgotten tab must not add days. */
 const MAX_DURATION_S = 4 * 60 * 60;

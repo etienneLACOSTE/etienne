@@ -1,6 +1,6 @@
 // @ts-check
 const {
-    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf, seatKeeper,
+    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf, seatKeeper, drawOffers,
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
@@ -102,7 +102,12 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
     /** Each player gets the new state and what just happened. */
     function sendState(room, action) {
         const game = room.game;
-        if (game.winner) {
+        if (action.turnEnded) draws.turnPlayed(room, action.by === 'white' ? 1 : 2);
+        if (game.winner === 'Draw') {
+            room.gameState = 'over';
+            room.clock.stop();
+            recordResult(room, 'agreement', 0);
+        } else if (game.winner) {
             room.gameState = 'over';
             room.clock.stop();
             recordResult(room, action.type === 'timeout' ? 'time' : 'king');
@@ -144,6 +149,12 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
     const seats = seatKeeper(ioChesspell, chesspellRooms, (room, player) => {
         forfeit(room, player);
         closeRoom(room.id);
+    });
+
+    // Both players agree on a draw: the game ends (game.js), and each player gets the state.
+    const draws = drawOffers(ioChesspell, chesspellRooms, (room) => {
+        Game.agreeDraw(room.game);
+        sendState(room, { type: 'draw', turnEnded: false });
     });
 
     /** Close a room nobody uses any more, and tell its players why. */
@@ -266,6 +277,18 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
             sendState(room, { type: 'target', by: color, turnEnded: result.status === 'done' && result.endTurn });
         });
 
+        safeOn(socket, 'offerDraw', (data) => {
+            const room = getRoom(chesspellRooms, data && data.roomCode);
+            const player = room && playerOf(room, socket);
+            if (player) draws.offer(room, player);
+        });
+
+        safeOn(socket, 'answerDraw', (data) => {
+            const room = getRoom(chesspellRooms, data && data.roomCode);
+            const player = room && playerOf(room, socket);
+            if (player) draws.answer(room, player, data.accept);
+        });
+
         safeOn(socket, 'leaveRoom', (data) => {
             const room = getRoom(chesspellRooms, data.roomCode);
             const player = room && playerOf(room, socket);
@@ -277,7 +300,10 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
             }
         });
 
-        safeOn(socket, 'disconnect', (reason) => seats.dropped(socket, reason));
+        safeOn(socket, 'disconnect', (reason) => {
+            draws.dropped(socket);
+            seats.dropped(socket, reason);
+        });
     });
 
     return { rooms: chesspellRooms }; // For invitations (server/presence.js)

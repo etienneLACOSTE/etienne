@@ -501,6 +501,13 @@
         return ignored;
     }
 
+    /** Both players agree on a draw: the game ends without a winner ('Draw'). */
+    function agreeDraw(state) {
+        if (state.winner) return;
+        state.winner = 'Draw';
+        cancelSpell(state);
+    }
+
     /** Plain copy of the state for a player (traps are visible to both players). */
     function snapshot(state) {
         const copy = JSON.parse(JSON.stringify({
@@ -517,6 +524,6 @@
 
     return {
         INSTRUCTIONS, newGame, destroyPiece, endTurn, isLegalMove, move, activateSpell, clickSquare,
-        completeSpell, cancelSpell, snapshot,
+        completeSpell, cancelSpell, snapshot, agreeDraw,
     };
 });

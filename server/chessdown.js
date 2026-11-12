@@ -1,7 +1,7 @@
 // @ts-check
 const {
     generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
-    seatKeeper,
+    seatKeeper, drawOffers,
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
@@ -49,6 +49,7 @@ function newGameState() {
         playAgain: { 1: false, 2: false },
         idleTurns: 0,
         positionHistory: {}, // Position key -> times seen, for the draw by repetition
+        draw: null, // Draw offers (server/socket-utils.js drawOffers)
     };
 }
 
@@ -120,6 +121,7 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
     /** The turn is lost on time; after MAX_IDLE_TURNS in a row, nobody plays: the room closes. */
     function skipTurn(room) {
         room.clock.stop();
+        draws.turnPlayed(room, room.currentPlayer);
         room.idleTurns = (room.idleTurns || 0) + 1;
         if (room.idleTurns >= MAX_IDLE_TURNS) {
             return closeIdleRoom(room.id, `Game closed: nobody played for ${MAX_IDLE_TURNS} turns.`);
@@ -139,6 +141,14 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
     const seats = seatKeeper(ioChessdown, chessdownRooms, (room, player) => {
         forfeit(room, player);
         closeRoom(room.id);
+    });
+
+    // Both players agree on a draw: the game ends, the clock stops.
+    const draws = drawOffers(ioChessdown, chessdownRooms, (room) => {
+        room.gameState = 'over';
+        room.clock.stop();
+        recordResult(room, 0, 'agreement');
+        ioChessdown.to(room.id).emit('drawAgreed');
     });
 
     /** Close a room nobody uses any more, and tell its players why. */
@@ -241,6 +251,7 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
             room.clock.stop();
             room.idleTurns = 0;
             const mover = room.currentPlayer;
+            draws.turnPlayed(room, mover);
             room.currentPlayer = room.currentPlayer === 1 ? 2 : 1;
             // King captured, or a piece survived a turn in the endzone: game over.
             if (targetPiece && targetPiece.type === 'k') {
@@ -270,6 +281,18 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
             if (playerOf(room, socket) !== room.currentPlayer) return;
 
             skipTurn(room);
+        });
+
+        safeOn(socket, 'offerDraw', (data) => {
+            const room = getRoom(chessdownRooms, data && data.roomCode);
+            const player = room && playerOf(room, socket);
+            if (player) draws.offer(room, player);
+        });
+
+        safeOn(socket, 'answerDraw', (data) => {
+            const room = getRoom(chessdownRooms, data && data.roomCode);
+            const player = room && playerOf(room, socket);
+            if (player) draws.answer(room, player, data.accept);
         });
 
         safeOn(socket, 'playAgainRequest', (data) => {
@@ -311,7 +334,10 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
             socket.to(data.roomCode).emit('opponentColorChanged', data.color);
         });
 
-        safeOn(socket, 'disconnect', (reason) => seats.dropped(socket, reason));
+        safeOn(socket, 'disconnect', (reason) => {
+            draws.dropped(socket);
+            seats.dropped(socket, reason);
+        });
     });
 
     return { rooms: chessdownRooms }; // For invitations (server/presence.js)
