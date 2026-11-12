@@ -167,6 +167,80 @@ function sweepIdleRooms(rooms, close) {
     setInterval(() => idleRooms(rooms, Date.now()).forEach(close), 60_000).unref();
 }
 
+// A player whose connection drops keeps their seat for a while: Socket.io's connection
+// state recovery (server/index.js) brings the same socket back (same id, same rooms) with
+// the messages it missed. The clock goes on meanwhile. SEAT_HOLD_MS is shorter for the
+// end-to-end tests only.
+const SEAT_HOLD_MS = Number(process.env.SEAT_HOLD_MS) || 30_000;
+// Disconnect reasons after which Socket.io keeps the session for a comeback; the others
+// mean the page closed its connection on purpose.
+const RECOVERABLE_REASONS = new Set([
+    'transport error', 'transport close', 'forced close', 'ping timeout', 'server shutting down', 'forced server close',
+]);
+
+/**
+ * Seats of one game kept through a dropped connection. Each player is told by their own
+ * socket id, so a player who comes back only gets the messages meant for them:
+ * - the opponent: 'opponentDisconnected' { seconds }, then 'opponentReconnected' or 'opponentLeft';
+ * - the player who did not come back in time: 'seatLost' (replayed if they come back later).
+ * @param {{ to: (room: string) => { emit: Function } }} nsp the game's namespace
+ * @param {Record<string, any>} rooms the game's open rooms
+ * @param {(room: any, player: 1 | 2) => void} gone the player is gone for good: count the
+ *   game as lost (if it was in progress) and close the room
+ * @param {{ holdMs?: number }} [options]
+ */
+function seatKeeper(nsp, rooms, gone, { holdMs = SEAT_HOLD_MS } = {}) {
+    const tell = (room, player, event, data) => {
+        if (room.players[player]) nsp.to(room.players[player]).emit(event, data);
+    };
+    const leave = (room, player) => {
+        const other = player === 1 ? 2 : 1;
+        tell(room, player, 'seatLost');
+        tell(room, other, 'opponentLeft');
+        gone(room, player);
+    };
+    return {
+        /** On 'disconnect': hold the seats of this socket, or give them up at once. */
+        dropped(socket, reason) {
+            for (const room of Object.values(rooms)) {
+                const player = playerOf(room, socket);
+                if (!player) continue;
+                if (!RECOVERABLE_REASONS.has(reason)) {
+                    leave(room, player);
+                    continue;
+                }
+                room.seatHolds = room.seatHolds || {};
+                clearTimeout(room.seatHolds[player]);
+                room.seatHolds[player] = setTimeout(() => {
+                    delete room.seatHolds[player];
+                    if (rooms[room.id] === room) leave(room, player);
+                }, holdMs);
+                room.seatHolds[player].unref?.();
+                tell(room, player === 1 ? 2 : 1, 'opponentDisconnected', { seconds: Math.ceil(holdMs / 1000) });
+            }
+        },
+        /** On 'connection' of a recovered socket: give its seats back. */
+        returned(socket) {
+            if (!socket.recovered) return;
+            for (const room of Object.values(rooms)) {
+                const player = playerOf(room, socket);
+                const hold = player && room.seatHolds && room.seatHolds[player];
+                if (!hold) continue;
+                clearTimeout(hold);
+                delete room.seatHolds[player];
+                // Signed out meanwhile (server/sign-out.js only reaches open connections).
+                if (room.accounts && !socket.data.user) room.accounts[player] = null;
+                tell(room, player === 1 ? 2 : 1, 'opponentReconnected');
+            }
+        },
+        /** The room closes: no seat to keep any more. */
+        release(room) {
+            for (const hold of Object.values(room.seatHolds || {})) clearTimeout(hold);
+            room.seatHolds = {};
+        },
+    };
+}
+
 // A handler that throws would stop the whole server, so every handler is guarded,
 // and messages over the rate limit are ignored.
 function safeOn(socket, event, handler) {
@@ -205,6 +279,6 @@ function playerOf(room, socket) {
 
 module.exports = {
     generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom, limitKey, identifyPlayers,
-    limitConnections, idleRooms, sweepIdleRooms,
-    MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST,
+    limitConnections, idleRooms, sweepIdleRooms, seatKeeper,
+    MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST, SEAT_HOLD_MS,
 };

@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
-    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitKey, limitConnections, idleRooms, playerOf,
+    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitKey, limitConnections, idleRooms, playerOf, seatKeeper,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, BURST,
 } = require('../../server/socket-utils');
 
@@ -156,4 +156,70 @@ test('per-address limits: one key per IPv4 address, per IPv6 /64', () => {
     }
     assert.notEqual(limitKey('2001:db8:abcd:13::1'), home, 'the next /64 is someone else');
     assert.equal(clientIp(fakeSocket('me', '2001:db8:abcd:12::77')), home);
+});
+
+/** A namespace that records what is sent to whom. */
+function fakeNamespace() {
+    const sent = [];
+    return { sent, to(id) { return { emit(event, data) { sent.push([id, event, data]); } }; } };
+}
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** A room in progress between sockets p1 and p2, and a seat keeper that records who is gone. */
+function seatedRoom(holdMs = 30) {
+    const nsp = fakeNamespace();
+    const rooms = { ROOMAB: { id: 'ROOMAB', players: { 1: 'p1', 2: 'p2' }, accounts: { 1: { id: 1 }, 2: null } } };
+    const gone = [];
+    const seats = seatKeeper(nsp, rooms, (room, player) => { gone.push(player); delete rooms[room.id]; }, { holdMs });
+    return { nsp, rooms, gone, seats };
+}
+
+test('a dropped connection keeps its seat, and gets it back when it comes back in time', async () => {
+    const { nsp, rooms, gone, seats } = seatedRoom();
+    seats.dropped(fakeSocket('p1'), 'transport close');
+    assert.deepEqual(nsp.sent, [['p2', 'opponentDisconnected', { seconds: 1 }]]);
+    const back = Object.assign(fakeSocket('p1'), { recovered: true, data: { user: { id: 1 } } });
+    seats.returned(back);
+    await wait(60);
+    assert.deepEqual(gone, []);
+    assert.ok(rooms.ROOMAB);
+    assert.deepEqual(nsp.sent.at(-1), ['p2', 'opponentReconnected', undefined]);
+    assert.deepEqual(rooms.ROOMAB.accounts[1], { id: 1 });
+});
+
+test('a seat not taken back in time is lost: the game counts as left', async () => {
+    const { nsp, rooms, gone, seats } = seatedRoom();
+    seats.dropped(fakeSocket('p2'), 'ping timeout');
+    await wait(60);
+    assert.deepEqual(gone, [2]);
+    assert.equal(rooms.ROOMAB, undefined);
+    assert.deepEqual(nsp.sent.slice(1), [['p2', 'seatLost', undefined], ['p1', 'opponentLeft', undefined]]);
+    seats.returned(Object.assign(fakeSocket('p2'), { recovered: true })); // Too late: nothing happens
+    assert.equal(nsp.sent.length, 3);
+});
+
+test('a page that closes its connection on purpose leaves at once', () => {
+    const { gone, seats } = seatedRoom();
+    seats.dropped(fakeSocket('p1'), 'client namespace disconnect');
+    assert.deepEqual(gone, [1]);
+});
+
+test('a closed room keeps no seat; a new connection is not a comeback', async () => {
+    const { rooms, gone, seats } = seatedRoom();
+    seats.dropped(fakeSocket('p1'), 'transport close');
+    seats.release(rooms.ROOMAB);
+    await wait(60);
+    assert.deepEqual(gone, []);
+    seats.dropped(fakeSocket('p1'), 'transport close');
+    seats.returned(fakeSocket('p1')); // Not recovered: the seat stays held, then is lost
+    await wait(60);
+    assert.deepEqual(gone, [1]);
+});
+
+test('signed out while away: the account no longer counts for the game', () => {
+    const { rooms, seats } = seatedRoom();
+    seats.dropped(fakeSocket('p1'), 'transport close');
+    seats.returned(Object.assign(fakeSocket('p1'), { recovered: true, data: { user: null } }));
+    assert.equal(rooms.ROOMAB.accounts[1], null);
+    seats.release(rooms.ROOMAB);
 });

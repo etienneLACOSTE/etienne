@@ -1,6 +1,7 @@
 // @ts-check
 const {
     generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
+    seatKeeper,
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
@@ -130,8 +131,15 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
 
     function closeRoom(code) {
         chessdownRooms[code].clock.stop();
+        seats.release(chessdownRooms[code]);
         delete chessdownRooms[code];
     }
+
+    // A dropped connection keeps its seat a while (server/socket-utils.js).
+    const seats = seatKeeper(ioChessdown, chessdownRooms, (room, player) => {
+        forfeit(room, player);
+        closeRoom(room.id);
+    });
 
     /** Close a room nobody uses any more, and tell its players why. */
     function closeIdleRoom(code, reason = 'Game closed after 15 minutes without activity.') {
@@ -143,6 +151,7 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
 
     ioChessdown.on('connection', (socket) => {
         console.log('Chessdown User connected:', socket.id);
+        seats.returned(socket);
 
         safeOn(socket, 'createRoom', (data) => {
             if (!makeRoomFor(chessdownRooms, socket)) return socket.emit('errorMsg', 'Too many games in progress. Try again later.');
@@ -302,16 +311,7 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
             socket.to(data.roomCode).emit('opponentColorChanged', data.color);
         });
 
-        safeOn(socket, 'disconnect', () => {
-            for (const [code, room] of Object.entries(chessdownRooms)) {
-                const player = playerOf(room, socket);
-                if (player) {
-                    forfeit(room, player);
-                    ioChessdown.to(code).emit('opponentLeft');
-                    closeRoom(code);
-                }
-            }
-        });
+        safeOn(socket, 'disconnect', (reason) => seats.dropped(socket, reason));
     });
 
     return { rooms: chessdownRooms }; // For invitations (server/presence.js)

@@ -1,6 +1,6 @@
 // @ts-check
 const {
-    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
+    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf, seatKeeper,
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
@@ -136,8 +136,15 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
 
     function closeRoom(code) {
         chesspellRooms[code].clock.stop();
+        seats.release(chesspellRooms[code]);
         delete chesspellRooms[code];
     }
+
+    // A dropped connection keeps its seat a while (server/socket-utils.js).
+    const seats = seatKeeper(ioChesspell, chesspellRooms, (room, player) => {
+        forfeit(room, player);
+        closeRoom(room.id);
+    });
 
     /** Close a room nobody uses any more, and tell its players why. */
     function closeIdleRoom(code, reason = 'Game closed after 15 minutes without activity.') {
@@ -149,6 +156,7 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
 
     ioChesspell.on('connection', (socket) => {
         console.log('Chesspell User connected:', socket.id);
+        seats.returned(socket);
 
         safeOn(socket, 'createRoom', (data) => {
             const deck = sanitizeDeck(data.deck);
@@ -269,16 +277,7 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
             }
         });
 
-        safeOn(socket, 'disconnect', () => {
-            for (const [code, room] of Object.entries(chesspellRooms)) {
-                const player = playerOf(room, socket);
-                if (player) {
-                    forfeit(room, player);
-                    ioChesspell.to(code).emit('opponentLeft');
-                    closeRoom(code);
-                }
-            }
-        });
+        safeOn(socket, 'disconnect', (reason) => seats.dropped(socket, reason));
     });
 
     return { rooms: chesspellRooms }; // For invitations (server/presence.js)

@@ -24,7 +24,15 @@ app.use(securityHeaders);
 const server = http.createServer(app);
 // Largest legitimate message: a Ches'spell profile with its avatar (40 KB at most).
 // Only this site's pages may open a game or presence connection.
-const io = new Server(server, { maxHttpBufferSize: 64_000, allowRequest: sameOriginHandshake });
+// Connection state recovery: a connection that drops and comes back within 2 minutes gets
+// its socket back (same id, same rooms) with the messages it missed, so a network blip
+// does not end a game (server/socket-utils.js seatKeeper). Middlewares run again on the
+// way back, so the session is read afresh and the connection is counted for its address.
+const io = new Server(server, {
+    maxHttpBufferSize: 64_000,
+    allowRequest: sameOriginHandshake,
+    connectionStateRecovery: { maxDisconnectionDuration: 2 * 60_000, skipMiddlewares: false },
+});
 
 // Serve the portfolio hub
 app.use(express.static(path.join(ROOT, 'hub')));
