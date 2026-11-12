@@ -61,10 +61,11 @@ async function start() {
     const db = await openDb(); // Tables are brought up to date first
     const sessions = sessionStore(db);
     const stats = statsStore(db);
-    const chesspell = registerChesspell(io, { sessions, stats });
-    const chessdown = registerChessdown(io, { sessions, stats });
+    const friends = friendStore(db);
+    const chesspell = registerChesspell(io, { sessions, stats, friends });
+    const chessdown = registerChessdown(io, { sessions, stats, friends });
     const rooms = { chesspell: chesspell.rooms, chessdown: chessdown.rooms };
-    const presence = registerPresence(io, { sessions, friends: friendStore(db), rooms });
+    const presence = registerPresence(io, { sessions, friends, rooms });
     const onSignOut = (who) => forgetSignedOut(io, rooms, who);
     app.use('/api/auth', oauthRouter(db));
     app.use('/api/auth', authRouter(db, { onSignOut }));

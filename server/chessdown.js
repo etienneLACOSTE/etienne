@@ -6,6 +6,7 @@ const {
 } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
+const { gameChat } = require('./chat');
 
 const { ROWS, COLS, MAX_POINTS, PIECE_VALUES } = engine;
 const JERSEY_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'white', 'black'];
@@ -74,10 +75,11 @@ function isValidDraft(pieces, player) {
 
 /**
  * @param {import('socket.io').Server} io
- * @param {{ sessions?: any, stats?: any }} [options] sessions: who is signed in
- *   (server/accounts/sessions.js); stats: where finished games are recorded (server/stats.js)
+ * @param {{ sessions?: any, stats?: any, friends?: any }} [options] sessions: who is signed in
+ *   (server/accounts/sessions.js); stats: where finished games are recorded (server/stats.js);
+ *   friends: blocks between players, for the chat (server/friends.js)
  */
-function registerChessdown(io, { sessions = null, stats = null } = {}) {
+function registerChessdown(io, { sessions = null, stats = null, friends = null } = {}) {
     const ioChessdown = io.of('/chessdown');
     limitConnections(ioChessdown);
     identifyPlayers(ioChessdown, sessions, stats);
@@ -151,6 +153,9 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
         ioChessdown.to(room.id).emit('drawAgreed');
     });
 
+    // Chat between the two players (server/chat.js).
+    const chat = gameChat(ioChessdown, chessdownRooms, friends);
+
     /** Close a room nobody uses any more, and tell its players why. */
     function closeIdleRoom(code, reason = 'Game closed after 15 minutes without activity.') {
         ioChessdown.to(code).emit('roomClosed', reason);
@@ -162,6 +167,7 @@ function registerChessdown(io, { sessions = null, stats = null } = {}) {
     ioChessdown.on('connection', (socket) => {
         console.log('Chessdown User connected:', socket.id);
         seats.returned(socket);
+        chat.connect(socket);
 
         safeOn(socket, 'createRoom', (data) => {
             if (!makeRoomFor(chessdownRooms, socket)) return socket.emit('errorMsg', 'Too many games in progress. Try again later.');

@@ -4,6 +4,7 @@ const {
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
+const { gameChat } = require('./chat');
 const Game = require('../games/chesspell/game.js');
 const { avatarProblem } = require('./accounts/avatar'); // The same check as account pictures
 
@@ -70,10 +71,11 @@ function sanitizeProfile(profile, deck) {
 
 /**
  * @param {import('socket.io').Server} io
- * @param {{ sessions?: any, stats?: any }} [options] sessions: who is signed in
- *   (server/accounts/sessions.js); stats: where finished games are recorded (server/stats.js)
+ * @param {{ sessions?: any, stats?: any, friends?: any }} [options] sessions: who is signed in
+ *   (server/accounts/sessions.js); stats: where finished games are recorded (server/stats.js);
+ *   friends: blocks between players, for the chat (server/friends.js)
  */
-function registerChesspell(io, { sessions = null, stats = null } = {}) {
+function registerChesspell(io, { sessions = null, stats = null, friends = null } = {}) {
     const ioChesspell = io.of('/chesspell');
     limitConnections(ioChesspell);
     identifyPlayers(ioChesspell, sessions, stats);
@@ -157,6 +159,9 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
         sendState(room, { type: 'draw', turnEnded: false });
     });
 
+    // Chat between the two players (server/chat.js).
+    const chat = gameChat(ioChesspell, chesspellRooms, friends);
+
     /** Close a room nobody uses any more, and tell its players why. */
     function closeIdleRoom(code, reason = 'Game closed after 15 minutes without activity.') {
         ioChesspell.to(code).emit('roomClosed', reason);
@@ -168,6 +173,7 @@ function registerChesspell(io, { sessions = null, stats = null } = {}) {
     ioChesspell.on('connection', (socket) => {
         console.log('Chesspell User connected:', socket.id);
         seats.returned(socket);
+        chat.connect(socket);
 
         safeOn(socket, 'createRoom', (data) => {
             const deck = sanitizeDeck(data.deck);
