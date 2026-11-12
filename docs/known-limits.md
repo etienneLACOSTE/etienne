@@ -79,6 +79,20 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 - **Recherche d'amis par pseudo exact seulement** (pas de suggestions), voulu pour ne pas
   exposer la liste des joueurs.
 
+## Nulle et chat (2026-11-12)
+
+- **Chat sans modération ni signalement** (`server/chat.js`) : réservé aux comptes, coupable
+  par chaque joueur, bloqué entre joueurs qui se sont bloqués, limité à 5 messages par 10 s
+  et 200 caractères, jamais enregistré. Mais un message insultant ne peut pas être signalé.
+  Piste : un bouton « Report » qui garde le message signalé (donnée nouvelle : politique de
+  confidentialité à mettre à jour), et bloquer l'adversaire depuis la partie (aujourd'hui,
+  depuis la page compte, et seulement pour les parties suivantes).
+- **Le chat disparaît au rechargement de la page** (rien n'est gardé, voulu) et n'existe
+  qu'une fois les deux joueurs dans la salle (pas dans la salle d'attente).
+- **Nulle sur le même écran : la page croit le joueur qui clique.** Celui qui a le trait
+  propose, l'autre répond dans la boîte de dialogue ; rien ne vérifie que ce n'est pas la
+  même personne (sans conséquence : seules ses propres stats « Same screen » comptent).
+
 ## Divers (relevés avant les comptes)
 
 - **Erreurs de formulaire dans une boîte de dialogue** (2026-11-12, `assets/js/dialog.js`) :
