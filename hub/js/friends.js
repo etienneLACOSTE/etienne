@@ -3,6 +3,7 @@
 // remove or block a friend, unblock. The server checks everything (server/friends.js).
 import { api } from '../../assets/js/session.js'; // Served as /assets/js/session.js
 import { onFriendsOnline, whereText } from '../../assets/js/presence.js';
+import { ask } from '../../assets/js/dialog.js';
 
 /** @param {string} id */
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -129,12 +130,12 @@ function draw() {
 
     $('friends-list').replaceChildren(...friends.map((p) => friendLine(p,
         action('Remove', `Remove ${p.username} from your friends`, async () => {
-            if (!confirm(`Remove ${p.username} from your friends?`)) return;
+            if (!await ask(`Remove ${p.username} from your friends?`, { confirm: 'Remove' })) return;
             await api('DELETE', `/api/friends/${path(p.username)}`);
             return `${p.username} is no longer your friend.`;
         }),
         action('Block', `Block ${p.username}`, async () => {
-            if (!confirm(`Block ${p.username}? They will no longer be able to send you requests or invitations.`)) return;
+            if (!await ask(`Block ${p.username}? They will no longer be able to send you requests or invitations.`, { confirm: 'Block' })) return;
             await api('POST', '/api/friends/blocks', { username: p.username });
             return `${p.username} is blocked.`;
         }))));

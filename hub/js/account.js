@@ -3,6 +3,7 @@
 // data and its deletion. Every check is redone by the server (server/accounts/).
 import { api as send, currentUser, showUserInTopbar } from '../../assets/js/session.js'; // Served as /assets/js/session.js
 import { showFriends } from './friends.js';
+import { ask } from '../../assets/js/dialog.js';
 
 /** @param {string} id */
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -298,8 +299,8 @@ async function signOut(button, url) {
     $('account-title').focus();
 }
 
-$('logout-all-button').addEventListener('click', () => {
-    if (!confirm('Sign out on every device where you are signed in, this one included?')) return;
+$('logout-all-button').addEventListener('click', async () => {
+    if (!await ask('Sign out on every device where you are signed in, this one included?', { confirm: 'Sign out everywhere' })) return;
     signOut($('logout-all-button'), '/api/account/sessions/logout-all');
 });
 
