@@ -5,6 +5,7 @@
 // with textContent or as an image src, never as HTML.
 import { ProfileManager } from './profiles.js';
 import { buildDeckForProfile } from './deck-builder.js';
+import { ask, notify } from '../../../assets/js/dialog.js';
 
 export const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,/;
 
@@ -116,7 +117,7 @@ export function submitProfile() {
     const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('new-profile-name'));
     const fileInput = /** @type {HTMLInputElement} */ (document.getElementById('new-profile-avatar'));
     const name = nameInput.value.trim();
-    if (!name) return alert("Please enter a username.");
+    if (!name) return void notify("Please enter a username.");
 
     const save = (avatar) => {
         if (editingProfileId) {
@@ -152,6 +153,6 @@ export function cancelEdit() {
     document.getElementById('profile-cancel-btn').style.display = 'none';
 }
 
-function deleteProfile(id) {
-    if (confirm("Are you sure you want to delete this profile?")) ProfileManager.deleteProfile(id);
+async function deleteProfile(id) {
+    if (await ask('Are you sure you want to delete this profile?', { confirm: 'Delete' })) ProfileManager.deleteProfile(id);
 }

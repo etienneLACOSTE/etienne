@@ -11,6 +11,7 @@ import { startTimer } from './clock.js';
 import { leaveGame } from './match.js';
 import { refreshInvites } from './invites.js';
 import { watchConnection } from '../../../assets/js/connection-notice.js';
+import { notify } from '../../../assets/js/dialog.js';
 
 /** The online buttons and the server's messages. */
 export function setupOnline() {
@@ -20,7 +21,7 @@ export function setupOnline() {
         const p1Id = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select')).value;
         const profile = ProfileManager.find(p1Id);
         if (!profile || !profile.deck || profile.deck.length !== 3) {
-            return alert("You must select a profile with a valid 3-card deck.");
+            return void notify("You must select a profile with a valid 3-card deck.");
         }
         match.p1Profile = profile;
         match.p1Deck = [...profile.deck];
@@ -37,7 +38,7 @@ export function setupOnline() {
         const p1Id = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select')).value;
         const profile = ProfileManager.find(p1Id);
         if (!profile || !profile.deck || profile.deck.length !== 3) {
-            return alert("You must select a profile with a valid 3-card deck.");
+            return void notify("You must select a profile with a valid 3-card deck.");
         }
         const code = /** @type {HTMLInputElement} */ (document.getElementById('room-code-input')).value.trim().toUpperCase();
         if (code.length === 6) {
@@ -45,7 +46,7 @@ export function setupOnline() {
             match.p2Deck = [...profile.deck];
             socket.emit('joinRoom', { roomCode: code, deck: match.p2Deck, profile: match.p2Profile });
         } else {
-            alert("Please enter a valid 6-letter code.");
+            notify("Please enter a valid 6-letter code.");
         }
     });
     
@@ -115,19 +116,19 @@ export function setupOnline() {
     socket.on('opponentLeft', () => {
         session.currentRoomCode = null;
         if (engine.winner) return; // The game is over: the end screen stays up
-        alert("Your opponent left the game.");
         session.isOnline = false;
         showScreen('main-menu');
+        notify('Your opponent left the game.');
     });
 
     // The server closed an idle room (see server/socket-utils.js).
     socket.on('roomClosed', (reason) => {
-        alert(reason);
         leaveGame();
+        notify(reason);
     });
 
     socket.on('errorMsg', (msg) => {
-        alert(msg);
+        notify(msg);
     });
 
     // A dropped connection: the server keeps the seat a while (see connection-notice.js).
@@ -136,8 +137,8 @@ export function setupOnline() {
         onLost: () => {
             session.currentRoomCode = null; // The room is gone: nothing to leave
             if (engine.winner) return; // The game is over: the end screen stays up
-            alert('Connection lost: the game could not be resumed.');
             leaveGame();
+            notify('Connection lost: the game could not be resumed.');
         },
     });
 }
@@ -156,7 +157,7 @@ export function joinFromInvite(roomCode) {
     if (ProfileManager.account) select.value = ProfileManager.account.id;
     const profile = ProfileManager.find(select.value);
     if (!profile || !profile.deck || profile.deck.length !== 3) {
-        alert('Build your deck of three cards first (Deck Builder), then join with this code.');
+        notify('Build your deck of three cards first (Deck Builder), then join with this code.');
         return;
     }
     document.getElementById('btn-join-room').click();

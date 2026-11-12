@@ -13,6 +13,7 @@ import { resetClock, startTimer, stopTimer } from './clock.js';
 import { startDraft } from './draft.js';
 import { generateBotDeck, loadBotProfile } from './bot-player.js';
 import { reportResult } from '../../../assets/js/session.js';
+import { notify } from '../../../assets/js/dialog.js';
 
 /** How long the last move stays on screen before the end screen comes up. */
 const END_SCREEN_DELAY_MS = 700;
@@ -24,7 +25,7 @@ export function startGame(skipDraft) {
     const p1Id = selectedValue('p1-select');
     const p2Id = selectedValue('p2-select');
     if (p1Id === p2Id && !match.isBotGame) {
-        return alert("Please select different profiles for Player 1 and Player 2.");
+        return void notify("Please select different profiles for Player 1 and Player 2.");
     }
     match.p1Profile = ProfileManager.find(p1Id);
     if (!match.isBotGame) match.p2Profile = ProfileManager.find(p2Id);
@@ -43,7 +44,7 @@ export function startGame(skipDraft) {
     }
     const hasDeck = (profile) => profile.deck && profile.deck.length === 3;
     if (!hasDeck(match.p1Profile) || (!match.isBotGame && !hasDeck(match.p2Profile))) {
-        return alert("Both players must have a saved deck (3 cards) to play Campaign Mode. Go to 'Manage Profiles' to build decks.");
+        return void notify("Both players must have a saved deck (3 cards) to play Campaign Mode. Go to 'Manage Profiles' to build decks.");
     }
     match.p1Deck = [...match.p1Profile.deck];
     match.p2Deck = match.isBotGame ? generateBotDeck() : [...match.p2Profile.deck];

@@ -8,6 +8,7 @@
 import { session, socket } from './state.js';
 import { emit } from './events.js';
 import { spellFx } from './spell-fx.js';
+import { notify } from '../../../assets/js/dialog.js';
 
 export const engine = {
     activeCardEl: null,
@@ -131,7 +132,7 @@ export const engine = {
         }
 
         const result = ChesspellGame.clickSquare(this, r, c);
-        if (result.status === 'invalid') return alert(result.message);
+        if (result.status === 'invalid') return void notify(result.message);
         if (result.status === 'next' || result.status === 'done') spellFx.target(r, c);
         if (result.status === 'next') {
             document.getElementById('spell-instruction').textContent = result.instruction;

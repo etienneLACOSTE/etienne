@@ -3,6 +3,7 @@
 // that fill themselves when opened (player select, deck builder) and the focus
 // (a11y.js) follow without this file knowing them.
 import { emit } from './events.js';
+import { notify } from '../../../assets/js/dialog.js';
 
 export function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
@@ -24,7 +25,7 @@ export function toggleTabletopMode() {
             orientation.lock('landscape').catch(e => console.warn('Orientation lock failed:', e));
         }
     }).catch(err => {
-        alert(`Error attempting to enable fullscreen: ${err.message}`);
+        notify(`Error attempting to enable fullscreen: ${err.message}`);
     });
 }
 

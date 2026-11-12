@@ -6,6 +6,7 @@ import { clearCurrentDraft, draftHooks, handleDraftSquareClick, handleTransition
 import { handleGameplaySquareClick, resetGame } from './gameplay.js';
 import { loadBotProfileForDifficulty } from './bot.js';
 import { setupNetwork } from './network.js';
+import { notify } from '../../../assets/js/dialog.js';
 
 /** A tap on a board square (or Enter on it, see a11y.js) goes to the draft or the match. */
 function onBoardPointerdown(e) {
@@ -127,7 +128,7 @@ export function setupEventListeners() {
 
     if (btnCreateRoom) {
         btnCreateRoom.addEventListener('pointerdown', () => {
-            if (!socket) return alert("Online mode is not available right now. Please launch the server.");
+            if (!socket) return void notify("Online mode is not available right now. Please launch the server.");
             enterFullscreen();
             // The creator's timer applies to both players; the server keeps the clock.
             socket.emit('createRoom', { timerMode: state.timerMode, timerSeconds: state.timerBaseSeconds });
@@ -136,13 +137,13 @@ export function setupEventListeners() {
 
     if (btnJoinRoom) {
         btnJoinRoom.addEventListener('pointerdown', () => {
-            if (!socket) return alert("Online mode is not available right now. Please launch the server.");
+            if (!socket) return void notify("Online mode is not available right now. Please launch the server.");
             enterFullscreen();
             const code = inputRoomCode.value.trim().toUpperCase();
             if (code.length === 6) {
                 socket.emit('joinRoom', code);
             } else {
-                alert("Please enter a valid 6-letter code.");
+                notify("Please enter a valid 6-letter code.");
             }
         });
     }

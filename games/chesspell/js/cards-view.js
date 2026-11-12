@@ -3,6 +3,7 @@
 // each player during a game, and the two card dialogs (choose / play a card, card info).
 import { cardsData, match, session, socket } from './state.js';
 import { engine } from './game-engine.js';
+import { notify } from '../../../assets/js/dialog.js';
 
 /** The arcana number of a spell card: I to XX. */
 export function roman(n) {
@@ -82,11 +83,11 @@ export function renderInGameDeck(deckIds, containerId, playerColor) {
         wireInfoButton(cardEl, card);
         cardEl.addEventListener('click', () => {
             if (engine.winner) return; // The game is over
-            if (match.isBotGame && playerColor === 'black') return alert("You cannot use the bot's spells!");
+            if (match.isBotGame && playerColor === 'black') return void notify("You cannot use the bot's spells!");
             if (!cardEl.classList.contains('used') && engine.turn === playerColor && !engine.targetingState) {
                 showCardModal(card, cardEl, playerColor);
             } else if (engine.turn !== playerColor) {
-                alert("Not your turn!");
+                notify("Not your turn!");
             }
         });
         return cardEl;

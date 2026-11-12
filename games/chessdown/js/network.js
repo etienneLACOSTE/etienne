@@ -8,6 +8,7 @@ import { endGame, resetGame, startGameplay, startTurn } from './gameplay.js';
 import { makeVirtualMove } from './rules-bridge.js';
 import { refreshInvites } from './invites.js';
 import { watchConnection } from '../../../assets/js/connection-notice.js';
+import { notify } from '../../../assets/js/dialog.js';
 
 export function setupNetwork() {
     // Socket Events
@@ -138,21 +139,21 @@ export function setupNetwork() {
 
     socket.on('opponentLeft', () => {
         state.currentRoomCode = null;
-        alert("Your opponent left the game.");
         resetGame();
         showScreen(ui.mainMenu);
+        notify('Your opponent left the game.');
     });
 
     // The server closed an idle room (see server/socket-utils.js).
     socket.on('roomClosed', (reason) => {
         state.currentRoomCode = null;
-        alert(reason);
         resetGame();
         showScreen(ui.mainMenu);
+        notify(reason);
     });
 
     socket.on('errorMsg', (msg) => {
-        alert(msg);
+        notify(msg);
     });
 
     // A dropped connection: the server keeps the seat a while (see connection-notice.js).
@@ -161,9 +162,9 @@ export function setupNetwork() {
         onLost: () => {
             state.currentRoomCode = null; // The room is gone: nothing to leave
             if (state.gameState === 'over') return; // The end screen stays up
-            alert('Connection lost: the game could not be resumed.');
             resetGame();
             showScreen(ui.mainMenu);
+            notify('Connection lost: the game could not be resumed.');
         },
     });
     } // End of if (socket)
