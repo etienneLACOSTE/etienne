@@ -10,6 +10,7 @@ import { refreshInvites } from './invites.js';
 import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
 import { drawTurnPlayed } from './draw.js';
+import { chat } from './chat.js';
 
 export function setupNetwork() {
     // Socket Events
@@ -36,6 +37,7 @@ export function setupNetwork() {
         }
         state.playerNames = (data && data.roomState && data.roomState.names) || { 1: null, 2: null };
         startDraftPhase(state.myPlayerNumber);
+        chat?.start(); // Both players are in the room
     });
 
     socket.on('draftPhaseEnded', (data) => {

@@ -12,6 +12,7 @@ import { leaveGame } from './match.js';
 import { refreshInvites } from './invites.js';
 import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
+import { chat } from './chat.js';
 
 /** The online buttons and the server's messages. */
 export function setupOnline() {
@@ -100,6 +101,7 @@ export function setupOnline() {
 
         engine.init();
         showScreen('game-board');
+        chat?.start(); // Both players are in the room
         
         renderInGameDeck(match.p1Deck, 'player1-cards', 'white');
         renderInGameDeck(match.p2Deck, 'player2-cards', 'black');

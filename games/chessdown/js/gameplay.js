@@ -9,6 +9,7 @@ import { announceTurn, resetAnnouncements } from './a11y.js';
 import { checkTouchdownWin, makeVirtualMove, serializeBoard } from './rules-bridge.js';
 import { reportResult } from '../../../assets/js/session.js';
 import { resetDrawOffers } from './draw.js';
+import { chat } from './chat.js';
 
 // --- Gameplay Logic ---
 
@@ -303,6 +304,7 @@ export function resetGame() {
     clearInterval(state.timerInterval);
     if (state.gameState === 'gameplay') state.gameState = 'over'; // No draw offer from the menu
     resetDrawOffers();
+    chat?.stop();
     ui.sideStatus.classList.add('hidden');
     ui.gameContainer.classList.remove('rotate-180');
     ui.victoryScreen.classList.remove('rotate-180');

@@ -1535,3 +1535,48 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .draw-offer-actions { display: flex; gap: 0.6rem; }
 .draw-offer-actions .btn { padding: 0.5rem 1.1rem; font-size: 1rem; }
 .draw-offer button:focus-visible { outline-color: var(--ink); }
+/* Chat of an online game (assets/js/game-chat.js): a vellum page beside the board */
+.game-chat {
+    position: fixed;
+    z-index: 2950;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: max(88px, env(safe-area-inset-bottom, 0px));
+    width: min(22rem, calc(100vw - 32px));
+    max-height: min(26rem, 60vh);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--vellum);
+    color: var(--ink);
+    border: 2px solid var(--gold);
+    outline: 1px solid var(--bronze);
+    outline-offset: -6px;
+    border-radius: 12px;
+    box-shadow: 0 16px 36px rgba(5, 3, 12, 0.6);
+    padding: 0.9rem;
+    font-family: var(--text);
+}
+.game-chat[hidden], .game-chat [hidden] { display: none; }
+.chat-head { display: flex; align-items: center; gap: 0.5rem; }
+.chat-title { margin: 0 auto 0 0; font: 1.4rem var(--display); }
+.chat-head .btn { padding: 0.3rem 0.8rem; font-size: 0.95rem; }
+.chat-log { margin: 0; overflow-y: auto; flex: 1; min-height: 3rem; }
+.chat-message { margin: 0; padding: 0.15rem 0; overflow-wrap: anywhere; }
+.chat-name { font-weight: 700; color: var(--bronze); }
+.chat-message.mine .chat-name { color: var(--ink-soft); }
+.chat-note { margin: 0; color: var(--ink-soft); }
+.chat-note a { color: var(--ink); }
+.chat-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.chat-label { flex-basis: 100%; font-size: 0.9rem; color: var(--ink-soft); }
+.chat-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.7rem;
+    border: 1.5px solid var(--bronze);
+    border-radius: 6px;
+    background: var(--vellum);
+    color: var(--ink);
+    font: 1rem var(--text);
+}
+.chat-form .btn { padding: 0.5rem 1rem; font-size: 1rem; }
+.game-chat button:focus-visible, .game-chat input:focus-visible { outline-color: var(--ink); }
