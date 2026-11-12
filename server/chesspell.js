@@ -1,6 +1,6 @@
 // @ts-check
 const {
-    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf, seatKeeper, drawOffers,
+    generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf, seatKeeper, drawOffers, pulseRooms,
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
@@ -169,6 +169,7 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null }
         closeRoom(code);
     }
     sweepIdleRooms(chesspellRooms, (code) => closeIdleRoom(code));
+    pulseRooms(ioChesspell, chesspellRooms); // Keeps a comeback possible after a long silence
 
     ioChesspell.on('connection', (socket) => {
         console.log('Chesspell User connected:', socket.id);

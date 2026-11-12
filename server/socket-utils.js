@@ -167,6 +167,29 @@ function sweepIdleRooms(rooms, close) {
     setInterval(() => idleRooms(rooms, Date.now()).forEach(close), 60_000).unref();
 }
 
+// A connection comes back with what it missed only if the last message it got is still
+// kept by Socket.io (2 minutes, server/index.js). A player who thinks for long (overall
+// timer) may get nothing for longer: every minute, each game in progress gets a small
+// 'roomPulse' message, kept like the others, so the page always has a recent one.
+// ROOM_PULSE_MS is shorter for the end-to-end tests only.
+const PULSE_MS = Number(process.env.ROOM_PULSE_MS) || 60_000;
+
+/**
+ * Send 'roomPulse' to every room with two players. Returns the function that sends it
+ * once (called every PULSE_MS).
+ * @param {{ to: (room: string) => { emit: Function } }} nsp the game's namespace
+ * @param {Record<string, any>} rooms the game's open rooms
+ */
+function pulseRooms(nsp, rooms) {
+    const pulse = () => {
+        for (const room of Object.values(rooms)) {
+            if (room.players[1] && room.players[2]) nsp.to(room.id).emit('roomPulse');
+        }
+    };
+    setInterval(pulse, PULSE_MS).unref();
+    return pulse;
+}
+
 // A player whose connection drops keeps their seat for a while: Socket.io's connection
 // state recovery (server/index.js) brings the same socket back (same id, same rooms) with
 // the messages it missed. The clock goes on meanwhile. SEAT_HOLD_MS is shorter for the
@@ -335,6 +358,6 @@ function playerOf(room, socket) {
 
 module.exports = {
     generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom, limitKey, identifyPlayers,
-    limitConnections, idleRooms, sweepIdleRooms, seatKeeper, drawOffers,
-    MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST, SEAT_HOLD_MS,
+    limitConnections, idleRooms, sweepIdleRooms, seatKeeper, drawOffers, pulseRooms,
+    MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST, SEAT_HOLD_MS, PULSE_MS,
 };

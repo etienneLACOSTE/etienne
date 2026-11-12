@@ -1,7 +1,7 @@
 // @ts-check
 const {
     generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
-    seatKeeper, drawOffers,
+    seatKeeper, drawOffers, pulseRooms,
     MAX_IDLE_TURNS,
 } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
@@ -163,6 +163,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null }
         closeRoom(code);
     }
     sweepIdleRooms(chessdownRooms, (code) => closeIdleRoom(code));
+    pulseRooms(ioChessdown, chessdownRooms); // Keeps a comeback possible after a long silence
 
     ioChessdown.on('connection', (socket) => {
         console.log('Chessdown User connected:', socket.id);
