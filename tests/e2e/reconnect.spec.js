@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, trackPageErrors } = require('./helpers');
+const { answerDialog, blockExternalRequests, trackPageErrors } = require('./helpers');
 
 // A connection that drops in the middle of an online game keeps its seat for a while
 // (server/socket-utils.js seatKeeper, SEAT_HOLD_MS = 3 s in the tests): it comes back
@@ -149,10 +149,7 @@ test.describe('Reconnection', () => {
     await dropConnection(opponent);
     await expect(notice).toContainText('Your opponent lost their connection. Waiting for them:');
     await expect(notice.locator('.connection-countdown')).toHaveText(/^[0-3] s$/);
-    const dialog = page.waitForEvent('dialog');
-    const message = (await dialog).message();
-    await (await dialog).accept();
-    expect(message).toBe('Your opponent left the game.');
+    await answerDialog(page, 'Your opponent left the game.');
     await expect(notice).toHaveCount(0);
     await expect(page.locator('#main-menu')).toBeVisible();
     expect(errors).toEqual([]);
@@ -186,10 +183,8 @@ test.describe('Reconnection', () => {
       socket.io.engine.close();
     });
     await expect.poll(() => seen(opponent), { timeout: 8000 }).toContain('opponentLeft');
-    const dialog = page.waitForEvent('dialog');
     await page.evaluate(async () => (await import('/chessdown/js/state.js')).socket.connect());
-    expect((await dialog).message()).toBe('Connection lost: the game could not be resumed.');
-    await (await dialog).accept();
+    await answerDialog(page, 'Connection lost: the game could not be resumed.');
     await expect(page.locator('#main-menu')).toBeVisible();
     await ctx.close();
     await other.close();

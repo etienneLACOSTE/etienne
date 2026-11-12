@@ -44,4 +44,17 @@ async function waitForGlobal(page, name, value) {
   await expect.poll(() => readGlobal(page, name), { timeout: 20_000 }).toEqual(value);
 }
 
-module.exports = { blockExternalRequests, trackPageErrors, readGlobal, waitForGlobal };
+/**
+ * Wait for the page's in-page dialog (assets/js/dialog.js) saying `message`, and answer it.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} message
+ * @param {string} [button] the button to press ('OK', or the confirm / cancel label)
+ */
+async function answerDialog(page, message, button = 'OK') {
+  const dialog = page.getByRole('alertdialog', { name: message, exact: true });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: button, exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+}
+
+module.exports = { blockExternalRequests, trackPageErrors, readGlobal, waitForGlobal, answerDialog };

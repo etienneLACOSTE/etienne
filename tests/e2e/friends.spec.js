@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, trackPageErrors } = require('./helpers');
+const { answerDialog, blockExternalRequests, trackPageErrors } = require('./helpers');
 
 // Friends from the account page: send a request by username, accept it, remove, block.
 
@@ -35,8 +35,8 @@ test('send a request, accept it, then remove the friend', async ({ browser }) =>
 
   await a.page.reload();
   await expect(a.page.locator('#friends-list')).toContainText(b.name);
-  a.page.once('dialog', (d) => d.accept());
   await a.page.getByRole('button', { name: `Remove ${b.name} from your friends` }).click();
+  await answerDialog(a.page, `Remove ${b.name} from your friends?`, 'Remove');
   await expect(a.page.locator('#friends-empty')).toBeVisible();
 
   await a.page.getByLabel('Add a friend by their username').fill('nobody-here');
@@ -61,8 +61,8 @@ test('after an action the focus stays useful and the result is read out; a faile
   await expect(notice).toBeFocused(); // The button is gone: the message that says what happened
 
   // A button still there keeps the focus (Block is cancelled here)
-  b.page.once('dialog', (d) => d.dismiss());
   await b.page.getByRole('button', { name: `Block ${a.name}` }).click();
+  await answerDialog(b.page, `Block ${a.name}? They will no longer be able to send you requests or invitations.`, 'Cancel');
   await expect(b.page.getByRole('button', { name: `Block ${a.name}` })).toBeFocused();
   await expect(notice).toBeHidden(); // The old message does not linger
 

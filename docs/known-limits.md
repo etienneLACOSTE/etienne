@@ -81,6 +81,10 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 
 ## Divers (relevés avant les comptes)
 
+- **Erreurs de formulaire dans une boîte de dialogue** (2026-11-12, `assets/js/dialog.js`) :
+  « Please enter a valid 6-letter code » ou « Please enter a username » s'ouvrent dans une
+  boîte au lieu de s'afficher à côté du champ. Piste : un message sous le champ, relié par
+  `aria-describedby`, et le focus remis dans le champ.
 - **Pas de test e2e de l'écran de fin Ches'spell en ligne.**
 - **Le tutoriel (`games/chesspell/js/demo.js`) enveloppe `engine.move` et
   `engine.activateSpell`** pour guider le joueur : dernier endroit où une fonction d'un

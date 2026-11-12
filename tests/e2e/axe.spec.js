@@ -32,6 +32,10 @@ const CHESSDOWN = {
     await pointer(page, '.shop-item[data-type="k"]');
     await pointer(page, '#chessboard .square[data-vr="5"][data-vc="4"]');
   },
+  'in-page dialog': async (page) => { // Joining without a code
+    await pointer(page, '#btn-join-room');
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+  },
   match: async (page) => {
     await CHESSDOWN.draft(page);
     await pointer(page, '#btn-validate-draft');
@@ -75,6 +79,10 @@ const CHESSPELL = {
     }
     await expect(page.locator('#game-board')).toHaveClass(/active/);
   },
+  'in-page dialog': async (page) => {
+    await page.evaluate(() => { import('/assets/js/dialog.js').then((d) => d.ask('Are you sure you want to delete this profile?', { confirm: 'Delete' })); });
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+  },
   'end screen': async (page) => {
     await CHESSPELL.match(page);
     await page.evaluate(() => { // A white queen on e7 takes the black king
@@ -92,6 +100,13 @@ test.describe('axe audit', () => {
 
   test('hub', async ({ page }) => {
     await page.goto('/');
+    expect(await audit(page)).toEqual([]);
+  });
+
+  test('hub: in-page dialog', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => { import('/assets/js/dialog.js').then((d) => d.ask('Remove someone from your friends?', { confirm: 'Remove' })); });
+    await expect(page.getByRole('alertdialog')).toBeVisible();
     expect(await audit(page)).toEqual([]);
   });
 

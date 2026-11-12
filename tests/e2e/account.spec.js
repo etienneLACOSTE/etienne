@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, trackPageErrors } = require('./helpers');
+const { answerDialog, blockExternalRequests, trackPageErrors } = require('./helpers');
 
 // Accounts from the hub: create one, see it in the top bar, sign out, sign in, delete it.
 
@@ -21,8 +21,8 @@ test.describe('Account', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(`Hello, ${name}`);
     for (const [url, button] of [['/api/account/sessions/logout-all', 'Sign out on every device'], ['/api/auth/logout', 'Sign out']]) {
       await page.route(`**${url}`, (route) => route.abort());
-      if (button !== 'Sign out') page.once('dialog', (d) => d.accept());
       await page.getByRole('button', { name: button, exact: true }).click();
+      if (button !== 'Sign out') await answerDialog(page, 'Sign out on every device where you are signed in, this one included?', 'Sign out everywhere');
       const notice = page.locator('#account-notice');
       await expect(notice).toContainText('You are still signed in');
       await expect(notice).toBeFocused();
