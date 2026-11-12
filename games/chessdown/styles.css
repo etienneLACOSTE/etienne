@@ -724,3 +724,17 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .invite-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .invite-actions .invite-join { background: var(--amber); border-color: var(--amber); color: var(--black); }
 .invite-actions .invite-later { background: transparent; border-color: var(--white); color: var(--white); }
+/* In-page dialogs (assets/js/dialog.js): black, white and amber, like the notices */
+.app-dialog {
+    margin: auto; /* Centred: the page resets every margin */
+    width: min(26rem, calc(100vw - 32px));
+    padding: 20px 24px;
+    background: var(--black);
+    color: var(--white);
+    border: 2px solid var(--amber);
+    border-radius: 6px;
+    font-family: var(--text);
+}
+.app-dialog::backdrop { background: rgb(0 0 0 / 0.6); }
+.app-dialog-message { margin: 0 0 16px; font-size: 17px; line-height: 1.45; }
+.app-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
