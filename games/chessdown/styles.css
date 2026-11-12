@@ -704,6 +704,23 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
     padding: 16px 20px;
 }
 .invite-toast p { margin: 0 0 12px; }
+/* A dropped connection, ours or the opponent's (assets/js/connection-notice.js) */
+.connection-notice {
+    position: fixed;
+    z-index: 3000;
+    top: max(16px, env(safe-area-inset-top, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    background: var(--black);
+    color: var(--white);
+    border: 2px solid var(--amber);
+    border-radius: 6px;
+    padding: 10px 16px;
+    text-align: center;
+}
+.connection-countdown { font-variant-numeric: tabular-nums; color: var(--amber); }
 .invite-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .invite-actions .invite-join { background: var(--amber); border-color: var(--amber); color: var(--black); }
 .invite-actions .invite-later { background: transparent; border-color: var(--white); color: var(--white); }

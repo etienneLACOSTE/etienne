@@ -10,6 +10,7 @@ import { renderChessboard } from './board-view.js';
 import { startTimer } from './clock.js';
 import { leaveGame } from './match.js';
 import { refreshInvites } from './invites.js';
+import { watchConnection } from '../../../assets/js/connection-notice.js';
 
 /** The online buttons and the server's messages. */
 export function setupOnline() {
@@ -127,6 +128,17 @@ export function setupOnline() {
 
     socket.on('errorMsg', (msg) => {
         alert(msg);
+    });
+
+    // A dropped connection: the server keeps the seat a while (see connection-notice.js).
+    watchConnection(socket, {
+        inRoom: () => Boolean(session.isOnline && session.currentRoomCode),
+        onLost: () => {
+            session.currentRoomCode = null; // The room is gone: nothing to leave
+            if (engine.winner) return; // The game is over: the end screen stays up
+            alert('Connection lost: the game could not be resumed.');
+            leaveGame();
+        },
     });
 }
 

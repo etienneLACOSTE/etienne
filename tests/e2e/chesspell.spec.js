@@ -363,6 +363,54 @@ test.describe("Ches'spell", () => {
     await ctx2.close();
   });
 
+  test('online: a dropped connection comes back and the game goes on, with a notice meanwhile', async ({ browser }) => {
+    const ctx1 = await browser.newContext();
+    const ctx2 = await browser.newContext();
+    for (const ctx of [ctx1, ctx2]) {
+      await blockExternalRequests(ctx);
+      await seedProfiles(ctx);
+    }
+    const p1 = await ctx1.newPage();
+    const p2 = await ctx2.newPage();
+    const errors = [p1, p2].map(trackPageErrors);
+    for (const page of [p1, p2]) {
+      await page.goto('/chesspell/');
+      await page.getByRole('button', { name: 'Online Multiplayer' }).click();
+    }
+    await p2.locator('#online-p1-select').selectOption('guest2');
+    await p1.locator('#btn-create-room').click();
+    const codeEl = p1.locator('#waiting-room-code');
+    await expect(codeEl).toHaveText(/^[A-Z]{6}$/);
+    await expect(codeEl).not.toHaveText('XXXX');
+    await p2.locator('#room-code-input').fill((await codeEl.textContent()) ?? '');
+    await p2.locator('#btn-join-room').click();
+    for (const page of [p1, p2]) await expect(page.locator('#game-board')).toHaveClass(/active/);
+
+    // Black's connection drops (and is held back, to look at the notices).
+    await p2.evaluate(async () => {
+      const { socket } = await import('/chesspell/js/state.js');
+      socket.io.reconnection(false);
+      socket.io.engine.close();
+    });
+    await expect(p2.locator('.connection-notice')).toHaveText('Connection lost. Reconnecting…');
+    const notice = p1.locator('.connection-notice');
+    await expect(notice).toContainText('Your opponent lost their connection. Waiting for them:');
+    await expect(notice).toHaveAttribute('role', 'status');
+    await clickMove(p1, [6, 4], [4, 4]); // White e4, while Black is away
+
+    await p2.evaluate(async () => (await import('/chesspell/js/state.js')).socket.connect());
+    await expect(notice).toHaveText('Your opponent is back.');
+    await expect(p2.locator('.connection-notice')).toHaveCount(0);
+    await expect.poll(() => pieceAt(p2, 4, 4)).toBe('P'); // The move it missed
+
+    await dragMove(p2, [1, 4], [3, 4], true); // Black e5: the seat is still Black's
+    for (const page of [p1, p2]) await expect.poll(() => pieceAt(page, 3, 4)).toBe('p');
+    await expect(notice).toHaveCount(0); // The "back" notice goes away by itself
+    expect(errors.flat()).toEqual([]);
+    await ctx1.close();
+    await ctx2.close();
+  });
+
   // Regression test: at 375 px the board used to be wider than #game-board
   // (overflow: hidden), so files a and h were half cut off.
   test('the whole board is visible', async ({ page }) => {
