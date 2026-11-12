@@ -50,11 +50,6 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   2026-11-10). Il faut déjà être connecté au compte ; quelqu'un qui a volé la session
   pourrait essayer 10 mots de passe par 15 minutes et par adresse. Piste : compter ces
   échecs avec ceux de la connexion (même compteur par compte).
-- **Adresse du visiteur : en-tête `cf-connecting-ip` cru sur parole** (tribunal du
-  2026-11-10). Si le serveur Render est joignable sans passer par Cloudflare, un visiteur
-  peut écrire cet en-tête lui-même et changer d'« adresse » à chaque essai, ce qui contourne
-  les limites par adresse (pas la limite par compte). Piste : vérifier sur Render si l'accès
-  direct est possible ; sinon, n'accepter l'en-tête que venant des adresses de Cloudflare.
 - **Un seul compte Google par compte Pawnet : vérifié par le code, pas par la base.** Deux
   liaisons envoyées exactement en même temps pourraient passer. Piste : contrainte
   `UNIQUE (user_id, provider)` sur `identities` (migration à valider).
