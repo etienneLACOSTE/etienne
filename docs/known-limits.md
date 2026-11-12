@@ -15,10 +15,6 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
     serveur ne la remarque qu'après le battement de cœur Socket.io (~45 s), puis attend
     30 s. Fermer l'onglet est vu tout de suite (et donne la victoire après 30 s ; le
     bouton « quitter » reste un abandon immédiat).
-  - **La reprise échoue si la page n'a rien reçu depuis plus de 2 minutes** (les messages
-    gardés pour la reprise expirent) : possible en mode « temps total » avec un long
-    temps de réflexion. Le joueur perd alors la partie au bout de 30 s, comme avant.
-    Piste : un message léger envoyé à la salle chaque minute.
 - **Chessdown sur le même écran : le compte est toujours le joueur 1.** Sans profils
   locaux, la page ne sait pas de quel côté est le joueur connecté ; s'il joue les rouges,
   ses victoires sont comptées comme des défaites (seulement dans ses stats « Same screen »,

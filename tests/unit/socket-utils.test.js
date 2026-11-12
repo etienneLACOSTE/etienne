@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
-    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitKey, limitConnections, idleRooms, playerOf, seatKeeper, drawOffers,
+    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitKey, limitConnections, idleRooms, playerOf, seatKeeper, drawOffers, pulseRooms,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, BURST,
 } = require('../../server/socket-utils');
 
@@ -278,4 +278,15 @@ test('draw offer: none outside a game in progress; a dropped connection ends it'
     assert.equal(nsp.sent.length, 2);
     draws.dropped(fakeSocket('p2'));
     assert.deepEqual(nsp.sent.slice(2), toBoth('drawOfferEnded', { reason: 'dropped' }));
+});
+
+test('every game with two players gets a pulse, so a long silence does not prevent a comeback', () => {
+    const nsp = fakeNamespace();
+    const rooms = {
+        PLAYIN: { id: 'PLAYIN', players: { 1: 'p1', 2: 'p2' } },
+        WAITIN: { id: 'WAITIN', players: { 1: 'p3', 2: null } },
+    };
+    const pulse = pulseRooms(nsp, rooms);
+    pulse();
+    assert.deepEqual(nsp.sent, [['PLAYIN', 'roomPulse', undefined]]);
 });

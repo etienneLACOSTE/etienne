@@ -71,7 +71,7 @@ test.describe('Draw by agreement', () => {
     expect(violations.map((v) => v.id)).toEqual([]);
     await bar.getByRole('button', { name: 'Decline' }).click();
     await expect(bar).toHaveCount(0);
-    await expect.poll(() => opponent.evaluate(() => window.seen.at(-1))).toEqual(['drawOfferEnded', { reason: 'declined' }]);
+    await expect.poll(() => opponent.evaluate(() => window.seen.filter(([e]) => e === 'drawOfferEnded'))).toEqual([['drawOfferEnded', { reason: 'declined' }]]);
 
     // This page offers: the opponent accepts.
     await expect(offer).toBeEnabled();
@@ -119,7 +119,7 @@ test.describe('Draw by agreement', () => {
     if (starter === 1) await play(1); // The page plays first: the offer stands
     await expect(offer).toHaveText('Draw offered');
     await play(2);
-    await expect.poll(() => opponent.evaluate(() => window.seen.at(-1)[0])).toBe('moveMade');
+    await expect.poll(() => seen(opponent)).toContain('moveMade');
     await expect.poll(() => seen(opponent)).toContain('drawOfferEnded');
     await expect(offer).toHaveText('Offer draw');
     await expect(offer).toBeEnabled();

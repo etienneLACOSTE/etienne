@@ -32,7 +32,8 @@ module.exports = defineConfig({
     url: `http://127.0.0.1:${PORT}`,
     // The tests open many connections from one machine: no per-address limits for them.
     // A dropped connection keeps its seat 3 s instead of 30 s (server/socket-utils.js).
-    env: { PORT: String(PORT), PER_IP_LIMITS: 'off', SEAT_HOLD_MS: '3000' },
+    // Games in progress get a pulse every second instead of every minute.
+    env: { PORT: String(PORT), PER_IP_LIMITS: 'off', SEAT_HOLD_MS: '3000', ROOM_PULSE_MS: '1000' },
     reuseExistingServer: false,
     stdout: 'ignore',
     stderr: 'pipe',

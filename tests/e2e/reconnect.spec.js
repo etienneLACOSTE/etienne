@@ -94,6 +94,22 @@ test.describe('Reconnection', () => {
     await b.context.close();
   });
 
+  test('a game in progress gets a pulse: the page always has a recent message to come back from', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    await blockExternalRequests(ctx);
+    const [pa, pb] = [await ctx.newPage(), await ctx.newPage()];
+    const errors = [pa, pb].map(trackPageErrors);
+    await onlineChessdown(pa, pb);
+    // Nothing is played: only the pulse arrives, and the page notes its position.
+    const offset = () => pb.evaluate(() => window.s._lastOffset);
+    await expect.poll(() => seen(pb)).toContain('roomPulse');
+    const first = await offset();
+    expect(first).toBeTruthy();
+    await expect.poll(offset).not.toBe(first);
+    expect(errors.flat()).toEqual([]);
+    await ctx.close();
+  });
+
   test('a connection that does not come back in time loses the game', async ({ browser }) => {
     const a = await signedInContext(browser);
     const b = await signedInContext(browser);
