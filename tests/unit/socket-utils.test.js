@@ -2,7 +2,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const {
-    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitKey, limitConnections, idleRooms, playerOf, seatKeeper,
+    safeOn, identifyPlayers, makeRoomFor, roomOrigin, clientIp, limitKey, limitConnections, idleRooms, playerOf, seatKeeper, drawOffers,
     MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, BURST,
 } = require('../../server/socket-utils');
 
@@ -222,4 +222,60 @@ test('signed out while away: the account no longer counts for the game', () => {
     seats.returned(Object.assign(fakeSocket('p1'), { recovered: true, data: { user: null } }));
     assert.equal(rooms.ROOMAB.accounts[1], null);
     seats.release(rooms.ROOMAB);
+});
+
+/** A game in progress between sockets p1 and p2, with draw offers that record agreements. */
+function drawTable() {
+    const nsp = fakeNamespace();
+    const room = { id: 'ROOMAB', players: { 1: 'p1', 2: 'p2' }, gameState: 'playing' };
+    const agreed = [];
+    const draws = drawOffers(nsp, { ROOMAB: room }, (r) => { agreed.push(r.id); r.gameState = 'over'; });
+    return { nsp, room, agreed, draws };
+}
+const toBoth = (event, data) => [['p1', event, data], ['p2', event, data]];
+
+test('draw offer: both players are told, and an acceptance ends the game', () => {
+    const { nsp, agreed, draws, room } = drawTable();
+    draws.offer(room, 1);
+    assert.deepEqual(nsp.sent, toBoth('drawOffered', { by: 1 }));
+    draws.answer(room, 1, true); // Not one's own offer
+    assert.deepEqual(agreed, []);
+    draws.answer(room, 2, true);
+    assert.deepEqual(agreed, ['ROOMAB']);
+    draws.answer(room, 2, true); // Already over
+    assert.deepEqual(agreed, ['ROOMAB']);
+});
+
+test('draw offer: declined, or ended by a turn of the other player; once per turn played', () => {
+    const { nsp, agreed, draws, room } = drawTable();
+    draws.offer(room, 1);
+    draws.answer(room, 2, 'yes'); // Only true accepts
+    assert.deepEqual(nsp.sent.slice(2), toBoth('drawOfferEnded', { reason: 'declined' }));
+    nsp.sent.length = 0;
+    draws.offer(room, 1); // Again in the same turn: refused
+    draws.offer(room, 2);
+    assert.deepEqual(nsp.sent, toBoth('drawOffered', { by: 2 }));
+    draws.offer(room, 1); // One offer at a time
+    assert.equal(nsp.sent.length, 2);
+    draws.turnPlayed(room, 2); // The player who offered plays: the offer stands
+    assert.equal(nsp.sent.length, 2);
+    draws.turnPlayed(room, 1); // The other player plays: it ends
+    assert.deepEqual(nsp.sent.slice(2), toBoth('drawOfferEnded', { reason: 'played' }));
+    draws.answer(room, 1, true);
+    assert.deepEqual(agreed, []);
+    draws.offer(room, 1); // A turn was played since its last offer
+    assert.deepEqual(nsp.sent.at(-1), ['p2', 'drawOffered', { by: 1 }]);
+});
+
+test('draw offer: none outside a game in progress; a dropped connection ends it', () => {
+    const { nsp, draws, room } = drawTable();
+    room.gameState = 'drafting';
+    draws.offer(room, 1);
+    assert.deepEqual(nsp.sent, []);
+    room.gameState = 'playing';
+    draws.offer(room, 1);
+    draws.dropped(fakeSocket('p3')); // Not in the room
+    assert.equal(nsp.sent.length, 2);
+    draws.dropped(fakeSocket('p2'));
+    assert.deepEqual(nsp.sent.slice(2), toBoth('drawOfferEnded', { reason: 'dropped' }));
 });

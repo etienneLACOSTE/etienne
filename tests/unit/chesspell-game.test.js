@@ -458,3 +458,16 @@ test('move: a Domi Reversi piece destroyed by a spell is forgotten (no crash on 
     assert.equal(s.board[3][3], 'Q');
     assert.equal(s.domiReversiPiece, null);
 });
+
+test('a draw agreed by both players ends the game without a winner, once', () => {
+    const state = G.newGame();
+    G.activateSpell(state, 8); // Wall: waiting for a target
+    G.agreeDraw(state);
+    assert.equal(state.winner, 'Draw');
+    assert.equal(state.targetingState, null);
+    assert.equal(G.isLegalMove(state, 6, 4, 4, 4), false, 'no more moves');
+    const won = G.newGame();
+    won.winner = 'White';
+    G.agreeDraw(won);
+    assert.equal(won.winner, 'White', 'a finished game stays finished');
+});
