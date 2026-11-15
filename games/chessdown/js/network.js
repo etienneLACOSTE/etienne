@@ -1,16 +1,59 @@
 // @ts-check
 // Online play: Socket.io event handlers, registered by setupEventListeners().
 import { fireConfetti } from '../confetti.js';
-import { COLOR_HEX, MAX_POINTS, playerName, socket, state, ui } from './state.js';
+import { COLOR_HEX, Engine, MAX_POINTS, playerName, socket, state, ui } from './state.js';
 import { clearHighlights, renderBoard, showScreen } from './board-view.js';
 import { setupColorPicker, startDraftPhase } from './draft.js';
-import { endGame, resetGame, startGameplay, startTurn } from './gameplay.js';
+import { endGame, resetGame, resumeGameplay, startGameplay, startTurn } from './gameplay.js';
 import { makeVirtualMove } from './rules-bridge.js';
 import { refreshInvites } from './invites.js';
 import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
 import { drawTurnPlayed } from './draw.js';
 import { chat } from './chat.js';
+import { keepSeat, RESUME_FAILED } from '../../../assets/js/seat.js';
+
+/**
+ * Show the game the server sent back to a reloaded page: the waiting room, the draft
+ * (started again, or waiting for the opponent once drafted) or the game in progress.
+ * @param {any} data server/chessdown.js resumeState
+ */
+function resumeOnlineGame(data) {
+    resetGame();
+    ui.victoryScreen.classList.add('hidden');
+    state.currentRoomCode = data.id;
+    state.myPlayerNumber = data.playerNumber;
+    state.isBotMatch = false;
+    state.timerMode = data.timer.mode;
+    state.timerBaseSeconds = data.timer.seconds;
+    state.playerNames = data.names || { 1: null, 2: null };
+    state.playerColors = data.playerColors;
+    state.board = data.board;
+    state.lastMove = data.lastMove;
+    if (data.gameState === 'waiting') {
+        document.getElementById('waiting-room-code').textContent = data.id;
+        showScreen(document.getElementById('waiting-screen'));
+        refreshInvites();
+        return;
+    }
+    chat?.start(); // Both players are in the room
+    if (data.gameState === 'drafting') {
+        const me = state.myPlayerNumber;
+        // Points and king of the pieces already placed (only once drafted).
+        const mine = state.board.flat().filter((piece) => piece && piece.player === me);
+        state.draftPoints[me] = MAX_POINTS - mine.reduce((sum, piece) => sum + Engine.PIECE_VALUES[piece.type], 0);
+        state.kingsPlaced[me] = mine.some((piece) => piece.type === 'k');
+        startDraftPhase(me);
+        if (data.drafted) {
+            ui.draftHeader.classList.add('hidden');
+            ui.draftFooter.classList.add('hidden');
+            ui.statusBar.textContent = 'Waiting for opponent to finish drafting...';
+            ui.btnValidateDraft.disabled = true;
+        }
+        return;
+    }
+    resumeGameplay(data);
+}
 
 export function setupNetwork() {
     // Socket Events
@@ -167,6 +210,10 @@ export function setupNetwork() {
     socket.on('errorMsg', (msg) => {
         notify(msg);
     });
+
+    // A reloaded page comes back to its game (assets/js/seat.js).
+    socket.on('seatResumed', resumeOnlineGame);
+    keepSeat(socket, 'chessdown', { onFailed: (reason) => notify(RESUME_FAILED[reason]) });
 
     // A dropped connection: the server keeps the seat a while (see connection-notice.js).
     watchConnection(socket, {

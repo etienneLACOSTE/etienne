@@ -14,6 +14,7 @@ import { startDraft } from './draft.js';
 import { generateBotDeck, loadBotProfile } from './bot-player.js';
 import { reportResult } from '../../../assets/js/session.js';
 import { notify } from '../../../assets/js/dialog.js';
+import { forgetSeat } from '../../../assets/js/seat.js';
 
 /** How long the last move stays on screen before the end screen comes up. */
 const END_SCREEN_DELAY_MS = 700;
@@ -85,6 +86,7 @@ export function leaveGame() {
     if (session.isOnline && socket) {
         if (session.currentRoomCode) socket.emit('leaveRoom', { roomCode: session.currentRoomCode });
         session.currentRoomCode = null;
+        forgetSeat('chesspell');
         session.isOnline = false;
     }
     showScreen('main-menu');

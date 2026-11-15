@@ -13,6 +13,7 @@ import { refreshInvites } from './invites.js';
 import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
 import { chat } from './chat.js';
+import { forgetSeat, keepSeat, RESUME_FAILED } from '../../../assets/js/seat.js';
 
 /** The online buttons and the server's messages. */
 export function setupOnline() {
@@ -56,6 +57,7 @@ export function setupOnline() {
             socket.emit('leaveRoom', { roomCode: session.currentRoomCode });
             session.currentRoomCode = null;
         }
+        forgetSeat('chesspell');
         showScreen('main-menu');
     });
 
@@ -77,38 +79,22 @@ export function setupOnline() {
     });
 
     socket.on('gameStarted', (data) => {
-        const state = data.roomState;
-        match.isBotGame = false; // Even after a campaign game on this page
         // Our own profile and deck are set; the opponent's come from the room.
         if (session.myPlayerNumber === 1) {
-            match.p2Profile = state.profiles[2];
-            match.p2Deck = state.decks[2];
+            match.p2Profile = data.roomState.profiles[2];
+            match.p2Deck = data.roomState.decks[2];
         } else {
-            match.p1Profile = state.profiles[1];
-            match.p1Deck = state.decks[1];
+            match.p1Profile = data.roomState.profiles[1];
+            match.p1Deck = data.roomState.decks[1];
         }
-        
-        setupPlayerBanner('player1-banner', match.p1Profile);
-        setupPlayerBanner('player2-banner', match.p2Profile);
-        
-        // Both players use the room's timer (chosen by its creator).
-        const timer = state.timer || { mode: 'turn', seconds: 10 };
-        clock.mode = timer.mode;
-        clock.minutes = Math.floor(timer.seconds / 60);
-        clock.seconds = timer.seconds % 60;
-        clock.leftP1 = timer.seconds;
-        clock.leftP2 = timer.seconds;
-
-        engine.init();
-        showScreen('game-board');
-        chat?.start(); // Both players are in the room
-        
-        renderInGameDeck(match.p1Deck, 'player1-cards', 'white');
-        renderInGameDeck(match.p2Deck, 'player2-cards', 'black');
-        
+        showOnlineGame(data.roomState);
         renderChessboard();
         startTimer();
     });
+
+    // A reloaded page comes back to its game (assets/js/seat.js).
+    socket.on('seatResumed', resumeOnlineGame);
+    keepSeat(socket, 'chesspell', { onFailed: (reason) => notify(RESUME_FAILED[reason]) });
 
     // The server referees the game: after every action it sends the new state.
     socket.on('gameState', ({ state, action }) => {
@@ -143,6 +129,63 @@ export function setupOnline() {
             notify('Connection lost: the game could not be resumed.');
         },
     });
+}
+
+/**
+ * The game screen of an online game: banners, the room's timer, a fresh board and both
+ * hands. The profiles and decks are in `match` already.
+ * @param {any} roomState server/chesspell.js getChesspellPublicRoomState
+ */
+function showOnlineGame(roomState) {
+    match.isBotGame = false; // Even after a campaign game on this page
+    setupPlayerBanner('player1-banner', match.p1Profile);
+    setupPlayerBanner('player2-banner', match.p2Profile);
+
+    // Both players use the room's timer (chosen by its creator).
+    const timer = roomState.timer || { mode: 'turn', seconds: 10 };
+    clock.mode = timer.mode;
+    clock.minutes = Math.floor(timer.seconds / 60);
+    clock.seconds = timer.seconds % 60;
+    clock.leftP1 = timer.seconds;
+    clock.leftP2 = timer.seconds;
+
+    engine.init();
+    showScreen('game-board');
+    chat?.start(); // Both players are in the room
+
+    renderInGameDeck(match.p1Deck, 'player1-cards', 'white');
+    renderInGameDeck(match.p2Deck, 'player2-cards', 'black');
+}
+
+/**
+ * Show the game the server sent back to a reloaded page: the waiting room, or the game
+ * in progress with the time left. Our own profile is this page's when it has it (its
+ * stats are kept here), else the copy the room holds.
+ * @param {any} data server/chesspell.js 'seatResumed'
+ */
+function resumeOnlineGame(data) {
+    const { roomState } = data;
+    const mine = (/** @type {any} */ profile) => (profile && ProfileManager.find(profile.id)) || profile;
+    document.getElementById('game-over-modal').classList.add('hidden');
+    session.currentRoomCode = data.roomCode;
+    session.myPlayerNumber = data.playerNumber;
+    session.myPlayerColor = data.playerNumber === 1 ? 'white' : 'black';
+    session.isOnline = true;
+    match.p1Profile = data.playerNumber === 1 ? mine(roomState.profiles[1]) : roomState.profiles[1];
+    match.p2Profile = data.playerNumber === 2 ? mine(roomState.profiles[2]) : roomState.profiles[2];
+    match.p1Deck = roomState.decks[1];
+    match.p2Deck = roomState.decks[2];
+    if (roomState.gameState === 'waiting' || !data.state) {
+        document.getElementById('waiting-room-code').textContent = data.roomCode;
+        showScreen('waiting-screen');
+        refreshInvites();
+        return;
+    }
+    showOnlineGame(roomState);
+    engine.applyServerState(data.state, null);
+    clock.leftP1 = Math.ceil(data.timeLeft.white / 1000);
+    clock.leftP2 = Math.ceil(data.timeLeft.black / 1000);
+    startTimer({ keep: true });
 }
 
 /**

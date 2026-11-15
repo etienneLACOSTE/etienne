@@ -43,6 +43,32 @@ function showMatchup() {
     matchup.textContent = `${playerName(me)} vs ${playerName(me === 1 ? 2 : 1)}`;
 }
 
+/**
+ * Online, a page that comes back to a game in progress (assets/js/seat.js): the board as
+ * the server keeps it, whose turn it is and the time left, without the coin flip.
+ * @param {{ currentPlayer: number, positionHistory: Record<string, number>, timeLeft: Record<number, number> }} game
+ */
+export function resumeGameplay({ currentPlayer, positionHistory, timeLeft }) {
+    resetAnnouncements(); // a11y.js
+    state.gameState = 'gameplay';
+    resetDrawOffers();
+    state.positionHistory = { ...positionHistory }; // The current position is counted already
+    state.currentPlayer = currentPlayer;
+    state.playerTimeRemaining[1] = timeLeft[1];
+    state.playerTimeRemaining[2] = timeLeft[2];
+    ui.statusBar.classList.add('hidden');
+    ui.gameContainer.classList.remove('rotate-180', 'draft-mode');
+    ui.gameLayout.classList.remove('hidden');
+    createBoardDOM(false);
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+    ui.sideStatus.classList.remove('hidden');
+    state.selectedBoardPiece = null;
+    clearHighlights();
+    renderBoard();
+    startTimer(timeLeft[currentPlayer]);
+    announceTurn();
+}
+
 export function finalizeGameplayStart() {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
     ui.sideStatus.classList.remove('hidden'); // Show timer
@@ -106,11 +132,12 @@ export function formatTime(ms) {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function startTimer() {
+/** @param {number} [turnLeftMs] per-turn mode: what is left of a turn already started */
+export function startTimer(turnLeftMs) {
     if (state.timerInterval) clearInterval(state.timerInterval);
     
     if (state.timerMode === 'turn') {
-        state.timeLeft = state.timerBaseSeconds * 1000;
+        state.timeLeft = turnLeftMs ?? state.timerBaseSeconds * 1000;
     }
     
     // Set hourglass flow direction

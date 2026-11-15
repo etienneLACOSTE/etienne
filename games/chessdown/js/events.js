@@ -9,6 +9,7 @@ import { setupNetwork } from './network.js';
 import { notify } from '../../../assets/js/dialog.js';
 import { setupDraw } from './draw.js';
 import { fireConfetti } from '../confetti.js';
+import { forgetSeat } from '../../../assets/js/seat.js';
 
 /** A tap on a board square (or Enter on it, see a11y.js) goes to the draft or the match. */
 function onBoardPointerdown(e) {
@@ -161,6 +162,7 @@ export function setupEventListeners() {
         if (state.currentRoomCode) {
             socket.emit('leaveRoom', { roomCode: state.currentRoomCode });
             state.currentRoomCode = null;
+            forgetSeat('chessdown');
         }
         resetGame();
         showScreen(ui.mainMenu);

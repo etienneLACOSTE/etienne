@@ -27,10 +27,14 @@ export function stopTimer() {
     clock.interval = null;
 }
 
-/** Start counting down for the player whose turn it is. */
-export function startTimer() {
+/**
+ * Start counting down for the player whose turn it is.
+ * @param {{ keep?: boolean }} [options] keep: count on from the time left as it is (a page
+ *   coming back to a game online), instead of a full turn
+ */
+export function startTimer({ keep = false } = {}) {
     stopTimer();
-    if (clock.mode === 'turn') resetClock();
+    if (clock.mode === 'turn' && !keep) resetClock();
     document.getElementById('side-status').classList.remove('hidden');
     clock.interval = setInterval(() => {
         if (engine.turn === 'white') {
