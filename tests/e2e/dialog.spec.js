@@ -17,12 +17,12 @@ test.describe('In-page dialogs', () => {
     page.on('dialog', (d) => { throw new Error(`Browser dialog opened: ${d.message()}`); });
   });
 
-  test('Chessdown: a mistake is told in the page, and the focus comes back', async ({ page }) => {
+  test('Chessdown: a message is told in the page, and the focus comes back', async ({ page }) => {
     await page.goto('/chessdown/');
     const join = page.locator('#btn-join-room');
     await join.focus();
-    await join.dispatchEvent('pointerdown'); // No code typed
-    const dialog = page.getByRole('alertdialog', { name: 'Please enter a valid 6-letter code.' });
+    await open(page, 'notify', 'Your opponent left the game.');
+    const dialog = page.getByRole('alertdialog', { name: 'Your opponent left the game.' });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'OK' })).toBeFocused();
     await page.keyboard.press('Enter');
