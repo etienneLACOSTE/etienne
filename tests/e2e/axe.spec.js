@@ -32,8 +32,12 @@ const CHESSDOWN = {
     await pointer(page, '.shop-item[data-type="k"]');
     await pointer(page, '#chessboard .square[data-vr="5"][data-vc="4"]');
   },
-  'in-page dialog': async (page) => { // Joining without a code
+  'form error': async (page) => { // Joining without a code: told under the field
     await pointer(page, '#btn-join-room');
+    await expect(page.getByRole('alert')).toBeVisible();
+  },
+  'in-page dialog': async (page) => {
+    await page.evaluate(() => { import('/assets/js/dialog.js').then((d) => d.notify('Your opponent left the game.')); });
     await expect(page.getByRole('alertdialog')).toBeVisible();
   },
   match: async (page) => {
