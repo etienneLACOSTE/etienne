@@ -176,6 +176,8 @@ h1 {
 .account-line strong { color: var(--white); }
 .account-line a { color: var(--amber); }
 .join-row button { flex: 1; }
+.field-error { margin: 6px 0 0; color: var(--amber); font-weight: 700; }
+#room-code-input[aria-invalid="true"] { border-color: var(--amber); }
 
 #room-code-input {
     width: 7.5em;

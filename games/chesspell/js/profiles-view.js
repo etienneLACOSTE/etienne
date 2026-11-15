@@ -5,7 +5,8 @@
 // with textContent or as an image src, never as HTML.
 import { ProfileManager } from './profiles.js';
 import { buildDeckForProfile } from './deck-builder.js';
-import { ask, notify } from '../../../assets/js/dialog.js';
+import { ask } from '../../../assets/js/dialog.js';
+import { clearFieldError, showFieldError } from '../../../assets/js/field-error.js';
 
 export const AVATAR_DATA_URL = /^data:image\/(png|jpeg|webp);base64,/;
 
@@ -117,7 +118,8 @@ export function submitProfile() {
     const nameInput = /** @type {HTMLInputElement} */ (document.getElementById('new-profile-name'));
     const fileInput = /** @type {HTMLInputElement} */ (document.getElementById('new-profile-avatar'));
     const name = nameInput.value.trim();
-    if (!name) return void notify("Please enter a username.");
+    if (!name) return showFieldError(nameInput, 'Enter a username.');
+    clearFieldError(nameInput);
 
     const save = (avatar) => {
         if (editingProfileId) {

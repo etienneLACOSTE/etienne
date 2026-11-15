@@ -10,6 +10,7 @@ import { choose, notify } from '../../../assets/js/dialog.js';
 import { setupDraw } from './draw.js';
 import { fireConfetti } from '../confetti.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
+import { clearFieldError, showFieldError } from '../../../assets/js/field-error.js';
 
 /** A tap on a board square (or Enter on it, see a11y.js) goes to the draft or the match. */
 function onBoardPointerdown(e) {
@@ -151,15 +152,16 @@ export function setupEventListeners() {
     }
 
     if (btnJoinRoom) {
-        btnJoinRoom.addEventListener('pointerdown', () => {
+        btnJoinRoom.addEventListener('pointerdown', (e) => {
             if (!socket) return void notify("Online mode is not available right now. Please launch the server.");
-            enterFullscreen();
             const code = inputRoomCode.value.trim().toUpperCase();
-            if (code.length === 6) {
-                socket.emit('joinRoom', code);
-            } else {
-                notify("Please enter a valid 6-letter code.");
+            if (!/^[A-Z]{6}$/.test(code)) {
+                e.preventDefault(); // The mouse press must not take the focus away from the field
+                return showFieldError(inputRoomCode, 'Enter the 6-letter code of the room.', { after: inputRoomCode.parentElement });
             }
+            clearFieldError(inputRoomCode);
+            enterFullscreen();
+            socket.emit('joinRoom', code);
         });
     }
 

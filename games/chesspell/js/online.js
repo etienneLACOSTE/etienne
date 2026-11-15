@@ -14,17 +14,30 @@ import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
 import { chat } from './chat.js';
 import { forgetSeat, keepSeat, RESUME_FAILED } from '../../../assets/js/seat.js';
+import { clearFieldError, showFieldError } from '../../../assets/js/field-error.js';
+
+/**
+ * The profile chosen to play online, with its deck of three cards; else null, and the
+ * player is told under the list.
+ */
+function chosenProfile() {
+    const select = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select'));
+    const profile = ProfileManager.find(select.value);
+    if (!profile || !profile.deck || profile.deck.length !== 3) {
+        showFieldError(select, 'Choose a profile with a deck of three cards (build it in the Deck Builder).');
+        return null;
+    }
+    clearFieldError(select);
+    return profile;
+}
 
 /** The online buttons and the server's messages. */
 export function setupOnline() {
     if (!socket) return;
     
     document.getElementById('btn-create-room')?.addEventListener('click', () => {
-        const p1Id = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select')).value;
-        const profile = ProfileManager.find(p1Id);
-        if (!profile || !profile.deck || profile.deck.length !== 3) {
-            return void notify("You must select a profile with a valid 3-card deck.");
-        }
+        const profile = chosenProfile();
+        if (!profile) return;
         match.p1Profile = profile;
         match.p1Deck = [...profile.deck];
         // The creator's timer applies to both players; the server keeps the clock.
@@ -37,19 +50,15 @@ export function setupOnline() {
     });
     
     document.getElementById('btn-join-room')?.addEventListener('click', () => {
-        const p1Id = /** @type {HTMLSelectElement} */ (document.getElementById('online-p1-select')).value;
-        const profile = ProfileManager.find(p1Id);
-        if (!profile || !profile.deck || profile.deck.length !== 3) {
-            return void notify("You must select a profile with a valid 3-card deck.");
-        }
-        const code = /** @type {HTMLInputElement} */ (document.getElementById('room-code-input')).value.trim().toUpperCase();
-        if (code.length === 6) {
-            match.p2Profile = profile; // Locally, we are p2 joining
-            match.p2Deck = [...profile.deck];
-            socket.emit('joinRoom', { roomCode: code, deck: match.p2Deck, profile: match.p2Profile });
-        } else {
-            notify("Please enter a valid 6-letter code.");
-        }
+        const profile = chosenProfile();
+        if (!profile) return;
+        const input = /** @type {HTMLInputElement} */ (document.getElementById('room-code-input'));
+        const code = input.value.trim().toUpperCase();
+        if (!/^[A-Z]{6}$/.test(code)) return showFieldError(input, 'Enter the 6-letter code of the room.');
+        clearFieldError(input);
+        match.p2Profile = profile; // Locally, we are p2 joining
+        match.p2Deck = [...profile.deck];
+        socket.emit('joinRoom', { roomCode: code, deck: match.p2Deck, profile: match.p2Profile });
     });
     
     document.getElementById('btn-leave-room')?.addEventListener('click', () => {

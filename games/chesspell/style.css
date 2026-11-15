@@ -1231,6 +1231,9 @@ body.tabletop-mode .chess-piece { font-size: calc(min(85vw, 80vh) / 8 * 0.78); }
     font-size: 1rem;
 }
 .create-profile input::placeholder, #room-code-input::placeholder { color: var(--muted); }
+.field-error { margin: 0.25rem 0 0; color: var(--ember); font-weight: 700; text-align: center; }
+.create-profile input[aria-invalid="true"], #room-code-input[aria-invalid="true"],
+.player-select-box select[aria-invalid="true"] { border-color: var(--ember); }
 
 .profiles-list {
     display: flex;
