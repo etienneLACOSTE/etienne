@@ -224,6 +224,71 @@ test('signed out while away: the account no longer counts for the game', () => {
     seats.release(rooms.ROOMAB);
 });
 
+/** A new connection (a reloaded page) that records what it is sent and the rooms it joins. */
+function pageSocket(id, user = null) {
+    return Object.assign(fakeSocket(id), {
+        data: { user }, emitted: [], joined: [],
+        emit(event, data) { this.emitted.push([event, data]); },
+        join(code) { this.joined.push(code); },
+    });
+}
+
+/** The seat token `socket` was given last. */
+const tokenOf = (socket) => socket.emitted.filter(([e]) => e === 'seatToken').at(-1)[1].token;
+
+test('a reloaded page takes its seat back with its token while the seat is held', () => {
+    const { nsp, rooms, gone, seats } = seatedRoom(1000);
+    const room = rooms.ROOMAB;
+    const first = pageSocket('p1');
+    seats.issue(room, 1, first);
+    const token = tokenOf(first);
+    assert.match(token, /^[A-Za-z0-9_-]{22}$/);
+    assert.deepEqual(first.emitted[0], ['seatToken', { roomCode: 'ROOMAB', token }]);
+
+    // Still connected (another tab, or the old page not closed yet): busy.
+    const early = pageSocket('p1b', { id: 1 });
+    assert.deepEqual(seats.resume(early, { roomCode: 'ROOMAB', token }), { error: 'busy' });
+
+    seats.dropped(fakeSocket('p1'), 'transport close');
+    const back = pageSocket('p1b', { id: 1 });
+    assert.deepEqual(seats.resume(back, { roomCode: 'ROOMAB', token }), { room, player: 1 });
+    assert.equal(room.players[1], 'p1b');
+    assert.deepEqual(back.joined, ['ROOMAB']);
+    assert.deepEqual(room.accounts[1], { id: 1 }, 'the same account still counts');
+    assert.deepEqual(nsp.sent.at(-1), ['p2', 'opponentReconnected', undefined]);
+    assert.notEqual(tokenOf(back), token, 'a new token each time');
+    assert.equal(room.seatHolds[1], undefined);
+
+    // The old token no longer works.
+    seats.dropped(fakeSocket('p1b'), 'transport close');
+    assert.deepEqual(seats.resume(pageSocket('x'), { roomCode: 'ROOMAB', token }), { error: 'gone' });
+    seats.release(room);
+    assert.deepEqual(gone, []);
+});
+
+test('a seat is not taken back with a wrong token, from another account, or after the game', () => {
+    const { rooms, gone, seats } = seatedRoom(1000);
+    const room = rooms.ROOMAB;
+    const first = pageSocket('p1');
+    seats.issue(room, 1, first);
+    const token = tokenOf(first);
+    seats.dropped(fakeSocket('p1'), 'transport close');
+    for (const data of [null, {}, { roomCode: 'ROOMAB' }, { roomCode: 'ROOMAB', token: 'x'.repeat(22) },
+        { roomCode: 'ROOMAB', token: 42 }, { roomCode: 'OTHERS', token }, { roomCode: '__proto__', token }]) {
+        assert.deepEqual(seats.resume(pageSocket('y'), data), { error: 'gone' }, JSON.stringify(data));
+    }
+    // Another account (or a guest) with the token plays on, but not for the account.
+    seats.resume(pageSocket('p1b', { id: 7 }), { roomCode: 'ROOMAB', token });
+    assert.equal(room.accounts[1], null);
+
+    // The game ended meanwhile: the seat is given up at once.
+    const next = room.seatTokens[1];
+    seats.dropped(fakeSocket('p1b'), 'transport close');
+    room.gameState = 'over';
+    assert.deepEqual(seats.resume(pageSocket('p1c'), { roomCode: 'ROOMAB', token: next }), { error: 'over' });
+    assert.deepEqual(gone, [1]);
+});
+
 /** A game in progress between sockets p1 and p2, with draw offers that record agreements. */
 function drawTable() {
     const nsp = fakeNamespace();

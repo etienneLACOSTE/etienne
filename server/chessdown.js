@@ -38,6 +38,25 @@ function getChessdownPublicRoomState(room) {
     };
 }
 
+/**
+ * Everything a page that comes back needs to show the game again. During the draft, only
+ * the player's own pieces: the opponent's army stays hidden until both have drafted.
+ */
+function resumeState(room, player) {
+    const board = room.gameState === 'drafting'
+        ? room.board.map((row) => row.map((piece) => (piece && piece.player === player ? piece : null)))
+        : room.board;
+    return {
+        ...getChessdownPublicRoomState(room),
+        board,
+        playerNumber: player,
+        drafted: Boolean(room.drafted[player]),
+        lastMove: room.lastMove,
+        positionHistory: room.positionHistory,
+        timeLeft: room.clock.left([1, 2]),
+    };
+}
+
 function newGameState() {
     return {
         gameState: 'drafting',
@@ -50,6 +69,7 @@ function newGameState() {
         playAgain: { 1: false, 2: false },
         idleTurns: 0,
         positionHistory: {}, // Position key -> times seen, for the draw by repetition
+        result: null, // { winner, reason } once the game is over
         draw: null, // Draw offers (server/socket-utils.js drawOffers)
     };
 }
@@ -86,6 +106,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null }
 
     /** A finished game counts for each signed-in player. winner: 1 or 2, or 0 for a draw. */
     function recordResult(room, winner, reason) {
+        room.result = { winner, reason };
         if (!stats) return;
         const name = (p) => (room.accounts[p] ? room.accounts[p].username : `Player ${p}`);
         stats.recordOnline({
@@ -192,6 +213,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null }
 
             socket.join(roomCode);
             socket.emit('roomCreated', roomCode);
+            seats.issue(room, 1, socket);
         });
 
         safeOn(socket, 'joinRoom', (roomCode) => {
@@ -205,12 +227,20 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null }
                 room.accounts[2] = socket.data.user;
                 socket.join(roomCode);
                 socket.emit('roomJoined', { roomCode, playerNumber: 2 });
+                seats.issue(room, 2, socket);
 
                 room.gameState = 'drafting';
                 ioChessdown.to(roomCode).emit('gameStarted', {
                     roomState: getChessdownPublicRoomState(room)
                 });
             }
+        });
+
+        // A reloaded page takes its seat back (server/socket-utils.js) and gets the game.
+        safeOn(socket, 'resumeSeat', (data) => {
+            const back = seats.resume(socket, data);
+            if ('error' in back) return socket.emit('resumeFailed', { reason: back.error });
+            socket.emit('seatResumed', resumeState(back.room, back.player));
         });
 
         safeOn(socket, 'draftComplete', (data) => {

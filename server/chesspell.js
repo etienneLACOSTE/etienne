@@ -203,6 +203,7 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null }
 
             socket.join(roomCode);
             socket.emit('roomCreated', roomCode);
+            seats.issue(room, 1, socket);
         });
 
         safeOn(socket, 'joinRoom', (data) => {
@@ -223,6 +224,7 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null }
 
                 socket.join(roomCode);
                 socket.emit('roomJoined', { roomCode, playerNumber: 2 });
+                seats.issue(room, 2, socket);
 
                 room.gameState = 'playing';
                 room.startedAt = Date.now();
@@ -232,6 +234,20 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null }
                 });
                 room.clock.start('white');
             }
+        });
+
+        // A reloaded page takes its seat back (server/socket-utils.js) and gets the game.
+        safeOn(socket, 'resumeSeat', (data) => {
+            const back = seats.resume(socket, data);
+            if ('error' in back) return socket.emit('resumeFailed', { reason: back.error });
+            const { room, player } = back;
+            socket.emit('seatResumed', {
+                roomCode: room.id,
+                playerNumber: player,
+                roomState: getChesspellPublicRoomState(room),
+                state: room.game ? Game.snapshot(room.game) : null,
+                timeLeft: room.clock.left(['white', 'black']),
+            });
         });
 
         /** The room and color of a member whose turn it is, or null. */

@@ -201,11 +201,24 @@ const RECOVERABLE_REASONS = new Set([
     'transport error', 'transport close', 'forced close', 'ping timeout', 'server shutting down', 'forced server close',
 ]);
 
+/** A seat token: 128 random bits, URL-safe. */
+const newSeatToken = () => crypto.randomBytes(16).toString('base64url');
+const SEAT_TOKEN = /^[A-Za-z0-9_-]{22}$/;
+
+/** Compare two seat tokens in constant time. */
+function sameToken(a, b) {
+    return typeof a === 'string' && typeof b === 'string' && a.length === b.length
+        && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
 /**
  * Seats of one game kept through a dropped connection. Each player is told by their own
  * socket id, so a player who comes back only gets the messages meant for them:
  * - the opponent: 'opponentDisconnected' { seconds }, then 'opponentReconnected' or 'opponentLeft';
  * - the player who did not come back in time: 'seatLost' (replayed if they come back later).
+ * A page that reloads gets a new connection, not the old one: it takes its seat back with
+ * the seat token it was given ('seatToken' { roomCode, token }, kept by the page for this
+ * tab only) while the seat is held (resume).
  * @param {{ to: (room: string) => { emit: Function } }} nsp the game's namespace
  * @param {Record<string, any>} rooms the game's open rooms
  * @param {(room: any, player: 1 | 2) => void} gone the player is gone for good: count the
@@ -255,6 +268,46 @@ function seatKeeper(nsp, rooms, gone, { holdMs = SEAT_HOLD_MS } = {}) {
                 if (room.accounts && !socket.data.user) room.accounts[player] = null;
                 tell(room, player === 1 ? 2 : 1, 'opponentReconnected');
             }
+        },
+        /** Give `socket` the token of its seat (a new one each time: an old one stops working). */
+        issue(room, player, socket) {
+            room.seatTokens = room.seatTokens || {};
+            room.seatTokens[player] = newSeatToken();
+            socket.emit('seatToken', { roomCode: room.id, token: room.seatTokens[player] });
+        },
+        /**
+         * A new connection (a reloaded page) takes its seat back with its token, while the
+         * seat is held. Returns the room and seat, or why not:
+         * - 'gone': no such seat (wrong token, room closed, seat already lost);
+         * - 'busy': the seat's connection is still open (another tab, or the server has
+         *   not seen the old page close yet: the page tries again);
+         * - 'over': the game has ended meanwhile; the seat is given up.
+         * @returns {{ room: any, player: 1 | 2 } | { error: 'gone' | 'busy' | 'over' }}
+         */
+        resume(socket, data) {
+            const room = getRoom(rooms, data && data.roomCode);
+            const token = data && data.token;
+            if (!room || typeof token !== 'string' || !SEAT_TOKEN.test(token)) return { error: 'gone' };
+            const tokens = room.seatTokens || {};
+            const player = /** @type {(1 | 2)[]} */ ([1, 2]).find((p) => sameToken(tokens[p], token));
+            if (!player) return { error: 'gone' };
+            if (room.players[player] === socket.id) return { room, player };
+            if (!room.seatHolds || !room.seatHolds[player]) return { error: 'busy' };
+            if (room.gameState === 'over') {
+                leave(room, player);
+                return { error: 'over' };
+            }
+            clearTimeout(room.seatHolds[player]);
+            delete room.seatHolds[player];
+            // Only the same account keeps counting for the game.
+            const account = room.accounts && room.accounts[player];
+            if (account && (!socket.data.user || Number(socket.data.user.id) !== Number(account.id))) room.accounts[player] = null;
+            room.players[player] = socket.id;
+            room.lastActivity = Date.now();
+            socket.join(room.id);
+            this.issue(room, player, socket);
+            tell(room, player === 1 ? 2 : 1, 'opponentReconnected');
+            return { room, player };
         },
         /** The room closes: no seat to keep any more. */
         release(room) {

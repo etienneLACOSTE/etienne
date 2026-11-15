@@ -61,6 +61,25 @@ class TurnClock {
         this.remaining.clear();
     }
 
+    /**
+     * Time left now for each of `sides`, in ms: of the running turn for the player to
+     * move ("turn" mode, a full turn for the other), or of the whole game ("overall").
+     * For a page that comes back in the middle of a game.
+     * @template {string | number} S
+     * @param {S[]} sides
+     * @returns {Record<S, number>}
+     */
+    left(sides) {
+        const elapsed = this.startedAt === null ? 0 : Math.max(0, Date.now() - this.startedAt);
+        const result = /** @type {Record<S, number>} */ ({});
+        for (const side of sides) {
+            const spent = side === this.side ? elapsed : 0;
+            const budget = this.timer.mode === 'turn' ? this.timer.ms : (this.remaining.has(side) ? this.remaining.get(side) : this.timer.ms);
+            result[side] = Math.max(0, budget - spent);
+        }
+        return result;
+    }
+
     /** For the clients: { mode, seconds }. */
     get settings() {
         return { mode: this.timer.mode, seconds: this.timer.ms / 1000 };
