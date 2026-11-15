@@ -9,8 +9,11 @@ const { migrate } = require('./migrate');
 /**
  * @typedef {{ rows: any[] }} Result
  * @typedef {{ query: (sql: string, params?: any[]) => Promise<Result> }} Queryable
+ * A transaction can also run a whole SQL script, several statements without parameters
+ * (the migrations): `exec`.
+ * @typedef {Queryable & { exec: (sql: string) => Promise<void> }} Tx
  * @typedef {Queryable & {
- *   transaction: <T>(fn: (tx: Queryable) => Promise<T>) => Promise<T>,
+ *   transaction: <T>(fn: (tx: Tx) => Promise<T>) => Promise<T>,
  *   close: () => Promise<void>,
  * }} Db
  */
@@ -37,7 +40,11 @@ async function inTransaction(pool, fn) {
     let broken = null;
     try {
         await client.query('BEGIN');
-        const result = await fn({ query: (sql, params) => client.query(sql, params) });
+        const result = await fn({
+            query: (sql, params) => client.query(sql, params),
+            // Without parameters, node-postgres uses the simple protocol: several statements at once.
+            exec: async (sql) => { await client.query(sql); },
+        });
         await client.query('COMMIT');
         return result;
     } catch (err) {
@@ -78,7 +85,10 @@ async function openInMemory(options = {}) {
     const pg = new PGlite(options);
     return {
         query: (sql, params) => pg.query(sql, params),
-        transaction: (fn) => pg.transaction((tx) => fn({ query: (sql, params) => tx.query(sql, params) })),
+        transaction: (fn) => pg.transaction((tx) => fn({
+            query: (sql, params) => tx.query(sql, params),
+            exec: async (sql) => { await tx.exec(sql); },
+        })),
         close: () => pg.close(),
     };
 }

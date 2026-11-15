@@ -17,10 +17,11 @@ async function migrate(db) {
     const files = fs.readdirSync(DIR).filter((f) => /^\d{3}_[a-z0-9_]+\.sql$/.test(f)).sort();
     for (const file of files) {
         if (done.has(file)) continue;
-        const statements = fs.readFileSync(path.join(DIR, file), 'utf8')
-            .split(/;\s*$/m).map((s) => s.trim()).filter(Boolean);
+        // The whole file at once: PostgreSQL itself reads its statements, so comments,
+        // strings and $$ bodies (DO blocks, functions) need no care.
+        const script = fs.readFileSync(path.join(DIR, file), 'utf8');
         await db.transaction(async (tx) => {
-            for (const sql of statements) await tx.query(sql);
+            await tx.exec(script);
             await tx.query('INSERT INTO schema_migrations (name) VALUES ($1)', [file]);
         });
     }
