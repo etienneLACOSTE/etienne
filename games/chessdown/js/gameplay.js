@@ -300,15 +300,16 @@ export function endGame(title, reason, winner, how) {
     state.gameState = 'over';
     resetDrawOffers();
     clearInterval(state.timerInterval);
-    // Against the bot or on the same screen, the signed-in player is player 1 (online,
-    // the server records the result).
-    if (!state.currentRoomCode && state.account && how) {
+    // Against the bot, the signed-in player is player 1; on the same screen, the side they
+    // chose at the start (none: not counted). Online, the server records the result.
+    const side = state.isBotMatch ? 1 : state.localSide;
+    if (!state.currentRoomCode && state.account && how && side) {
         reportResult({
             game: 'chessdown',
             mode: state.isBotMatch ? 'bot' : 'local',
-            result: winner === 0 ? 'draw' : winner === 1 ? 'win' : 'loss',
+            result: winner === 0 ? 'draw' : winner === side ? 'win' : 'loss',
             reason: how,
-            opponent: state.isBotMatch ? `Bot (${state.botDifficultyLevel || 'master'})` : 'Player 2',
+            opponent: state.isBotMatch ? `Bot (${state.botDifficultyLevel || 'master'})` : `Player ${side === 1 ? 2 : 1}`,
             startedAt: state.matchStartedAt,
         });
     }

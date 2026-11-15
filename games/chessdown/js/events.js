@@ -6,7 +6,7 @@ import { clearCurrentDraft, draftHooks, handleDraftSquareClick, handleTransition
 import { endGame, handleGameplaySquareClick, resetGame } from './gameplay.js';
 import { loadBotProfileForDifficulty } from './bot.js';
 import { setupNetwork } from './network.js';
-import { notify } from '../../../assets/js/dialog.js';
+import { choose, notify } from '../../../assets/js/dialog.js';
 import { setupDraw } from './draw.js';
 import { fireConfetti } from '../confetti.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
@@ -29,10 +29,22 @@ export function setupEventListeners() {
 
     const btnStartLocal = document.getElementById('btn-start-local');
     if (btnStartLocal) {
-        btnStartLocal.addEventListener('pointerdown', () => {
+        btnStartLocal.addEventListener('pointerdown', async (e) => {
+            e.preventDefault(); // The mouse press must not take the focus out of the question below
             state.currentRoomCode = null;
             state.isBotMatch = false;
-            enterFullscreen();
+            enterFullscreen(); // While the tap still counts as the player's gesture
+            state.localSide = 0;
+            if (state.account) {
+                // The game counts in the account's stats for the side its player takes.
+                const side = await choose('Which side are you? The game counts in your stats for that side.', [
+                    { label: 'Player 1 (drafts first)', value: '1' },
+                    { label: 'Player 2', value: '2' },
+                    { label: 'Neither (not counted)', value: '0' },
+                ]);
+                if (!side) return; // Escape: back to the menu
+                state.localSide = Number(side);
+            }
             startDraftPhase(1);
         });
     }

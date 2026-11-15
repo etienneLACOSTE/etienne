@@ -70,3 +70,13 @@ export async function ask(message, { confirm = 'OK', cancel = 'Cancel' } = {}) {
     ]);
     return answer === 'confirm';
 }
+
+/**
+ * A question with several answers, one button each (the first one has the focus).
+ * @param {string} message
+ * @param {{ label: string, value: string }[]} choices
+ * @returns {Promise<string>} the value chosen, '' when closed with Escape
+ */
+export async function choose(message, choices) {
+    return open(message, choices.map((c, i) => ({ ...c, primary: i === 0, focus: i === 0 })));
+}

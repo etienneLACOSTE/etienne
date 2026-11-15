@@ -58,6 +58,8 @@ export const state = {
     botTrainingData: null, // training_data.json
     /** @type {{ id: number, username: string } | null} The signed-in player (assets/js/session.js). */
     account: null,
+    /** Same screen: the signed-in player's side (1 or 2) for their stats, 0: not counted. */
+    localSide: 0,
     /** When the current match started (Date.now()), for the time played. */
     matchStartedAt: 0,
     /** Online: each player's username (null for a guest), sent by the server. */
