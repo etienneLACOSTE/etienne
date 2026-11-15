@@ -3,16 +3,23 @@
 // - only when both players are signed in (accounts), and neither has blocked the other;
 // - each player can turn the chat off: they get nothing, and the opponent cannot write;
 // - short text messages, relayed as text, limited in rate;
-// - nothing is kept: no storage, no log of what is written.
+// - nothing is stored, except a message its reader reports: the last messages of a game
+//   stay in the server's memory while it lasts, so that the reported one is copied from
+//   there (never from what the reporting page says), into chat_reports (server/reports.js);
+// - a player can block their opponent from the game: no more chat, and the block works as
+//   on the account page (server/friends.js).
 // Events: the page sends 'chatJoin' { roomCode, muted } when an online game starts,
-// 'chatMuted' { roomCode, muted } and 'chatMessage' { roomCode, text }. Each player gets
-// 'chatState' { available, reason, opponentMuted }, 'chatMessage' { from, name, text } and
-// 'chatNotice' { reason }.
+// 'chatMuted' { roomCode, muted }, 'chatMessage' { roomCode, text },
+// 'chatReport' { roomCode, messageId } and 'chatBlock' { roomCode }. Each player gets
+// 'chatState' { available, reason, opponentMuted }, 'chatMessage' { id, from, name, text }
+// and 'chatNotice' { reason, messageId? }.
 const { safeOn, getRoom, playerOf } = require('./socket-utils');
 
 const MAX_LENGTH = 200;
 const RATE_WINDOW_MS = 10_000;
 const RATE_MAX = 5; // Messages per window and per connection
+const RECENT = 30; // Messages of a game kept in memory, the ones that can be reported
+const MAX_REPORTS = 5; // Reports per player and per game
 
 // Control characters, and the ones that reverse the direction of the text around them.
 const UNSAFE = /[\p{Cc}‪-‮⁦-⁩]/gu;
@@ -28,15 +35,28 @@ function cleanMessage(text) {
 /**
  * @param {{ to: (room: string) => { emit: Function } }} nsp the game's namespace
  * @param {Record<string, any>} rooms the game's open rooms
- * @param {{ blocked: (blocker: number, blocked: number) => Promise<boolean> } | null} friends
+ * @param {{ blocked: (blocker: number, blocked: number) => Promise<boolean>, block?: (me: number, other: number) => Promise<void> } | null} friends
  *   blocks between players (server/friends.js); null: no chat at all
+ * @param {{ game?: string, reports?: { save: (r: any) => Promise<void> } | null, onBlock?: (ids: number[]) => void }} [options]
+ *   game: its name, for the reports; reports: where reported messages go (server/reports.js),
+ *   null: no reports; onBlock: a player blocked another from a game (friends lists change)
  * @returns {{ connect: (socket: any) => void }}
  */
-function gameChat(nsp, rooms, friends) {
-    /** room.chat: who turned it off; whether the two accounts block each other (asked once). */
-    const chatOf = (room) => room.chat || (room.chat = { muted: { 1: false, 2: false }, blockedFor: '', blocked: null });
+function gameChat(nsp, rooms, friends, { game = '', reports = null, onBlock = () => {} } = {}) {
+    /**
+     * room.chat: who turned it off; who blocks whom between the two accounts (asked once);
+     * the last messages, and the ones each player reported.
+     */
+    const chatOf = (room) => room.chat || (room.chat = {
+        muted: { 1: false, 2: false }, blockedFor: '', blocked: null,
+        recent: [], nextId: 1, reported: { 1: new Set(), 2: new Set() },
+    });
 
-    /** True when either player blocked the other (asked once per pair of accounts). */
+    /**
+     * Who blocks whom: { 1: player 1 blocked player 2, 2: the other way }, or null when it
+     * cannot be known (no chat then). Asked once per pair of accounts.
+     * @returns {Promise<{ 1: boolean, 2: boolean } | null>}
+     */
     function blockedPair(room) {
         const chat = chatOf(room);
         const [a, b] = [room.accounts[1], room.accounts[2]];
@@ -44,20 +64,23 @@ function gameChat(nsp, rooms, friends) {
         if (chat.blockedFor !== pair || !chat.blocked) {
             chat.blockedFor = pair;
             chat.blocked = Promise.all([friends.blocked(a.id, b.id), friends.blocked(b.id, a.id)])
-                .then(([x, y]) => x || y)
-                .catch(() => true); // Unknown: no chat
+                .then(([x, y]) => ({ 1: x, 2: y }))
+                .catch(() => null);
         }
         return chat.blocked;
     }
 
-    /** Whether `player` can chat in `room`, and why not. */
+    /** Whether `player` can chat in `room`, and why not. A blocked player is never told so. */
     async function stateFor(room, player) {
         const other = player === 1 ? 2 : 1;
         const accounts = room.accounts || {};
         if (!friends || !room.players[other]) return { available: false, reason: 'unavailable', opponentMuted: false };
         if (!accounts[player]) return { available: false, reason: 'you-guest', opponentMuted: false };
         if (!accounts[other]) return { available: false, reason: 'opponent-guest', opponentMuted: false };
-        if (await blockedPair(room)) return { available: false, reason: 'unavailable', opponentMuted: false };
+        const blocks = await blockedPair(room);
+        if (!blocks || blocks[1] || blocks[2]) {
+            return { available: false, reason: blocks && blocks[player] ? 'you-blocked' : 'unavailable', opponentMuted: false };
+        }
         return { available: true, reason: null, opponentMuted: chatOf(room).muted[other] };
     }
 
@@ -114,13 +137,59 @@ function gameChat(nsp, rooms, friends) {
                 if (!state.available || !socket.data.user || chatOf(room).muted[player]) return;
                 if (state.opponentMuted) return socket.emit('chatNotice', { reason: 'muted' });
                 if (tooFast(socket)) return socket.emit('chatNotice', { reason: 'rate' });
-                const message = { from: player, name: room.accounts[player].username, text };
+                const chat = chatOf(room);
+                const message = { id: chat.nextId++, from: player, name: room.accounts[player].username, text };
+                chat.recent.push({ ...message, userId: room.accounts[player].id });
+                if (chat.recent.length > RECENT) chat.recent.shift();
                 for (const p of [player, other]) {
                     if (room.players[p]) nsp.to(room.players[p]).emit('chatMessage', message);
                 }
+            });
+
+            // A message of the opponent's, reported: copied from the server's memory.
+            safeOn(socket, 'chatReport', async (data) => {
+                const s = seat(socket, data);
+                if (!s || !reports) return;
+                const { room, player } = s;
+                const me = room.accounts && room.accounts[player];
+                if (!me || !socket.data.user) return;
+                const chat = chatOf(room);
+                const message = chat.recent.find((m) => m.id === data.messageId && m.from !== player);
+                const reported = chat.reported[player];
+                if (!message || reported.has(message.id)) return;
+                if (reported.size >= MAX_REPORTS) return socket.emit('chatNotice', { reason: 'report-limit', messageId: message.id });
+                reported.add(message.id);
+                try {
+                    await reports.save({ reporterId: me.id, reportedId: message.userId, reportedName: message.name, game, message: message.text });
+                    socket.emit('chatNotice', { reason: 'reported', messageId: message.id });
+                } catch (err) {
+                    reported.delete(message.id);
+                    console.error(`Chat report not saved: ${err.message}`);
+                    socket.emit('chatNotice', { reason: 'report-failed', messageId: message.id });
+                }
+            });
+
+            // Block the opponent from the game: as on the account page, for good.
+            safeOn(socket, 'chatBlock', async (data) => {
+                const s = seat(socket, data);
+                if (!s || !friends || !friends.block) return;
+                const { room, player } = s;
+                const me = room.accounts && room.accounts[player];
+                const them = room.accounts && room.accounts[player === 1 ? 2 : 1];
+                if (!me || !them || !socket.data.user) return;
+                try {
+                    await friends.block(me.id, them.id);
+                } catch (err) {
+                    console.error(`Block from a game not saved: ${err.message}`);
+                    return socket.emit('chatNotice', { reason: 'block-failed' });
+                }
+                chatOf(room).blocked = null; // Asked again
+                socket.emit('chatNotice', { reason: 'blocked' });
+                onBlock([me.id, them.id]);
+                await tellState(room);
             });
         },
     };
 }
 
-module.exports = { gameChat, cleanMessage, MAX_LENGTH, RATE_MAX };
+module.exports = { gameChat, cleanMessage, MAX_LENGTH, RATE_MAX, RECENT, MAX_REPORTS };

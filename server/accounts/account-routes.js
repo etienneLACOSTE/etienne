@@ -11,6 +11,7 @@ const { avatarProblem } = require('./avatar');
 const { sanitizeDeck } = require('../chesspell');
 const { statsStore, resultProblem } = require('../stats');
 const { friendStore } = require('../friends');
+const { reportStore } = require('../reports');
 
 /** What each game may save on the account, checked like the game server checks it. */
 const DECK_CHECKS = {
@@ -131,6 +132,7 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, 
                     blocked: f.blocked,
                 };
             })(),
+            chatReports: await reportStore(db).about(a.id),
             linkedSignIns: a.providers.map((p) => ({ provider: p.provider, linkedAt: p.created_at })),
             sessions: signedIn.map((s) => ({ signedInAt: s.created_at, expiresAt: s.expires_at })),
             note: 'The password itself is never stored, only a one-way hash of it, which is not included.',

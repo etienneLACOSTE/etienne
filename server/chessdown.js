@@ -95,11 +95,13 @@ function isValidDraft(pieces, player) {
 
 /**
  * @param {import('socket.io').Server} io
- * @param {{ sessions?: any, stats?: any, friends?: any }} [options] sessions: who is signed in
- *   (server/accounts/sessions.js); stats: where finished games are recorded (server/stats.js);
- *   friends: blocks between players, for the chat (server/friends.js)
+ * @param {{ sessions?: any, stats?: any, friends?: any, reports?: any, onBlock?: (ids: number[]) => void }} [options]
+ *   sessions: who is signed in (server/accounts/sessions.js); stats: where finished games are
+ *   recorded (server/stats.js); friends: blocks between players, for the chat
+ *   (server/friends.js); reports: reported chat messages (server/reports.js); onBlock: a
+ *   player blocked another from the chat
  */
-function registerChessdown(io, { sessions = null, stats = null, friends = null } = {}) {
+function registerChessdown(io, { sessions = null, stats = null, friends = null, reports = null, onBlock = () => {} } = {}) {
     const ioChessdown = io.of('/chessdown');
     limitConnections(ioChessdown);
     identifyPlayers(ioChessdown, sessions, stats);
@@ -175,7 +177,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null }
     });
 
     // Chat between the two players (server/chat.js).
-    const chat = gameChat(ioChessdown, chessdownRooms, friends);
+    const chat = gameChat(ioChessdown, chessdownRooms, friends, { game: 'chessdown', reports, onBlock });
 
     /** Close a room nobody uses any more, and tell its players why. */
     function closeIdleRoom(code, reason = 'Game closed after 15 minutes without activity.') {

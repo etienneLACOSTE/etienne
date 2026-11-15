@@ -15,6 +15,7 @@ const { statsStore } = require('./stats');
 const { friendsRouter, friendStore } = require('./friends');
 const { registerPresence } = require('./presence');
 const { forgetSignedOut } = require('./sign-out');
+const { reportStore } = require('./reports');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -62,21 +63,26 @@ async function start() {
     const sessions = sessionStore(db);
     const stats = statsStore(db);
     const friends = friendStore(db);
-    const chesspell = registerChesspell(io, { sessions, stats, friends });
-    const chessdown = registerChessdown(io, { sessions, stats, friends });
+    const reports = reportStore(db);
+    // A block from a game's chat changes friends lists, as one from the account page does.
+    /** @type {(ids: number[]) => void} */
+    let friendsChanged = () => {};
+    const onBlock = (ids) => friendsChanged(ids);
+    const chesspell = registerChesspell(io, { sessions, stats, friends, reports, onBlock });
+    const chessdown = registerChessdown(io, { sessions, stats, friends, reports, onBlock });
     const rooms = { chesspell: chesspell.rooms, chessdown: chessdown.rooms };
     const presence = registerPresence(io, { sessions, friends, rooms });
+    friendsChanged = (ids) => presence.friendsChanged(ids).catch(logError('Presence: friends update failed'));
     const onSignOut = (who) => forgetSignedOut(io, rooms, who);
     app.use('/api/auth', oauthRouter(db));
     app.use('/api/auth', authRouter(db, { onSignOut }));
     app.use('/api/account', accountRouter(db, { onSignOut }));
-    app.use('/api/friends', friendsRouter(db, {
-        onChange: (ids) => presence.friendsChanged(ids).catch(logError('Presence: friends update failed')),
-    }));
+    app.use('/api/friends', friendsRouter(db, { onChange: friendsChanged }));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
     const cleanUp = () => {
         sessions.deleteExpired().catch(logError('Cleanup: expired sessions'));
         deleteExpiredPending(db).catch(logError('Cleanup: expired Google sign-ins'));
+        reports.deleteOld().catch(logError('Cleanup: old chat reports'));
     };
     cleanUp(); // At start too: a server that restarts often would otherwise never clean up
     setInterval(cleanUp, HOUR).unref();

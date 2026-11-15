@@ -71,11 +71,13 @@ function sanitizeProfile(profile, deck) {
 
 /**
  * @param {import('socket.io').Server} io
- * @param {{ sessions?: any, stats?: any, friends?: any }} [options] sessions: who is signed in
- *   (server/accounts/sessions.js); stats: where finished games are recorded (server/stats.js);
- *   friends: blocks between players, for the chat (server/friends.js)
+ * @param {{ sessions?: any, stats?: any, friends?: any, reports?: any, onBlock?: (ids: number[]) => void }} [options]
+ *   sessions: who is signed in (server/accounts/sessions.js); stats: where finished games are
+ *   recorded (server/stats.js); friends: blocks between players, for the chat
+ *   (server/friends.js); reports: reported chat messages (server/reports.js); onBlock: a
+ *   player blocked another from the chat
  */
-function registerChesspell(io, { sessions = null, stats = null, friends = null } = {}) {
+function registerChesspell(io, { sessions = null, stats = null, friends = null, reports = null, onBlock = () => {} } = {}) {
     const ioChesspell = io.of('/chesspell');
     limitConnections(ioChesspell);
     identifyPlayers(ioChesspell, sessions, stats);
@@ -160,7 +162,7 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null }
     });
 
     // Chat between the two players (server/chat.js).
-    const chat = gameChat(ioChesspell, chesspellRooms, friends);
+    const chat = gameChat(ioChesspell, chesspellRooms, friends, { game: 'chesspell', reports, onBlock });
 
     /** Close a room nobody uses any more, and tell its players why. */
     function closeIdleRoom(code, reason = 'Game closed after 15 minutes without activity.') {
