@@ -3,6 +3,9 @@
 // a "Chat" button; it opens a panel with the messages, a field to write, and a switch to
 // turn the chat off (remembered on this device). The chat exists only between two
 // accounts: a guest is asked to sign in. Messages are shown as text, never as HTML.
+// Each message of the opponent can be reported (kept 90 days on the server, see
+// server/reports.js), and the opponent can be blocked from the panel.
+import { ask } from './dialog.js';
 
 const OFF_KEY = 'pawnet.chatOff';
 const MAX_LENGTH = 200; // As on the server
@@ -11,6 +14,15 @@ const NOTES = {
     'you-guest': 'Sign in to chat with your opponent.',
     'opponent-guest': 'Your opponent is playing as a guest: no chat.',
     unavailable: 'Chat is not available in this game.',
+    'you-blocked': 'You blocked this player. You can unblock them on your account page.',
+};
+
+/** What the panel says after a report or a block. */
+const NOTICES = {
+    rate: 'You are sending messages too fast. Wait a few seconds.',
+    'report-failed': 'The report could not be sent. Try again.',
+    'report-limit': 'You cannot report more messages in this game. You can block this player.',
+    'block-failed': 'The block could not be saved. Try again, or block them from your account page.',
 };
 
 function readOff() {
@@ -42,6 +54,7 @@ export function createChat(socket, { button, roomCode, me }) {
         <div class="chat-head">
             <h2 class="chat-title" id="game-chat-title">Chat</h2>
             <button type="button" class="chat-switch btn btn-secondary">Turn chat off</button>
+            <button type="button" class="chat-block btn btn-secondary">Block</button>
             <button type="button" class="chat-close btn btn-secondary" aria-label="Close the chat">×</button>
         </div>
         <div class="chat-log" role="log" aria-live="polite" aria-label="Messages"></div>
@@ -57,6 +70,9 @@ export function createChat(socket, { button, roomCode, me }) {
     const form = /** @type {HTMLFormElement} */ (panel.querySelector('.chat-form'));
     const input = /** @type {HTMLInputElement} */ (panel.querySelector('.chat-input'));
     const toggle = /** @type {HTMLButtonElement} */ (panel.querySelector('.chat-switch'));
+    const block = /** @type {HTMLButtonElement} */ (panel.querySelector('.chat-block'));
+    /** The Report button of each message of the opponent still on screen, by message id. */
+    const reportButtons = new Map();
     button.setAttribute('aria-controls', panel.id);
     button.setAttribute('aria-expanded', 'false');
 
@@ -67,6 +83,7 @@ export function createChat(socket, { button, roomCode, me }) {
         button.setAttribute('aria-expanded', String(open));
         panel.hidden = !open;
         toggle.hidden = !state.available;
+        block.hidden = !state.available;
         toggle.textContent = off ? 'Turn chat on' : 'Turn chat off';
         log.hidden = !state.available || off;
         form.hidden = !canWrite;
@@ -106,6 +123,28 @@ export function createChat(socket, { button, roomCode, me }) {
         if (code) socket.emit('chatMuted', { roomCode: code, muted: off });
         render();
     });
+    block.addEventListener('click', async () => {
+        const sure = await ask('Block your opponent? You will no longer chat with them, and they cannot send you friend requests or invitations. You can unblock them on your account page.', { confirm: 'Block', cancel: 'Cancel' });
+        const code = roomCode();
+        if (sure && code) socket.emit('chatBlock', { roomCode: code });
+        block.focus();
+    });
+    /** The Report button of a message of the opponent's. */
+    function reportButton(/** @type {number} */ id, /** @type {string} */ name) {
+        const report = Object.assign(document.createElement('button'), { type: 'button', className: 'chat-report', textContent: 'Report' });
+        report.setAttribute('aria-label', `Report this message from ${name}`);
+        report.addEventListener('click', async () => {
+            const sure = await ask('Report this message? It is kept for 90 days so that it can be checked, then deleted.', { confirm: 'Report', cancel: 'Cancel' });
+            const code = roomCode();
+            if (sure && code && report.isConnected) {
+                report.disabled = true;
+                socket.emit('chatReport', { roomCode: code, messageId: id });
+            }
+            if (report.isConnected) report.focus();
+        });
+        reportButtons.set(id, report);
+        return report;
+    }
     form.addEventListener('submit', (e) => {
         e.preventDefault();
         const text = input.value.trim();
@@ -132,17 +171,30 @@ export function createChat(socket, { button, roomCode, me }) {
             className: 'chat-name', textContent: mine ? 'You' : String(data.name || 'Opponent'),
         });
         item.append(name, ': ', String(data.text));
+        if (!mine && Number.isInteger(data.id)) item.append(' ', reportButton(data.id, name.textContent));
         log.append(item);
         while (log.children.length > 100) log.firstElementChild?.remove(); // Only the last 100
+        for (const [id, report] of reportButtons) if (!report.isConnected) reportButtons.delete(id);
         log.scrollTop = log.scrollHeight;
         if (!open && !mine) unread++;
         render();
     });
     socket.on('chatNotice', (/** @type {any} */ data) => {
-        if (data && data.reason === 'rate') {
-            note.hidden = false;
-            note.textContent = 'You are sending messages too fast. Wait a few seconds.';
+        const reason = data && data.reason;
+        const report = reportButtons.get(data && data.messageId);
+        if (reason === 'reported' && report) {
+            const done = Object.assign(document.createElement('span'), { className: 'chat-reported', textContent: 'Reported' });
+            const hadFocus = document.activeElement === report;
+            report.replaceWith(done);
+            reportButtons.delete(data.messageId);
+            if (hadFocus) (form.hidden ? toggle : input).focus();
+            return;
         }
+        if (report) report.disabled = reason === 'report-limit';
+        if (reason === 'blocked') return; // The new chatState says it
+        if (!NOTICES[reason]) return;
+        note.hidden = false;
+        note.textContent = NOTICES[reason];
     });
 
     return {
@@ -152,6 +204,7 @@ export function createChat(socket, { button, roomCode, me }) {
             if (!code) return;
             if (code !== startedFor) {
                 log.replaceChildren();
+                reportButtons.clear();
                 unread = 0;
                 state = { available: false, reason: null, opponentMuted: false };
             }
@@ -164,6 +217,7 @@ export function createChat(socket, { button, roomCode, me }) {
         stop() {
             startedFor = '';
             log.replaceChildren();
+            reportButtons.clear();
             unread = 0;
             open = false;
             button.hidden = true;

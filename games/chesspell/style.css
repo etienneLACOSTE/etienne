@@ -1557,13 +1557,26 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
     font-family: var(--text);
 }
 .game-chat[hidden], .game-chat [hidden] { display: none; }
-.chat-head { display: flex; align-items: center; gap: 0.5rem; }
+.chat-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .chat-title { margin: 0 auto 0 0; font: 1.4rem var(--display); }
 .chat-head .btn { padding: 0.3rem 0.8rem; font-size: 0.95rem; }
 .chat-log { margin: 0; overflow-y: auto; flex: 1; min-height: 3rem; }
 .chat-message { margin: 0; padding: 0.15rem 0; overflow-wrap: anywhere; }
 .chat-name { font-weight: 700; color: var(--bronze); }
 .chat-message.mine .chat-name { color: var(--ink-soft); }
+.chat-report {
+    min-height: 24px;
+    margin-left: 0.25rem;
+    padding: 0 0.4rem;
+    background: none;
+    border: 1px solid var(--ink-soft);
+    border-radius: 4px;
+    color: var(--ink-soft);
+    font: 0.8rem var(--text);
+    cursor: pointer;
+}
+.chat-report:hover, .chat-report:focus-visible { color: var(--ink); border-color: var(--bronze); }
+.chat-reported { margin-left: 0.25rem; font-size: 0.8rem; color: var(--ink-soft); font-style: italic; }
 .chat-note { margin: 0; color: var(--ink-soft); }
 .chat-note a { color: var(--ink); }
 .chat-form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
