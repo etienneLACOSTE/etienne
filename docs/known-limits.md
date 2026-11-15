@@ -7,10 +7,12 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 
 - **Coupure de connexion en ligne : la place est gardée 30 secondes** (2026-11-12,
   `seatKeeper` dans `server/socket-utils.js`, reprise de connexion Socket.io). Ce qui reste :
-  - **Recharger ou rouvrir la page ne fait pas revenir dans la partie** : seule une
-    connexion qui revient d'elle-même est reprise (le navigateur garde son identifiant de
-    session Socket.io en mémoire). Piste : un jeton de place gardé dans `sessionStorage`,
-    et une resynchronisation complète de la partie (Chessdown applique les coups un à un).
+  - **Recharger la page fait revenir dans la partie** (2026-11-15, `assets/js/seat.js`) :
+    un jeton de place gardé dans `sessionStorage` (cet onglet seulement), tant que la place
+    est gardée. Ce qui reste : la draft de Chessdown en cours recommence de zéro (seule
+    une armée validée est gardée) ; le chat repart vide ; ouvrir la partie dans un autre
+    onglet ou navigateur ne la reprend pas (le jeton est propre à l'onglet) ; une partie
+    finie n'est pas reprise (l'écran de fin et « Play Again » sont perdus).
   - **Une coupure franche est vue tard** : sans fermeture propre (Wi-Fi perdu, tunnel), le
     serveur ne la remarque qu'après le battement de cœur Socket.io (~45 s), puis attend
     30 s. Fermer l'onglet est vu tout de suite (et donne la victoire après 30 s ; le
