@@ -157,7 +157,14 @@ function oauthRouter(db, { providers = realProviders(), attemptsPerWindow = 30, 
             // One sign-in per provider and account: unlinking removes the provider's sign-in.
             const already = (await db.query('SELECT 1 FROM identities WHERE user_id = $1 AND provider = $2', [current.id, name])).rows.length;
             if (!owner && already) return back(res, { error: 'already' });
-            if (!owner) await db.query('INSERT INTO identities (provider, subject, user_id) VALUES ($1, $2, $3)', [name, who.subject, current.id]);
+            if (!owner) {
+                // Two links at the same time: the database keeps one (UNIQUE), the other is told.
+                const { rows } = await db.query(
+                    'INSERT INTO identities (provider, subject, user_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING 1',
+                    [name, who.subject, current.id],
+                );
+                if (!rows.length) return back(res, { error: 'already' });
+            }
             return back(res, { linked: name });
         }
         if (owner) {

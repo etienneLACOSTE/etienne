@@ -53,9 +53,6 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   2026-11-10). Il faut déjà être connecté au compte ; quelqu'un qui a volé la session
   pourrait essayer 10 mots de passe par 15 minutes et par adresse. Piste : compter ces
   échecs avec ceux de la connexion (même compteur par compte).
-- **Un seul compte Google par compte Pawnet : vérifié par le code, pas par la base.** Deux
-  liaisons envoyées exactement en même temps pourraient passer. Piste : contrainte
-  `UNIQUE (user_id, provider)` sur `identities` (migration à valider).
 
 ## Amis et présence (étape 4, 2026-11-09)
 
