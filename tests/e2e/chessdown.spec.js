@@ -110,6 +110,49 @@ test.describe('Chessdown', () => {
     expect(errors).toEqual([]);
   });
 
+  test('local game, signed in: the player says which side they are, and the game counts for it', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    const name = `s${Date.now() % 1e7}${Math.floor(Math.random() * 1000)}`;
+    const res = await page.request.post('/api/auth/signup', {
+      headers: { origin: 'http://127.0.0.1:3100' },
+      data: { username: name, email: `${name}@example.com`, password: 'correct horse battery' },
+    });
+    expect(res.ok()).toBe(true);
+    await page.goto('/chessdown/');
+    await expect.poll(() => page.evaluate(() => Boolean(chessdown.state.account))).toBe(true);
+
+    // Escape: no game, back to the menu.
+    await page.locator('#btn-start-local').click();
+    const question = page.getByRole('alertdialog', { name: 'Which side are you? The game counts in your stats for that side.' });
+    await expect(question.getByRole('button', { name: 'Player 1 (drafts first)' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(question).toHaveCount(0);
+    await expect(page.locator('#main-menu')).toBeVisible();
+
+    // Player 2 this time: player 1's touchdown is their defeat.
+    await page.locator('#btn-start-local').click();
+    await question.getByRole('button', { name: 'Player 2', exact: true }).click();
+    await place(page, 'k', 5, 4);
+    await place(page, 'r', 3, 0);
+    await page.locator('#btn-validate-draft').click();
+    await page.locator('#btn-ready').click();
+    await place(page, 'k', 5, 4);
+    await page.locator('#btn-validate-draft').click();
+    const starter = await waitForGameplay(page);
+    if (starter === 2) await move(page, [0, 3], [1, 3]);
+    await waitForGlobal(page, 'currentPlayer', 1);
+    await move(page, [9, 0], [0, 0]);
+    await waitForGlobal(page, 'currentPlayer', 2);
+    const kingRow = starter === 2 ? 1 : 0;
+    await move(page, [kingRow, 3], [kingRow + 1, 3]);
+    await expect(page.locator('#victory-reason')).toHaveText(/TOUCHDOWN!/);
+
+    const stats = async () => (await (await page.request.get('/api/account/stats')).json());
+    await expect.poll(async () => (await stats()).games.chessdown.modes.local).toEqual({ wins: 0, losses: 1, draws: 0 });
+    expect((await stats()).recent[0]).toMatchObject({ mode: 'local', result: 'loss', reason: 'touchdown', opponent: 'Player 1' });
+    expect(errors).toEqual([]);
+  });
+
   test('campaign: the bot answers a move', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.goto('/chessdown/');

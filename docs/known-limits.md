@@ -17,11 +17,6 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
     serveur ne la remarque qu'après le battement de cœur Socket.io (~45 s), puis attend
     30 s. Fermer l'onglet est vu tout de suite (et donne la victoire après 30 s ; le
     bouton « quitter » reste un abandon immédiat).
-- **Chessdown sur le même écran : le compte est toujours le joueur 1.** Sans profils
-  locaux, la page ne sait pas de quel côté est le joueur connecté ; s'il joue les rouges,
-  ses victoires sont comptées comme des défaites (seulement dans ses stats « Same screen »,
-  qui ne sont plus montrées aux adversaires). Piste : demander « Which side are you? » au
-  début d'une partie locale, comme Ches'spell choisit un profil par côté.
 - **Parties contre le bot et en local : déclarées par la page.** Quelqu'un qui modifie sa
   page peut s'ajouter des victoires, seulement dans ses propres stats, affichées à part
   des parties en ligne (les totaux montrés aux adversaires ne comptent que l'en ligne). Piste : rejouer la partie côté serveur (envoyer les coups), ou
