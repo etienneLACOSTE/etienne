@@ -32,7 +32,7 @@ async function onlineChessdown(pa, pb, drafts) {
     window.ended = new Promise((r) => s.on('draftPhaseEnded', (d) => r(d.roomState.currentPlayer)));
     window.code = new Promise((r) => s.once('roomCreated', r));
     s.once('gameStarted', async () => s.emit('draftComplete', { roomCode: await window.code, player: 1, color: 'blue', pieces }));
-    s.emit('createRoom', {});
+    s.emit('createRoom', { timerMode: 'turn', timerSeconds: 300 }); // No turn lost on time, even under load
   }, drafts[1]);
   const code = await pa.evaluate(() => window.code);
   await pb.evaluate(([c, pieces]) => {
@@ -47,9 +47,12 @@ async function onlineChessdown(pa, pb, drafts) {
   const starter = await pa.evaluate(() => window.ended);
   const pages = { 1: pa, 2: pb };
   const move = async (player, from, to) => {
-    const seen = [pa, pb].map((p) => p.evaluate(() => new Promise((r) => window.s.once('moveMade', () => r(true)))));
+    // Both pages listen before the move is sent, so neither can miss it.
+    await Promise.all([pa, pb].map((p) => p.evaluate(() => {
+      window.moved = new Promise((r) => window.s.once('moveMade', () => r(true)));
+    })));
     await pages[player].evaluate(([c, f, t]) => window.s.emit('makeMove', { roomCode: c, from: f, to: t }), [code, from, to]);
-    await Promise.all(seen);
+    await Promise.all([pa, pb].map((p) => p.evaluate(() => window.moved)));
   };
   return { code, starter, move };
 }
@@ -89,9 +92,9 @@ test.describe('Stats', () => {
     expect(await pb.evaluate(() => window.names)).toEqual({ 1: a.name, 2: b.name });
     const starter = await pa.evaluate(() => window.ended);
     if (starter === 2) { // Black's king steps forward, still on the rook's column
-      const moved = pa.evaluate(() => new Promise((r) => window.s.once('moveMade', () => r(true))));
+      await pa.evaluate(() => { window.moved = new Promise((r) => window.s.once('moveMade', () => r(true))); });
       await pb.evaluate((c) => window.s.emit('makeMove', { roomCode: c, from: { r: 0, c: 3 }, to: { r: 1, c: 3 } }), code);
-      await moved;
+      await pa.evaluate(() => window.moved);
     }
     const kingRow = starter === 2 ? 1 : 0;
     await pa.evaluate(([c, row]) => window.s.emit('makeMove', { roomCode: c, from: { r: 9, c: 3 }, to: { r: row, c: 3 } }), [code, kingRow]);

@@ -40,7 +40,7 @@ async function onlineChessdown(pa, pb) {
     window.ended = new Promise((r) => window.s.on('draftPhaseEnded', (d) => r(d.roomState.currentPlayer)));
     window.code = new Promise((r) => window.s.once('roomCreated', r));
     window.s.once('gameStarted', async () => window.s.emit('draftComplete', { roomCode: await window.code, player: 1, color: 'blue', pieces }));
-    window.s.emit('createRoom', {});
+    window.s.emit('createRoom', { timerMode: 'turn', timerSeconds: 300 }); // No turn lost on time, even under load
   }, KINGS[1]);
   const code = await pa.evaluate(() => window.code);
   await pb.evaluate(([c, pieces]) => {
@@ -83,9 +83,9 @@ test.describe('Reconnection', () => {
 
     // Its turn now: the server still knows it.
     const other = starter === 1 ? 2 : 1;
-    const moved = mover.evaluate(() => new Promise((r) => window.s.once('moveMade', (d) => r(d.nextPlayer))));
+    await mover.evaluate(() => { window.moved = new Promise((r) => window.s.once('moveMade', (d) => r(d.nextPlayer))); });
     await away.evaluate(([c, f, t]) => window.s.emit('makeMove', { roomCode: c, from: f, to: t }), [code, kingOf[other], step[other]]);
-    expect(await moved).toBe(starter);
+    expect(await mover.evaluate(() => window.moved)).toBe(starter);
 
     // Nothing was recorded: the game is still in progress.
     const online = async (ctx) => (await (await ctx.request.get('/api/account/stats')).json()).games.chessdown.modes.online;

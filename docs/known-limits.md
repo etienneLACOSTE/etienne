@@ -91,8 +91,8 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   moteur.
 - **`games/chesspell/bot.js` est complexe et peu couvert par les tests de mutation**
   (Stryker) : à cibler avec `/crap` avant de le retoucher.
-- **Tests en ligne parfois instables sous charge.** Lors d'un `npm test` complet (le
-  2026-11-09), 3 tests en ligne ont échoué une fois (Ches'spell « both players see each
-  move », un test d'arbitrage, le minuteur Chessdown) puis sont passés seuls et au
-  lancement suivant. Piste : attendre des événements plutôt que des délais dans ces
-  tests, ou moins de workers Playwright pour les tests en ligne.
+- **Tests en ligne : une course corrigée, à surveiller** (2026-11-15). Des tests envoyaient
+  un coup avant que les deux pages écoutent `moveMade` : sous charge, l'événement passait
+  avant l'écoute (`stats.spec.js`, `reconnect.spec.js`, corrigé ; minuteur de 5 min pour
+  ces parties). Ensuite, trois suites complètes et 200 passages répétés des tests en ligne
+  sans échec. Si un test en ligne échoue encore une fois, chercher d'abord ce motif.
