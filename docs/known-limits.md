@@ -94,5 +94,5 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 - **Tests en ligne : une course corrigée, à surveiller** (2026-11-15). Des tests envoyaient
   un coup avant que les deux pages écoutent `moveMade` : sous charge, l'événement passait
   avant l'écoute (`stats.spec.js`, `reconnect.spec.js`, corrigé ; minuteur de 5 min pour
-  ces parties). Ensuite, trois suites complètes et 200 passages répétés des tests en ligne
-  sans échec. Si un test en ligne échoue encore une fois, chercher d'abord ce motif.
+  ces parties). Ensuite, deux suites e2e complètes (346 tests) et 200 passages répétés des
+  tests en ligne, sans échec. Si un test en ligne échoue encore une fois, chercher d'abord ce motif.
