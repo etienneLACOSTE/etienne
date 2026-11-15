@@ -85,7 +85,6 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 
 ## Divers (relevés avant les comptes)
 
-- **Pas de test e2e de l'écran de fin Ches'spell en ligne.**
 - **Le tutoriel (`games/chesspell/js/demo.js`) enveloppe `engine.move` et
   `engine.activateSpell`** pour guider le joueur : dernier endroit où une fonction d'un
   autre module est remplacée à la volée. Piste : un point d'extension explicite dans le

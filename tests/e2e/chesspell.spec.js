@@ -363,6 +363,61 @@ test.describe("Ches'spell", () => {
     await ctx2.close();
   });
 
+  test('online: the king falls; each player sees the end from their side, without Rematch', async ({ browser }) => {
+    const ctx1 = await browser.newContext();
+    const ctx2 = await browser.newContext();
+    for (const ctx of [ctx1, ctx2]) {
+      await blockExternalRequests(ctx);
+      await seedProfiles(ctx);
+    }
+    const p1 = await ctx1.newPage();
+    const p2 = await ctx2.newPage();
+    const errors = [p1, p2].map(trackPageErrors);
+    for (const page of [p1, p2]) {
+      await page.goto('/chesspell/');
+      await page.getByRole('button', { name: 'Online Multiplayer' }).click();
+    }
+    await p2.locator('#online-p1-select').selectOption('guest2');
+    await p1.locator('#btn-create-room').click();
+    const codeEl = p1.locator('#waiting-room-code');
+    await expect(codeEl).toHaveText(/^[A-Z]{6}$/);
+    await p2.locator('#room-code-input').fill((await codeEl.textContent()) ?? '');
+    await p2.locator('#btn-join-room').click();
+    await expect(p2.locator('#game-board')).toHaveClass(/active/);
+
+    // f3 e5, g4 Qh4, a3 Qxe1: the white king is taken.
+    const moves = [[p1, [6, 5], [5, 5]], [p2, [1, 4], [3, 4]], [p1, [6, 6], [4, 6]], [p2, [0, 3], [4, 7]], [p1, [6, 0], [5, 0]]];
+    for (const [page, from, to] of moves) {
+      const before = await turn(p1);
+      await clickMove(page, from, to, page === p2);
+      await expect.poll(() => turn(p1)).not.toBe(before);
+    }
+    await clickMove(p2, [4, 7], [7, 4], true);
+
+    const end = (page, title) => page.getByRole('dialog', { name: title });
+    await expect(end(p1, 'Defeat')).toBeVisible();
+    await expect(end(p1, 'Defeat')).toContainText('The white king has fallen. Guest 2 defeats Guest 1.');
+    await expect(end(p2, 'Victory')).toBeVisible();
+    await expect(end(p2, 'Victory')).toContainText('The white king has fallen. Guest 2 defeats Guest 1.');
+    for (const page of [p1, p2]) {
+      await expect(page.getByRole('button', { name: 'Rematch' })).toBeHidden();
+      expect(await page.evaluate(() => chesspell.engine.winner)).toBe('Black');
+    }
+    // The local profiles keep the result.
+    const stats = (page, id) => page.evaluate((i) => JSON.parse(localStorage.getItem('spellChessProfiles')).find((p) => p.id === i).stats, id);
+    expect(await stats(p1, 'guest1')).toEqual({ played: 1, wins: 0 });
+    expect(await stats(p2, 'guest2')).toEqual({ played: 1, wins: 1 });
+
+    // Main menu: the room is left, no notice for the other player.
+    await end(p2, 'Victory').getByRole('button', { name: 'Main menu' }).click();
+    await expect(p2.locator('#main-menu')).toHaveClass(/active/);
+    await expect(end(p1, 'Defeat')).toBeVisible();
+    await expect(p1.getByRole('alertdialog')).toHaveCount(0);
+    expect(errors.flat()).toEqual([]);
+    await ctx1.close();
+    await ctx2.close();
+  });
+
   test('online: a dropped connection comes back and the game goes on, with a notice meanwhile', async ({ browser }) => {
     const ctx1 = await browser.newContext();
     const ctx2 = await browser.newContext();
