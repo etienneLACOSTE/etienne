@@ -59,7 +59,7 @@ test.describe('Chat', () => {
     await expect(chatButton(bob.page)).toHaveText('Chat (1)');
     await expect(chatButton(bob.page)).toHaveAccessibleName('Chat, 1 unread');
     await chatButton(bob.page).click();
-    await expect(panel(bob.page).getByRole('log')).toHaveText(`${alice.name}: Good luck <img src=x onerror="window.hacked=1">`);
+    await expect(panel(bob.page).getByRole('log')).toHaveText(`${alice.name}: Good luck <img src=x onerror="window.hacked=1"> Report`);
     expect(await bob.page.evaluate(() => window.hacked)).toBeUndefined();
     await expect(chatButton(bob.page)).toHaveText('Chat');
 
@@ -71,6 +71,43 @@ test.describe('Chat', () => {
     await bob.page.keyboard.press('Escape');
     await expect(panel(bob.page)).toBeHidden();
     await expect(chatButton(bob.page)).toBeFocused();
+    expect([...alice.errors, ...bob.errors]).toEqual([]);
+    await alice.context.close();
+    await bob.context.close();
+  });
+
+  test('Chessdown: a message reported, then the opponent blocked, from the game', async ({ browser }) => {
+    const alice = await player(browser);
+    const bob = await player(browser);
+    await chessdownRoom(alice.page, bob.page);
+    await chatButton(alice.page).click();
+    await panel(alice.page).getByLabel('Message', { exact: true }).fill('you play badly');
+    await alice.page.keyboard.press('Enter');
+    await chatButton(bob.page).click();
+    const log = panel(bob.page).getByRole('log');
+    await expect(log).toContainText('you play badly');
+    await expect(panel(alice.page).getByRole('button', { name: /^Report/ })).toHaveCount(0); // Not one's own
+
+    // Report: a confirmation, then "Reported".
+    await log.getByRole('button', { name: `Report this message from ${alice.name}` }).click();
+    const confirm = bob.page.getByRole('alertdialog', { name: /^Report this message\?/ });
+    await confirm.getByRole('button', { name: 'Report', exact: true }).click();
+    await expect(log.getByText('Reported')).toBeVisible();
+    await expect(log.getByRole('button', { name: /^Report/ })).toHaveCount(0);
+    const exported = await (await bob.context.request.get('/api/account/export')).json();
+    expect(exported.chatReports.made.map((r) => [r.reported, r.game])).toEqual([[alice.name, 'chessdown']]);
+    const reported = await (await alice.context.request.get('/api/account/export')).json();
+    expect(reported.chatReports.received.map((r) => r.message)).toEqual(['you play badly']);
+    expect(JSON.stringify(reported)).not.toContain(bob.name);
+
+    // Block: the chat stops for both; only Bob is told why.
+    await panel(bob.page).getByRole('button', { name: 'Block' }).click();
+    await bob.page.getByRole('alertdialog', { name: /^Block your opponent\?/ }).getByRole('button', { name: 'Block', exact: true }).click();
+    await expect(panel(bob.page)).toContainText('You blocked this player. You can unblock them on your account page.');
+    await expect(panel(bob.page).getByLabel('Message', { exact: true })).toBeHidden();
+    await expect(panel(alice.page)).toContainText('Chat is not available in this game.');
+    const friends = await (await bob.context.request.get('/api/friends')).json();
+    expect(friends.blocked).toEqual([alice.name]);
     expect([...alice.errors, ...bob.errors]).toEqual([]);
     await alice.context.close();
     await bob.context.close();
@@ -147,7 +184,7 @@ test.describe('Chat', () => {
     await panel(bob.page).getByRole('button', { name: 'Send' }).click();
     await expect(chatButton(alice.page)).toHaveText('Chat (1)');
     await chatButton(alice.page).click();
-    await expect(panel(alice.page).getByRole('log')).toHaveText(`${bob.name}: gl hf`);
+    await expect(panel(alice.page).getByRole('log')).toHaveText(`${bob.name}: gl hf Report`);
     expect([...alice.errors, ...bob.errors]).toEqual([]);
     await alice.context.close();
     await bob.context.close();
