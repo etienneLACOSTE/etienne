@@ -79,12 +79,12 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 
 ## Nulle et chat (2026-11-12)
 
-- **Chat sans modération ni signalement** (`server/chat.js`) : réservé aux comptes, coupable
-  par chaque joueur, bloqué entre joueurs qui se sont bloqués, limité à 5 messages par 10 s
-  et 200 caractères, jamais enregistré. Mais un message insultant ne peut pas être signalé.
-  Piste : un bouton « Report » qui garde le message signalé (donnée nouvelle : politique de
-  confidentialité à mettre à jour), et bloquer l'adversaire depuis la partie (aujourd'hui,
-  depuis la page compte, et seulement pour les parties suivantes).
+- **Signalements sans outil de modération** (2026-11-15, `server/reports.js`) : un message
+  signalé est gardé 90 jours dans `chat_reports`, copié depuis la mémoire du serveur (les
+  30 derniers messages de la partie), 5 signalements au plus par joueur et par partie.
+  Mais rien ne les lit sur le site : il faut les consulter à la main dans la base, et
+  aucune sanction n'existe (suspendre un compte). Piste : une page d'administration
+  réservée, et prévenir par email quand un même compte est signalé plusieurs fois.
 - **Le chat disparaît au rechargement de la page** (rien n'est gardé, voulu) et n'existe
   qu'une fois les deux joueurs dans la salle (pas dans la salle d'attente).
 - **Nulle sur le même écran : la page croit le joueur qui clique.** Celui qui a le trait
