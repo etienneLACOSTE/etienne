@@ -6,6 +6,7 @@
 import { COLS, ROWS, state, ui } from './state.js';
 import { getBoardCoords, getViewCoords } from './coords.js';
 import { t } from '../../../assets/js/i18n.js';
+import { seriesIntro } from './match.js';
 
 export const COLUMN_LETTERS = 'abcdefgh';
 
@@ -198,7 +199,7 @@ export function describeLastMove(before) {
 
 export function announceTurn() {
     let text;
-    if (!previousTurn) text = t('a11y.matchStarts');
+    if (!previousTurn) text = [t('a11y.matchStarts'), seriesIntro()].filter(Boolean).join(' ');
     else if (state.lastMove && state.lastMove !== previousTurn.lastMove) text = describeLastMove(previousTurn.pieces);
     else text = t('a11y.skipped');
     announce(`${text} ${whoseTurn(state.currentPlayer)}`);

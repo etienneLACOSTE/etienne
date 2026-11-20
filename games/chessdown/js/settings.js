@@ -13,15 +13,14 @@ export function loadTimer() {
         const saved = JSON.parse(localStorage.getItem(TIMER_KEY) || 'null');
         if (saved && (saved.mode === 'turn' || saved.mode === 'overall')
             && Number.isInteger(saved.seconds) && saved.seconds > 0 && saved.seconds < 100 * 60) {
-            state.timerMode = saved.mode;
-            state.timerBaseSeconds = saved.seconds;
+            state.chosenTimer = { mode: saved.mode, seconds: saved.seconds };
         }
     } catch { /* Nothing kept: the default timer */ }
 }
 
 function saveTimer() {
     try {
-        localStorage.setItem(TIMER_KEY, JSON.stringify({ mode: state.timerMode, seconds: state.timerBaseSeconds }));
+        localStorage.setItem(TIMER_KEY, JSON.stringify(state.chosenTimer));
     } catch { /* Only for this visit */ }
 }
 
@@ -40,13 +39,14 @@ export function showSettings(select) {
     select.value = language();
     const minutes = /** @type {HTMLInputElement} */ (document.getElementById('timer-min'));
     const seconds = /** @type {HTMLInputElement} */ (document.getElementById('timer-sec'));
-    minutes.value = String(Math.floor(state.timerBaseSeconds / 60));
-    seconds.value = String(state.timerBaseSeconds % 60);
+    const chosen = state.chosenTimer;
+    minutes.value = String(Math.floor(chosen.seconds / 60));
+    seconds.value = String(chosen.seconds % 60);
     for (const button of document.querySelectorAll('.timer-toggle-btn')) {
-        button.classList.toggle('selected', /** @type {HTMLElement} */ (button).dataset.mode === state.timerMode);
+        button.classList.toggle('selected', /** @type {HTMLElement} */ (button).dataset.mode === chosen.mode);
     }
-    document.getElementById('timer-desc-turn')?.classList.toggle('hidden', state.timerMode !== 'turn');
-    document.getElementById('timer-desc-overall')?.classList.toggle('hidden', state.timerMode !== 'overall');
+    document.getElementById('timer-desc-turn')?.classList.toggle('hidden', chosen.mode !== 'turn');
+    document.getElementById('timer-desc-overall')?.classList.toggle('hidden', chosen.mode !== 'overall');
 }
 
 /**

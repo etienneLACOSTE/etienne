@@ -17,6 +17,7 @@
         <header>
             <h1>Chessdown</h1>
             <div id="status-bar" data-i18n="status.loading">Loading...</div>
+            <div id="series-score" class="series-score" hidden></div>
             <div class="header-actions">
                 <button id="btn-chat" type="button" class="btn-ghost" hidden data-i18n="chat.title">Chat</button>
                 <button id="btn-offer-draw" type="button" class="btn-ghost" hidden data-i18n="draw.offer">Offer draw</button>
@@ -67,13 +68,13 @@
                 <p data-i18n="rules.draftText">You have 39 points to buy your custom army. You must buy exactly 1 King. Place your pieces secretly in your deployment zone and pick your team color.</p>
 
                 <h3 data-i18n="rules.gameplay">Gameplay</h3>
-                <p data-i18n="rules.gameplayText">Pieces move exactly like in traditional chess. However, you only have 10 seconds per turn! If the timer runs out, your turn is skipped.</p>
+                <p data-i18n="rules.gameplayText">Pieces move exactly like in traditional chess. A match is a best of 3 (the first to win 2 games), with 30 seconds per turn; you can also play a single game with your own timer. If the timer runs out, your turn is skipped.</p>
 
                 <h3 data-i18n="rules.differences">Differences with Chess</h3>
                 <ul>
                     <li><strong data-i18n="rules.noMateTitle">No Checkmate:</strong> <span data-i18n="rules.noMateText">There is no "check" warning. The King must be physically captured.</span></li>
                     <li><strong data-i18n="rules.boardTitle">The Board:</strong> <span data-i18n="rules.boardText">It's 8x12, longer than a standard chessboard.</span></li>
-                    <li><strong data-i18n="rules.speedTitle">Speed:</strong> <span data-i18n="rules.speedText">10 second forced timer!</span></li>
+                    <li><strong data-i18n="rules.speedTitle">Speed:</strong> <span data-i18n="rules.speedText">30 seconds per turn in a best of 3!</span></li>
                 </ul>
             </div>
             <div class="overlay-actions">
@@ -229,6 +230,7 @@
         <div id="victory-screen" class="screen hidden">
             <h2 id="victory-title">Victory!</h2>
             <p id="victory-reason">Reason for victory</p>
+            <p id="victory-series" class="victory-series" hidden></p>
             <div class="victory-controls">
                 <button id="btn-restart" class="btn-primary" data-i18n="end.playAgain">Play Again</button>
                 <button id="btn-main-menu" class="btn-secondary" data-i18n="end.mainMenu">Main Menu</button>
@@ -243,6 +245,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <!-- Rules shared with the server (classic script), then the game (ES modules). -->
     <script src="engine.js"></script>
+    <script src="series.js"></script>
     <script src="bot-search.js"></script>
     <script type="module" src="js/main.js"></script>
 </body>

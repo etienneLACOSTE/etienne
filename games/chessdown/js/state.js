@@ -10,6 +10,8 @@ export const Engine = globalThis.ChessdownEngine;
 export const { ROWS, COLS, MAX_POINTS } = Engine;
 // Bot draft and search (bot-search.js, a classic script shared with the trainer).
 export const Bot = globalThis.ChessdownBot;
+// Best of 3 or single game (series.js, a classic script shared with the server).
+export const Series = globalThis.ChessdownSeries;
 
 // Filled glyphs for both sides: CSS colours them with the jersey and an outline.
 export const PIECE_ICONS = { p: '♟', n: '♞', b: '♝', r: '♜', q: '♛', k: '♚' };
@@ -75,9 +77,14 @@ export const state = {
     touchdownTimer: { player: null, row: null, col: null },
     isAnimating: false,
 
-    // Timer
+    // Match: a best of 3 or a single game (series.js); online, as the server keeps it.
+    series: Series.newSeries('single'),
+
+    // Timer of the game being played (a best of 3 uses 30 s turns)
     timerMode: 'turn', // 'turn' or 'overall'
     timerBaseSeconds: 10,
+    /** The timer chosen in Settings, for single games. */
+    chosenTimer: { mode: 'turn', seconds: 10 },
     playerTimeRemaining: { 1: 10000, 2: 10000 }, // In ms
     timeLeft: 10_000,
     /** @type {any} */

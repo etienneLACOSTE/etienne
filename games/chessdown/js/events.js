@@ -13,6 +13,7 @@ import { forgetSeat } from '../../../assets/js/seat.js';
 import { clearFieldError, showFieldError } from '../../../assets/js/field-error.js';
 import { t } from '../../../assets/js/i18n.js';
 import { saveSettings, showSettings } from './settings.js';
+import { askFormat, hideScore, startSeries } from './match.js';
 
 const languageSelect = /** @type {HTMLSelectElement} */ (document.getElementById('language-select'));
 
@@ -40,6 +41,9 @@ export function setupEventListeners() {
             state.isBotMatch = false;
             enterFullscreen(); // While the tap still counts as the player's gesture
             state.localSide = 0;
+            const format = await askFormat();
+            if (!format) return; // Escape: back to the menu
+            startSeries(format);
             if (state.account) {
                 // The game counts in the account's stats for the side its player takes.
                 const side = await choose(t('local.whichSide'), [
@@ -97,6 +101,7 @@ export function setupEventListeners() {
             state.currentRoomCode = null;
             state.isBotMatch = true;
             enterFullscreen();
+            startSeries('bo3'); // The campaign is always played in best of 3
             startDraftPhase(1);
         });
     }
@@ -114,9 +119,8 @@ export function setupEventListeners() {
         btn.addEventListener('pointerdown', (e) => {
             timerToggleBtns.forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            state.timerMode = btn.getAttribute('data-mode');
             
-            if (state.timerMode === 'turn') {
+            if (btn.getAttribute('data-mode') === 'turn') {
                 document.getElementById('timer-desc-turn').classList.remove('hidden');
                 document.getElementById('timer-desc-overall').classList.add('hidden');
             } else {
@@ -130,8 +134,12 @@ export function setupEventListeners() {
         ui.btnSaveTimer.addEventListener('pointerdown', () => {
             const m = parseInt(ui.timerMinInput.value) || 0;
             const s = parseInt(ui.timerSecInput.value) || 0;
-            state.timerBaseSeconds = (m * 60) + s;
-            if (state.timerBaseSeconds <= 0) state.timerBaseSeconds = 10; // Fallback
+            const selected = document.querySelector('.timer-toggle-btn.selected');
+            // The timer of single games (a best of 3 always uses 30 s turns).
+            state.chosenTimer = {
+                mode: selected && selected.getAttribute('data-mode') === 'overall' ? 'overall' : 'turn',
+                seconds: (m * 60) + s > 0 ? (m * 60) + s : 10, // Fallback
+            };
             
             ui.timerModal.classList.add('hidden');
             ui.mainMenu.classList.remove('hidden');
@@ -149,11 +157,15 @@ export function setupEventListeners() {
     const inputRoomCode = /** @type {HTMLInputElement} */ (document.getElementById('room-code-input'));
 
     if (btnCreateRoom) {
-        btnCreateRoom.addEventListener('pointerdown', () => {
+        btnCreateRoom.addEventListener('pointerdown', async (e) => {
             if (!socket) return void notify(t('online.unavailable'));
+            e.preventDefault(); // The mouse press must not take the focus out of the question
             enterFullscreen();
-            // The creator's timer applies to both players; the server keeps the clock.
-            socket.emit('createRoom', { timerMode: state.timerMode, timerSeconds: state.timerBaseSeconds });
+            const format = await askFormat();
+            if (!format) return;
+            // The creator's match applies to both players; the server keeps the clock
+            // (30 s turns for a best of 3, the timer chosen in Settings for a single game).
+            socket.emit('createRoom', { format, timerMode: state.chosenTimer.mode, timerSeconds: state.chosenTimer.seconds });
         });
     }
 
@@ -185,6 +197,8 @@ export function setupEventListeners() {
             forgetSeat('chessdown');
         }
         resetGame();
+        state.gameState = 'mainMenu';
+        hideScore();
         showScreen(ui.mainMenu);
         ui.statusBar.textContent = t('status.welcome');
     });
@@ -197,8 +211,10 @@ export function setupEventListeners() {
                 btnRestart.textContent = t('end.waitingRematch');
                 btnRestart.disabled = true;
             } else {
-                // Fallback for local
+                // Local or bot: the next game of the series, or a new match once it is over.
+                const series = state.series;
                 resetGame();
+                if (series.over) startSeries(series.format);
                 startDraftPhase(1);
             }
         });

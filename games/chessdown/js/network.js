@@ -12,6 +12,7 @@ import { notify } from '../../../assets/js/dialog.js';
 import { drawTurnPlayed } from './draw.js';
 import { chat } from './chat.js';
 import { forgetSeat, keepSeat, resumeFailedText } from '../../../assets/js/seat.js';
+import { useSeries } from './match.js';
 import { serverText, t } from '../../../assets/js/i18n.js';
 
 /**
@@ -31,6 +32,7 @@ function resumeOnlineGame(data) {
     state.playerColors = data.playerColors;
     state.board = data.board;
     state.lastMove = data.lastMove;
+    if (data.series) useSeries(data.series);
     if (data.gameState === 'waiting') {
         document.getElementById('waiting-room-code').textContent = data.id;
         showScreen(document.getElementById('waiting-screen'));
@@ -38,6 +40,13 @@ function resumeOnlineGame(data) {
         return;
     }
     chat?.start(); // Both players are in the room
+    if (data.gameState === 'between' && data.lastGame) {
+        // Between two games of a series: the end screen of the last one, with "Next game".
+        const winner = data.lastGame.winner;
+        const title = !winner ? t('end.draw') : winner === state.myPlayerNumber ? t('end.victory') : t('end.defeat');
+        endGame(title, '', winner);
+        return;
+    }
     if (data.gameState === 'drafting') {
         const me = state.myPlayerNumber;
         // Points and king of the pieces already placed (only once drafted).
@@ -80,6 +89,7 @@ export function setupNetwork() {
             state.timerBaseSeconds = timer.seconds;
         }
         state.playerNames = (data && data.roomState && data.roomState.names) || { 1: null, 2: null };
+        if (data && data.roomState && data.roomState.series) useSeries(data.roomState.series);
         startDraftPhase(state.myPlayerNumber);
         chat?.start(); // Both players are in the room
     });
@@ -88,7 +98,12 @@ export function setupNetwork() {
         // Sync the fully merged board and colors from server
         state.board = data.roomState.board;
         state.playerColors = data.roomState.playerColors;
-        startGameplay(data.roomState.currentPlayer);
+        startGameplay(data.roomState.currentPlayer, { coin: data.roomState.coinFlip !== false });
+    });
+
+    // The server counts each game in the series before saying how it ended.
+    socket.on('seriesUpdate', (data) => {
+        if (data && data.series) useSeries(data.series);
     });
 
     // Brute-force color sync to bypass any UI listener issues
@@ -167,7 +182,9 @@ export function setupNetwork() {
 
     socket.on('playAgainStatus', (data) => {
         const btn = /** @type {HTMLButtonElement} */ (document.getElementById('btn-restart'));
-        if (btn && !btn.disabled) btn.textContent = t('end.playAgainCount', { n: data.count });
+        if (btn && !btn.disabled) {
+            btn.textContent = t(state.series.over ? 'end.playAgainCount' : 'series.nextGameCount', { n: data.count });
+        }
     });
 
     socket.on('opponentColorChanged', (color) => {
@@ -178,7 +195,8 @@ export function setupNetwork() {
         }
     });
 
-    socket.on('gameRestarted', () => {
+    socket.on('gameRestarted', (data) => {
+        if (data && data.series) useSeries(data.series);
         const btn = /** @type {HTMLButtonElement} */ (document.getElementById('btn-restart'));
         if (btn) {
             btn.textContent = t('end.playAgain');
@@ -186,9 +204,15 @@ export function setupNetwork() {
         }
         ui.victoryScreen.classList.add('hidden');
         
-        // Reset local draft state
+        // A fresh board for the new game (the last game's pieces are gone on the server too)
+        state.board = Engine.createBoard();
+        state.lastMove = null;
+        state.positionHistory = {};
+        state.selectedDraftPiece = null;
+        state.selectedBoardPiece = null;
         state.draftPoints = { 1: MAX_POINTS, 2: MAX_POINTS };
         state.kingsPlaced = { 1: false, 2: false };
+        ui.btnValidateDraft.disabled = false;
         
         startDraftPhase(state.myPlayerNumber);
     });

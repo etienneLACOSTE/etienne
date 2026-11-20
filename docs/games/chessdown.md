@@ -65,8 +65,14 @@ Décisions du propriétaire du projet, dans l'ordre de réalisation :
      `docs/games/chessdown-levels.md` (le niveau 3 est la pièce classique ; le mode
      Classique = toutes les pièces au niveau 3). L'expérience ne se gagne qu'en campagne.
    - Le bot devra être réentraîné pour All Star.
-3. **Best of 3, tours de 30 s**, en campagne et en ligne ; une nouvelle draft à chaque
-   manche ; le serveur compte les manches en ligne.
+3. **Best of 3, tours de 30 s** : fait le 2026-11-21 (`games/chessdown/series.js`, règles
+   partagées par la page et le serveur). Au lancement d'un match local ou d'une salle, le
+   joueur choisit « Best of 3 » ou « Partie unique » (minuteur des Settings) ; la campagne
+   est toujours en best of 3. Une nouvelle draft à chaque manche ; le perdant de la manche
+   précédente commence (tirage au sort pour la première, et après une nulle) ; une manche
+   nulle ne compte pour personne, et après 5 manches la série s'arrête. En ligne, le
+   serveur tient la série (`seriesUpdate`, état `between` entre deux manches, qu'une page
+   rechargée reprend).
 4. **Le club** : nom, maillot, blason (modèles, pas d'image envoyée), joueurs nommés,
    registre (prises, fois pris, déplacements, touchdowns), expérience, compositions
    enregistrées.

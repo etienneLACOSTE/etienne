@@ -83,6 +83,13 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   propose, l'autre répond dans la boîte de dialogue ; rien ne vérifie que ce n'est pas la
   même personne (sans conséquence : seules ses propres stats « Same screen » comptent).
 
+## Best of 3 (2026-11-21)
+
+- **Les stats comptent chaque manche, pas la série :** le résultat d'une série n'est
+  enregistré nulle part. Piste : une table des séries, avec le ladder.
+- **Quitter en cours de série** compte comme un abandon de la manche en cours (stats) et
+  ferme la salle ; la série n'existe plus, sans trace de qui l'a perdue.
+
 ## Niveaux des pièces (2026-11-21)
 
 - **Le bot n'est pas entraîné pour All Star :** il joue les coups des niveaux, et pèse une

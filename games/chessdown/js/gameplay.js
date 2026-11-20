@@ -2,7 +2,7 @@
 // Gameplay: turns, timer, moves, end of game.
 import { fireConfetti } from '../confetti.js';
 import { COLOR_HEX, COLS, MAX_POINTS, ROWS, playerName, socket, state, ui } from './state.js';
-import { clearHighlights, createBoardDOM, getSquareElement, highlightValidMoves, renderBoard, showScreen, startCoinFlip } from './board-view.js';
+import { clearHighlights, createBoardDOM, getSquareElement, highlightValidMoves, renderBoard, showScreen, showStarter, startCoinFlip } from './board-view.js';
 import { getBoardCoords, getViewCoords } from './coords.js';
 import { chooseBotMove } from './bot.js';
 import { announceTurn, resetAnnouncements } from './a11y.js';
@@ -12,10 +12,16 @@ import { resetDrawOffers } from './draw.js';
 import { chat } from './chat.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
 import { t } from '../../../assets/js/i18n.js';
+import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
 
 // --- Gameplay Logic ---
 
-export function startGameplay(winner) {
+/**
+ * Both armies are drafted: the match starts with the coin flip, or, in a series, with the
+ * loser of the last game (`coin` false).
+ * @param {number} winner who starts @param {{ coin?: boolean }} [options]
+ */
+export function startGameplay(winner, { coin = true } = {}) {
     resetAnnouncements(); // a11y.js
     state.gameState = 'gameplay';
     resetDrawOffers();
@@ -33,7 +39,9 @@ export function startGameplay(winner) {
     createBoardDOM(false);
     renderBoard();
     showMatchup();
-    startCoinFlip(winner, finalizeGameplayStart);
+    showScore();
+    if (coin) startCoinFlip(winner, finalizeGameplayStart);
+    else showStarter(winner, t('series.loserStarts', { name: playerName(winner) }), finalizeGameplayStart);
 }
 
 /** Online, the coin flip shows who plays whom: "Alice vs Bob" (a guest is "Player N"). */
@@ -300,8 +308,11 @@ export function movePiece(fromR, fromC, toR, toC) {
  */
 export function endGame(title, reason, winner, how) {
     state.gameState = 'over';
-    // Online, nothing to come back to after a reload (a rematch brings a new seat).
-    if (state.currentRoomCode) forgetSeat('chessdown');
+    // The series counts the game (online, the server sent it already: 'seriesUpdate').
+    if (!state.currentRoomCode) recordLocalGame(winner);
+    // Online, once the match is over nothing is left to come back to after a reload (a
+    // rematch brings a new seat); between two games of a series, the seat is kept.
+    if (state.currentRoomCode && state.series.over) forgetSeat('chessdown');
     resetDrawOffers();
     clearInterval(state.timerInterval);
     // Against the bot, the signed-in player is player 1; on the same screen, the side they
@@ -319,6 +330,7 @@ export function endGame(title, reason, winner, how) {
     }
     ui.victoryTitle.textContent = title;
     ui.victoryReason.textContent = reason;
+    showSeriesEnd();
     
     const canvas = document.getElementById('confetti-canvas');
     if (!state.currentRoomCode && winner === 2 && !state.isBotMatch) {
@@ -332,8 +344,22 @@ export function endGame(title, reason, winner, how) {
     showScreen(ui.victoryScreen);
 }
 
+/** The end screen's line about the series, and its button: next game, or a new match. */
+export function showSeriesEnd() {
+    const { line, button } = seriesEnd();
+    const box = document.getElementById('victory-series');
+    if (box) {
+        box.textContent = line;
+        box.hidden = !line;
+    }
+    const restart = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-restart'));
+    if (restart && !restart.disabled) restart.textContent = button;
+    showScore();
+}
+
 export function resetGame() {
     clearInterval(state.timerInterval);
+    hideScore(); // Shown again when the next game of a series starts
     if (state.gameState === 'gameplay') state.gameState = 'over'; // No draw offer from the menu
     resetDrawOffers();
     chat?.stop();

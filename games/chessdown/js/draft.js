@@ -5,6 +5,13 @@ import { createBoardDOM, renderBoard, showScreen } from './board-view.js';
 import { getBoardCoords, getDraftZoneView } from './coords.js';
 import { startGameplay } from './gameplay.js';
 import { autoDraftBot } from './bot.js';
+import { nextStarter, showScore } from './match.js';
+
+/** Who starts: in a series, the loser of the last game; otherwise the coin. */
+function beginMatch() {
+    const starter = nextStarter();
+    startGameplay(starter || (Math.random() < 0.5 ? 1 : 2), { coin: !starter });
+}
 import { t } from '../../../assets/js/i18n.js';
 
 // --- Draft Logic ---
@@ -32,6 +39,7 @@ export function showTransitionScreen() {
 export function startDraftPhase(player) {
     state.currentPlayer = player;
     state.gameState = `draft${player}`;
+    showScore(); // A best of 3 shows its score from the draft on
     
     if (!state.currentRoomCode) {
         if (player === 2) {
@@ -243,17 +251,15 @@ export function validateDraft() {
                 autoDraftBot();
                 ui.draftHeader.classList.add('hidden');
                 ui.draftFooter.classList.add('hidden');
-                const winner = Math.random() < 0.5 ? 1 : 2;
-                startGameplay(winner);
+                beginMatch();
             } else {
                 startDraftPhase(2);
             }
         } else {
-            // Both drafted! Start coin flip.
+            // Both drafted: the match starts.
             ui.draftHeader.classList.add('hidden');
             ui.draftFooter.classList.add('hidden');
-            const winner = Math.random() < 0.5 ? 1 : 2;
-            startGameplay(winner);
+            beginMatch();
         }
     }
 }

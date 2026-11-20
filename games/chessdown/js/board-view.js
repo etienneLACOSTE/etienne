@@ -80,8 +80,26 @@ export function createBoardDOM(isDraft) {
 // --- Coin Flip ---
 
 /** Spin the coin, then call `onLanded` once the starting player is shown. */
+/**
+ * In a series, no coin: the loser of the last game starts. The coin screen says so for
+ * as long as a coin flip would take (online, the server's clock waits that long).
+ */
+export function showStarter(starter, text, onDone) {
+    showScreen(ui.coinFlipScreen);
+    const coinContainer = /** @type {HTMLElement} */ (ui.coinFlipScreen.querySelector('.coin-container'));
+    coinContainer.hidden = true;
+    ui.coinText.textContent = text;
+    ui.coinText.classList.remove('hidden');
+    setTimeout(() => {
+        state.currentPlayer = starter;
+        onDone();
+    }, 3000);
+}
+
 export function startCoinFlip(winner, onLanded) {
     showScreen(ui.coinFlipScreen);
+    /** @type {HTMLElement} */ (ui.coinFlipScreen.querySelector('.coin-container')).hidden = false;
+    ui.coinText.classList.add('hidden');
     
     // Apply chosen colors to the coin faces
     ui.coinFront.className = `coin-face coin-front endzone-${state.playerColors[1]}`;
