@@ -13,7 +13,7 @@ import { refreshInvites } from './invites.js';
 import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
 import { chat } from './chat.js';
-import { forgetSeat, keepSeat, RESUME_FAILED } from '../../../assets/js/seat.js';
+import { forgetSeat, keepSeat, resumeFailedText } from '../../../assets/js/seat.js';
 import { clearFieldError, showFieldError } from '../../../assets/js/field-error.js';
 
 /**
@@ -105,7 +105,7 @@ export function setupOnline() {
     keepSeat(socket, 'chesspell', {
         idle: () => !session.currentRoomCode && !document.querySelector('#game-board.active, #draft-phase.active'),
         onResumed: resumeOnlineGame,
-        onFailed: (reason) => notify(RESUME_FAILED[reason]),
+        onFailed: (reason) => notify(resumeFailedText(reason)),
     });
 
     // The server referees the game: after every action it sends the new state.

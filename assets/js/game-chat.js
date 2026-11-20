@@ -6,25 +6,26 @@
 // Each message of the opponent can be reported (kept 90 days on the server, see
 // server/reports.js), and the opponent can be blocked from the panel.
 import { ask } from './dialog.js';
+import { t, translatePage, withLink } from './i18n.js';
 
 const OFF_KEY = 'pawnet.chatOff';
 const MAX_LENGTH = 200; // As on the server
 const RECENT = 30; // Messages of the game the server keeps, the only ones that can be reported (server/chat.js)
 
+/** Why there is no chat (server/chat.js chatState reason): text keys (assets/js/strings). */
 const NOTES = {
-    'you-guest': 'Sign in to chat with your opponent.',
-    'opponent-guest': 'Your opponent is playing as a guest: no chat.',
-    unavailable: 'Chat is not available in this game.',
-    'you-blocked': 'You blocked this player. You can unblock them on your account page.',
+    'opponent-guest': 'chat.opponentGuest',
+    unavailable: 'chat.unavailable',
+    'you-blocked': 'chat.youBlocked',
 };
 
 /** What the panel says after a report or a block. */
 const NOTICES = {
-    rate: 'You are sending messages too fast. Wait a few seconds.',
-    'report-failed': 'The report could not be sent. Try again.',
-    'report-limit': 'You cannot report more messages in this game. You can block this player.',
-    'report-expired': 'This message is too old to report. You can block this player.',
-    'block-failed': 'The block could not be saved. Try again, or block them from your account page.',
+    rate: 'chat.rate',
+    'report-failed': 'chat.reportFailed',
+    'report-limit': 'chat.reportLimit',
+    'report-expired': 'chat.reportExpired',
+    'block-failed': 'chat.blockFailed',
 };
 
 function readOff() {
@@ -54,18 +55,19 @@ export function createChat(socket, { button, roomCode, me }) {
     panel.setAttribute('aria-labelledby', 'game-chat-title');
     panel.innerHTML = `
         <div class="chat-head">
-            <h2 class="chat-title" id="game-chat-title">Chat</h2>
+            <h2 class="chat-title" id="game-chat-title" data-i18n="chat.title">Chat</h2>
             <button type="button" class="chat-switch btn btn-secondary">Turn chat off</button>
-            <button type="button" class="chat-block btn btn-secondary">Block</button>
-            <button type="button" class="chat-close btn btn-secondary" aria-label="Close the chat">×</button>
+            <button type="button" class="chat-block btn btn-secondary" data-i18n="chat.block">Block</button>
+            <button type="button" class="chat-close btn btn-secondary" data-i18n-attr="aria-label: chat.close" aria-label="Close the chat">×</button>
         </div>
-        <div class="chat-log" role="log" aria-live="polite" aria-label="Messages"></div>
+        <div class="chat-log" role="log" aria-live="polite" data-i18n-attr="aria-label: chat.messages" aria-label="Messages"></div>
         <p class="chat-note"></p>
         <form class="chat-form">
-            <label class="chat-label" for="chat-input">Message</label>
+            <label class="chat-label" for="chat-input" data-i18n="chat.message">Message</label>
             <input id="chat-input" class="chat-input" type="text" maxlength="${MAX_LENGTH}" autocomplete="off" required>
-            <button type="submit" class="btn btn-primary">Send</button>
+            <button type="submit" class="btn btn-primary" data-i18n="chat.send">Send</button>
         </form>`;
+    translatePage(panel);
     document.body.append(panel);
     const log = /** @type {HTMLElement} */ (panel.querySelector('.chat-log'));
     const note = /** @type {HTMLElement} */ (panel.querySelector('.chat-note'));
@@ -80,26 +82,23 @@ export function createChat(socket, { button, roomCode, me }) {
 
     function render() {
         const canWrite = state.available && !off && !state.opponentMuted;
-        button.textContent = off ? 'Chat off' : unread ? `Chat (${unread})` : 'Chat';
-        button.setAttribute('aria-label', unread && !off ? `Chat, ${unread} unread` : button.textContent);
+        button.textContent = off ? t('chat.buttonOff') : unread ? t('chat.buttonUnread', { n: unread }) : t('chat.title');
+        button.setAttribute('aria-label', unread && !off ? t('chat.buttonUnreadLabel', { n: unread }) : button.textContent);
         button.setAttribute('aria-expanded', String(open));
         panel.hidden = !open;
         toggle.hidden = !state.available;
         block.hidden = !state.available;
-        toggle.textContent = off ? 'Turn chat on' : 'Turn chat off';
+        toggle.textContent = off ? t('chat.turnOn') : t('chat.turnOff');
         log.hidden = !state.available || off;
         form.hidden = !canWrite;
         let text = '';
-        if (!state.available) text = NOTES[state.reason] || NOTES.unavailable;
-        else if (off) text = 'Chat is off: you do not get messages.';
-        else if (state.opponentMuted) text = 'Your opponent turned the chat off.';
+        if (!state.available) text = t(NOTES[state.reason] || NOTES.unavailable);
+        else if (off) text = t('chat.isOff');
+        else if (state.opponentMuted) text = t('chat.opponentOff');
         note.replaceChildren(text);
         note.hidden = !text;
         if (state.reason === 'you-guest') {
-            const link = Object.assign(document.createElement('a'), {
-                href: `/account/?next=${encodeURIComponent(location.pathname)}`, textContent: 'Sign in',
-            });
-            note.replaceChildren(link, ' to chat with your opponent.');
+            note.replaceChildren(...withLink(t('chat.signInToChat'), `/account/?next=${encodeURIComponent(location.pathname)}`, t('common.signIn')));
         }
     }
 
@@ -126,7 +125,7 @@ export function createChat(socket, { button, roomCode, me }) {
         render();
     });
     block.addEventListener('click', async () => {
-        const sure = await ask('Block your opponent? You will no longer chat with them, and they cannot send you friend requests or invitations. You can unblock them on your account page.', { confirm: 'Block', cancel: 'Cancel' });
+        const sure = await ask(t('chat.blockAsk'), { confirm: t('chat.block'), cancel: t('dialog.cancel') });
         const code = roomCode();
         if (sure && code) socket.emit('chatBlock', { roomCode: code });
         block.focus();
@@ -143,10 +142,10 @@ export function createChat(socket, { button, roomCode, me }) {
     }
 
     function reportButton(/** @type {number} */ id, /** @type {string} */ name) {
-        const report = Object.assign(document.createElement('button'), { type: 'button', className: 'chat-report', textContent: 'Report' });
-        report.setAttribute('aria-label', `Report this message from ${name}`);
+        const report = Object.assign(document.createElement('button'), { type: 'button', className: 'chat-report', textContent: t('chat.report') });
+        report.setAttribute('aria-label', t('chat.reportLabel', { name }));
         report.addEventListener('click', async () => {
-            const sure = await ask('Report this message? It is kept for 90 days so that it can be checked, then deleted.', { confirm: 'Report', cancel: 'Cancel' });
+            const sure = await ask(t('chat.reportAsk'), { confirm: t('chat.report'), cancel: t('dialog.cancel') });
             const code = roomCode();
             if (sure && code && report.isConnected) {
                 report.disabled = true;
@@ -180,7 +179,7 @@ export function createChat(socket, { button, roomCode, me }) {
         const item = document.createElement('p');
         item.className = mine ? 'chat-message mine' : 'chat-message';
         const name = Object.assign(document.createElement('span'), {
-            className: 'chat-name', textContent: mine ? 'You' : String(data.name || 'Opponent'),
+            className: 'chat-name', textContent: mine ? t('chat.you') : String(data.name || t('chat.opponent')),
         });
         item.append(name, ': ', String(data.text));
         if (!mine && Number.isInteger(data.id)) item.append(' ', reportButton(data.id, name.textContent));
@@ -199,7 +198,7 @@ export function createChat(socket, { button, roomCode, me }) {
         const reason = data && data.reason;
         const report = reportButtons.get(data && data.messageId);
         if (reason === 'reported' && report) {
-            const done = Object.assign(document.createElement('span'), { className: 'chat-reported', textContent: 'Reported' });
+            const done = Object.assign(document.createElement('span'), { className: 'chat-reported', textContent: t('chat.reported') });
             const hadFocus = document.activeElement === report;
             report.replaceWith(done);
             reportButtons.delete(data.messageId);
@@ -211,7 +210,7 @@ export function createChat(socket, { button, roomCode, me }) {
         if (reason === 'blocked') return; // The new chatState says it
         if (!NOTICES[reason]) return;
         note.hidden = false;
-        note.textContent = NOTICES[reason];
+        note.textContent = t(NOTICES[reason]);
     });
 
     return {

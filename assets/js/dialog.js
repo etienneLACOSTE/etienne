@@ -4,6 +4,7 @@
 // browser keeps the focus inside, closes it with Escape and gives the focus back to
 // where it was. One dialog at a time: the next one waits for the current one to close.
 // Buttons: `.btn` and `.btn-primary`, styled by each page (hub, Chessdown, Ches'spell).
+import { t } from './i18n.js';
 
 /** @type {Promise<unknown>} */
 let queue = Promise.resolve();
@@ -54,7 +55,7 @@ function open(message, buttons) {
  * @returns {Promise<void>} once the player has closed it
  */
 export async function notify(message) {
-    await open(message, [{ label: 'OK', value: 'ok', primary: true, focus: true }]);
+    await open(message, [{ label: t('dialog.ok'), value: 'ok', primary: true, focus: true }]);
 }
 
 /**
@@ -63,7 +64,7 @@ export async function notify(message) {
  * @param {{ confirm?: string, cancel?: string }} [labels]
  * @returns {Promise<boolean>} true when confirmed (false for cancel and Escape)
  */
-export async function ask(message, { confirm = 'OK', cancel = 'Cancel' } = {}) {
+export async function ask(message, { confirm = t('dialog.ok'), cancel = t('dialog.cancel') } = {}) {
     const answer = await open(message, [
         { label: cancel, value: 'cancel', focus: true },
         { label: confirm, value: 'confirm', primary: true },

@@ -5,6 +5,7 @@
 // only, and sends it back when it opens: the server gives the seat back while it is still
 // held (30 s), with the whole game ('seatResumed').
 // The token is not a tracker: random, for one game, forgotten when the tab closes.
+import { t } from './i18n.js';
 
 /** A seat left longer ago than this is not worth asking for (the server holds 30 s). */
 const STALE_MS = 60_000;
@@ -114,9 +115,10 @@ export function keepSeat(socket, game, { idle, onResumed, onFailed }) {
     else socket.once('connect', ask);
 }
 
-/** What the page says when its game could not be taken back. */
-export const RESUME_FAILED = {
-    gone: 'Your game could not be resumed.',
-    busy: 'Your game is still open in another tab or window.',
-    over: 'Your game is over.',
-};
+/**
+ * What the page says when its game could not be taken back.
+ * @param {'gone' | 'busy' | 'over'} reason
+ */
+export function resumeFailedText(reason) {
+    return t(`seat.${reason}`);
+}

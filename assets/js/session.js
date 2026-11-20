@@ -4,6 +4,8 @@
 // Games import it as ../../../assets/js/session.js: from /<game>/js/ the browser
 // resolves that to /assets/js/session.js, and the type checker finds the same file.
 
+import { fillNodes, t, withLink } from './i18n.js';
+
 /** @typedef {{ id: number, username: string }} User */
 
 /** Send JSON to the site's API; returns the answer, or throws its error message. */
@@ -17,10 +19,10 @@ export async function api(method, url, body) {
             body: body && JSON.stringify(body),
         });
     } catch {
-        throw new Error('The site cannot be reached. Check your connection and try again.');
+        throw new Error(t('common.unreachable'));
     }
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Something went wrong. Try again.');
+    if (!res.ok) throw new Error(data.error || t('common.error'));
     return data;
 }
 
@@ -57,8 +59,8 @@ export async function reportResult({ startedAt, ...r }) {
 export function showUserInTopbar(user) {
     const link = document.getElementById('account-link');
     if (!link) return;
-    link.textContent = user ? user.username : 'Sign in';
-    link.setAttribute('aria-label', user ? `${user.username}, your account` : 'Sign in or create an account');
+    link.textContent = user ? user.username : t('common.signIn');
+    link.setAttribute('aria-label', user ? t('account.yourAccountLabel', { name: user.username }) : t('account.signInOrCreate'));
 }
 
 /**
@@ -66,7 +68,8 @@ export function showUserInTopbar(user) {
  * to the game afterwards.
  * @param {HTMLElement} el
  * @param {User | null} user
- * @param {{ game: string, perk: string }} options game: its path ('/chesspell/'); perk: what an account keeps
+ * @param {{ game: string, perk: string }} options game: its path ('/chesspell/'); perk: what an
+ *   account keeps, in the page's language
  */
 export function showAccountLine(el, user, { game, perk }) {
     const link = document.createElement('a');
@@ -74,12 +77,12 @@ export function showAccountLine(el, user, { game, perk }) {
         const name = document.createElement('strong');
         name.textContent = user.username;
         link.href = '/account/';
-        link.textContent = 'Your account';
-        el.replaceChildren('Signed in as ', name, '. ', link);
+        link.textContent = t('account.yourAccount');
+        el.replaceChildren(...fillNodes(t('account.signedInAs'), { name, link }));
     } else {
         link.href = `/account/?next=${encodeURIComponent(game)}`;
-        link.textContent = 'Sign in';
-        el.replaceChildren(link, ` to keep your ${perk} on every device.`);
+        link.textContent = t('common.signIn');
+        el.replaceChildren(...fillNodes(t('account.keepPerk', { perk }), { link }));
     }
     el.hidden = false;
 }
@@ -96,8 +99,7 @@ export function gateOnline(controls, gate, user, game) {
     controls.hidden = !user;
     gate.hidden = Boolean(user);
     if (user) return;
-    const link = Object.assign(document.createElement('a'), { href: `/account/?next=${encodeURIComponent(game)}`, textContent: 'Sign in' });
-    gate.replaceChildren(link, ' to play online. Without an account, the Campaign is open to you.');
+    gate.replaceChildren(...withLink(t('account.signInToPlay'), `/account/?next=${encodeURIComponent(game)}`, t('common.signIn')));
 }
 
 // On every hub page, the button follows who is signed in, and a signed-in player is

@@ -4,6 +4,7 @@
 // The server keeps the rules: one offer at a time, one per turn played, and the offer
 // ends when the opponent plays a turn. The bar does not take the focus (the opponent
 // may be in the middle of a move): it is announced, and reachable with Tab.
+import { t } from './i18n.js';
 
 /**
  * @param {any} socket the game's Socket.io connection
@@ -20,7 +21,7 @@ export function watchDrawOffers(socket, { button, me, roomCode, playing }) {
 
     function refresh() {
         button.disabled = !playing() || Boolean(pending) || offeredThisTurn;
-        button.textContent = pending === me() ? 'Draw offered' : 'Offer draw';
+        button.textContent = pending === me() ? t('draw.offered') : t('draw.offer');
     }
 
     function hideBar() {
@@ -35,7 +36,7 @@ export function watchDrawOffers(socket, { button, me, roomCode, playing }) {
         const box = document.createElement('div');
         box.className = 'draw-offer';
         box.setAttribute('role', 'group');
-        box.setAttribute('aria-label', 'Draw offer');
+        box.setAttribute('aria-label', t('draw.bar'));
         const status = document.createElement('p');
         status.className = 'draw-offer-text';
         status.setAttribute('role', 'status');
@@ -69,11 +70,11 @@ export function watchDrawOffers(socket, { button, me, roomCode, playing }) {
         pending = Number(data && data.by) || 0;
         if (pending === me()) {
             offeredThisTurn = true;
-            showBar('Draw offered. Waiting for your opponent…');
+            showBar(t('draw.waiting'));
         } else if (pending) {
-            showBar('Your opponent offers a draw.', [
-                ['Accept', true, () => answer(true)],
-                ['Decline', false, () => answer(false)],
+            showBar(t('draw.theyOffer'), [
+                [t('draw.accept'), true, () => answer(true)],
+                [t('draw.decline'), false, () => answer(false)],
             ]);
         }
         refresh();
@@ -84,7 +85,7 @@ export function watchDrawOffers(socket, { button, me, roomCode, playing }) {
         pending = 0;
         hideBar();
         if (mine && data && data.reason === 'declined') {
-            const shown = showBar('Your opponent declined the draw.');
+            const shown = showBar(t('draw.declined'));
             hideTimer = window.setTimeout(() => { if (bar === shown) hideBar(); }, 4000);
         }
         refresh();

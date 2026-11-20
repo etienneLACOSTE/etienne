@@ -5,6 +5,7 @@
 // - our own connection: "Connection lost. Reconnecting…";
 // - the opponent's: "Your opponent lost their connection. Waiting for them: 30 s".
 // The notice is a status region: read once by screen readers (the countdown is not).
+import { t } from './i18n.js';
 
 /** @type {HTMLElement | null} */
 let box = null;
@@ -28,7 +29,7 @@ function show(text, seconds = 0) {
         left.setAttribute('aria-hidden', 'true');
         notice.append(' ', left);
         let remaining = seconds;
-        const paint = () => { left.textContent = `${remaining} s`; };
+        const paint = () => { left.textContent = t('connection.seconds', { n: remaining }); };
         paint();
         countdown = window.setInterval(() => {
             remaining = Math.max(0, remaining - 1);
@@ -54,7 +55,7 @@ export function watchConnection(socket, { inRoom, onLost }) {
     socket.on('disconnect', (/** @type {string} */ reason) => {
         if (reason === 'io client disconnect' || !inRoom()) return;
         droppedInRoom = true;
-        show('Connection lost. Reconnecting…');
+        show(t('connection.lost'));
     });
     socket.on('connect', () => {
         if (!droppedInRoom) return;
@@ -65,10 +66,10 @@ export function watchConnection(socket, { inRoom, onLost }) {
     });
     socket.on('opponentDisconnected', (/** @type {{ seconds?: number }} */ data) => {
         const seconds = Number(data && data.seconds);
-        show('Your opponent lost their connection. Waiting for them:', Number.isInteger(seconds) && seconds > 0 ? seconds : 0);
+        show(t('connection.opponentLost'), Number.isInteger(seconds) && seconds > 0 ? seconds : 0);
     });
     socket.on('opponentReconnected', () => {
-        show('Your opponent is back.');
+        show(t('connection.opponentBack'));
         const shown = box;
         setTimeout(() => { if (box === shown) hide(); }, 3000);
     });
