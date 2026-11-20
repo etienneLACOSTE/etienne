@@ -60,12 +60,9 @@ Décisions du propriétaire du projet, dans l'ordre de réalisation :
    - Deux modes, en ligne comme en campagne : **Classique** (règles actuelles, identiques
      pour tous) et **All Star** (son club, pièces avec niveaux). Chacun a son **ladder**
      (classement).
-   - Expérience d'une pièce nommée : 1 par déplacement, 5 par prise, 10 par touchdown ;
-     un seuil fait passer au niveau suivant.
-   - Portée : tour, fou, dame : 3 cases au niveau 1, 5 au niveau 2, illimitée au
-     niveau 3. Cavalier, roi, pion : bonus de niveau à proposer.
-   - Un niveau coûte aussi des points de draft (ex. tour 5 / 6 / 7) : le budget de 39
-     reste l'égalisateur entre un vieux club et un nouveau.
+   - Niveaux 1 à 5, effets de chaque pièce, coûts et expérience : voir
+     `docs/games/chessdown-levels.md` (le niveau 3 est la pièce classique ; le mode
+     Classique = toutes les pièces au niveau 3). L'expérience ne se gagne qu'en campagne.
    - Le bot devra être réentraîné pour All Star.
 3. **Best of 3, tours de 30 s**, en campagne et en ligne ; une nouvelle draft à chaque
    manche ; le serveur compte les manches en ligne.
