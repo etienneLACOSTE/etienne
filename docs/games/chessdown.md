@@ -50,3 +50,33 @@ Then open `http://localhost:3000/chessdown/` (local, campaign and online modes).
 ### Files
 - `games/chessdown/`: game client; `training_data.json` holds the bot profiles.
 - `tools/chessdown/train.js`: genetic training of the bot, writes `games/chessdown/training_data.json`.
+
+## Feuille de route : club, All Star et carrière (décidée le 2026-11-20)
+
+Décisions du propriétaire du projet, dans l'ordre de réalisation :
+
+1. **Langues** : fait le 2026-11-20 (EN, FR, ES, IT, DE ; écran Settings).
+2. **Niveaux des pièces dans le moteur**, avec des tests ; le mode Classique ne change pas.
+   - Deux modes, en ligne comme en campagne : **Classique** (règles actuelles, identiques
+     pour tous) et **All Star** (son club, pièces avec niveaux). Chacun a son **ladder**
+     (classement).
+   - Expérience d'une pièce nommée : 1 par déplacement, 5 par prise, 10 par touchdown ;
+     un seuil fait passer au niveau suivant.
+   - Portée : tour, fou, dame : 3 cases au niveau 1, 5 au niveau 2, illimitée au
+     niveau 3. Cavalier, roi, pion : bonus de niveau à proposer.
+   - Un niveau coûte aussi des points de draft (ex. tour 5 / 6 / 7) : le budget de 39
+     reste l'égalisateur entre un vieux club et un nouveau.
+   - Le bot devra être réentraîné pour All Star.
+3. **Best of 3, tours de 30 s**, en campagne et en ligne ; une nouvelle draft à chaque
+   manche ; le serveur compte les manches en ligne.
+4. **Le club** : nom, maillot, blason (modèles, pas d'image envoyée), joueurs nommés,
+   registre (prises, fois pris, déplacements, touchdowns), expérience, compositions
+   enregistrées.
+5. **All Star en ligne** : club enregistré sur le serveur (migration à demander), pour
+   que le serveur connaisse les vrais niveaux. L'expérience de campagne reste déclarée
+   par le navigateur (à noter dans `docs/known-limits.md`).
+6. **La carrière** : scolaire, départementale, régionale, nationale, internationale ;
+   l'échelon scolaire sert de tutoriel (pièces et règles débloquées au fil des matchs).
+
+En ligne : réservé aux comptes (fait le 2026-11-20). Les stats des joueurs restent un
+palmarès en Classique ; en All Star, le niveau donne de la portée mais coûte des points.
