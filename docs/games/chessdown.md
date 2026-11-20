@@ -57,6 +57,7 @@ Décisions du propriétaire du projet, dans l'ordre de réalisation :
 
 1. **Langues** : fait le 2026-11-20 (EN, FR, ES, IT, DE ; écran Settings).
 2. **Niveaux des pièces dans le moteur**, avec des tests ; le mode Classique ne change pas.
+   Moteur et évaluation du bot faits le 2026-11-21 (interface et serveur All Star à venir).
    - Deux modes, en ligne comme en campagne : **Classique** (règles actuelles, identiques
      pour tous) et **All Star** (son club, pièces avec niveaux). Chacun a son **ladder**
      (classement).

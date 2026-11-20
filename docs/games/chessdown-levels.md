@@ -2,7 +2,10 @@
 
 Spécification décidée avec le propriétaire du projet (2026-11-20 et 2026-11-21). Elle
 fait foi pour le moteur (`games/chessdown/engine.js`), le bot, le serveur et l'interface.
-Rien n'est encore codé : la feuille de route est dans `docs/games/chessdown.md`.
+Fait dans le moteur le 2026-11-21 (`levelOf`, `pieceCost`, `lineOfSight`, déplacements
+et transformation) ; testé dans `tests/unit/chessdown-levels.test.js`, avec un test
+différentiel qui prouve que le mode Classique n'a pas changé. Pas encore d'interface, ni
+de mode All Star en ligne : la feuille de route est dans `docs/games/chessdown.md`.
 
 ## Décisions
 

@@ -141,7 +141,7 @@
                 const piece = board[r][c];
                 if (!piece) continue;
                 if (piece.type === 'k') kings[piece.player] = [r, c];
-                const val = piece.type === 'k' ? 10000 : (profile.pieceWeights[piece.type] || PIECE_VALUES[piece.type] * 100);
+                const val = piece.type === 'k' ? 10000 : weightOf(profile, piece);
                 let positionBonus = 0;
                 let centerBonus = 0;
                 if (c >= 2 && c <= 5) centerBonus += bonusCols;
@@ -165,13 +165,23 @@
         return me === 2 ? score : -score;
     }
 
+    /**
+     * A piece's weight: the profile's weight for its type, scaled by its level's draft
+     * cost (All Star, docs/games/chessdown-levels.md). Level 3 is the plain weight.
+     */
+    function weightOf(profile, piece) {
+        const base = profile.pieceWeights[piece.type] || PIECE_VALUES[piece.type] * 100;
+        const level = Engine.levelOf(piece);
+        return level === 3 ? base : base * Engine.pieceCost(piece.type, level) / PIECE_VALUES[piece.type];
+    }
+
     /** Material only (piece weights), from `me`'s side: to choose between lost positions. */
     function material(board, profile, me) {
         let score = 0;
         for (const row of board) {
             for (const p of row) {
                 if (!p || p.type === 'k') continue;
-                const val = profile.pieceWeights[p.type] || PIECE_VALUES[p.type] * 100;
+                const val = weightOf(profile, p);
                 score += p.player === me ? val : -val;
             }
         }

@@ -83,6 +83,14 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   propose, l'autre répond dans la boîte de dialogue ; rien ne vérifie que ce n'est pas la
   même personne (sans conséquence : seules ses propres stats « Same screen » comptent).
 
+## Niveaux des pièces (2026-11-21)
+
+- **Le bot n'est pas entraîné pour All Star :** il joue les coups des niveaux, et pèse une
+  pièce selon le coût de son niveau, mais ses poids viennent du mode Classique. Piste :
+  un entraînement avec des armées à niveaux variés (`tools/chessdown/train.js`), adopté
+  seulement s'il fait mieux contre des armées variées.
+- **La portée du fou aux niveaux 1 et 2 (2 et 4 cases) reste à confirmer.**
+
 ## Langues (2026-11-20)
 
 - **Chessdown seulement** en anglais, français, espagnol, italien et allemand (réglage
