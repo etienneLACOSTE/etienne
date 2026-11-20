@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { answerDialog, blockExternalRequests, trackPageErrors } = require('./helpers');
+const { answerDialog, blockExternalRequests, chooseFormat, trackPageErrors } = require('./helpers');
 
 // A connection that drops in the middle of an online game keeps its seat for a while
 // (server/socket-utils.js seatKeeper, SEAT_HOLD_MS = 3 s in the tests): it comes back
@@ -140,6 +140,7 @@ test.describe('Reconnection', () => {
 
     await page.goto('/chessdown/');
     await page.locator('#btn-create-room').click();
+    await chooseFormat(page);
     await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/); // Not the placeholder
     const code = await page.locator('#waiting-room-code').textContent();
 
@@ -182,6 +183,7 @@ test.describe('Reconnection', () => {
 
     await page.goto('/chessdown/');
     await page.locator('#btn-create-room').click();
+    await chooseFormat(page);
     await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/); // Not the placeholder
     const code = await page.locator('#waiting-room-code').textContent();
     await opponent.goto('/chessdown/');

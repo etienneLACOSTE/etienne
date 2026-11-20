@@ -57,6 +57,21 @@ async function answerDialog(page, message, button = 'OK') {
   await expect(dialog).toHaveCount(0);
 }
 
+/**
+ * Chessdown asks which match to play when a local game starts or a room is created:
+ * answer it ('single': one free game with the Settings timer; 'bo3': a best of 3).
+ * Works in every language (the first button is the best of 3).
+ * @param {import('@playwright/test').Page} page
+ * @param {'single' | 'bo3'} [format]
+ */
+async function chooseFormat(page, format = 'single') {
+  const dialog = page.locator('dialog.app-dialog').first();
+  const question = (await dialog.locator('.app-dialog-message').textContent()) ?? '';
+  await dialog.getByRole('button').nth(format === 'bo3' ? 0 : 1).click();
+  // Gone (another question may follow, e.g. the side of a signed-in player).
+  await expect(page.getByRole('alertdialog', { name: question, exact: true })).toHaveCount(0);
+}
+
 const ORIGIN = 'http://127.0.0.1:3100'; // The test server (playwright.config.js)
 let accounts = 0;
 
@@ -87,4 +102,4 @@ async function signedInContext(browser) {
   return { context, name };
 }
 
-module.exports = { blockExternalRequests, trackPageErrors, readGlobal, waitForGlobal, answerDialog, signUp, signedInContext, ORIGIN };
+module.exports = { blockExternalRequests, trackPageErrors, readGlobal, waitForGlobal, answerDialog, chooseFormat, signUp, signedInContext, ORIGIN };

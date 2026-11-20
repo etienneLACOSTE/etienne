@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
-const { answerDialog, blockExternalRequests, trackPageErrors } = require('./helpers');
+const { answerDialog, blockExternalRequests, chooseFormat, trackPageErrors } = require('./helpers');
 
 // Draw by agreement: online (the server keeps the offers, server/socket-utils.js
 // drawOffers) and on the same screen (a dialog for the other player).
@@ -33,6 +33,7 @@ const seen = (page) => page.evaluate(() => window.seen.map(([e]) => e));
 async function chessdownOnline(page, opponent) {
   await page.goto('/chessdown/');
   await page.locator('#btn-create-room').dispatchEvent('pointerdown');
+  await chooseFormat(page);
   await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
   const code = await page.locator('#waiting-room-code').textContent();
   await opponent.goto('/chessdown/');
@@ -133,6 +134,7 @@ test.describe('Draw by agreement', () => {
     await page.goto('/chessdown/');
     const pointer = (selector) => page.locator(selector).dispatchEvent('pointerdown');
     await pointer('#btn-start-local');
+    await chooseFormat(page);
     for (let i = 0; i < 2; i++) {
       if (i) await pointer('#btn-ready');
       await pointer('.shop-item[data-type="k"]');

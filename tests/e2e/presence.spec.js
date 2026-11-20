@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, trackPageErrors } = require('./helpers');
+const { blockExternalRequests, chooseFormat, trackPageErrors } = require('./helpers');
 
 // Friends online: who is online and where, and an invitation straight into a game.
 
@@ -97,6 +97,7 @@ test("an invitation: no focus taken during a game, Escape dismisses it, Join lea
   const errors = [alice.page, bob.page].map(trackPageErrors);
   const createRoom = async (page) => {
     await page.locator('#btn-create-room').dispatchEvent('pointerdown');
+    await chooseFormat(page);
     await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
     return page.locator('#waiting-room-code').textContent();
   };

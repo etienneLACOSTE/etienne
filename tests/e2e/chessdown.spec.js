@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, readGlobal, signedInContext, trackPageErrors, waitForGlobal } = require('./helpers');
+const { blockExternalRequests, chooseFormat, readGlobal, signedInContext, trackPageErrors, waitForGlobal } = require('./helpers');
 
 // Board: 12 rows x 8 cols. Player 1 drafts rows 9-11, player 2 rows 0-2.
 // In draft, each player sees a 6x8 view; rows 3-5 of the view are the deployment zone.
@@ -61,6 +61,7 @@ test.describe('Chessdown', () => {
     await page.goto('/chessdown/');
 
     await page.locator('#btn-start-local').click();
+    await chooseFormat(page);
     // Player 1: king (11,4), rook (9,3)
     await place(page, 'k', 5, 4);
     await place(page, 'r', 3, 3);
@@ -88,6 +89,7 @@ test.describe('Chessdown', () => {
     await page.goto('/chessdown/');
 
     await page.locator('#btn-start-local').click();
+    await chooseFormat(page);
     // Player 1: king (11,4), rook (9,0)
     await place(page, 'k', 5, 4);
     await place(page, 'r', 3, 0);
@@ -123,6 +125,7 @@ test.describe('Chessdown', () => {
 
     // Escape: no game, back to the menu.
     await page.locator('#btn-start-local').click();
+    await chooseFormat(page);
     const question = page.getByRole('alertdialog', { name: 'Which side are you? The game counts in your stats for that side.' });
     await expect(question.getByRole('button', { name: 'Player 1 (drafts first)' })).toBeFocused();
     await page.keyboard.press('Escape');
@@ -131,6 +134,7 @@ test.describe('Chessdown', () => {
 
     // Player 2 this time: player 1's touchdown is their defeat.
     await page.locator('#btn-start-local').click();
+    await chooseFormat(page);
     await question.getByRole('button', { name: 'Player 2', exact: true }).click();
     await place(page, 'k', 5, 4);
     await place(page, 'r', 3, 0);
@@ -202,6 +206,7 @@ test.describe('Chessdown', () => {
     await p1.goto('/chessdown/');
     await p2.goto('/chessdown/');
     await p1.locator('#btn-create-room').click();
+    await chooseFormat(p1);
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).toHaveText(/^[A-Z]{6}$/);
     await expect(codeEl).not.toHaveText('ABCD');
@@ -244,6 +249,7 @@ test.describe('Chessdown', () => {
     await p1.goto('/chessdown/');
     await p2.goto('/chessdown/');
     await p1.locator('#btn-create-room').click();
+    await chooseFormat(p1);
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).not.toHaveText('ABCD');
     await p2.locator('#room-code-input').fill((await codeEl.textContent()) ?? '');
@@ -276,6 +282,7 @@ test.describe('Chessdown', () => {
     await p1.goto('/chessdown/');
     await p2.goto('/chessdown/');
     await p1.locator('#btn-create-room').click();
+    await chooseFormat(p1);
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).not.toHaveText('ABCD');
     await p2.locator('#room-code-input').fill((await codeEl.textContent()) ?? '');

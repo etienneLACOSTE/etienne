@@ -130,6 +130,47 @@ test.describe('Server authority', () => {
     expect(timers).toEqual([{ mode: 'overall', seconds: 90 }, { mode: 'turn', seconds: 10 }, { mode: 'turn', seconds: 10 }]);
   });
 
+  test('chessdown: a best of 3 room plays 30 s turns, counts each game, and the loser starts the next one', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const g = await T.chessdownRoom({ format: 'bo3', timerMode: 'overall', timerSeconds: 90 });
+      const timer = g.joined.roomState.timer;
+      const firstSeries = g.joined.roomState.series;
+      // Player 1's rook takes the king on column 3 (if player 2 starts, its king steps into the column).
+      const update = T.once(g.p1, 'seriesUpdate', 3000);
+      if (g.starter === 2) {
+        const moved = T.once(g.p1, 'moveMade');
+        g.p2.emit('makeMove', { roomCode: g.code, from: { r: 0, c: 3 }, to: { r: 1, c: 3 } });
+        await moved;
+      }
+      const target = g.starter === 2 ? { r: 1, c: 3 } : { r: 0, c: 3 };
+      g.p1.emit('makeMove', { roomCode: g.code, from: { r: 9, c: 3 }, to: target });
+      const afterFirst = await update;
+      // Asking for the next game: one is not enough, both are.
+      const waiting = T.once(g.p2, 'playAgainStatus');
+      g.p1.emit('playAgainRequest', { roomCode: g.code });
+      const status = await waiting;
+      const restarted = T.once(g.p1, 'gameRestarted');
+      g.p2.emit('playAgainRequest', { roomCode: g.code });
+      const next = await restarted;
+      const ended = T.once(g.p1, 'draftPhaseEnded', 2000);
+      g.p1.emit('draftComplete', { roomCode: g.code, player: 1, color: 'blue', pieces: [{ r: 11, c: 4, type: 'k' }] });
+      g.p2.emit('draftComplete', { roomCode: g.code, player: 2, color: 'red', pieces: [{ r: 0, c: 3, type: 'k' }] });
+      const second = (await ended).roomState;
+      return { timer, firstSeries, afterFirst: afterFirst.series, status, next: next.series, second };
+    });
+    expect(result.timer).toEqual({ mode: 'turn', seconds: 30 });
+    expect(result.firstSeries).toMatchObject({ format: 'bo3', games: 0 });
+    expect(result.afterFirst).toMatchObject({ wins: { 1: 1, 2: 0 }, games: 1, over: false, lastLoser: 2 });
+    expect(result.status).toEqual({ count: 1 });
+    expect(result.next).toMatchObject({ wins: { 1: 1, 2: 0 }, games: 1 });
+    expect(result.second).toMatchObject({ currentPlayer: 2, coinFlip: false, gameState: 'playing' });
+  });
+
+  test('chessdown: without a format, a room is a single game with its own timer', async ({ page }) => {
+    const series = await page.evaluate(async () => (await T.chessdownRoom()).joined.roomState.series);
+    expect(series).toMatchObject({ format: 'single', games: 0, over: false });
+  });
+
   // 1 s timer: coin flip (3 s) + 1 s + grace (1.5 s) before the server steps in.
   test('chessdown: a player who never gives up the turn loses it to the server clock', async ({ page }) => {
     const result = await page.evaluate(async () => {

@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, readGlobal } = require('./helpers');
+const { blockExternalRequests, chooseFormat, readGlobal } = require('./helpers');
 
 // Everything must work without a mouse (WCAG 2.1.1): menu buttons, the draft shop,
 // the colour swatches and the board, which is one tab stop navigated with arrows.
@@ -38,11 +38,13 @@ test.describe('Keyboard: Chessdown', () => {
     await page.keyboard.press('Space');
     await expect(page.locator('#main-menu')).toBeVisible();
     await activate(page.locator('#btn-start-local'));
+    await chooseFormat(page);
     await expect.poll(() => readGlobal(page, 'gameState')).toBe('draft1');
   });
 
   test('the board is one tab stop, navigated with arrow keys, and squares say what they hold', async ({ page }) => {
     await activate(page.locator('#btn-start-local'));
+    await chooseFormat(page);
     await place(page, 'k', 5, 4);
     // Only one square is in the tab order.
     expect(await page.locator('#chessboard .square[tabindex="0"]').count()).toBe(1);
@@ -57,6 +59,7 @@ test.describe('Keyboard: Chessdown', () => {
 
   test('a whole local game can be played without a mouse', async ({ page }) => {
     await activate(page.locator('#btn-start-local'));
+    await chooseFormat(page);
     await place(page, 'k', 5, 4);
     await place(page, 'r', 3, 3);
     await activate(page.locator('.color-swatch[data-color="green"]'));

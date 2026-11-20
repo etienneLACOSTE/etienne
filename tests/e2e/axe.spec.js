@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
-const { blockExternalRequests, signUp } = require('./helpers');
+const { blockExternalRequests, chooseFormat, signUp } = require('./helpers');
 
 // Automated accessibility audit (axe-core) of every screen, against WCAG 2.2 A and AA.
 // Complements keyboard.spec.js and a11y.spec.js, which test behaviour axe cannot see.
@@ -29,6 +29,7 @@ const CHESSDOWN = {
   campaign: async (page) => pointer(page, '#btn-start-bot'),
   draft: async (page) => {
     await pointer(page, '#btn-start-local');
+    await chooseFormat(page);
     await pointer(page, '.shop-item[data-type="k"]');
     await pointer(page, '#chessboard .square[data-vr="5"][data-vc="4"]');
   },

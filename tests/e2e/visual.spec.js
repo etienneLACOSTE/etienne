@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests } = require('./helpers');
+const { blockExternalRequests, chooseFormat } = require('./helpers');
 
 // Reference screenshots of the main screens, for desktop and mobile (375 px).
 // External fonts/icons are blocked, so icons are absent from these images on purpose.
@@ -24,6 +24,7 @@ test.describe('Visual baseline', () => {
   test('chessdown draft screen', async ({ page }) => {
     await page.goto('/chessdown/');
     await page.locator('#btn-start-local').click();
+    await chooseFormat(page);
     await page.locator('.shop-item[data-type="k"]').click();
     await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
     await expect(page).toHaveScreenshot('chessdown-draft.png', { mask: [page.locator('#crowd')] });

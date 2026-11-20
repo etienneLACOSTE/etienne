@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
-const { blockExternalRequests, trackPageErrors } = require('./helpers');
+const { blockExternalRequests, chooseFormat, trackPageErrors } = require('./helpers');
 
 // Chessdown in five languages (assets/js/i18n.js, games/chessdown/strings/): chosen in
 // Settings, kept in this browser; without a choice, the browser's language when offered.
@@ -42,7 +42,7 @@ test.describe('Languages', () => {
     await expect(page.getByLabel('Langue')).toHaveValue('fr');
     await expect(page.getByRole('button', { name: 'Temps total' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByLabel('Minutes')).toHaveValue('3');
-    expect(await page.evaluate(() => chessdown.state.timerMode)).toBe('overall');
+    expect(await page.evaluate(() => chessdown.state.chosenTimer)).toEqual({ mode: 'overall', seconds: 180 });
     expect(errors).toEqual([]);
   });
 
@@ -67,6 +67,7 @@ test.describe('Languages', () => {
     await page.addInitScript(() => localStorage.setItem('pawnet.language', 'fr'));
     await page.goto('/chessdown/');
     await page.getByRole('button', { name: 'Jouer en local (2 joueurs)' }).dispatchEvent('pointerdown');
+    await chooseFormat(page);
     await expect(page.locator('#status-bar')).toHaveText(/^Draft : (joueur 1|compose ton armée !)$/);
     await expect(page.getByRole('button', { name: 'Acheter : Roi, 0 points' })).toBeVisible();
     await expect(page.getByRole('group', { name: 'Terrain' })).toBeVisible();

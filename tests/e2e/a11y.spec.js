@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests } = require('./helpers');
+const { blockExternalRequests, chooseFormat } = require('./helpers');
 
 // Screen-reader basics on every page (WCAG 1.1.1, 1.3.1, 2.4.6, 3.1.1, 4.1.2):
 // a language, one h1, a name for every control, button and link, alt text on
@@ -51,6 +51,7 @@ test.describe('Announcements', () => {
   test('chessdown: match start, a move, a skipped turn', async ({ page }) => {
     await page.goto('/chessdown/');
     await pointer(page, '#btn-start-local');
+    await chooseFormat(page);
     for (let i = 0; i < 2; i++) {
       if (i) await pointer(page, '#btn-ready');
       await pointer(page, '.shop-item[data-type="k"]');

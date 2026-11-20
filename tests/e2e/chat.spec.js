@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
-const { blockExternalRequests, trackPageErrors } = require('./helpers');
+const { blockExternalRequests, chooseFormat, trackPageErrors } = require('./helpers');
 
 // Chat between the two players of an online game (server/chat.js, assets/js/game-chat.js).
 
@@ -30,6 +30,7 @@ async function player(browser, { guest = false } = {}) {
 async function chessdownRoom(a, b) {
   await a.goto('/chessdown/');
   await a.locator('#btn-create-room').dispatchEvent('pointerdown');
+  await chooseFormat(a);
   await expect(a.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
   const code = (await a.locator('#waiting-room-code').textContent()) ?? '';
   await b.goto('/chessdown/');

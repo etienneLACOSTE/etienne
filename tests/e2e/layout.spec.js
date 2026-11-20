@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests } = require('./helpers');
+const { blockExternalRequests, chooseFormat } = require('./helpers');
 
 // No page may scroll sideways, and key elements must sit inside the screen,
 // especially at phone width (375 px in the mobile project).
@@ -47,6 +47,7 @@ test.describe('Layout', () => {
     await page.goto('/chessdown/');
     const pointer = (selector) => page.locator(selector).dispatchEvent('pointerdown');
     await pointer('#btn-start-local');
+    await chooseFormat(page);
     for (const [type, vc] of [['k', 4], ['q', 3], ['q', 2], ['r', 1]]) {
       await pointer(`.shop-item[data-type="${type}"]`);
       await pointer(`#chessboard .square[data-vr="5"][data-vc="${vc}"]`);

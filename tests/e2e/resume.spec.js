@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { answerDialog, blockExternalRequests, signedInContext, trackPageErrors } = require('./helpers');
+const { answerDialog, blockExternalRequests, chooseFormat, signedInContext, trackPageErrors } = require('./helpers');
 
 // A page reloaded in the middle of an online game takes its seat back with the seat token
 // it kept for this tab (assets/js/seat.js, server/socket-utils.js seatKeeper), while the
@@ -21,6 +21,7 @@ const cd = (page, field) => page.evaluate((f) => chessdown.state[f], field);
 async function chessdownRoom(page, opponent) {
   await page.goto('/chessdown/');
   await page.locator('#btn-create-room').dispatchEvent('pointerdown');
+  await chooseFormat(page);
   await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
   const code = /** @type {string} */ (await page.locator('#waiting-room-code').textContent());
   await opponent.goto('/chessdown/');
@@ -65,6 +66,7 @@ test.describe('Coming back after a reload', () => {
     const errors = trackPageErrors(page);
     await page.goto('/chessdown/');
     await page.locator('#btn-create-room').dispatchEvent('pointerdown');
+    await chooseFormat(page);
     await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
     const code = await page.locator('#waiting-room-code').textContent();
 
