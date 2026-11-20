@@ -135,6 +135,10 @@ test('report: old messages cannot be reported, a guest cannot report, a failure 
     const first = to('a', 'chatMessage')[0];
     await a.send('chatReport', { roomCode: 'ROOMAB', messageId: first.id });
     assert.deepEqual(saved, [], 'only the last messages are kept');
+    assert.deepEqual(a.got.at(-1), ['chatNotice', { reason: 'report-expired', messageId: first.id }], 'and the page is told');
+    const told = a.got.length;
+    for (const messageId of [999, 0, -1, 1.5, '1']) await a.send('chatReport', { roomCode: 'ROOMAB', messageId });
+    assert.equal(a.got.length, told, 'not for an id never sent');
 
     a.data.user = null; // Signed out
     await a.send('chatReport', { roomCode: 'ROOMAB', messageId: to('a', 'chatMessage').at(-1).id });

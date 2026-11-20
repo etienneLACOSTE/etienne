@@ -12,7 +12,8 @@
 // 'chatMuted' { roomCode, muted }, 'chatMessage' { roomCode, text },
 // 'chatReport' { roomCode, messageId } and 'chatBlock' { roomCode }. Each player gets
 // 'chatState' { available, reason, opponentMuted }, 'chatMessage' { id, from, name, text }
-// and 'chatNotice' { reason, messageId? }.
+// and 'chatNotice' { reason, messageId? } (reason 'report-expired': the message is too old to
+// be reported, only the last RECENT are kept).
 const { safeOn, getRoom, playerOf } = require('./socket-utils');
 
 const MAX_LENGTH = 200;
@@ -156,7 +157,14 @@ function gameChat(nsp, rooms, friends, { game = '', reports = null, onBlock = ()
                 const chat = chatOf(room);
                 const message = chat.recent.find((m) => m.id === data.messageId && m.from !== player);
                 const reported = chat.reported[player];
-                if (!message || reported.has(message.id)) return;
+                if (!message) {
+                    // Sent in this game but no longer in memory: the page is told, so its button does not hang.
+                    const id = data.messageId;
+                    const oldest = chat.recent.length ? chat.recent[0].id : chat.nextId;
+                    if (Number.isInteger(id) && id >= 1 && id < oldest) socket.emit('chatNotice', { reason: 'report-expired', messageId: id });
+                    return;
+                }
+                if (reported.has(message.id)) return;
                 if (reported.size >= MAX_REPORTS) return socket.emit('chatNotice', { reason: 'report-limit', messageId: message.id });
                 reported.add(message.id);
                 try {

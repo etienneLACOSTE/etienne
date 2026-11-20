@@ -9,6 +9,7 @@ import { ask } from './dialog.js';
 
 const OFF_KEY = 'pawnet.chatOff';
 const MAX_LENGTH = 200; // As on the server
+const RECENT = 30; // Messages of the game the server keeps, the only ones that can be reported (server/chat.js)
 
 const NOTES = {
     'you-guest': 'Sign in to chat with your opponent.',
@@ -22,6 +23,7 @@ const NOTICES = {
     rate: 'You are sending messages too fast. Wait a few seconds.',
     'report-failed': 'The report could not be sent. Try again.',
     'report-limit': 'You cannot report more messages in this game. You can block this player.',
+    'report-expired': 'This message is too old to report. You can block this player.',
     'block-failed': 'The block could not be saved. Try again, or block them from your account page.',
 };
 
@@ -130,6 +132,16 @@ export function createChat(socket, { button, roomCode, me }) {
         block.focus();
     });
     /** The Report button of a message of the opponent's. */
+    /** The message can no longer be reported: its button goes (focus to the message field or the toggle). */
+    function dropReport(/** @type {number} */ id) {
+        const report = reportButtons.get(id);
+        if (!report) return;
+        const hadFocus = document.activeElement === report;
+        report.remove();
+        reportButtons.delete(id);
+        if (hadFocus) (form.hidden ? toggle : input).focus();
+    }
+
     function reportButton(/** @type {number} */ id, /** @type {string} */ name) {
         const report = Object.assign(document.createElement('button'), { type: 'button', className: 'chat-report', textContent: 'Report' });
         report.setAttribute('aria-label', `Report this message from ${name}`);
@@ -174,7 +186,11 @@ export function createChat(socket, { button, roomCode, me }) {
         if (!mine && Number.isInteger(data.id)) item.append(' ', reportButton(data.id, name.textContent));
         log.append(item);
         while (log.children.length > 100) log.firstElementChild?.remove(); // Only the last 100
-        for (const [id, report] of reportButtons) if (!report.isConnected) reportButtons.delete(id);
+        for (const [id, report] of reportButtons) {
+            // Gone from the log, or too old for the server to have it still: no more Report.
+            if (Number.isInteger(data.id) && id <= data.id - RECENT) dropReport(id);
+            else if (!report.isConnected) reportButtons.delete(id);
+        }
         log.scrollTop = log.scrollHeight;
         if (!open && !mine) unread++;
         render();
@@ -190,7 +206,8 @@ export function createChat(socket, { button, roomCode, me }) {
             if (hadFocus) (form.hidden ? toggle : input).focus();
             return;
         }
-        if (report) report.disabled = reason === 'report-limit';
+        if (reason === 'report-expired') dropReport(data.messageId);
+        else if (report) report.disabled = reason === 'report-limit';
         if (reason === 'blocked') return; // The new chatState says it
         if (!NOTICES[reason]) return;
         note.hidden = false;
