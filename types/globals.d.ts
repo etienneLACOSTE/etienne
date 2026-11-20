@@ -3,6 +3,7 @@ export {};
 
 declare global {
     var ChessdownEngine: typeof import('../games/chessdown/engine.js');
+    var ChessdownSeries: typeof import('../games/chessdown/series.js');
     var ChessdownBot: typeof import('../games/chessdown/bot-search.js');
     var ChesspellRules: typeof import('../games/chesspell/rules.js');
     var ChesspellGame: typeof import('../games/chesspell/game.js');

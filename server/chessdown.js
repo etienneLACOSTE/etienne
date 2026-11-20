@@ -5,6 +5,7 @@ const {
     MAX_IDLE_TURNS, SIGN_IN_TO_PLAY,
 } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
+const Series = require('../games/chessdown/series.js');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
 const { gameChat } = require('./chat');
 
@@ -33,6 +34,11 @@ function getChessdownPublicRoomState(room) {
         playerColors: room.playerColors,
         board: room.board,
         timer: room.clock.settings,
+        // The match: a best of 3 or a single game (games/chessdown/series.js), the last
+        // game's result between two games, and whether a coin chose who starts.
+        series: room.series,
+        lastGame: room.lastGame || null,
+        coinFlip: room.coinFlip !== false,
         // Signed-in players' usernames (set by the server), null for a guest.
         names: { 1: room.accounts[1] ? room.accounts[1].username : null, 2: room.accounts[2] ? room.accounts[2].username : null },
     };
@@ -123,10 +129,25 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
         return room.positionHistory[key] >= 3;
     }
 
-    /** A player leaves a game in progress: it counts as a win for the other one. */
+    /**
+     * A game ends (winner 1 or 2, or 0 for a draw): it counts in the stats and in the
+     * series, and the pages are told the series first ('seriesUpdate'), then how the game
+     * ended. Between two games of a series the room waits for both players ('between').
+     */
+    function gameOver(room, winner, reason) {
+        room.clock.stop();
+        recordResult(room, winner, reason);
+        room.series = Series.recordGame(room.series, winner);
+        room.lastGame = { winner, reason };
+        room.gameState = room.series.over ? 'over' : 'between';
+        ioChessdown.to(room.id).emit('seriesUpdate', { series: room.series });
+    }
+
+    /** A player leaves a game in progress: it counts as a win for the other one (and the series). */
     function forfeit(room, leaver) {
         if (room.gameState !== 'playing') return;
         room.gameState = 'over';
+        room.clock.stop();
         recordResult(room, leaver === 1 ? 2 : 1, 'forfeit');
     }
 
@@ -134,8 +155,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
     function timeUp(room) {
         if (chessdownRooms[room.id] !== room || room.gameState !== 'playing') return;
         if (room.clock.timer.mode === 'overall') {
-            room.gameState = 'over';
-            recordResult(room, room.currentPlayer === 1 ? 2 : 1, 'time');
+            gameOver(room, room.currentPlayer === 1 ? 2 : 1, 'time');
             ioChessdown.to(room.id).emit('timeOut', { loser: room.currentPlayer });
             return;
         }
@@ -169,9 +189,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
 
     // Both players agree on a draw: the game ends, the clock stops.
     const draws = drawOffers(ioChessdown, chessdownRooms, (room) => {
-        room.gameState = 'over';
-        room.clock.stop();
-        recordResult(room, 0, 'agreement');
+        gameOver(room, 0, 'agreement');
         ioChessdown.to(room.id).emit('drawAgreed');
     });
 
@@ -209,9 +227,14 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
                 accounts: { 1: socket.data.user, 2: null }, // Signed-in players, for their stats
                 startedAt: 0,
                 clock: /** @type {TurnClock} */ (null),
+                // A best of 3 (30 s turns) when asked (the page always says), else one free game.
+                series: Series.newSeries(data && data.format === 'bo3' ? 'bo3' : 'single'),
                 ...roomOrigin(socket),
             };
-            room.clock = new TurnClock(sanitizeTimer(data), () => timeUp(room));
+            const timer = room.series.format === 'bo3'
+                ? { mode: 'turn', ms: Series.SERIES_TURN_SECONDS * 1000 }
+                : sanitizeTimer(data);
+            room.clock = new TurnClock(timer, () => timeUp(room));
 
             socket.join(roomCode);
             socket.emit('roomCreated', roomCode);
@@ -264,7 +287,10 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
             if (room.drafted[1] && room.drafted[2]) {
                 room.gameState = 'playing';
                 room.startedAt = Date.now();
-                room.currentPlayer = Math.random() < 0.5 ? 1 : 2;
+                // In a series, the loser of the last game starts; otherwise the coin decides.
+                const starter = Series.starter(room.series);
+                room.coinFlip = !starter;
+                room.currentPlayer = starter || (Math.random() < 0.5 ? 1 : 2);
                 room.clock.reset();
                 room.clock.start(room.currentPlayer, COIN_FLIP_MS);
 
@@ -296,14 +322,11 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
             room.currentPlayer = room.currentPlayer === 1 ? 2 : 1;
             // King captured, or a piece survived a turn in the endzone: game over.
             if (targetPiece && targetPiece.type === 'k') {
-                room.gameState = 'over';
-                recordResult(room, mover, 'king');
+                gameOver(room, mover, 'king');
             } else if (engine.hasPieceInEndzone(room.board, room.currentPlayer)) {
-                room.gameState = 'over';
-                recordResult(room, room.currentPlayer, 'touchdown');
+                gameOver(room, room.currentPlayer, 'touchdown');
             } else if (seenThreeTimes(room)) {
-                room.gameState = 'over'; // The pages see it too and show the draw
-                recordResult(room, 0, 'repetition');
+                gameOver(room, 0, 'repetition'); // The pages see it too and show the draw
             } else {
                 room.clock.start(room.currentPlayer);
             }
@@ -337,8 +360,9 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
         });
 
         safeOn(socket, 'playAgainRequest', (data) => {
-            const room = getRoom(chessdownRooms, data.roomCode);
-            if (!room) return;
+            // The next game of the series, or a new series once it is over: both must ask.
+            const room = getRoom(chessdownRooms, data && data.roomCode);
+            if (!room || (room.gameState !== 'between' && room.gameState !== 'over')) return;
             const player = playerOf(room, socket);
             if (player === null) return;
 
@@ -347,8 +371,10 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
 
             if (count === 2) {
                 room.clock.reset();
+                if (room.series.over) room.series = Series.newSeries(room.series.format);
+                room.lastGame = null;
                 Object.assign(room, newGameState());
-                ioChessdown.to(data.roomCode).emit('gameRestarted');
+                ioChessdown.to(data.roomCode).emit('gameRestarted', { series: room.series });
                 // The pages forgot their seats when the game ended: new ones for the rematch.
                 seats.issue(room, 1);
                 seats.issue(room, 2);
