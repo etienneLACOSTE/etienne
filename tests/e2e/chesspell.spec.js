@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, trackPageErrors } = require('./helpers');
+const { blockExternalRequests, signedInContext, trackPageErrors } = require('./helpers');
 
 // Board: engine.board[r][c], r = 0 is black's back rank (rank 8), c = 0 is file a.
 // Pieces are absolutely positioned over the squares, so we click by board geometry.
@@ -309,8 +309,8 @@ test.describe("Ches'spell", () => {
   });
 
   test('online: both players see each move', async ({ browser }) => {
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+    const { context: ctx1, name: name1 } = await signedInContext(browser);
+    const { context: ctx2, name: name2 } = await signedInContext(browser);
     for (const ctx of [ctx1, ctx2]) {
       await blockExternalRequests(ctx);
       await seedProfiles(ctx);
@@ -324,6 +324,7 @@ test.describe("Ches'spell", () => {
       await page.getByRole('button', { name: 'Online Multiplayer' }).click();
     }
     await p2.locator('#online-p1-select').selectOption('guest2');
+    await p1.locator('#online-p1-select').selectOption('guest1');
     await p1.locator('#btn-create-room').click();
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).toHaveText(/^[A-Z]{6}$/);
@@ -331,11 +332,12 @@ test.describe("Ches'spell", () => {
     await p2.locator('#room-code-input').fill((await codeEl.textContent()) ?? '');
     await p2.locator('#btn-join-room').click();
 
-    for (const page of [p1, p2]) {
-      await expect(page.locator('#game-board')).toHaveClass(/active/);
-      await expect(page.locator('#player1-banner')).toContainText('Guest 1');
-      await expect(page.locator('#player2-banner')).toContainText('Guest 2');
-    }
+    // Each page shows its own profile, and the opponent's account name (set by the server).
+    for (const page of [p1, p2]) await expect(page.locator('#game-board')).toHaveClass(/active/);
+    await expect(p1.locator('#player1-banner')).toContainText('Guest 1');
+    await expect(p1.locator('#player2-banner')).toContainText(name2);
+    await expect(p2.locator('#player1-banner')).toContainText(name1);
+    await expect(p2.locator('#player2-banner')).toContainText('Guest 2');
 
     await clickMove(p1, [6, 4], [4, 4]); // White e4
     for (const page of [p1, p2]) await expect.poll(() => pieceAt(page, 4, 4)).toBe('P');
@@ -364,8 +366,8 @@ test.describe("Ches'spell", () => {
   });
 
   test('online: the king falls; each player sees the end from their side, without Rematch', async ({ browser }) => {
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+    const { context: ctx1, name: name1 } = await signedInContext(browser);
+    const { context: ctx2, name: name2 } = await signedInContext(browser);
     for (const ctx of [ctx1, ctx2]) {
       await blockExternalRequests(ctx);
       await seedProfiles(ctx);
@@ -378,6 +380,7 @@ test.describe("Ches'spell", () => {
       await page.getByRole('button', { name: 'Online Multiplayer' }).click();
     }
     await p2.locator('#online-p1-select').selectOption('guest2');
+    await p1.locator('#online-p1-select').selectOption('guest1');
     await p1.locator('#btn-create-room').click();
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).toHaveText(/^[A-Z]{6}$/);
@@ -396,9 +399,9 @@ test.describe("Ches'spell", () => {
 
     const end = (page, title) => page.getByRole('dialog', { name: title });
     await expect(end(p1, 'Defeat')).toBeVisible();
-    await expect(end(p1, 'Defeat')).toContainText('The white king has fallen. Guest 2 defeats Guest 1.');
+    await expect(end(p1, 'Defeat')).toContainText(`The white king has fallen. ${name2} defeats Guest 1.`);
     await expect(end(p2, 'Victory')).toBeVisible();
-    await expect(end(p2, 'Victory')).toContainText('The white king has fallen. Guest 2 defeats Guest 1.');
+    await expect(end(p2, 'Victory')).toContainText(`The white king has fallen. Guest 2 defeats ${name1}.`);
     for (const page of [p1, p2]) {
       await expect(page.getByRole('button', { name: 'Rematch' })).toBeHidden();
       expect(await page.evaluate(() => chesspell.engine.winner)).toBe('Black');
@@ -419,8 +422,8 @@ test.describe("Ches'spell", () => {
   });
 
   test('online: a dropped connection comes back and the game goes on, with a notice meanwhile', async ({ browser }) => {
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+    const { context: ctx1, name: name1 } = await signedInContext(browser);
+    const { context: ctx2, name: name2 } = await signedInContext(browser);
     for (const ctx of [ctx1, ctx2]) {
       await blockExternalRequests(ctx);
       await seedProfiles(ctx);
@@ -433,6 +436,7 @@ test.describe("Ches'spell", () => {
       await page.getByRole('button', { name: 'Online Multiplayer' }).click();
     }
     await p2.locator('#online-p1-select').selectOption('guest2');
+    await p1.locator('#online-p1-select').selectOption('guest1');
     await p1.locator('#btn-create-room').click();
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).toHaveText(/^[A-Z]{6}$/);
@@ -485,8 +489,8 @@ test.describe("Ches'spell", () => {
   // Regression test: squares used to stay unrotated for the online black player,
   // so clicking an empty square targeted the mirrored one.
   test('online: black can move by clicking', async ({ browser }) => {
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+    const { context: ctx1, name: name1 } = await signedInContext(browser);
+    const { context: ctx2, name: name2 } = await signedInContext(browser);
     for (const ctx of [ctx1, ctx2]) {
       await blockExternalRequests(ctx);
       await seedProfiles(ctx);
@@ -498,6 +502,7 @@ test.describe("Ches'spell", () => {
       await page.getByRole('button', { name: 'Online Multiplayer' }).click();
     }
     await p2.locator('#online-p1-select').selectOption('guest2');
+    await p1.locator('#online-p1-select').selectOption('guest1');
     await p1.locator('#btn-create-room').click();
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).not.toHaveText('XXXX');

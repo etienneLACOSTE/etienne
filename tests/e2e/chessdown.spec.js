@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, trackPageErrors, readGlobal, waitForGlobal } = require('./helpers');
+const { blockExternalRequests, readGlobal, signedInContext, trackPageErrors, waitForGlobal } = require('./helpers');
 
 // Board: 12 rows x 8 cols. Player 1 drafts rows 9-11, player 2 rows 0-2.
 // In draft, each player sees a 6x8 view; rows 3-5 of the view are the deployment zone.
@@ -191,8 +191,8 @@ test.describe('Chessdown', () => {
   });
 
   test('online: two players draft, then the starter captures the king', async ({ browser }) => {
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+    const ctx1 = (await signedInContext(browser)).context;
+    const ctx2 = (await signedInContext(browser)).context;
     await blockExternalRequests(ctx1);
     await blockExternalRequests(ctx2);
     const p1 = await ctx1.newPage();
@@ -234,8 +234,8 @@ test.describe('Chessdown', () => {
 
   test('online: when the turn timer runs out, both players move on together', async ({ browser }) => {
     test.setTimeout(60_000);
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+    const ctx1 = (await signedInContext(browser)).context;
+    const ctx2 = (await signedInContext(browser)).context;
     await blockExternalRequests(ctx1);
     await blockExternalRequests(ctx2);
     const p1 = await ctx1.newPage();
@@ -265,8 +265,8 @@ test.describe('Chessdown', () => {
   });
 
   test('online: en passant works between two players', async ({ browser }) => {
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+    const ctx1 = (await signedInContext(browser)).context;
+    const ctx2 = (await signedInContext(browser)).context;
     await blockExternalRequests(ctx1);
     await blockExternalRequests(ctx2);
     const p1 = await ctx1.newPage();

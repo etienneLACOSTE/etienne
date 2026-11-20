@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests } = require('./helpers');
+const { blockExternalRequests, signUp } = require('./helpers');
 
 // Malformed Socket.io messages must be ignored, never crash the shared server.
 // The socket.io client is taken from a game page, so no extra dependency is needed.
@@ -34,6 +34,9 @@ const MALFORMED = {
 };
 
 test.describe('Server robustness', () => {
+  // Rooms are for accounts: every connection of the page is signed in.
+  test.beforeEach(async ({ page }) => { await signUp(page.context()); });
+
   test('oversized messages are refused and do not affect the server', async ({ page, request }) => {
     await blockExternalRequests(page);
     await page.goto('/chessdown/');

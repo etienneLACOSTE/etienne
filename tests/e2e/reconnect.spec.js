@@ -95,7 +95,7 @@ test.describe('Reconnection', () => {
   });
 
   test('a game in progress gets a pulse: the page always has a recent message to come back from', async ({ browser }) => {
-    const ctx = await browser.newContext();
+    const ctx = (await signedInContext(browser)).context;
     await blockExternalRequests(ctx);
     const [pa, pb] = [await ctx.newPage(), await ctx.newPage()];
     const errors = [pa, pb].map(trackPageErrors);
@@ -130,8 +130,8 @@ test.describe('Reconnection', () => {
   });
 
   test('Chessdown page: a notice while the connection is lost, and while the opponent is away', async ({ browser }) => {
-    const ctx = await browser.newContext();
-    const other = await browser.newContext();
+    const ctx = (await signedInContext(browser)).context;
+    const other = (await signedInContext(browser)).context;
     for (const c of [ctx, other]) await blockExternalRequests(c);
     const page = await ctx.newPage();
     const opponent = await other.newPage();
@@ -174,8 +174,8 @@ test.describe('Reconnection', () => {
   });
 
   test('Chessdown page: back too late, the page says the game could not be resumed', async ({ browser }) => {
-    const ctx = await browser.newContext();
-    const other = await browser.newContext();
+    const ctx = (await signedInContext(browser)).context;
+    const other = (await signedInContext(browser)).context;
     for (const c of [ctx, other]) await blockExternalRequests(c);
     const page = await ctx.newPage();
     const opponent = await other.newPage();

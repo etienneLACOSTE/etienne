@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { answerDialog, blockExternalRequests, trackPageErrors } = require('./helpers');
+const { answerDialog, blockExternalRequests, signedInContext, trackPageErrors } = require('./helpers');
 
 // A page reloaded in the middle of an online game takes its seat back with the seat token
 // it kept for this tab (assets/js/seat.js, server/socket-utils.js seatKeeper), while the
@@ -39,6 +39,7 @@ async function chesspellGame(contexts, page, opponent) {
   await contexts[0].addInitScript((p) => localStorage.setItem('spellChessProfiles', JSON.stringify(p)), profiles);
   await page.goto('/chesspell/');
   await page.getByRole('button', { name: 'Online Multiplayer' }).click();
+  await page.locator('#online-p1-select').selectOption('guest1');
   await page.locator('#btn-create-room').click();
   await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
   const code = /** @type {string} */ (await page.locator('#waiting-room-code').textContent());
@@ -53,9 +54,9 @@ async function chesspellGame(contexts, page, opponent) {
 const storedSeat = (page, game) => page.evaluate((g) => sessionStorage.getItem(`pawnet.seat.${g}`), game);
 
 async function pages(browser) {
-  const contexts = [await browser.newContext(), await browser.newContext()];
-  for (const c of contexts) await blockExternalRequests(c);
-  return { contexts, page: await contexts[0].newPage(), opponent: await contexts[1].newPage() };
+  const [a, b] = [await signedInContext(browser), await signedInContext(browser)];
+  const contexts = [a.context, b.context];
+  return { contexts, page: await contexts[0].newPage(), opponent: await contexts[1].newPage(), opponentName: b.name };
 }
 
 test.describe('Coming back after a reload', () => {
@@ -142,12 +143,13 @@ test.describe('Coming back after a reload', () => {
   });
 
   test("Ches'spell: in the middle of the game, the board and the hands come back", async ({ browser }) => {
-    const { contexts, page, opponent } = await pages(browser);
+    const { contexts, page, opponent, opponentName } = await pages(browser);
     const profiles = [{ id: 'guest1', name: 'Guest 1', avatar: '', stats: { played: 0, wins: 0 }, deck: [8, 12, 5] }];
     await contexts[0].addInitScript((p) => localStorage.setItem('spellChessProfiles', JSON.stringify(p)), profiles);
     const errors = trackPageErrors(page);
     await page.goto('/chesspell/');
     await page.getByRole('button', { name: 'Online Multiplayer' }).click();
+    await page.locator('#online-p1-select').selectOption('guest1');
     await page.locator('#btn-create-room').click();
     await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
     const code = await page.locator('#waiting-room-code').textContent();
@@ -170,7 +172,7 @@ test.describe('Coming back after a reload', () => {
       turn: chesspell.engine.turn, pawn: chesspell.engine.board[4][4], color: chesspell.session.myPlayerColor,
       p2: chesspell.match.p2Profile.name,
     }));
-    expect(view).toEqual({ turn: 'black', pawn: 'P', color: 'white', p2: 'Rival' });
+    expect(view).toEqual({ turn: 'black', pawn: 'P', color: 'white', p2: opponentName });
     await expect(page.locator('#player1-cards .in-game-card')).toHaveCount(3);
     await expect(page.locator('#player2-cards .in-game-card')).toHaveCount(3);
     await expect.poll(() => seen(opponent)).toContain('opponentReconnected');

@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { answerDialog, blockExternalRequests } = require('./helpers');
+const { answerDialog, blockExternalRequests, signUp } = require('./helpers');
 
 // In-page dialogs (assets/js/dialog.js), instead of the browser's alert() and confirm().
 
@@ -18,6 +18,7 @@ test.describe('In-page dialogs', () => {
   });
 
   test('Chessdown: a message is told in the page, and the focus comes back', async ({ page }) => {
+    await signUp(page.context()); // The join button is for accounts
     await page.goto('/chessdown/');
     const join = page.locator('#btn-join-room');
     await join.focus();

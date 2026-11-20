@@ -136,20 +136,6 @@ test.describe('Chat', () => {
     await bob.context.close();
   });
 
-  test('Chessdown: no chat with a guest; the guest is asked to sign in', async ({ browser }) => {
-    const alice = await player(browser);
-    const guest = await player(browser, { guest: true });
-    await chessdownRoom(alice.page, guest.page);
-    await chatButton(guest.page).click();
-    await expect(panel(guest.page)).toContainText('Sign in to chat with your opponent.');
-    await expect(panel(guest.page).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/account/?next=%2Fchessdown%2F');
-    await expect(panel(guest.page).getByLabel('Message', { exact: true })).toBeHidden();
-    await chatButton(alice.page).click();
-    await expect(panel(alice.page)).toContainText('Your opponent is playing as a guest: no chat.');
-    await alice.context.close();
-    await guest.context.close();
-  });
-
   test('Chessdown: back at the menu, no chat button and no messages left', async ({ browser }) => {
     const alice = await player(browser);
     const bob = await player(browser);

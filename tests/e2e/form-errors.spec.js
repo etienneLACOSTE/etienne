@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
-const { blockExternalRequests } = require('./helpers');
+const { blockExternalRequests, signUp } = require('./helpers');
 
 // Form mistakes are told under their field (assets/js/field-error.js), not in a dialog:
 // the field is marked invalid, described by the message, and has the focus back.
@@ -22,6 +22,7 @@ test.describe('Form errors', () => {
   });
 
   test('Chessdown: a wrong room code, under the field; typing clears it', async ({ page }) => {
+    await signUp(page.context()); // The online controls are for accounts
     await page.goto('/chessdown/');
     const field = page.getByRole('textbox', { name: 'Room code (6 letters)' });
     await field.fill('AB1');
@@ -46,7 +47,8 @@ test.describe('Form errors', () => {
     await page.getByRole('button', { name: 'Create', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveCount(0);
 
-    // Ann has no deck yet: told under the profile list.
+    // Signed in, neither the account nor Ann has a deck yet: told under the profile list.
+    await signUp(page.context());
     await page.goto('/chesspell/');
     await page.getByRole('button', { name: 'Online Multiplayer' }).click();
     const select = page.locator('#online-p1-select');
@@ -60,8 +62,10 @@ test.describe('Form errors', () => {
     await page.addInitScript(() => localStorage.setItem('spellChessProfiles', JSON.stringify([
       { id: 'guest1', name: 'Guest 1', avatar: '', stats: { played: 0, wins: 0 }, deck: [8, 12, 5] },
     ])));
+    await signUp(page.context());
     await page.goto('/chesspell/');
     await page.getByRole('button', { name: 'Online Multiplayer' }).click();
+    await page.locator('#online-p1-select').selectOption('guest1'); // A profile with a deck
     const field = page.getByRole('textbox', { name: 'Room code (6 letters)' });
     await field.fill('ABC');
     await page.locator('#btn-join-room').click();

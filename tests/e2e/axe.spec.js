@@ -1,7 +1,7 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 const AxeBuilder = require('@axe-core/playwright').default;
-const { blockExternalRequests } = require('./helpers');
+const { blockExternalRequests, signUp } = require('./helpers');
 
 // Automated accessibility audit (axe-core) of every screen, against WCAG 2.2 A and AA.
 // Complements keyboard.spec.js and a11y.spec.js, which test behaviour axe cannot see.
@@ -32,7 +32,9 @@ const CHESSDOWN = {
     await pointer(page, '.shop-item[data-type="k"]');
     await pointer(page, '#chessboard .square[data-vr="5"][data-vc="4"]');
   },
-  'form error': async (page) => { // Joining without a code: told under the field
+  'form error': async (page) => { // Joining without a code: told under the field (signed in)
+    await signUp(page.context());
+    await page.reload();
     await pointer(page, '#btn-join-room');
     await expect(page.getByRole('alert')).toBeVisible();
   },

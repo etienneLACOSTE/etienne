@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests, trackPageErrors } = require('./helpers');
+const { blockExternalRequests, signedInContext, trackPageErrors } = require('./helpers');
 
 // Ches'spell with an account: player 1 is the account, its deck is saved on the server
 // and follows the player; guests stay for player 2 and for playing without an account.
@@ -113,8 +113,7 @@ test.describe("Ches'spell with an account", () => {
 
     // Online, the opponent receives the account's name and picture (set by the server)
     await page.goto('/chesspell/');
-    const guest = await browser.newContext();
-    await blockExternalRequests(guest);
+    const { context: guest } = await signedInContext(browser);
     const guestPage = await guest.newPage();
     await guestPage.goto('/chesspell/');
     const code = await page.evaluate(() => new Promise((resolve) => {

@@ -57,4 +57,34 @@ async function answerDialog(page, message, button = 'OK') {
   await expect(dialog).toHaveCount(0);
 }
 
-module.exports = { blockExternalRequests, trackPageErrors, readGlobal, waitForGlobal, answerDialog };
+const ORIGIN = 'http://127.0.0.1:3100'; // The test server (playwright.config.js)
+let accounts = 0;
+
+/**
+ * A new account, signed in in `context` (online games need one). Its pages and their
+ * Socket.io connections are that account.
+ * @param {import('@playwright/test').BrowserContext} context
+ * @returns {Promise<string>} its username
+ */
+async function signUp(context) {
+  const name = `t${process.pid % 1000}${Date.now() % 1e6}${++accounts}`.slice(0, 20);
+  const res = await context.request.post('/api/auth/signup', {
+    headers: { origin: ORIGIN },
+    data: { username: name, email: `${name}@example.com`, password: 'correct horse battery' },
+  });
+  expect(res.ok()).toBe(true);
+  return name;
+}
+
+/**
+ * A new browser context with outside requests blocked and a new account signed in.
+ * @param {import('@playwright/test').Browser} browser
+ */
+async function signedInContext(browser) {
+  const context = await browser.newContext();
+  await blockExternalRequests(context);
+  const name = await signUp(context);
+  return { context, name };
+}
+
+module.exports = { blockExternalRequests, trackPageErrors, readGlobal, waitForGlobal, answerDialog, signUp, signedInContext, ORIGIN };

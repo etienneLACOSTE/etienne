@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests } = require('./helpers');
+const { blockExternalRequests, signedInContext } = require('./helpers');
 
 // Player names come from other players (online) or from the user (local profiles):
 // they must be shown as text, never interpreted as HTML.
@@ -18,9 +18,9 @@ async function seed(ctx, name, deck) {
 }
 
 test.describe('XSS', () => {
-  test("ches'spell: an opponent's name is displayed as text", async ({ browser }) => {
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+  test("ches'spell: online, the opponent's name is the account's, never what the page sends", async ({ browser }) => {
+    const { context: ctx1, name } = await signedInContext(browser);
+    const ctx2 = (await signedInContext(browser)).context;
     await seed(ctx1, EVIL_NAME, [8, 12, 5]);
     await seed(ctx2, 'Victim', [1, 15, 14]);
     const p1 = await ctx1.newPage();
@@ -29,6 +29,7 @@ test.describe('XSS', () => {
       await page.goto('/chesspell/');
       await page.getByRole('button', { name: 'Online Multiplayer' }).click();
     }
+    for (const page of [p1, p2]) await page.locator('#online-p1-select').selectOption('me');
     await p1.locator('#btn-create-room').click();
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).not.toHaveText('XXXX');
@@ -36,7 +37,7 @@ test.describe('XSS', () => {
     await p2.locator('#btn-join-room').click();
 
     await expect(p2.locator('#game-board')).toHaveClass(/active/);
-    await expect(p2.locator('#player1-banner .player-name')).toHaveText(EVIL_NAME);
+    await expect(p2.locator('#player1-banner .player-name')).toHaveText(name);
     await expect(p2.locator('#pwn')).toHaveCount(0);
     await ctx1.close();
     await ctx2.close();

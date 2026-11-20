@@ -95,8 +95,8 @@ test.describe('Draw by agreement', () => {
   });
 
   test('Chessdown online: a move by the other player ends the offer; once per turn played', async ({ browser }) => {
-    const ctx = await browser.newContext();
-    const other = await browser.newContext();
+    const ctx = (await signedInContext(browser)).context;
+    const other = (await signedInContext(browser)).context;
     for (const c of [ctx, other]) await blockExternalRequests(c);
     const page = await ctx.newPage();
     const opponent = await other.newPage();
@@ -163,8 +163,8 @@ test.describe('Draw by agreement', () => {
   });
 
   test("Ches'spell online: an offer accepted on the other page ends the game as a draw", async ({ browser }) => {
-    const ctx1 = await browser.newContext();
-    const ctx2 = await browser.newContext();
+    const ctx1 = (await signedInContext(browser)).context;
+    const ctx2 = (await signedInContext(browser)).context;
     const profiles = [
       { id: 'guest1', name: 'Guest 1', avatar: '', stats: { played: 0, wins: 0 }, deck: [8, 12, 5] },
       { id: 'guest2', name: 'Guest 2', avatar: '', stats: { played: 0, wins: 0 }, deck: [1, 15, 14] },
@@ -181,6 +181,7 @@ test.describe('Draw by agreement', () => {
       await page.getByRole('button', { name: 'Online Multiplayer' }).click();
     }
     await p2.locator('#online-p1-select').selectOption('guest2');
+    await p1.locator('#online-p1-select').selectOption('guest1');
     await p1.locator('#btn-create-room').click();
     const codeEl = p1.locator('#waiting-room-code');
     await expect(codeEl).toHaveText(/^[A-Z]{6}$/);

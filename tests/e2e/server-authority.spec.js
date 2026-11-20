@@ -1,6 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
-const { blockExternalRequests } = require('./helpers');
+const { blockExternalRequests, signUp } = require('./helpers');
 
 // The server is the referee: it only accepts messages from room members, in turn,
 // and (for Chessdown) only legal drafts and moves. Each scenario runs real
@@ -9,6 +9,7 @@ const { blockExternalRequests } = require('./helpers');
 test.describe('Server authority', () => {
   test.beforeEach(async ({ page }) => {
     await blockExternalRequests(page);
+    await signUp(page.context()); // Online games need an account (both test players use it)
     await page.goto('/chessdown/'); // Loads /socket.io/socket.io.js
     // Shared helpers available to every page.evaluate below.
     await page.evaluate(() => {
@@ -60,6 +61,31 @@ test.describe('Server authority', () => {
         },
       };
     });
+  });
+
+  test('a guest can neither create nor join a room, in either game', async ({ page }) => {
+    // A room made by a signed-in player, then the page signs out: new connections are guests.
+    const code = await page.evaluate(async () => {
+      const p1 = await T.connect('/chessdown');
+      return new Promise((r) => { p1.once('roomCreated', r); p1.emit('createRoom', {}); });
+    });
+    await page.context().clearCookies();
+    const answers = await page.evaluate(async (c) => {
+      const profile = { id: 'g', name: 'G', avatar: '', stats: {} };
+      const refusal = async (ns, event, data) => {
+        const s = await T.connect(ns);
+        const answer = T.once(s, 'errorMsg');
+        s.emit(event, data);
+        return answer;
+      };
+      return Promise.all([
+        refusal('/chessdown', 'createRoom', {}),
+        refusal('/chessdown', 'joinRoom', c),
+        refusal('/chesspell', 'createRoom', { deck: [8, 16, 10], profile }),
+        refusal('/chesspell', 'joinRoom', { roomCode: 'ABCDEF', deck: [1, 15, 14], profile }),
+      ]);
+    }, code);
+    expect(answers).toEqual(Array(4).fill('Sign in to play online.'));
   });
 
   test('chessdown: the draft board reaches both players', async ({ page }) => {
