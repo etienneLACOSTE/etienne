@@ -1,4 +1,4 @@
-// Reported chat messages (server/reports.js): saved, given in each account's export,
+// Reported chat messages (server/reports.js): saved, given in the reporter's export only,
 // deleted after 90 days, and with the reported player's account.
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -14,17 +14,15 @@ async function user(name) {
     return Number(rows[0].id);
 }
 
-test('a report is saved; each side sees its own part of it, never who reported them', async () => {
+const messagesAbout = async (id) => (await db.query('SELECT message FROM chat_reports WHERE reported_id = $1 ORDER BY id', [id])).rows.map((r) => r.message);
+
+test('a report is saved; only the reporter sees it in an export', async () => {
     const reports = reportStore(db);
     const [alice, bob] = [await user('alice'), await user('bob')];
     await reports.save({ reporterId: alice, reportedId: bob, reportedName: 'bob', game: 'chessdown', message: 'you are bad' });
-    const mine = await reports.about(alice);
-    assert.deepEqual(mine.made.map(({ reported, game }) => ({ reported, game })), [{ reported: 'bob', game: 'chessdown' }]);
-    assert.deepEqual(mine.received, []);
-    const theirs = await reports.about(bob);
-    assert.deepEqual(theirs.made, []);
-    assert.deepEqual(theirs.received.map(({ game, message }) => ({ game, message })), [{ game: 'chessdown', message: 'you are bad' }]);
-    assert.equal(JSON.stringify(theirs).includes('alice'), false);
+    assert.deepEqual((await reports.madeBy(alice)).map(({ reported, game }) => ({ reported, game })), [{ reported: 'bob', game: 'chessdown' }]);
+    assert.deepEqual(await reports.madeBy(bob), []);
+    assert.deepEqual(await messagesAbout(bob), ['you are bad']);
 });
 
 test(`reports older than ${KEEP_DAYS} days are deleted`, async () => {
@@ -34,7 +32,7 @@ test(`reports older than ${KEEP_DAYS} days are deleted`, async () => {
     await reports.save({ reporterId: carol, reportedId: dave, reportedName: 'dave', game: 'chesspell', message: 'new' });
     await db.query(`UPDATE chat_reports SET created_at = now() - interval '91 days' WHERE message = 'old'`);
     await reports.deleteOld();
-    assert.deepEqual((await reports.about(dave)).received.map((r) => r.message), ['new']);
+    assert.deepEqual(await messagesAbout(dave), ['new']);
 });
 
 test("deleting an account: the reports about it go, the ones it made lose its name", async () => {

@@ -95,10 +95,11 @@ test.describe('Chat', () => {
     await expect(log.getByText('Reported')).toBeVisible();
     await expect(log.getByRole('button', { name: /^Report/ })).toHaveCount(0);
     const exported = await (await bob.context.request.get('/api/account/export')).json();
-    expect(exported.chatReports.made.map((r) => [r.reported, r.game])).toEqual([[alice.name, 'chessdown']]);
+    expect(exported.chatReportsMade.map((r) => [r.reported, r.game])).toEqual([[alice.name, 'chessdown']]);
+    // Confidential: nothing of the report in the reported player's export.
     const reported = await (await alice.context.request.get('/api/account/export')).json();
-    expect(reported.chatReports.received.map((r) => r.message)).toEqual(['you play badly']);
-    expect(JSON.stringify(reported)).not.toContain(bob.name);
+    expect(reported.chatReportsMade).toEqual([]);
+    expect(JSON.stringify(reported)).not.toContain('you play badly');
 
     // Block: the chat stops for both; only Bob is told why.
     await panel(bob.page).getByRole('button', { name: 'Block' }).click();

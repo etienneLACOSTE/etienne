@@ -132,7 +132,7 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, 
                     blocked: f.blocked,
                 };
             })(),
-            chatReports: await reportStore(db).about(a.id),
+            chatReportsMade: await reportStore(db).madeBy(a.id),
             linkedSignIns: a.providers.map((p) => ({ provider: p.provider, linkedAt: p.created_at })),
             sessions: signedIn.map((s) => ({ signedInAt: s.created_at, expiresAt: s.expires_at })),
             note: 'The password itself is never stored, only a one-way hash of it, which is not included.',

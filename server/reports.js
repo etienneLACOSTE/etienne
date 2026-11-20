@@ -21,18 +21,16 @@ function reportStore(db) {
             await db.query(`DELETE FROM chat_reports WHERE created_at < now() - make_interval(days => $1)`, [KEEP_DAYS]);
         },
         /**
-         * For the account's data export: the reports it made (who, when), and the messages
-         * of its own that were reported (when, never by whom).
+         * For the account's data export: the reports it made (who, when). The reports about
+         * it are left out on purpose: a report stays confidential, and in a one-against-one
+         * game its date or its game would point to the reporter (GDPR art. 15(4): the right
+         * of access must not harm the rights of others).
          * @param {number} userId
          */
-        async about(userId) {
-            const made = (await db.query(
-                `SELECT reported_name, game, created_at FROM chat_reports WHERE reporter_id = $1 ORDER BY created_at`, [userId],
+        async madeBy(userId) {
+            return (await db.query(
+                `SELECT reported_name, game, created_at FROM chat_reports WHERE reporter_id = $1 ORDER BY created_at, id`, [userId],
             )).rows.map((r) => ({ reported: r.reported_name, game: r.game, reportedAt: r.created_at }));
-            const received = (await db.query(
-                `SELECT game, message, created_at FROM chat_reports WHERE reported_id = $1 ORDER BY created_at`, [userId],
-            )).rows.map((r) => ({ game: r.game, message: r.message, reportedAt: r.created_at }));
-            return { made, received };
         },
     };
 }
