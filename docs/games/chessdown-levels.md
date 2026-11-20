@@ -12,7 +12,7 @@ de mode All Star en ligne : la feuille de route est dans `docs/games/chessdown.m
 Points tranchés le 2026-11-21 :
 
 - **Fou, niveaux 1 et 2 :** portée plus courte que la tour, car une diagonale va plus
-  loin : **2 puis 4 cases** (proposé, à confirmer).
+  loin : **2 puis 4 cases**.
 - **Fou, niveaux 4 et 5 :** au niveau 4, il saute une pièce de son camp ; au niveau 5, il
   fait aussi un pas d'une case en ligne droite, sans manger.
 - **Dame, niveau 5 :** la ligne de vue se calcule comme un rayon lumineux (jeux de
@@ -121,8 +121,8 @@ Niveau 4 / 5
 
 | Niveau | Déplacement |
 |---|---|
-| 1 | en diagonale, **2 cases au plus** (à confirmer) |
-| 2 | en diagonale, **4 cases au plus** (à confirmer) |
+| 1 | en diagonale, **2 cases au plus** |
+| 2 | en diagonale, **4 cases au plus** |
 | 3 | normal |
 | 4 | + **saut d'une pièce de son camp,** comme la tour niveau 4 : atterrit juste derrière, **sans manger** |
 | 5 | + **un pas d'une case en ligne droite,** **sans manger** : il peut ainsi changer de couleur de case |

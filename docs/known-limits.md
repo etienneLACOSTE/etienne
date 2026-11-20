@@ -89,7 +89,6 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   pièce selon le coût de son niveau, mais ses poids viennent du mode Classique. Piste :
   un entraînement avec des armées à niveaux variés (`tools/chessdown/train.js`), adopté
   seulement s'il fait mieux contre des armées variées.
-- **La portée du fou aux niveaux 1 et 2 (2 et 4 cases) reste à confirmer.**
 
 ## Langues (2026-11-20)
 
