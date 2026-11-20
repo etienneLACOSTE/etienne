@@ -39,7 +39,7 @@ import { setupInvites } from './invites.js';
 import { startDemo } from './demo.js';
 import { setupAccessibility } from './a11y.js';
 import { startSky } from './sky.js';
-import { currentUser, showAccountLine } from '../../../assets/js/session.js';
+import { currentUser, gateOnline, showAccountLine } from '../../../assets/js/session.js';
 
 // --- Game flow: what happens after each event (a11y.js adds its own announcements).
 on('boardChanged', renderChessboard);
@@ -106,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentUser().then((user) => {
         session.account = user;
         showAccountLine(document.getElementById('account-line'), user, { game: '/chesspell/', perk: 'deck and stats' });
+        gateOnline(document.getElementById('online-controls'), document.getElementById('online-gate'), user, '/chesspell/');
         if (!user) return;
         const account = ProfileManager.loadAccount(user).catch(() => {}); // Guests only if the account cannot be read
         // An invitation joins with the account's deck: once the account is loaded.

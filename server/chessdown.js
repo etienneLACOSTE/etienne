@@ -2,7 +2,7 @@
 const {
     generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf,
     seatKeeper, drawOffers, pulseRooms,
-    MAX_IDLE_TURNS,
+    MAX_IDLE_TURNS, SIGN_IN_TO_PLAY,
 } = require('./socket-utils');
 const engine = require('../games/chessdown/engine.js');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
@@ -193,6 +193,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
         chat.connect(socket);
 
         safeOn(socket, 'createRoom', (data) => {
+            if (!socket.data.user) return socket.emit('errorMsg', SIGN_IN_TO_PLAY);
             if (!makeRoomFor(chessdownRooms, socket)) return socket.emit('errorMsg', 'Too many games in progress. Try again later.');
             let roomCode = generateRoomCode();
             while (chessdownRooms[roomCode]) {
@@ -219,7 +220,9 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
 
         safeOn(socket, 'joinRoom', (roomCode) => {
             const room = getRoom(chessdownRooms, roomCode);
-            if (!room) {
+            if (!socket.data.user) {
+                socket.emit('errorMsg', SIGN_IN_TO_PLAY);
+            } else if (!room) {
                 socket.emit('errorMsg', 'Room not found.');
             } else if (room.players[2] !== null || room.players[1] === socket.id) {
                 socket.emit('errorMsg', 'Room is already full.');

@@ -37,6 +37,8 @@ function allowMessage(socket) {
 
 // Rooms are kept in memory: one waiting room per player, a cap per address and in total,
 // so that one machine cannot take every room (or all the memory) for itself.
+/** Online games are for players with an account (guests have the campaign). */
+const SIGN_IN_TO_PLAY = 'Sign in to play online.';
 const MAX_ROOMS = 1000;
 const MAX_ROOMS_PER_IP = 5;
 const MAX_CONNECTIONS_PER_IP = 20;
@@ -425,5 +427,5 @@ function playerOf(room, socket) {
 module.exports = {
     generateRoomCode, safeOn, getRoom, isSquare, playerOf, makeRoomFor, roomOrigin, clientIp, addressFrom, limitKey, identifyPlayers,
     limitConnections, idleRooms, sweepIdleRooms, seatKeeper, drawOffers, pulseRooms,
-    MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST, SEAT_HOLD_MS, PULSE_MS,
+    SIGN_IN_TO_PLAY, MAX_ROOMS, MAX_ROOMS_PER_IP, MAX_CONNECTIONS_PER_IP, IDLE_ROOM_MS, MAX_IDLE_TURNS, RATE_PER_SECOND, BURST, SEAT_HOLD_MS, PULSE_MS,
 };

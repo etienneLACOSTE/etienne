@@ -1280,6 +1280,8 @@ body.tabletop-mode .chess-piece { font-size: calc(min(85vw, 80vh) / 8 * 0.78); }
     gap: 1.5rem;
     margin-top: 1rem;
 }
+.player-select-container[hidden] { display: none; }
+#online-screen .online-gate { margin: 2rem auto 0; }
 
 .player-select-box {
     display: flex;

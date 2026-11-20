@@ -84,6 +84,22 @@ export function showAccountLine(el, user, { game, perk }) {
     el.hidden = false;
 }
 
+/**
+ * Online games are for players with an account: signed out, the online controls give way
+ * to a line that says so, with a link to sign in (and back to the game).
+ * @param {HTMLElement} controls the online controls
+ * @param {HTMLElement} gate the line shown instead
+ * @param {{ username: string } | null} user
+ * @param {string} game the game's page, to come back to after signing in
+ */
+export function gateOnline(controls, gate, user, game) {
+    controls.hidden = !user;
+    gate.hidden = Boolean(user);
+    if (user) return;
+    const link = Object.assign(document.createElement('a'), { href: `/account/?next=${encodeURIComponent(game)}`, textContent: 'Sign in' });
+    gate.replaceChildren(link, ' to play online. Without an account, the Campaign is open to you.');
+}
+
 // On every hub page, the button follows who is signed in, and a signed-in player is
 // online for their friends (presence.js).
 if (document.getElementById('account-link')) {

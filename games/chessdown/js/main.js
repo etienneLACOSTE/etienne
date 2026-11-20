@@ -9,7 +9,7 @@ import { setupAccessibility } from './a11y.js';
 import { startCrowd } from './crowd.js';
 import { movePiece, skipTurn } from './gameplay.js';
 import { generateAllMoves, getValidMoves } from './rules-bridge.js';
-import { currentUser, showAccountLine } from '../../../assets/js/session.js';
+import { currentUser, gateOnline, showAccountLine } from '../../../assets/js/session.js';
 import { joinFromInvite, setupInvites } from './invites.js';
 
 // Initialization
@@ -34,6 +34,7 @@ export function init() {
     currentUser().then((user) => {
         state.account = user;
         showAccountLine(document.getElementById('account-line'), user, { game: '/chessdown/', perk: 'stats' });
+        gateOnline(document.getElementById('online-controls'), document.getElementById('online-gate'), user, '/chessdown/');
         if (!user) return;
         setupInvites();
         // Arriving from an invitation on another page: /chessdown/?join=CODE

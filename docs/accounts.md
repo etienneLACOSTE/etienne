@@ -1,7 +1,8 @@
 # Accounts on Pawnet
 
 One account for the whole site (hub and both games): stats, decks and friends follow the
-player on every device. Playing without an account stays possible everywhere.
+player on every device. Online games need an account (owner, 2026-11-20); without one,
+the campaign against the bot and same-screen games stay open.
 
 ## Choices made (owner, 2026-11-09)
 
@@ -13,8 +14,9 @@ player on every device. Playing without an account stays possible everywhere.
   (to be decided).
 - Sessions: random token in an HttpOnly, SameSite=Lax cookie (`sid`, 30 days); only its
   SHA-256 is stored. Every change checks the Origin header (CSRF).
-- Guests: every game stays playable without an account; the games invite players to
-  create one ("keep your deck and stats on every device").
+- Guests (changed 2026-11-20): no online games (the server refuses `createRoom` /
+  `joinRoom` without an account, the pages show a sign-in line instead); the campaign and
+  same-screen games stay open, and the games invite players to create an account ("keep your deck and stats on every device").
 - Stats: every game counts. Online games are recorded by the server (reliable); games
   against the bot or on the same screen are sent by the browser and shown apart.
 - Avatar on the account, now: a small image (150 px, 40 KB at most), checked on the

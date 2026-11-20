@@ -1,7 +1,7 @@
 // @ts-check
 const {
     generateRoomCode, makeRoomFor, roomOrigin, limitConnections, identifyPlayers, sweepIdleRooms, safeOn, getRoom, isSquare, playerOf, seatKeeper, drawOffers, pulseRooms,
-    MAX_IDLE_TURNS,
+    MAX_IDLE_TURNS, SIGN_IN_TO_PLAY,
 } = require('./socket-utils');
 const { TurnClock, sanitizeTimer } = require('./turn-clock');
 const { gameChat } = require('./chat');
@@ -179,6 +179,7 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null, 
         chat.connect(socket);
 
         safeOn(socket, 'createRoom', (data) => {
+            if (!socket.data.user) return socket.emit('errorMsg', SIGN_IN_TO_PLAY);
             const deck = sanitizeDeck(data.deck);
             if (!deck) return socket.emit('errorMsg', 'Invalid deck.');
             if (!makeRoomFor(chesspellRooms, socket)) return socket.emit('errorMsg', 'Too many games in progress. Try again later.');
@@ -212,7 +213,9 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null, 
             const roomCode = data.roomCode;
             const room = getRoom(chesspellRooms, roomCode);
             const deck = sanitizeDeck(data.deck);
-            if (!room) {
+            if (!socket.data.user) {
+                socket.emit('errorMsg', SIGN_IN_TO_PLAY);
+            } else if (!room) {
                 socket.emit('errorMsg', 'Room not found.');
             } else if (room.players[2] !== null || room.players[1] === socket.id) {
                 socket.emit('errorMsg', 'Room is already full.');

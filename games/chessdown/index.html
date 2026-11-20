@@ -31,11 +31,14 @@
                 <button id="btn-start-bot" class="btn-secondary">Campaign (vs Bot)</button>
             </div>
             <div class="menu-group menu-online">
-                <button id="btn-create-room" class="btn-secondary">Create Online Room</button>
-                <div class="join-row">
-                    <input type="text" id="room-code-input" placeholder="CODE" aria-label="Room code (6 letters)" maxlength="6">
-                    <button id="btn-join-room" class="btn-secondary">Join Room</button>
+                <div class="online-controls" id="online-controls">
+                    <button id="btn-create-room" class="btn-secondary">Create Online Room</button>
+                    <div class="join-row">
+                        <input type="text" id="room-code-input" placeholder="CODE" aria-label="Room code (6 letters)" maxlength="6">
+                        <button id="btn-join-room" class="btn-secondary">Join Room</button>
+                    </div>
                 </div>
+                <p class="account-line online-gate" id="online-gate" hidden></p>
             </div>
             <div class="menu-row">
                 <button id="btn-how-to-play" class="btn-ghost">How to Play</button>

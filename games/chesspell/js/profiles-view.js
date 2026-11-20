@@ -60,11 +60,27 @@ export function updatePlayerSelects() {
     const options = (profiles) => profiles.map((p) => new Option(label(p), p.id));
     const p1Select = /** @type {HTMLSelectElement} */ (document.getElementById('p1-select'));
     const p2Select = /** @type {HTMLSelectElement} */ (document.getElementById('p2-select'));
-    p1Select.replaceChildren(...options(ProfileManager.all()));
-    p2Select.replaceChildren(...options(ProfileManager.profiles));
+    const online = /** @type {HTMLSelectElement | null} */ (document.getElementById('online-p1-select'));
+    refill(p1Select, options(ProfileManager.all()));
+    refill(p2Select, options(ProfileManager.profiles));
     const guests = ProfileManager.profiles;
-    if (!ProfileManager.account && guests.length > 1) p2Select.value = guests[1].id;
-    document.getElementById('online-p1-select')?.replaceChildren(...options(ProfileManager.all()));
+    if (!ProfileManager.account && guests.length > 1 && !p2Select.dataset.chosen) p2Select.value = guests[1].id;
+    if (online) refill(online, options(ProfileManager.all()));
+}
+
+/**
+ * New options for a list; a profile the player picked themselves stays picked (the
+ * account loads after the page opens, and fills the lists again).
+ * @param {HTMLSelectElement} select @param {HTMLOptionElement[]} options
+ */
+function refill(select, options) {
+    if (!select.dataset.watched) {
+        select.dataset.watched = '1';
+        select.addEventListener('change', () => { select.dataset.chosen = select.value; });
+    }
+    select.replaceChildren(...options);
+    const chosen = select.dataset.chosen;
+    if (chosen && options.some((o) => o.value === chosen)) select.value = chosen;
 }
 
 export function renderProfilesList() {
