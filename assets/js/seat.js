@@ -28,23 +28,47 @@ function write(game, seat) {
     } catch { /* Not kept: a reload cannot come back */ }
 }
 
-/** The page leaves its room on purpose (or the room is gone): nothing to come back to. */
+/** What to call to stop waiting for an answer, per game (see keepSeat). */
+const cancels = new Map();
+
+/**
+ * The page leaves its room on purpose, its game is over, or the room is gone: nothing to
+ * come back to. An answer still on its way for an older seat is dropped.
+ */
 export function forgetSeat(game) {
     write(game, null);
+    cancels.get(game)?.();
 }
 
 /**
- * Keep this page's seat, and ask for it back when the page opens.
+ * Keep this page's seat, and ask for it back when the page opens. Only one answer is
+ * waited for, and only while the page has not moved on: a new room, a game against the bot
+ * or leaving drop it, and a seat given back too late is left at once.
  * @param {any} socket the game's Socket.io connection
  * @param {string} game 'chessdown' or 'chesspell'
- * @param {{ onFailed: (reason: 'gone' | 'busy' | 'over') => void }} handlers onFailed:
- *   a seat was asked for and could not be given back
+ * @param {{
+ *   idle: () => boolean,
+ *   onResumed: (data: any) => void,
+ *   onFailed: (reason: 'gone' | 'busy' | 'over') => void,
+ * }} handlers idle: the page is still on its menu (nothing started since it opened);
+ *   onResumed: show the game the server sent back ('seatResumed'); onFailed: a seat was
+ *   asked for and could not be given back
  */
-export function keepSeat(socket, game, { onFailed }) {
+export function keepSeat(socket, game, { idle, onResumed, onFailed }) {
+    /** @type {{ roomCode: string, token: string } | null} The seat asked for, until answered. */
+    let pending = null;
+    let tries = 0;
+    let retry = 0;
+    const stop = () => {
+        pending = null;
+        clearTimeout(retry);
+    };
+    cancels.set(game, stop);
+
     socket.on('seatToken', (/** @type {any} */ data) => {
-        if (data && typeof data.roomCode === 'string' && typeof data.token === 'string') {
-            write(game, { roomCode: data.roomCode, token: data.token });
-        }
+        if (!data || typeof data.roomCode !== 'string' || typeof data.token !== 'string') return;
+        if (pending && pending.roomCode !== data.roomCode) stop(); // The page is in another room now
+        write(game, { roomCode: data.roomCode, token: data.token });
     });
     for (const event of ['opponentLeft', 'roomClosed', 'seatLost']) socket.on(event, () => forgetSeat(game));
     // When the page goes away, note when: a seat left long ago is not asked for.
@@ -53,17 +77,39 @@ export function keepSeat(socket, game, { onFailed }) {
         if (seat) write(game, { ...seat, leftAt: Date.now() });
     });
 
-    const seat = read(game);
-    if (!seat) return;
-    if (seat.leftAt && Date.now() - seat.leftAt > STALE_MS) return forgetSeat(game);
-    let tries = 0;
-    const ask = () => socket.emit('resumeSeat', { roomCode: seat.roomCode, token: seat.token });
+    socket.on('seatResumed', (/** @type {any} */ data) => {
+        const roomCode = data && (data.roomCode || data.id);
+        if (!pending || !idle()) {
+            // Too late: the page has moved on. The seat was given back on the server: leave it.
+            stop();
+            if (typeof roomCode === 'string') socket.emit('leaveRoom', { roomCode });
+            return;
+        }
+        stop();
+        onResumed(data);
+    });
     socket.on('resumeFailed', (/** @type {any} */ data) => {
+        if (!pending) return;
         const reason = data && data.reason;
-        if (reason === 'busy' && ++tries < RETRIES) return void setTimeout(ask, RETRY_MS);
-        forgetSeat(game);
+        if (reason === 'busy' && ++tries < RETRIES) {
+            retry = window.setTimeout(ask, RETRY_MS);
+            return;
+        }
+        const asked = pending;
+        stop();
+        const seat = read(game);
+        if (seat && seat.token === asked.token) write(game, null); // Not a newer seat
+        if (reason === 'elsewhere') return; // The page is already in another game
         onFailed(reason === 'busy' || reason === 'over' ? reason : 'gone');
     });
+
+    const seat = read(game);
+    if (!seat) return;
+    if (seat.leftAt && Date.now() - seat.leftAt > STALE_MS) return void write(game, null);
+    pending = { roomCode: seat.roomCode, token: seat.token };
+    function ask() {
+        if (pending) socket.emit('resumeSeat', pending);
+    }
     if (socket.connected) ask();
     else socket.once('connect', ask);
 }
@@ -71,6 +117,6 @@ export function keepSeat(socket, game, { onFailed }) {
 /** What the page says when its game could not be taken back. */
 export const RESUME_FAILED = {
     gone: 'Your game could not be resumed.',
-    busy: 'Your game is open in another tab.',
-    over: 'Your game ended while you were away.',
+    busy: 'Your game is still open in another tab or window.',
+    over: 'Your game is over.',
 };

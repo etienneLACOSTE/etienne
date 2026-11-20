@@ -33,6 +33,25 @@ async function chessdownRoom(page, opponent) {
   return code;
 }
 
+/** The Ches'spell page creates a room as Guest 1, a raw connection joins: the game starts. */
+async function chesspellGame(contexts, page, opponent) {
+  const profiles = [{ id: 'guest1', name: 'Guest 1', avatar: '', stats: { played: 0, wins: 0 }, deck: [8, 12, 5] }];
+  await contexts[0].addInitScript((p) => localStorage.setItem('spellChessProfiles', JSON.stringify(p)), profiles);
+  await page.goto('/chesspell/');
+  await page.getByRole('button', { name: 'Online Multiplayer' }).click();
+  await page.locator('#btn-create-room').click();
+  await expect(page.locator('#waiting-room-code')).toHaveText(/^[A-Z]{6}$/);
+  const code = /** @type {string} */ (await page.locator('#waiting-room-code').textContent());
+  await opponent.goto('/chesspell/');
+  await rawSocket(opponent, 'chesspell');
+  await opponent.evaluate((c) => window.s.emit('joinRoom', {
+    roomCode: c, deck: [1, 15, 14], profile: { id: 'x', name: 'Rival', avatar: '', stats: {} },
+  }), code);
+  await expect(page.locator('#game-board')).toHaveClass(/active/);
+  return code;
+}
+const storedSeat = (page, game) => page.evaluate((g) => sessionStorage.getItem(`pawnet.seat.${g}`), game);
+
 async function pages(browser) {
   const contexts = [await browser.newContext(), await browser.newContext()];
   for (const c of contexts) await blockExternalRequests(c);
@@ -180,6 +199,68 @@ test.describe('Coming back after a reload', () => {
     await chessdownRoom(page, opponent);
     await page.locator('#btn-main-menu').dispatchEvent('pointerdown');
     expect(await page.evaluate(() => sessionStorage.getItem('pawnet.seat.chessdown'))).toBeNull();
+    for (const c of contexts) await c.close();
+  });
+
+  test("Ches'spell: Quit Game asks, the opponent wins at once, and a reload does not come back", async ({ browser }) => {
+    const { contexts, page, opponent } = await pages(browser);
+    const errors = trackPageErrors(page);
+    await chesspellGame(contexts, page, opponent);
+    expect(await storedSeat(page, 'chesspell')).not.toBeNull();
+
+    await page.getByRole('button', { name: 'Quit Game' }).click();
+    await answerDialog(page, 'Quit this game? Your opponent wins.', 'Keep playing');
+    await expect(page.locator('#game-board')).toHaveClass(/active/);
+    await page.getByRole('button', { name: 'Quit Game' }).click();
+    await answerDialog(page, 'Quit this game? Your opponent wins.', 'Quit');
+    await expect(page.locator('#main-menu')).toHaveClass(/active/);
+    await expect.poll(() => seen(opponent)).toContain('opponentLeft');
+    expect(await storedSeat(page, 'chesspell')).toBeNull();
+
+    await page.reload();
+    await expect(page.locator('#main-menu')).toHaveClass(/active/);
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    expect(errors).toEqual([]);
+    for (const c of contexts) await c.close();
+  });
+
+  test("Ches'spell: once the game is over, a reload starts from the menu, without a false message", async ({ browser }) => {
+    const { contexts, page, opponent } = await pages(browser);
+    const errors = trackPageErrors(page);
+    const code = await chesspellGame(contexts, page, opponent);
+    await page.evaluate(async (c) => {
+      const { socket } = await import('/chesspell/js/state.js');
+      socket.emit('offerDraw', { roomCode: c });
+    }, code);
+    await expect.poll(() => seen(opponent)).toContain('drawOffered');
+    await opponent.evaluate((c) => window.s.emit('answerDraw', { roomCode: c, accept: true }), code);
+    await expect(page.locator('#game-over-modal')).toBeVisible();
+    expect(await storedSeat(page, 'chesspell')).toBeNull();
+
+    await page.reload();
+    await expect(page.locator('#main-menu')).toHaveClass(/active/);
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    expect(errors).toEqual([]);
+    for (const c of contexts) await c.close();
+  });
+
+  test('a resume answered after the page started something else is left, not shown', async ({ browser }) => {
+    const { contexts, page, opponent } = await pages(browser);
+    const code = await chessdownRoom(page, opponent);
+    // The old page still holds the seat: the reloaded one gets 'busy' and tries again, meanwhile
+    // its player starts a game against the bot.
+    const other = await contexts[0].newPage();
+    await other.goto('/chessdown/');
+    const seat = await storedSeat(page, 'chessdown');
+    await other.evaluate((s) => sessionStorage.setItem('pawnet.seat.chessdown', s), seat);
+    await other.reload();
+    await other.evaluate(() => { chessdown.state.gameState = 'gameplay'; chessdown.state.isBotMatch = true; });
+    await page.close(); // The seat is free now: the next try gets it back, too late
+    // Given back on the server, then left at once: the opponent wins.
+    await expect.poll(() => seen(opponent), { timeout: 10_000 }).toContain('opponentLeft');
+    expect(await seen(opponent)).toContain('opponentReconnected');
+    expect(await other.evaluate(() => chessdown.state.currentRoomCode)).toBeNull();
+    expect(code).toMatch(/^[A-Z]{6}$/);
     for (const c of contexts) await c.close();
   });
 });

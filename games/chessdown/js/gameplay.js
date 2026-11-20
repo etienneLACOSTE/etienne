@@ -10,6 +10,7 @@ import { checkTouchdownWin, makeVirtualMove, serializeBoard } from './rules-brid
 import { reportResult } from '../../../assets/js/session.js';
 import { resetDrawOffers } from './draw.js';
 import { chat } from './chat.js';
+import { forgetSeat } from '../../../assets/js/seat.js';
 
 // --- Gameplay Logic ---
 
@@ -298,6 +299,8 @@ export function movePiece(fromR, fromC, toR, toC) {
  */
 export function endGame(title, reason, winner, how) {
     state.gameState = 'over';
+    // Online, nothing to come back to after a reload (a rematch brings a new seat).
+    if (state.currentRoomCode) forgetSeat('chessdown');
     resetDrawOffers();
     clearInterval(state.timerInterval);
     // Against the bot, the signed-in player is player 1; on the same screen, the side they

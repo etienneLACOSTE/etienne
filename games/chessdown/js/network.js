@@ -11,7 +11,7 @@ import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
 import { drawTurnPlayed } from './draw.js';
 import { chat } from './chat.js';
-import { keepSeat, RESUME_FAILED } from '../../../assets/js/seat.js';
+import { forgetSeat, keepSeat, RESUME_FAILED } from '../../../assets/js/seat.js';
 
 /**
  * Show the game the server sent back to a reloaded page: the waiting room, the draft
@@ -212,14 +212,18 @@ export function setupNetwork() {
     });
 
     // A reloaded page comes back to its game (assets/js/seat.js).
-    socket.on('seatResumed', resumeOnlineGame);
-    keepSeat(socket, 'chessdown', { onFailed: (reason) => notify(RESUME_FAILED[reason]) });
+    keepSeat(socket, 'chessdown', {
+        idle: () => !state.currentRoomCode && !['draft1', 'draft2', 'gameplay'].includes(state.gameState),
+        onResumed: resumeOnlineGame,
+        onFailed: (reason) => notify(RESUME_FAILED[reason]),
+    });
 
     // A dropped connection: the server keeps the seat a while (see connection-notice.js).
     watchConnection(socket, {
         inRoom: () => Boolean(state.currentRoomCode),
         onLost: () => {
             state.currentRoomCode = null; // The room is gone: nothing to leave
+            forgetSeat('chessdown');
             if (state.gameState === 'over') return; // The end screen stays up
             resetGame();
             showScreen(ui.mainMenu);

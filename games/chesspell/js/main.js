@@ -31,7 +31,7 @@ import { openDeckBuilder, refreshDeckBuilder, saveDeckForProfile, setupDeckBuild
 import { cancelEdit, renderProfilesList, submitProfile, updatePlayerSelects } from './profiles-view.js';
 import { setTimerMode, startTimer } from './clock.js';
 import { botStrength, playBotTurn, selectBotDeck } from './bot-player.js';
-import { endGame, leaveGame, rematch, startCampaign, startGame } from './match.js';
+import { endGame, leaveGame, quitGame, rematch, startCampaign, startGame } from './match.js';
 import { joinFromInvite, setupOnline } from './online.js';
 import { drawTurnPlayed, resetDrawOffers, setupDraw, updateDrawButton } from './draw.js';
 import { chat } from './chat.js';
@@ -78,6 +78,7 @@ export const UI_ACTIONS = {
     saveDeck: () => saveDeckForProfile(),
     rematch: () => rematch(),
     leaveGame: () => leaveGame(),
+    quitGame: () => quitGame(),
     setTimerMode: (el) => setTimerMode(el.dataset.mode),
     selectBotDeck: (el) => selectBotDeck(el.dataset.deck),
     submitProfile: () => submitProfile(),

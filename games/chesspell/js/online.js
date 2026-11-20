@@ -102,8 +102,11 @@ export function setupOnline() {
     });
 
     // A reloaded page comes back to its game (assets/js/seat.js).
-    socket.on('seatResumed', resumeOnlineGame);
-    keepSeat(socket, 'chesspell', { onFailed: (reason) => notify(RESUME_FAILED[reason]) });
+    keepSeat(socket, 'chesspell', {
+        idle: () => !session.currentRoomCode && !document.querySelector('#game-board.active, #draft-phase.active'),
+        onResumed: resumeOnlineGame,
+        onFailed: (reason) => notify(RESUME_FAILED[reason]),
+    });
 
     // The server referees the game: after every action it sends the new state.
     socket.on('gameState', ({ state, action }) => {

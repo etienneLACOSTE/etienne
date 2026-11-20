@@ -13,7 +13,7 @@ import { resetClock, startTimer, stopTimer } from './clock.js';
 import { startDraft } from './draft.js';
 import { generateBotDeck, loadBotProfile } from './bot-player.js';
 import { reportResult } from '../../../assets/js/session.js';
-import { notify } from '../../../assets/js/dialog.js';
+import { ask, notify } from '../../../assets/js/dialog.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
 
 /** How long the last move stays on screen before the end screen comes up. */
@@ -93,12 +93,25 @@ export function leaveGame() {
 }
 
 /**
+ * The Quit Game button: online, a game in progress is lost at once (after asking);
+ * otherwise straight back to the menu.
+ */
+export async function quitGame() {
+    if (session.isOnline && session.currentRoomCode && !engine.winner) {
+        const sure = await ask('Quit this game? Your opponent wins.', { confirm: 'Quit', cancel: 'Keep playing' });
+        if (!sure) return;
+    }
+    leaveGame();
+}
+
+/**
  * A king fell, a player ran out of time or both agreed on a draw: the clock stops, the
  * profiles keep the result, and the end screen comes up once the last move has been seen.
  * @param {{ winner: 'white' | 'black' | 'draw', reason: 'king' | 'time' | 'agreement' }} result
  */
 export function endGame({ winner, reason }) {
     stopTimer();
+    if (session.isOnline) forgetSeat('chesspell'); // Nothing to come back to after a reload
     ProfileManager.recordResult([['white', match.p1Profile], ['black', match.p2Profile]], winner);
     recordAccountResult(winner, reason);
     setTimeout(() => {
