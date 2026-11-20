@@ -48,6 +48,7 @@ function resumeState(room, player) {
         : room.board;
     return {
         ...getChessdownPublicRoomState(room),
+        roomCode: room.id,
         board,
         playerNumber: player,
         drafted: Boolean(room.drafted[player]),
@@ -69,7 +70,6 @@ function newGameState() {
         playAgain: { 1: false, 2: false },
         idleTurns: 0,
         positionHistory: {}, // Position key -> times seen, for the draw by repetition
-        result: null, // { winner, reason } once the game is over
         draw: null, // Draw offers (server/socket-utils.js drawOffers)
     };
 }
@@ -108,7 +108,6 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
 
     /** A finished game counts for each signed-in player. winner: 1 or 2, or 0 for a draw. */
     function recordResult(room, winner, reason) {
-        room.result = { winner, reason };
         if (!stats) return;
         const name = (p) => (room.accounts[p] ? room.accounts[p].username : `Player ${p}`);
         stats.recordOnline({
@@ -215,7 +214,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
 
             socket.join(roomCode);
             socket.emit('roomCreated', roomCode);
-            seats.issue(room, 1, socket);
+            seats.issue(room, 1);
         });
 
         safeOn(socket, 'joinRoom', (roomCode) => {
@@ -229,7 +228,7 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
                 room.accounts[2] = socket.data.user;
                 socket.join(roomCode);
                 socket.emit('roomJoined', { roomCode, playerNumber: 2 });
-                seats.issue(room, 2, socket);
+                seats.issue(room, 2);
 
                 room.gameState = 'drafting';
                 ioChessdown.to(roomCode).emit('gameStarted', {
@@ -347,6 +346,9 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
                 room.clock.reset();
                 Object.assign(room, newGameState());
                 ioChessdown.to(data.roomCode).emit('gameRestarted');
+                // The pages forgot their seats when the game ended: new ones for the rematch.
+                seats.issue(room, 1);
+                seats.issue(room, 2);
             } else {
                 ioChessdown.to(data.roomCode).emit('playAgainStatus', { count });
             }

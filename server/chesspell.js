@@ -205,7 +205,7 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null, 
 
             socket.join(roomCode);
             socket.emit('roomCreated', roomCode);
-            seats.issue(room, 1, socket);
+            seats.issue(room, 1);
         });
 
         safeOn(socket, 'joinRoom', (data) => {
@@ -226,7 +226,7 @@ function registerChesspell(io, { sessions = null, stats = null, friends = null, 
 
                 socket.join(roomCode);
                 socket.emit('roomJoined', { roomCode, playerNumber: 2 });
-                seats.issue(room, 2, socket);
+                seats.issue(room, 2);
 
                 room.gameState = 'playing';
                 room.startedAt = Date.now();

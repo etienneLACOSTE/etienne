@@ -219,7 +219,8 @@ function sameToken(a, b) {
  * A page that reloads gets a new connection, not the old one: it takes its seat back with
  * the seat token it was given ('seatToken' { roomCode, token }, kept by the page for this
  * tab only) while the seat is held (resume).
- * @param {{ to: (room: string) => { emit: Function } }} nsp the game's namespace
+ * @param {{ to: (room: string) => { emit: Function }, in?: (room: string) => { socketsLeave: (room: string) => void } }} nsp
+ *   the game's namespace
  * @param {Record<string, any>} rooms the game's open rooms
  * @param {(room: any, player: 1 | 2) => void} gone the player is gone for good: count the
  *   game as lost (if it was in progress) and close the room
@@ -228,6 +229,12 @@ function sameToken(a, b) {
 function seatKeeper(nsp, rooms, gone, { holdMs = SEAT_HOLD_MS } = {}) {
     const tell = (room, player, event, data) => {
         if (room.players[player]) nsp.to(room.players[player]).emit(event, data);
+    };
+    /** Give the player of a seat the token of their seat (a new one each time: an old one stops working). */
+    const issue = (room, player) => {
+        room.seatTokens = room.seatTokens || {};
+        room.seatTokens[player] = newSeatToken();
+        tell(room, player, 'seatToken', { roomCode: room.id, token: room.seatTokens[player] });
     };
     const leave = (room, player) => {
         const other = player === 1 ? 2 : 1;
@@ -269,20 +276,19 @@ function seatKeeper(nsp, rooms, gone, { holdMs = SEAT_HOLD_MS } = {}) {
                 tell(room, player === 1 ? 2 : 1, 'opponentReconnected');
             }
         },
-        /** Give `socket` the token of its seat (a new one each time: an old one stops working). */
-        issue(room, player, socket) {
-            room.seatTokens = room.seatTokens || {};
-            room.seatTokens[player] = newSeatToken();
-            socket.emit('seatToken', { roomCode: room.id, token: room.seatTokens[player] });
-        },
+        issue,
         /**
          * A new connection (a reloaded page) takes its seat back with its token, while the
          * seat is held. Returns the room and seat, or why not:
          * - 'gone': no such seat (wrong token, room closed, seat already lost);
          * - 'busy': the seat's connection is still open (another tab, or the server has
          *   not seen the old page close yet: the page tries again);
-         * - 'over': the game has ended meanwhile; the seat is given up.
-         * @returns {{ room: any, player: 1 | 2 } | { error: 'gone' | 'busy' | 'over' }}
+         * - 'over': the game has ended meanwhile; the seat is given up;
+         * - 'elsewhere': this connection already has a seat in another room (the page moved
+         *   on before the answer came).
+         * The connection that held the seat before is told 'seatLost' and taken out of the
+         * room: Socket.io's recovery could otherwise bring it back into the room's messages.
+         * @returns {{ room: any, player: 1 | 2 } | { error: 'gone' | 'busy' | 'over' | 'elsewhere' }}
          */
         resume(socket, data) {
             const room = getRoom(rooms, data && data.roomCode);
@@ -291,7 +297,9 @@ function seatKeeper(nsp, rooms, gone, { holdMs = SEAT_HOLD_MS } = {}) {
             const tokens = room.seatTokens || {};
             const player = /** @type {(1 | 2)[]} */ ([1, 2]).find((p) => sameToken(tokens[p], token));
             if (!player) return { error: 'gone' };
-            if (room.players[player] === socket.id) return { room, player };
+            if (room.players[player] === socket.id) return room.gameState === 'over' ? { error: 'over' } : { room, player };
+            const seatedElsewhere = Object.values(rooms).some((r) => r !== room && (r.players[1] === socket.id || r.players[2] === socket.id));
+            if (seatedElsewhere) return { error: 'elsewhere' };
             if (!room.seatHolds || !room.seatHolds[player]) return { error: 'busy' };
             if (room.gameState === 'over') {
                 leave(room, player);
@@ -302,10 +310,15 @@ function seatKeeper(nsp, rooms, gone, { holdMs = SEAT_HOLD_MS } = {}) {
             // Only the same account keeps counting for the game.
             const account = room.accounts && room.accounts[player];
             if (account && (!socket.data.user || Number(socket.data.user.id) !== Number(account.id))) room.accounts[player] = null;
+            const previous = room.players[player];
+            if (previous) {
+                nsp.to(previous).emit('seatLost');
+                if (nsp.in) nsp.in(previous).socketsLeave(room.id);
+            }
             room.players[player] = socket.id;
             room.lastActivity = Date.now();
             socket.join(room.id);
-            this.issue(room, player, socket);
+            issue(room, player);
             tell(room, player === 1 ? 2 : 1, 'opponentReconnected');
             return { room, player };
         },
