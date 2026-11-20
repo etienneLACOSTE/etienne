@@ -5,6 +5,7 @@
 import { socket, state } from './state.js';
 import { ask } from '../../../assets/js/dialog.js';
 import { watchDrawOffers } from '../../../assets/js/draw-offer.js';
+import { t } from '../../../assets/js/i18n.js';
 
 const button = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-offer-draw'));
 const inMatch = () => state.gameState === 'gameplay' && !state.isBotMatch;
@@ -21,7 +22,7 @@ export function updateDrawButton() {
     button.hidden = !inMatch();
     if (state.currentRoomCode && online) return online.refresh();
     button.disabled = !inMatch();
-    button.textContent = 'Offer draw';
+    button.textContent = t('draw.offer');
 }
 
 /** A turn was played online: a new offer is allowed. */
@@ -42,7 +43,7 @@ export function setupDraw(agreed) {
         if (state.currentRoomCode) return online?.offer();
         const offerer = state.currentPlayer;
         const other = offerer === 1 ? 2 : 1;
-        const accepted = await ask(`Player ${offerer} offers a draw. Player ${other}, do you accept?`, { confirm: 'Accept', cancel: 'Decline' });
+        const accepted = await ask(t('draw.localAsk', { a: offerer, b: other }), { confirm: t('draw.accept'), cancel: t('draw.decline') });
         if (accepted && inMatch() && !state.currentRoomCode) agreed();
     });
 }

@@ -1,5 +1,6 @@
 // @ts-check
 // Entry point.
+import './lang.js'; // First: the language is set before any text is written
 import { state, ui } from './state.js';
 import { showScreen } from './board-view.js';
 import { loadBotProfileForDifficulty } from './bot.js';
@@ -11,6 +12,8 @@ import { movePiece, skipTurn } from './gameplay.js';
 import { generateAllMoves, getValidMoves } from './rules-bridge.js';
 import { currentUser, gateOnline, showAccountLine } from '../../../assets/js/session.js';
 import { joinFromInvite, setupInvites } from './invites.js';
+import { loadTimer } from './settings.js';
+import { t } from '../../../assets/js/i18n.js';
 
 // Initialization
 export function init() {
@@ -29,11 +32,12 @@ export function init() {
         return;
     }
     
+    loadTimer();
     showScreen(ui.mainMenu);
-    ui.statusBar.textContent = "Welcome to Chessdown";
+    ui.statusBar.textContent = t('status.welcome');
     currentUser().then((user) => {
         state.account = user;
-        showAccountLine(document.getElementById('account-line'), user, { game: '/chessdown/', perk: 'stats' });
+        showAccountLine(document.getElementById('account-line'), user, { game: '/chessdown/', perk: t('menu.perkStats') });
         gateOnline(document.getElementById('online-controls'), document.getElementById('online-gate'), user, '/chessdown/');
         if (!user) return;
         setupInvites();

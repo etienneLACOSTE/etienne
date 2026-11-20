@@ -5,12 +5,13 @@ import { createBoardDOM, renderBoard, showScreen } from './board-view.js';
 import { getBoardCoords, getDraftZoneView } from './coords.js';
 import { startGameplay } from './gameplay.js';
 import { autoDraftBot } from './bot.js';
+import { t } from '../../../assets/js/i18n.js';
 
 // --- Draft Logic ---
 
 export function toggleRemoveMode() {
     state.removeMode = !state.removeMode;
-    ui.btnRemoveMode.textContent = state.removeMode ? "Remove Mode: ON" : "Remove Mode: OFF";
+    ui.btnRemoveMode.textContent = state.removeMode ? t('draft.removeOn') : t('draft.removeOff');
     ui.btnRemoveMode.classList.toggle('btn-danger', state.removeMode);
     ui.btnRemoveMode.classList.toggle('btn-secondary', !state.removeMode);
     if (state.removeMode) {
@@ -23,8 +24,8 @@ export function showTransitionScreen() {
     ui.gameLayout.classList.add('hidden');
     ui.draftHeader.classList.add('hidden');
     ui.draftFooter.classList.add('hidden');
-    ui.transitionTitle.textContent = `Player ${state.currentPlayer}'s Turn`;
-    ui.statusBar.textContent = `Waiting for Player ${state.currentPlayer}`;
+    ui.transitionTitle.textContent = t('transition.title', { n: state.currentPlayer });
+    ui.statusBar.textContent = t('status.waitingFor', { n: state.currentPlayer });
     showScreen(ui.transitionScreen);
 }
 
@@ -55,7 +56,7 @@ export function startDraftPhase(player) {
         updateShopColors();
         updateDraftUI();
         renderBoard();
-        ui.statusBar.textContent = `Draft Phase: Build your army!`;
+        ui.statusBar.textContent = t('status.draftBuild');
     }
 }
 
@@ -69,7 +70,7 @@ export function handleTransitionReady() {
     updateShopColors();
     updateDraftUI();
     renderBoard();
-    ui.statusBar.textContent = `Draft Phase: Player ${state.currentPlayer}`;
+    ui.statusBar.textContent = t('status.draftPlayer', { n: state.currentPlayer });
 }
 
 export function updateShopColors() {
@@ -234,7 +235,7 @@ export function validateDraft() {
         // Hide draft UI and show waiting message
         ui.draftHeader.classList.add('hidden');
         ui.draftFooter.classList.add('hidden');
-        ui.statusBar.textContent = "Waiting for opponent to finish drafting...";
+        ui.statusBar.textContent = t('status.waitingDraft');
         ui.btnValidateDraft.disabled = true;
     } else {
         if (state.currentPlayer === 1) {

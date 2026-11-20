@@ -11,6 +11,7 @@ import { reportResult } from '../../../assets/js/session.js';
 import { resetDrawOffers } from './draw.js';
 import { chat } from './chat.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
+import { t } from '../../../assets/js/i18n.js';
 
 // --- Gameplay Logic ---
 
@@ -41,7 +42,7 @@ function showMatchup() {
     if (!matchup) return;
     matchup.hidden = !state.currentRoomCode;
     const me = state.myPlayerNumber;
-    matchup.textContent = `${playerName(me)} vs ${playerName(me === 1 ? 2 : 1)}`;
+    matchup.textContent = t('coin.matchup', { a: playerName(me), b: playerName(me === 1 ? 2 : 1) });
 }
 
 /**
@@ -87,13 +88,13 @@ export function startTurn() {
         
         if (state.myPlayerNumber === winner) {
             fireConfetti([winnerColorHex, '#f1c40f']);
-            endGame('Victory!', `TOUCHDOWN! You survived in the endzone!`, winner, 'touchdown');
+            endGame(t('end.victory'), t('end.touchdownYou'), winner, 'touchdown');
         } else {
             if (!state.currentRoomCode) {
                 fireConfetti([winnerColorHex, '#f1c40f']);
-                endGame('Victory!', `TOUCHDOWN! Player ${winner} survived in the endzone!`, winner, 'touchdown');
+                endGame(t('end.victory'), t('end.touchdownPlayer', { n: winner }), winner, 'touchdown');
             } else {
-                endGame('Defeat...', `TOUCHDOWN! ${playerName(winner)} survived in the endzone!`, winner, 'touchdown');
+                endGame(t('end.defeat'), t('end.touchdownThem', { name: playerName(winner) }), winner, 'touchdown');
             }
         }
         return;
@@ -105,7 +106,7 @@ export function startTurn() {
         const p1Color = COLOR_HEX[state.playerColors[1]];
         const p2Color = COLOR_HEX[state.playerColors[2]];
         fireConfetti([p1Color, p2Color], 30);
-        endGame('DRAW', "by 3 repetitions", 0, 'repetition');
+        endGame(t('end.draw'), t('end.byRepetition'), 0, 'repetition');
         return;
     }
     
@@ -178,7 +179,7 @@ export function startTimer(turnLeftMs) {
                 const winner = state.currentPlayer === 1 ? 2 : 1;
                 const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
                 fireConfetti([winnerColorHex, '#f1c40f']);
-                endGame('Time Out!', `Player ${state.currentPlayer} ran out of time!`, winner, 'time');
+                endGame(t('end.timeOut'), t('end.playerOutOfTime', { n: state.currentPlayer }), winner, 'time');
             }
         }
     }, 100);
@@ -283,7 +284,7 @@ export function movePiece(fromR, fromC, toR, toC) {
             const winner = state.currentPlayer;
             const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
             fireConfetti([winnerColorHex, '#f1c40f']);
-            endGame('Victory!', `Player ${winner} captured the King!`, winner, 'king');
+            endGame(t('end.victory'), t('end.playerCapturedKing', { n: winner }), winner, 'king');
             return;
         }
 

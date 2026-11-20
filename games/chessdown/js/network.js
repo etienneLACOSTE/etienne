@@ -11,7 +11,8 @@ import { watchConnection } from '../../../assets/js/connection-notice.js';
 import { notify } from '../../../assets/js/dialog.js';
 import { drawTurnPlayed } from './draw.js';
 import { chat } from './chat.js';
-import { forgetSeat, keepSeat, RESUME_FAILED } from '../../../assets/js/seat.js';
+import { forgetSeat, keepSeat, resumeFailedText } from '../../../assets/js/seat.js';
+import { serverText, t } from '../../../assets/js/i18n.js';
 
 /**
  * Show the game the server sent back to a reloaded page: the waiting room, the draft
@@ -47,7 +48,7 @@ function resumeOnlineGame(data) {
         if (data.drafted) {
             ui.draftHeader.classList.add('hidden');
             ui.draftFooter.classList.add('hidden');
-            ui.statusBar.textContent = 'Waiting for opponent to finish drafting...';
+            ui.statusBar.textContent = t('status.waitingDraft');
             ui.btnValidateDraft.disabled = true;
         }
         return;
@@ -119,9 +120,9 @@ export function setupNetwork() {
 
             if (state.myPlayerNumber === winner) {
                 fireConfetti([winnerColorHex, '#f1c40f']);
-                endGame('Victory!', `You captured the King!`, winner);
+                endGame(t('end.victory'), t('end.youCapturedKing'), winner);
             } else {
-                endGame('Defeat...', `${playerName(winner)} captured your King.`, winner);
+                endGame(t('end.defeat'), t('end.theyCapturedKing', { name: playerName(winner) }), winner);
             }
             return;
         }
@@ -143,9 +144,9 @@ export function setupNetwork() {
         const winner = data.loser === 1 ? 2 : 1;
         if (state.myPlayerNumber === winner) {
             fireConfetti([COLOR_HEX[state.playerColors[winner]], '#f1c40f']);
-            endGame('Time Out!', 'Your opponent ran out of time!', winner);
+            endGame(t('end.timeOut'), t('end.opponentOutOfTime'), winner);
         } else {
-            endGame('Time Out!', 'You ran out of time.', winner);
+            endGame(t('end.timeOut'), t('end.youOutOfTime'), winner);
         }
     });
 
@@ -161,12 +162,12 @@ export function setupNetwork() {
     socket.on('drawAgreed', () => {
         if (state.gameState === 'over') return;
         fireConfetti([COLOR_HEX[state.playerColors[1]], COLOR_HEX[state.playerColors[2]]], 30);
-        endGame('DRAW', 'by agreement', 0, 'agreement');
+        endGame(t('end.draw'), t('end.byAgreement'), 0, 'agreement');
     });
 
     socket.on('playAgainStatus', (data) => {
         const btn = /** @type {HTMLButtonElement} */ (document.getElementById('btn-restart'));
-        if (btn && !btn.disabled) btn.textContent = `Play Again (${data.count}/2)`;
+        if (btn && !btn.disabled) btn.textContent = t('end.playAgainCount', { n: data.count });
     });
 
     socket.on('opponentColorChanged', (color) => {
@@ -180,7 +181,7 @@ export function setupNetwork() {
     socket.on('gameRestarted', () => {
         const btn = /** @type {HTMLButtonElement} */ (document.getElementById('btn-restart'));
         if (btn) {
-            btn.textContent = "Play Again";
+            btn.textContent = t('end.playAgain');
             btn.disabled = false;
         }
         ui.victoryScreen.classList.add('hidden');
@@ -196,7 +197,7 @@ export function setupNetwork() {
         state.currentRoomCode = null;
         resetGame();
         showScreen(ui.mainMenu);
-        notify('Your opponent left the game.');
+        notify(t('online.opponentLeft'));
     });
 
     // The server closed an idle room (see server/socket-utils.js).
@@ -204,18 +205,18 @@ export function setupNetwork() {
         state.currentRoomCode = null;
         resetGame();
         showScreen(ui.mainMenu);
-        notify(reason);
+        notify(serverText(reason));
     });
 
     socket.on('errorMsg', (msg) => {
-        notify(msg);
+        notify(serverText(msg));
     });
 
     // A reloaded page comes back to its game (assets/js/seat.js).
     keepSeat(socket, 'chessdown', {
         idle: () => !state.currentRoomCode && !['draft1', 'draft2', 'gameplay'].includes(state.gameState),
         onResumed: resumeOnlineGame,
-        onFailed: (reason) => notify(RESUME_FAILED[reason]),
+        onFailed: (reason) => notify(resumeFailedText(reason)),
     });
 
     // A dropped connection: the server keeps the seat a while (see connection-notice.js).
@@ -227,7 +228,7 @@ export function setupNetwork() {
             if (state.gameState === 'over') return; // The end screen stays up
             resetGame();
             showScreen(ui.mainMenu);
-            notify('Connection lost: the game could not be resumed.');
+            notify(t('online.connectionLost'));
         },
     });
     } // End of if (socket)

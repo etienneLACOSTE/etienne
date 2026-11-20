@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chessdown - Chess x American Football</title>
+    <title data-i18n="page.title">Chessdown - Chess x American Football</title>
     <link rel="icon" href="/assets/brand/favicon-32.png" sizes="32x32" type="image/png">
     <link rel="icon" href="/assets/brand/icon-192.png" sizes="192x192" type="image/png">
     <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
@@ -16,33 +16,33 @@
     <div id="game-container">
         <header>
             <h1>Chessdown</h1>
-            <div id="status-bar">Loading...</div>
+            <div id="status-bar" data-i18n="status.loading">Loading...</div>
             <div class="header-actions">
-                <button id="btn-chat" type="button" class="btn-ghost" hidden>Chat</button>
-                <button id="btn-offer-draw" type="button" class="btn-ghost" hidden>Offer draw</button>
+                <button id="btn-chat" type="button" class="btn-ghost" hidden data-i18n="chat.title">Chat</button>
+                <button id="btn-offer-draw" type="button" class="btn-ghost" hidden data-i18n="draw.offer">Offer draw</button>
             </div>
         </header>
 
         <!-- Menu Principal -->
         <div id="main-menu" class="screen active">
-            <h2>Ready for the big game?</h2>
+            <h2 data-i18n="menu.title">Ready for the big game?</h2>
             <div class="menu-group">
-                <button id="btn-start-local" class="btn-primary">Play Local (2 Players)</button>
-                <button id="btn-start-bot" class="btn-secondary">Campaign (vs Bot)</button>
+                <button id="btn-start-local" class="btn-primary" data-i18n="menu.local">Play Local (2 Players)</button>
+                <button id="btn-start-bot" class="btn-secondary" data-i18n="menu.campaign">Campaign (vs Bot)</button>
             </div>
             <div class="menu-group menu-online">
                 <div class="online-controls" id="online-controls">
-                    <button id="btn-create-room" class="btn-secondary">Create Online Room</button>
+                    <button id="btn-create-room" class="btn-secondary" data-i18n="menu.createRoom">Create Online Room</button>
                     <div class="join-row">
-                        <input type="text" id="room-code-input" placeholder="CODE" aria-label="Room code (6 letters)" maxlength="6">
-                        <button id="btn-join-room" class="btn-secondary">Join Room</button>
+                        <input type="text" id="room-code-input" placeholder="CODE" aria-label="Room code (6 letters)" maxlength="6" data-i18n-attr="placeholder: menu.codePlaceholder; aria-label: menu.codeLabel">
+                        <button id="btn-join-room" class="btn-secondary" data-i18n="menu.joinRoom">Join Room</button>
                     </div>
                 </div>
                 <p class="account-line online-gate" id="online-gate" hidden></p>
             </div>
             <div class="menu-row">
-                <button id="btn-how-to-play" class="btn-ghost">How to Play</button>
-                <button id="btn-show-timer" class="btn-ghost">Timer</button>
+                <button id="btn-how-to-play" class="btn-ghost" data-i18n="menu.howToPlay">How to Play</button>
+                <button id="btn-show-timer" class="btn-ghost" data-i18n="menu.settings">Settings</button>
             </div>
             <p class="account-line muted" id="account-line" hidden></p>
         </div>
@@ -50,90 +50,96 @@
         <!-- Waiting Screen (Online) -->
         <div id="waiting-screen" class="screen hidden">
             <h2 id="waiting-room-code" class="room-code">ABCD</h2>
-            <p>Share this code with your opponent.</p>
-            <p class="muted">Waiting for Player 2 to join...</p>
+            <p data-i18n="waiting.share">Share this code with your opponent.</p>
+            <p class="muted" data-i18n="waiting.forPlayer2">Waiting for Player 2 to join...</p>
             <div class="invite-friends" id="invite-friends" hidden></div>
         </div>
 
         <!-- How to Play Modal -->
         <div id="rules-modal" class="screen overlay hidden">
-            <h2>How to Play Chessdown</h2>
+            <h2 data-i18n="rules.title">How to Play Chessdown</h2>
             <div class="rules-text">
-                <h3>Goal</h3>
-                <p>1. <strong>Capture the King:</strong> Take the opponent's King.</p>
-                <p>2. <strong>Touchdown:</strong> Reach the opponent's Endzone (the last row) with any piece and survive there for one full turn.</p>
-                
-                <h3>Draft Phase</h3>
-                <p>You have <strong>39 points</strong> to buy your custom army. You must buy exactly 1 King. Place your pieces secretly in your deployment zone and pick your team color.</p>
+                <h3 data-i18n="rules.goal">Goal</h3>
+                <p>1. <strong data-i18n="rules.kingTitle">Capture the King:</strong> <span data-i18n="rules.kingText">Take the opponent's King.</span></p>
+                <p>2. <strong data-i18n="rules.touchdownTitle">Touchdown:</strong> <span data-i18n="rules.touchdownText">Reach the opponent's Endzone (the last row) with any piece and survive there for one full turn.</span></p>
 
-                <h3>Gameplay</h3>
-                <p>Pieces move exactly like in traditional chess. However, you only have <strong>10 seconds</strong> per turn! If the timer runs out, your turn is skipped.</p>
+                <h3 data-i18n="rules.draft">Draft Phase</h3>
+                <p data-i18n="rules.draftText">You have 39 points to buy your custom army. You must buy exactly 1 King. Place your pieces secretly in your deployment zone and pick your team color.</p>
 
-                <h3>Differences with Chess</h3>
+                <h3 data-i18n="rules.gameplay">Gameplay</h3>
+                <p data-i18n="rules.gameplayText">Pieces move exactly like in traditional chess. However, you only have 10 seconds per turn! If the timer runs out, your turn is skipped.</p>
+
+                <h3 data-i18n="rules.differences">Differences with Chess</h3>
                 <ul>
-                    <li><strong>No Checkmate:</strong> There is no "check" warning. The King must be physically captured.</li>
-                    <li><strong>The Board:</strong> It's 8x12, longer than a standard chessboard.</li>
-                    <li><strong>Speed:</strong> 10 second forced timer!</li>
+                    <li><strong data-i18n="rules.noMateTitle">No Checkmate:</strong> <span data-i18n="rules.noMateText">There is no "check" warning. The King must be physically captured.</span></li>
+                    <li><strong data-i18n="rules.boardTitle">The Board:</strong> <span data-i18n="rules.boardText">It's 8x12, longer than a standard chessboard.</span></li>
+                    <li><strong data-i18n="rules.speedTitle">Speed:</strong> <span data-i18n="rules.speedText">10 second forced timer!</span></li>
                 </ul>
             </div>
             <div class="overlay-actions">
-                <button id="btn-close-rules" class="btn-primary">Got it!</button>
+                <button id="btn-close-rules" class="btn-primary" data-i18n="rules.close">Got it!</button>
             </div>
         </div>
 
         <!-- Difficulty Selection Modal -->
         <div id="difficulty-modal" class="screen overlay hidden">
-            <h2>Campaign Setup</h2>
+            <h2 data-i18n="campaign.title">Campaign Setup</h2>
 
-            <h3 id="diff-label">1. Select Difficulty</h3>
+            <h3 id="diff-label" data-i18n="campaign.difficulty">1. Select Difficulty</h3>
             <div id="diff-selector" class="choice-group" role="group" aria-labelledby="diff-label">
-                <button class="btn-difficulty selected" data-level="novice">Novice</button>
-                <button class="btn-difficulty" data-level="apprentice">Apprentice</button>
-                <button class="btn-difficulty" data-level="expert">Expert</button>
-                <button class="btn-difficulty" data-level="master">Master</button>
+                <button class="btn-difficulty selected" data-level="novice" data-i18n="level.novice">Novice</button>
+                <button class="btn-difficulty" data-level="apprentice" data-i18n="level.apprentice">Apprentice</button>
+                <button class="btn-difficulty" data-level="expert" data-i18n="level.expert">Expert</button>
+                <button class="btn-difficulty" data-level="master" data-i18n="level.master">Master</button>
             </div>
 
-            <h3 id="arch-label">2. Select Archetype</h3>
+            <h3 id="arch-label" data-i18n="campaign.archetype">2. Select Archetype</h3>
             <div id="arch-selector" class="choice-group" role="group" aria-labelledby="arch-label">
-                <button class="btn-archetype selected" data-arch="normal">Normal</button>
-                <button class="btn-archetype" data-arch="ecuries">Écuries</button>
-                <button class="btn-archetype" data-arch="citadelle">Citadelle</button>
-                <button class="btn-archetype" data-arch="chapiteau">Chapiteau</button>
-                <button class="btn-archetype" data-arch="chair">Chair à canon</button>
-                <button class="btn-archetype" data-arch="sorcieres">Sorcières</button>
+                <button class="btn-archetype selected" data-arch="normal" data-i18n="arch.normal">Normal</button>
+                <button class="btn-archetype" data-arch="ecuries" data-i18n="arch.ecuries">Stables</button>
+                <button class="btn-archetype" data-arch="citadelle" data-i18n="arch.citadelle">Citadel</button>
+                <button class="btn-archetype" data-arch="chapiteau" data-i18n="arch.chapiteau">Big Top</button>
+                <button class="btn-archetype" data-arch="chair" data-i18n="arch.chair">Cannon Fodder</button>
+                <button class="btn-archetype" data-arch="sorcieres" data-i18n="arch.sorcieres">Witches</button>
             </div>
 
             <div class="overlay-actions">
-                <button id="btn-close-difficulty" class="btn-ghost">Cancel</button>
-                <button id="btn-confirm-campaign" class="btn-primary btn-big">Start Match</button>
+                <button id="btn-close-difficulty" class="btn-ghost" data-i18n="dialog.cancel">Cancel</button>
+                <button id="btn-confirm-campaign" class="btn-primary btn-big" data-i18n="campaign.start">Start Match</button>
             </div>
         </div>
 
         <!-- Timer Selection Modal -->
         <div id="timer-modal" class="screen overlay hidden">
-            <h2>Timer Options</h2>
+            <h2 data-i18n="settings.title">Settings</h2>
 
-            <div class="choice-group" role="group" aria-label="Timer mode">
-                <button class="timer-toggle-btn selected" data-mode="turn">Turn Time</button>
-                <button class="timer-toggle-btn" data-mode="overall">Overall Time</button>
+            <div class="settings-field">
+                <label for="language-select" data-i18n="settings.language">Language</label>
+                <select id="language-select"></select>
             </div>
 
-            <p id="timer-desc-turn" class="muted">Time resets each turn.</p>
-            <p id="timer-desc-overall" class="muted hidden">Total time per player. You lose if it reaches 0:00.</p>
+            <h3 data-i18n="settings.timer">Timer</h3>
+            <div class="choice-group" role="group" aria-label="Timer mode" data-i18n-attr="aria-label: settings.timerMode">
+                <button class="timer-toggle-btn selected" data-mode="turn" data-i18n="settings.turnTime">Turn Time</button>
+                <button class="timer-toggle-btn" data-mode="overall" data-i18n="settings.overallTime">Overall Time</button>
+            </div>
+
+            <p id="timer-desc-turn" class="muted" data-i18n="settings.turnDesc">Time resets each turn.</p>
+            <p id="timer-desc-overall" class="muted hidden" data-i18n="settings.overallDesc">Total time per player. You lose if it reaches 0:00.</p>
 
             <div class="time-inputs">
                 <div class="time-field">
                     <input type="number" id="timer-min" class="time-input" min="0" max="99" value="0">
-                    <label for="timer-min">Minutes</label>
+                    <label for="timer-min" data-i18n="settings.minutes">Minutes</label>
                 </div>
                 <span class="time-sep" aria-hidden="true">:</span>
                 <div class="time-field">
                     <input type="number" id="timer-sec" class="time-input" min="0" max="59" value="10">
-                    <label for="timer-sec">Seconds</label>
+                    <label for="timer-sec" data-i18n="settings.seconds">Seconds</label>
                 </div>
             </div>
 
-            <button id="btn-save-timer" class="btn-primary btn-big">Save Options</button>
+            <button id="btn-save-timer" class="btn-primary btn-big" data-i18n="settings.save">Save</button>
         </div>
 
         <!-- Écran de Pile ou Face -->
@@ -145,20 +151,20 @@
                     <div id="coin-back" class="coin-face coin-back"></div>
                 </div>
             </div>
-            <p id="coin-text" class="hidden">Coin is flipping...</p>
+            <p id="coin-text" class="hidden" data-i18n="coin.flipping">Coin is flipping...</p>
         </div>
 
         <!-- Écran de Transition (Pass & Play) -->
         <div id="transition-screen" class="screen hidden">
             <h2 id="transition-title">Player X's Turn</h2>
-            <p>Pass the device. Make sure your opponent isn't looking!</p>
-            <button id="btn-ready" class="btn-primary">I'm ready</button>
+            <p data-i18n="transition.pass">Pass the device. Make sure your opponent isn't looking!</p>
+            <button id="btn-ready" class="btn-primary" data-i18n="transition.ready">I'm ready</button>
         </div>
 
         <!-- Interface de Draft (Haut) -->
         <div id="draft-header" class="screen hidden">
             <div class="draft-header-info">
-                <h3>Budget: <span id="draft-points">39</span>/39</h3>
+                <h3><span data-i18n="draft.budget">Budget:</span> <span id="draft-points">39</span>/39</h3>
                 <div class="color-picker" id="color-picker">
                     <div class="color-swatch" data-color="red" style="background-color: #e74c3c;"></div>
                     <div class="color-swatch" data-color="blue" style="background-color: #3498db;"></div>
@@ -193,29 +199,29 @@
         <div id="draft-footer" class="screen hidden">
             <div class="pieces-shop">
                 <div class="shop-item" data-type="p" data-cost="1" data-icon="♟">
-                    <span class="icon">♟</span> <span class="name">Pawn</span> <span class="cost">(1)</span>
+                    <span class="icon">♟</span> <span class="name" data-i18n="piece.p">Pawn</span> <span class="cost">(1)</span>
                 </div>
                 <div class="shop-item" data-type="n" data-cost="3" data-icon="♞">
-                    <span class="icon">♞</span> <span class="name">Knight</span> <span class="cost">(3)</span>
+                    <span class="icon">♞</span> <span class="name" data-i18n="piece.n">Knight</span> <span class="cost">(3)</span>
                 </div>
                 <div class="shop-item" data-type="b" data-cost="3" data-icon="♝">
-                    <span class="icon">♝</span> <span class="name">Bishop</span> <span class="cost">(3)</span>
+                    <span class="icon">♝</span> <span class="name" data-i18n="piece.b">Bishop</span> <span class="cost">(3)</span>
                 </div>
                 <div class="shop-item" data-type="r" data-cost="5" data-icon="♜">
-                    <span class="icon">♜</span> <span class="name">Rook</span> <span class="cost">(5)</span>
+                    <span class="icon">♜</span> <span class="name" data-i18n="piece.r">Rook</span> <span class="cost">(5)</span>
                 </div>
                 <div class="shop-item" data-type="q" data-cost="9" data-icon="♛">
-                    <span class="icon">♛</span> <span class="name">Queen</span> <span class="cost">(9)</span>
+                    <span class="icon">♛</span> <span class="name" data-i18n="piece.q">Queen</span> <span class="cost">(9)</span>
                 </div>
                 <div class="shop-item" data-type="k" data-cost="0" data-icon="♚" id="shop-king">
-                    <span class="icon">♚</span> <span class="name">King</span> <span class="cost">(0)</span>
+                    <span class="icon">♚</span> <span class="name" data-i18n="piece.k">King</span> <span class="cost">(0)</span>
                 </div>
             </div>
             
             <div class="draft-controls">
-                <button id="btn-validate-draft" class="btn-success" disabled>Validate team</button>
-                <button id="btn-clear-draft" class="btn-danger">Clear all</button>
-                <button id="btn-remove-mode" class="btn-secondary">Remove Mode: OFF</button>
+                <button id="btn-validate-draft" class="btn-success" disabled data-i18n="draft.validate">Validate team</button>
+                <button id="btn-clear-draft" class="btn-danger" data-i18n="draft.clear">Clear all</button>
+                <button id="btn-remove-mode" class="btn-secondary" data-i18n="draft.removeOff">Remove Mode: OFF</button>
             </div>
         </div>
 
@@ -224,8 +230,8 @@
             <h2 id="victory-title">Victory!</h2>
             <p id="victory-reason">Reason for victory</p>
             <div class="victory-controls">
-                <button id="btn-restart" class="btn-primary">Play Again</button>
-                <button id="btn-main-menu" class="btn-secondary">Main Menu</button>
+                <button id="btn-restart" class="btn-primary" data-i18n="end.playAgain">Play Again</button>
+                <button id="btn-main-menu" class="btn-secondary" data-i18n="end.mainMenu">Main Menu</button>
             </div>
         </div>
 

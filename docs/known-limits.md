@@ -83,6 +83,19 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   propose, l'autre répond dans la boîte de dialogue ; rien ne vérifie que ce n'est pas la
   même personne (sans conséquence : seules ses propres stats « Same screen » comptent).
 
+## Langues (2026-11-20)
+
+- **Chessdown seulement** en anglais, français, espagnol, italien et allemand (réglage
+  dans Settings, gardé dans le navigateur). L'accueil, le compte, la confidentialité et
+  Ches'spell restent en anglais. Piste : appeler `useLanguages()` sur ces pages avec leurs
+  dictionnaires (`assets/js/i18n.js`).
+- **Traductions faites sans relecture par des locuteurs natifs** (espagnol, italien,
+  allemand surtout). Piste : les faire relire avant d'ouvrir au public.
+- **Messages du serveur traduits d'après leur texte anglais** (`serverText()` dans
+  `assets/js/i18n.js`) : une phrase du serveur modifiée sans mettre la table à jour reste
+  en anglais. Piste : le serveur envoie un code au lieu d'une phrase.
+- **Les erreurs des routes `/api`** (compte, amis) arrivent en anglais.
+
 ## Divers (relevés avant les comptes)
 
 - **Le tutoriel (`games/chesspell/js/demo.js`) enveloppe `engine.move` et

@@ -11,6 +11,10 @@ import { setupDraw } from './draw.js';
 import { fireConfetti } from '../confetti.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
 import { clearFieldError, showFieldError } from '../../../assets/js/field-error.js';
+import { t } from '../../../assets/js/i18n.js';
+import { saveSettings, showSettings } from './settings.js';
+
+const languageSelect = /** @type {HTMLSelectElement} */ (document.getElementById('language-select'));
 
 /** A tap on a board square (or Enter on it, see a11y.js) goes to the draft or the match. */
 function onBoardPointerdown(e) {
@@ -38,10 +42,10 @@ export function setupEventListeners() {
             state.localSide = 0;
             if (state.account) {
                 // The game counts in the account's stats for the side its player takes.
-                const side = await choose('Which side are you? The game counts in your stats for that side.', [
-                    { label: 'Player 1 (drafts first)', value: '1' },
-                    { label: 'Player 2', value: '2' },
-                    { label: 'Neither (not counted)', value: '0' },
+                const side = await choose(t('local.whichSide'), [
+                    { label: t('local.player1'), value: '1' },
+                    { label: t('local.player2'), value: '2' },
+                    { label: t('local.neither'), value: '0' },
                 ]);
                 if (!side) return; // Escape: back to the menu
                 state.localSide = Number(side);
@@ -99,6 +103,7 @@ export function setupEventListeners() {
 
     if (ui.btnShowTimer) {
         ui.btnShowTimer.addEventListener('pointerdown', () => {
+            showSettings(languageSelect);
             ui.mainMenu.classList.add('hidden');
             ui.timerModal.classList.remove('hidden');
         });
@@ -130,6 +135,7 @@ export function setupEventListeners() {
             
             ui.timerModal.classList.add('hidden');
             ui.mainMenu.classList.remove('hidden');
+            saveSettings(languageSelect); // Kept; a new language reloads the page
         });
     }
 
@@ -144,7 +150,7 @@ export function setupEventListeners() {
 
     if (btnCreateRoom) {
         btnCreateRoom.addEventListener('pointerdown', () => {
-            if (!socket) return void notify("Online mode is not available right now. Please launch the server.");
+            if (!socket) return void notify(t('online.unavailable'));
             enterFullscreen();
             // The creator's timer applies to both players; the server keeps the clock.
             socket.emit('createRoom', { timerMode: state.timerMode, timerSeconds: state.timerBaseSeconds });
@@ -153,11 +159,11 @@ export function setupEventListeners() {
 
     if (btnJoinRoom) {
         btnJoinRoom.addEventListener('pointerdown', (e) => {
-            if (!socket) return void notify("Online mode is not available right now. Please launch the server.");
+            if (!socket) return void notify(t('online.unavailable'));
             const code = inputRoomCode.value.trim().toUpperCase();
             if (!/^[A-Z]{6}$/.test(code)) {
                 e.preventDefault(); // The mouse press must not take the focus away from the field
-                return showFieldError(inputRoomCode, 'Enter the 6-letter code of the room.', { after: inputRoomCode.parentElement });
+                return showFieldError(inputRoomCode, t('menu.codeError'), { after: inputRoomCode.parentElement });
             }
             clearFieldError(inputRoomCode);
             enterFullscreen();
@@ -169,7 +175,7 @@ export function setupEventListeners() {
     // Same screen: both players agreed on a draw (online, the server ends the game).
     setupDraw(() => {
         fireConfetti([COLOR_HEX[state.playerColors[1]], COLOR_HEX[state.playerColors[2]]], 30);
-        endGame('DRAW', 'by agreement', 0, 'agreement');
+        endGame(t('end.draw'), t('end.byAgreement'), 0, 'agreement');
     });
     
     ui.btnMainMenu.addEventListener('pointerdown', () => {
@@ -180,7 +186,7 @@ export function setupEventListeners() {
         }
         resetGame();
         showScreen(ui.mainMenu);
-        ui.statusBar.textContent = "Welcome to Chessdown";
+        ui.statusBar.textContent = t('status.welcome');
     });
 
     const btnRestart = /** @type {HTMLButtonElement} */ (document.getElementById('btn-restart'));
@@ -188,7 +194,7 @@ export function setupEventListeners() {
         btnRestart.addEventListener('pointerdown', () => {
             if (state.currentRoomCode) {
                 socket.emit('playAgainRequest', { roomCode: state.currentRoomCode });
-                btnRestart.textContent = "Waiting... (1/2)";
+                btnRestart.textContent = t('end.waitingRematch');
                 btnRestart.disabled = true;
             } else {
                 // Fallback for local

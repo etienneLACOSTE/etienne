@@ -1,6 +1,7 @@
 // @ts-check
 // Chessdown client state: socket, constants, game state and DOM references.
 // Every module imports `state` and reads or changes its fields (state.board, ...).
+import { t } from '../../../assets/js/i18n.js';
 // Socket.io client (absent when the page is opened without the server).
 export const socket = typeof io !== 'undefined' ? io('/chessdown') : null;
 
@@ -135,5 +136,5 @@ export const ui = {
 
 /** A player's name: their username online when signed in, else "Player 1" / "Player 2". */
 export function playerName(player) {
-    return state.playerNames[player] || `Player ${player}`;
+    return state.playerNames[player] || t('common.player', { n: player });
 }

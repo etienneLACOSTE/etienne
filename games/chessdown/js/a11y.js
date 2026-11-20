@@ -5,8 +5,8 @@
 // the colour swatches and the board operable from the keyboard, and labels the board.
 import { COLS, ROWS, state, ui } from './state.js';
 import { getBoardCoords, getViewCoords } from './coords.js';
+import { t } from '../../../assets/js/i18n.js';
 
-export const PIECE_NAMES = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
 export const COLUMN_LETTERS = 'abcdefgh';
 
 /** Replay the game's pointerdown handlers on an element. */
@@ -62,17 +62,20 @@ export function setupAccessibility() {
     }, true);
 
     ui.shopItems.forEach(item => {
-        makeKeyboardButton(item, `Buy ${PIECE_NAMES[item.dataset.type]}, ${item.dataset.cost} points`);
+        makeKeyboardButton(item, t('a11y.buy', { piece: t(`piece.${item.dataset.type}`), n: item.dataset.cost }));
         syncPressedState(item);
     });
     ui.colorSwatches.forEach(swatch => {
-        makeKeyboardButton(swatch, `${swatch.dataset.color} jersey`);
+        makeKeyboardButton(swatch, t('a11y.jersey', { color: t(`color.${swatch.dataset.color}`) }));
         syncPressedState(swatch);
     });
 
+    // Choice buttons (difficulty, archetype, timer mode) say which one is chosen.
+    document.querySelectorAll('.btn-difficulty, .btn-archetype, .timer-toggle-btn').forEach(syncPressedState);
+
     ui.statusBar.setAttribute('role', 'status');
     ui.chessboard.setAttribute('role', 'group');
-    ui.chessboard.setAttribute('aria-label', 'Board');
+    ui.chessboard.setAttribute('aria-label', t('a11y.board'));
     ui.chessboard.addEventListener('keydown', onBoardKeydown);
 
     setupAnnouncer();
@@ -128,11 +131,11 @@ export function onBoardKeydown(e) {
     }
 }
 
+/** "your rook", "opponent's rook", "bot's rook" or "player 2 rook" (one text per piece: articles agree with it). */
 export function describePiece(piece) {
-    const name = PIECE_NAMES[piece.type];
-    if (state.currentRoomCode) return `${piece.player === state.myPlayerNumber ? 'your' : "opponent's"} ${name}`;
-    if (state.isBotMatch) return `${piece.player === 1 ? 'your' : "bot's"} ${name}`;
-    return `player ${piece.player} ${name}`;
+    if (state.currentRoomCode) return t(`a11y.${piece.player === state.myPlayerNumber ? 'own' : 'opp'}.${piece.type}`);
+    if (state.isBotMatch) return t(`a11y.${piece.player === 1 ? 'own' : 'bot'}.${piece.type}`);
+    return t(`a11y.player.${piece.type}`, { n: piece.player });
 }
 
 /** Each square says where it is, what it holds and whether it is selected or a legal target. */
@@ -145,9 +148,9 @@ export function refreshSquareLabels() {
         const piece = state.board[r] && state.board[r][c];
         // During the draft only the current player's pieces are shown.
         const visible = piece && (state.gameState === 'gameplay' || piece.player === state.currentPlayer);
-        let label = `${COLUMN_LETTERS[vc]}${rows - vr}: ${visible ? describePiece(piece) : 'empty'}`;
-        if (sq.classList.contains('selected')) label += ', selected';
-        if (sq.classList.contains('highlight')) label += ', can move here';
+        let label = `${COLUMN_LETTERS[vc]}${rows - vr}: ${visible ? describePiece(piece) : t('a11y.empty')}`;
+        if (sq.classList.contains('selected')) label += t('a11y.selected');
+        if (sq.classList.contains('highlight')) label += t('a11y.canMove');
         sq.setAttribute('aria-label', label);
     }
 }
@@ -175,9 +178,9 @@ export function capitalize(text) {
 }
 
 export function whoseTurn(player) {
-    if (state.currentRoomCode) return player === state.myPlayerNumber ? 'Your turn.' : "Opponent's turn.";
-    if (state.isBotMatch) return player === 1 ? 'Your turn.' : "Bot's turn.";
-    return `Player ${player}'s turn.`;
+    if (state.currentRoomCode) return player === state.myPlayerNumber ? t('a11y.yourTurn') : t('a11y.opponentTurn');
+    if (state.isBotMatch) return player === 1 ? t('a11y.yourTurn') : t('a11y.botTurn');
+    return t('a11y.playerTurn', { n: player });
 }
 
 export function describeLastMove(before) {
@@ -187,17 +190,17 @@ export function describeLastMove(before) {
     // En passant: the captured pawn was beside the start square, not on the target.
     const captured = before[m.toR][m.toC]
         || (piece.type === 'p' && m.fromC !== m.toC && before[m.fromR][m.toC]) || null;
-    let text = `${capitalize(describePiece(piece))} ${squareName(m.fromR, m.fromC)} to ${squareName(m.toR, m.toC)}`;
-    if (captured) text += `, takes ${describePiece(captured)}`;
-    if (m.toR === ChessdownEngine.endzoneRow(piece.player)) text += ', in the end zone';
+    let text = t('a11y.move', { piece: capitalize(describePiece(piece)), from: squareName(m.fromR, m.fromC), to: squareName(m.toR, m.toC) });
+    if (captured) text += t('a11y.takes', { piece: describePiece(captured) });
+    if (m.toR === ChessdownEngine.endzoneRow(piece.player)) text += t('a11y.endzone');
     return text + '.';
 }
 
 export function announceTurn() {
     let text;
-    if (!previousTurn) text = 'Match starts.';
+    if (!previousTurn) text = t('a11y.matchStarts');
     else if (state.lastMove && state.lastMove !== previousTurn.lastMove) text = describeLastMove(previousTurn.pieces);
-    else text = "Time's up, turn skipped.";
+    else text = t('a11y.skipped');
     announce(`${text} ${whoseTurn(state.currentPlayer)}`);
     previousTurn = { lastMove: state.lastMove, pieces: state.board.map(row => row.map(p => p && { type: p.type, player: p.player })) };
 }

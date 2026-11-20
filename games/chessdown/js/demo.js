@@ -3,6 +3,19 @@
 import { state, ui } from './state.js';
 import { draftHooks, handleDraftSquareClick, startDraftPhase, validateDraft } from './draft.js';
 import { loadBotProfileForDifficulty } from './bot.js';
+import { setRichText, t, translatePage } from '../../../assets/js/i18n.js';
+
+/** The bubble's text: **bold** parts, one line per line break. */
+function say(/** @type {HTMLElement} */ el, /** @type {string} */ key, error = false) {
+    const lines = t(key).split('\n').map((line) => {
+        const span = document.createElement('span');
+        setRichText(span, line);
+        return span;
+    });
+    const box = error ? Object.assign(document.createElement('span'), { className: 'demo-error' }) : el;
+    if (error) el.replaceChildren(box);
+    box.replaceChildren(...lines.flatMap((line, i) => (i ? [document.createElement('br'), line] : [line])));
+}
 
 export function startDemo() {
     state.currentRoomCode = null;
@@ -14,13 +27,15 @@ export function startDemo() {
     const overlay = document.createElement('div');
     overlay.id = 'demo-overlay-bubble';
     overlay.innerHTML = `
-        <h2>Interactive Demo</h2>
-        <p id="demo-text">Welcome to Chessdown! First, build your army. Click the highlighted <b>King</b> in the shop.</p>
-        <a href="/">Back to the games</a>
+        <h2 data-i18n="demo.title">Interactive Demo</h2>
+        <p id="demo-text"></p>
+        <a href="/" data-i18n="demo.back">Back to the games</a>
     `;
+    translatePage(overlay);
+    say(/** @type {HTMLElement} */ (overlay.querySelector('#demo-text')), 'demo.start');
     
     let demoStep = 0;
-    const pText = overlay.querySelector('#demo-text');
+    const pText = /** @type {HTMLElement} */ (overlay.querySelector('#demo-text'));
     
     // Bubble and highlight styles live in styles.css.
     
@@ -65,22 +80,22 @@ export function startDemo() {
                 if (demoStep === 0 && item.dataset.type === 'k') {
                     demoStep = 1;
                     document.querySelectorAll('.demo-highlight').forEach(el => el.classList.remove('demo-highlight'));
-                    pText.innerHTML = "Perfect! The King is your most vital piece. Click on any highlighted square on the <b>bottom row</b> to place it safely.";
+                    say(pText, 'demo.king');
                     highlightRow(5);
                 } else if (demoStep === 2 && item.dataset.type === 'r') {
                     demoStep = 3;
                     document.querySelectorAll('.demo-highlight').forEach(el => el.classList.remove('demo-highlight'));
-                    pText.innerHTML = "Good! Place the Rook on your last row to defend the King from side attacks.";
+                    say(pText, 'demo.rook');
                     highlightRow(5);
                 } else if (demoStep === 4 && item.dataset.type === 'r') {
                     demoStep = 5;
                     document.querySelectorAll('.demo-highlight').forEach(el => el.classList.remove('demo-highlight'));
-                    pText.innerHTML = "Place the second Rook on your last row as well.";
+                    say(pText, 'demo.rook2');
                     highlightRow(5);
                 } else if (demoStep === 6 && item.dataset.type === 'p') {
                     demoStep = 7;
                     document.querySelectorAll('.demo-highlight').forEach(el => el.classList.remove('demo-highlight'));
-                    pText.innerHTML = "Pawns are great for breaking 'vis-à-vis' (direct line of sight) attacks. Place it in front of your King or Rooks (row 4).";
+                    say(pText, 'demo.pawn');
                     highlightRow(4);
                 } else if (demoStep > 7) {
                     item.classList.remove('demo-highlight');
@@ -92,53 +107,53 @@ export function startDemo() {
         draftHooks.squareClick = function(viewR, viewC) {
             if (demoStep === 1) {
                 if (viewR !== 5) {
-                    pText.innerHTML = "<span class='demo-error'>Please place the King on the highlighted bottom row!</span>";
+                    say(pText, 'demo.errKing', true);
                     return;
                 }
                 originalHandleDraftSquareClick(viewR, viewC);
                 demoStep = 2;
                 highlightRow(null);
-                pText.innerHTML = "King placed! Now click the <b>Rook</b> in the shop to secure your backline.";
+                say(pText, 'demo.kingPlaced');
                 const rookItem = document.querySelector('.shop-item[data-type="r"]');
                 if(rookItem) rookItem.classList.add('demo-highlight');
             } else if (demoStep === 3) {
                 if (viewR !== 5) {
-                    pText.innerHTML = "<span class='demo-error'>Please place the Rook on the bottom row to defend the King!</span>";
+                    say(pText, 'demo.errRook', true);
                     return;
                 }
                 originalHandleDraftSquareClick(viewR, viewC);
                 demoStep = 4;
                 highlightRow(null);
-                pText.innerHTML = "First Rook placed. Buy a <b>second Rook</b>.";
+                say(pText, 'demo.rookPlaced');
                 const rookItem = document.querySelector('.shop-item[data-type="r"]');
                 if(rookItem) rookItem.classList.add('demo-highlight');
             } else if (demoStep === 5) {
                 if (viewR !== 5) {
-                    pText.innerHTML = "<span class='demo-error'>Place it on the bottom row!</span>";
+                    say(pText, 'demo.errRook2', true);
                     return;
                 }
                 originalHandleDraftSquareClick(viewR, viewC);
                 demoStep = 6;
                 highlightRow(null);
-                pText.innerHTML = "Backline secured! Now click the <b>Pawn</b> in the shop.";
+                say(pText, 'demo.backline');
                 const pawnItem = document.querySelector('.shop-item[data-type="p"]');
                 if(pawnItem) pawnItem.classList.add('demo-highlight');
             } else if (demoStep === 7) {
                 if (viewR !== 4) {
-                    pText.innerHTML = "<span class='demo-error'>Place the Pawn on the highlighted row in front of your pieces.</span>";
+                    say(pText, 'demo.errPawn', true);
                     return;
                 }
                 originalHandleDraftSquareClick(viewR, viewC);
                 demoStep = 8;
                 highlightRow(null);
-                pText.innerHTML = "Well done! Now you are on your own. <b>Spend ALL your remaining points</b> (try Queens or Knights). When points reach 0, click <b>Validate Draft</b>.";
+                say(pText, 'demo.onYourOwn');
                 
                 const checkPoints = setInterval(() => {
                     if (state.draftPoints[1] <= 1 && demoStep === 8) {
                         demoStep = 9;
                         const validateBtn = document.getElementById('btn-validate-draft');
                         if(validateBtn) validateBtn.classList.add('demo-highlight');
-                        pText.innerHTML = "Your army is ready! Click <b>Validate Draft</b> to start the battle. Be fast, you only have 10 seconds per turn!";
+                        say(pText, 'demo.ready');
                         clearInterval(checkPoints);
                     }
                 }, 500);
@@ -154,7 +169,7 @@ export function startDemo() {
         
         newBtn.addEventListener('pointerdown', () => {
             newBtn.classList.remove('demo-highlight');
-            pText.innerHTML = "<b>Battle started!</b><br><br>• Pieces move exactly like in classical chess.<br>• <b>Win condition 1:</b> Capture the enemy King.<br>• <b>Win condition 2:</b> Reach the enemy's last row (Touchdown).<br><br>Good luck!";
+            say(pText, 'demo.battle');
             validateDraft();
         });
 
