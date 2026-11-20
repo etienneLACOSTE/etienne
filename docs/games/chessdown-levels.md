@@ -4,25 +4,25 @@ Spécification décidée avec le propriétaire du projet (2026-11-20 et 2026-11-
 fait foi pour le moteur (`games/chessdown/engine.js`), le bot, le serveur et l'interface.
 Rien n'est encore codé : la feuille de route est dans `docs/games/chessdown.md`.
 
-## À confirmer
+## Décisions
 
-Points que la spécification fixe par interprétation, en attente d'un « ok » :
+Points tranchés le 2026-11-21 :
 
-1. **Fou, niveaux 1 et 2 :** portée de 3 puis 6 cases, comme la tour.
-2. **Fou, niveau 5 :** il peut aussi faire un pas d'une case en ligne droite, sans
-   manger. C'est l'inverse des niveaux 4 et 5 de la première proposition.
-3. **Dame, niveau 5, « ligne de vue » :** une ligne de dame dégagée (rangée, colonne ou
-   diagonale, sans pièce entre elles) entre la dame et son roi. Les « 4 cases » sont les
-   4 cases voisines du roi en ligne droite (haut, bas, gauche, droite).
-4. **Pion niveau 5 qui prend un pion,** y compris en passant : il ne se transforme pas
-   et reste un pion de niveau 5.
-5. **La transformation ne dure que le temps de la partie :** dans le club, le joueur
-   reste un pion. Il garde son nom et son expérience, et sa transformation est comptée
-   dans ses stats.
-6. **Le niveau ne redescend jamais,** même quand le malus de -3 fait baisser
-   l'expérience sous le palier atteint.
-7. **Bonus de fin de partie gagnée :** +3 pour chaque pièce encore sur le terrain
-   (proposé, pas encore confirmé).
+- **Fou, niveaux 1 et 2 :** portée plus courte que la tour, car une diagonale va plus
+  loin : **2 puis 4 cases** (proposé, à confirmer).
+- **Fou, niveaux 4 et 5 :** au niveau 4, il saute une pièce de son camp ; au niveau 5, il
+  fait aussi un pas d'une case en ligne droite, sans manger.
+- **Dame, niveau 5 :** la ligne de vue se calcule comme un rayon lumineux (jeux de
+  tactique sur grille), dans n'importe quel angle (voir « Ligne de vue »).
+- **Pion niveau 5 :** il ne se transforme qu'en une pièce autre qu'un pion. Prendre un
+  pion, y compris en passant, le laisse pion de niveau 5.
+- **La transformation ne dure que le temps de la partie :** dans le club, le joueur
+  reste un pion, avec son nom et son expérience ; ses transformations sont comptées dans
+  ses stats.
+- **Le niveau ne redescend jamais,** même quand le malus de -3 fait passer l'expérience
+  sous le palier atteint.
+- **+3 d'expérience** pour chaque pièce encore sur le terrain à la fin d'une partie
+  gagnée.
 
 ## Principes
 
@@ -58,9 +58,10 @@ occupée (la pièce saute par-dessus).
 - **En passant contre un pas de 3 (niveau 4 ou 5) :** un pion adverse de niveau 3 ou plus
   peut le prendre sur l'une ou l'autre des cases traversées, au coup qui suit
   immédiatement.
-- **La transformation (niveau 5) est obligatoire :** après une prise, le pion devient la
-  pièce prise, au niveau 3. Le joueur n'a rien à choisir. Prendre un pion ne le
-  transforme pas (voir « À confirmer », point 4). Prendre le roi termine la partie.
+- **La transformation (niveau 5) est obligatoire :** après la prise d'un cavalier, d'un
+  fou, d'une tour ou d'une dame, le pion devient la pièce prise, au niveau 3. Le joueur
+  n'a rien à choisir. Prendre un pion (même en passant) ne le transforme pas. Prendre le
+  roi termine la partie.
 
 ```
 Niveau 4, premier coup        Niveau 5 qui prend un cavalier
@@ -117,11 +118,11 @@ Niveau 4 / 5
 
 | Niveau | Déplacement |
 |---|---|
-| 1 | en diagonale, **3 cases au plus** (à confirmer) |
-| 2 | en diagonale, **6 cases au plus** (à confirmer) |
+| 1 | en diagonale, **2 cases au plus** (à confirmer) |
+| 2 | en diagonale, **4 cases au plus** (à confirmer) |
 | 3 | normal |
 | 4 | + **saut d'une pièce de son camp,** comme la tour niveau 4 : atterrit juste derrière, **sans manger** |
-| 5 | + **un pas d'une case en ligne droite,** **sans manger** : il peut ainsi changer de couleur de case (à confirmer) |
+| 5 | + **un pas d'une case en ligne droite,** **sans manger** : il peut ainsi changer de couleur de case |
 
 ## Dame
 
@@ -131,16 +132,37 @@ Niveau 4 / 5
 | 2 | comme une dame, **6 cases au plus** |
 | 3 | normale |
 | 4 | + **saut de cavalier** (comme un cavalier niveau 3), **sans manger** |
-| 5 | + **téléportation au contact de son roi :** sur l'une des 4 cases voisines du roi en ligne droite, au choix, si la dame a une ligne de vue sur son roi. **Sans manger.** |
+| 5 | + **téléportation au contact de son roi :** sur l'une des 4 cases voisines du roi (haut, bas, gauche, droite), au choix, si son roi est **dans son champ de vision** (voir « Ligne de vue »). **Sans manger.** |
 
 ```
-Niveau 5 : la dame (D) voit son roi (R) en diagonale, rien entre eux
+Niveau 5 : la dame (D) voit son roi (R), dans n'importe quel angle
  . A .
  A R A      ← les 4 arrivées possibles, si elles sont vides
- . A .
- . . . .
- . . . . D
+ . A . .
+ . . . . .
+ . . . . . . D
 ```
+
+### Ligne de vue
+
+Comme un rayon lumineux dans un jeu de tactique sur grille. On trace le segment qui
+va **du centre de la case de la dame au centre de la case du roi.** Le roi est visible
+si **aucune autre pièce** n'occupe une case dont le segment traverse l'intérieur.
+
+- Un segment qui passe **exactement par un coin** entre deux cases ne traverse aucune
+  des deux : il n'est pas bloqué par elles.
+- Les cases de la dame et du roi ne comptent pas.
+- Le calcul se fait en nombres entiers (coordonnées doublées), sans arrondi, pour que
+  le navigateur, le serveur et le bot donnent toujours la même réponse.
+
+```
+ . . * R      Le roi est 3 cases à droite et 2 vers le haut. Le segment D→R
+ . * * .      traverse les cases marquées * : une pièce sur l'une d'elles
+ D * . .      cache le roi. Les autres cases ne gênent pas.
+```
+
+En diagonale exacte, le segment ne passe que par des coins et par les cases de la
+diagonale elle-même : seules ces cases-là peuvent cacher le roi.
 
 ## Roi
 
@@ -168,9 +190,9 @@ Budget : 39 points, comme aujourd'hui.
   - +1 par déplacement (téléportation et sauts compris) ;
   - +5 par prise ;
   - +10 par touchdown marqué ;
-  - +3 s'il est encore sur le terrain à la fin d'une partie gagnée (à confirmer).
+  - +3 s'il est encore sur le terrain à la fin d'une partie gagnée.
 - **Ce qui coûte :** -3 quand la pièce est prise. L'expérience ne descend jamais sous 0,
-  et le niveau ne redescend jamais (à confirmer).
+  et le niveau ne redescend jamais.
 - **Paliers :**
 
 | Niveau | Expérience totale |
