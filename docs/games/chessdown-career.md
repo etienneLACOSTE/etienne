@@ -15,7 +15,7 @@ servent à faire progresser ses joueurs et à en recruter.
   bars, écoles, parcs, city-stades, mairie, fermes, ports…
   - Les quêtes principales sont marquées d'un **!** doré (l'ambre du Stade).
   - Les quêtes annexes sont marquées d'un **!** bleu. C'est une nouvelle couleur, `--quest-blue`
-    (#3FA9F5), à ajouter à DESIGN.md une fois validée.
+    (#3FA9F5), validée et ajoutée à DESIGN.md.
   - Les lieux verrouillés se débloquent avec la trame principale.
   - L'entraîneur suit les routes. Les cartes sont sinueuses et vivantes : rivières, voitures,
     trains, drapeaux.
@@ -43,6 +43,7 @@ servent à faire progresser ses joueurs et à en recruter.
 - **Les clubs adverses sont créés une fois par carrière.** Ce sont des rivaux qu'on retrouve
   d'une saison à l'autre, avec un nom, un blason et un style de jeu. Le style vient des
   archétypes du bot : `ecuries`, `citadelle`, `chapiteau`, `chair`, `sorcieres`, `normal`.
+- **Un seul écran, sans défilement** : la carte et la fiche du lieu ; le journal (trame principale, quêtes annexes) est derrière un onglet en haut.
 - **Des entraîneurs adverses faciles à reconnaître.** Chacun a :
   - un portrait en pixel art ;
   - un surnom ;

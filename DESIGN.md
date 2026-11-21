@@ -88,6 +88,7 @@ body), line-height 1.5. Uppercase only in Stade display type.
 | `--amber` | #FFB81C | scoreboard clock, primary action **on black only**, focus ring |
 | `--muted` | #545454 | secondary text on white |
 | `--muted-on-dark` | #BDBDBD | secondary text on black |
+| `--quest-blue` | #3FA9F5 | career: side-quest markers (main quests use amber), owner's choice 2026-11-21 |
 
 Chessdown jersey colours (red, blue, green…) are game data chosen by players, not palette
 colours: they only colour pieces, end zones and the timer bar, always with an ink outline.
@@ -101,6 +102,7 @@ colours: they only colour pieces, end zones and the timer bar, always with an in
 | paper / lilac | navy | 16.1 / 8.8 |
 | white | turf / turf-light | 6.3 / 5.4 |
 | amber / muted-on-dark | black | 12.1 / 11.2 |
+| black | quest-blue | 8.2 (quest-blue also 8.2 as a graphic on black) |
 | black | amber | 12.1 |
 | muted | white | 7.6 |
 | black | turf | 3.3 (large display type and graphics only) |
