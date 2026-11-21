@@ -42,6 +42,14 @@ const CHESSDOWN = {
     await page.locator('.career-marker.main').click();
     await expect(page.locator('#career-card h3')).toHaveText("Schools Tournament · Winners' bracket · round 1");
   },
+  'career tour': async (page) => { // Gérard's tour opens by itself the first time (js/career-tour.js)
+    await page.evaluate(async () => {
+      localStorage.removeItem('pawnet.chessdown.tourSeen');
+      const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    });
+    await expect(page.locator('#career-card .career-kind')).toHaveText('Gérard’s tour · 1/11');
+  },
   'career journal': async (page) => {
     await page.evaluate(async () => {
       const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');

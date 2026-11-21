@@ -42,6 +42,8 @@ const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('pa
 test.describe('Career', () => {
   test.beforeEach(async ({ context }) => {
     await blockExternalRequests(context);
+    // Gérard's tour opens by itself on a first visit: seen already, except in its own test
+    await context.addInitScript(() => { if (!location.search.includes('tour')) localStorage.setItem('pawnet.chessdown.tourSeen', '1'); });
   });
 
   test('opens at the club, in town: Gérard, the scale, the map and its places', async ({ page }) => {
@@ -137,6 +139,41 @@ test.describe('Career', () => {
       await page.locator('#career-back').click(); // Back to the club, then the menu
       await page.locator('#club-menu').click();
     }
+  });
+
+  test('Gérard\'s tour: by itself the first time, step by step with what he speaks of outlined; again from its button', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/chessdown/?tour');
+    await page.evaluate(async (club) => {
+      localStorage.removeItem('pawnet.chessdown.tourSeen');
+      localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club));
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    }, CLUB);
+    await expect(card(page).locator('.career-kind')).toHaveText('Gérard’s tour · 1/11');
+    await expect(card(page).locator('h3')).toHaveText('Welcome, coach');
+    await expect(page.locator('.career-marker[data-place="home"]')).toHaveClass(/tour-focus/);
+    // The HQ has the club's crest on its front
+    await expect(page.locator('#career-canvas')).toHaveAttribute('data-crest', 'on');
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()).violations.map((v) => v.id)).toEqual([]);
+    const next = card(page).getByRole('button', { name: 'Next' });
+    for (let i = 0; i < 6; i++) await next.click();
+    await expect(card(page).locator('h3')).toHaveText('The tournament');
+    await expect(page.locator('.career-marker.main')).toHaveClass(/tour-focus/);
+    await expect(page.locator('.career-marker[data-place="home"]')).not.toHaveClass(/tour-focus/);
+    await expect(card(page).getByRole('button', { name: 'Next' })).toBeFocused();
+    await card(page).getByRole('button', { name: 'Back' }).click();
+    await expect(card(page).locator('h3')).toHaveText('The map and the date');
+    await card(page).getByRole('button', { name: 'Skip the tour' }).click();
+    await expect(page.locator('.tour-focus')).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('pawnet.chessdown.tourSeen'))).toBe('1');
+    // Again from its button, to its end
+    await page.getByRole('button', { name: 'Tour with Gérard' }).click();
+    await expect(card(page).locator('.career-kind')).toHaveText('Gérard’s tour · 1/11');
+    for (let i = 0; i < 10; i++) await card(page).getByRole('button', { name: 'Next' }).click();
+    await card(page).getByRole('button', { name: 'Let’s play!' }).click();
+    await expect(card(page).locator('h3')).toHaveText('Racing Rook'); // Back to the HQ's card
+    expect(errors).toEqual([]);
   });
 
   test('in French', async ({ page }) => {

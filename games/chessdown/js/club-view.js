@@ -56,7 +56,7 @@ export function rosterTable(club, { rename = true } = {}) {
  * @param {any} club
  * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void, onCareer: (club: any, view: string) => void }} handlers
  *   onPlay: a friendly match with the club against the bot; onCareer: the career, on its map,
- *   journal or pieces' guide ('map', 'journal', 'guide')
+ *   journal or pieces' guide ('map', 'journal', 'guide'), or with Gérard's tour ('tour')
  */
 /** "Coach · the tournament of the career's tier · season" (the town's, season 1, before the career starts). */
 export function clubMeta(club) {
@@ -78,7 +78,8 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
           </div>
           <div class="club-row club-career-row"><button type="button" class="btn-primary btn-big" data-career="map">${esc(t('career.tabMap'))}</button>
             <button type="button" class="btn-secondary" data-career="journal">${esc(t('career.tabJournal'))}</button>
-            <button type="button" class="btn-secondary" data-career="guide">${esc(t('guide.tab'))}</button></div>
+            <button type="button" class="btn-secondary" data-career="guide">${esc(t('guide.tab'))}</button>
+            <button type="button" class="btn-ghost" data-career="tour">${esc(t('tour.button'))}</button></div>
           <div class="club-row"><button type="button" class="btn-secondary" id="club-play">${esc(t('allStar.play'))}</button></div>
           <section class="club-section" aria-labelledby="club-register-title">
             <h3 id="club-register-title">${esc(t('club.registerTitle'))}</h3>

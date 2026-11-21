@@ -41,6 +41,17 @@ international compris, un tournoi de 32 clubs à double élimination ; les coupe
 - Les carrières enregistrées avant (version 1, ligues) sont refusées : la page en recommence
   une (le club est gardé).
 
+## Visite de Gérard et blason du QG (2026-11-21)
+
+- `js/career-tour.js` : 11 étapes dans la fiche de droite (principe, gagner une partie, draft,
+  niveaux, expérience, carte et date, tournoi, quêtes annexes, boss, transports, Journal et
+  Pièces), l'élément concerné entouré (`tour-focus`). Elle s'ouvre seule à la première
+  ouverture de la carrière (`pawnet.chessdown.tourSeen` dans le navigateur), et à la demande :
+  bouton « Visite avec Gérard » de la carrière et de la page du club. Choisir un lieu sur la
+  carte l'interrompt.
+- Le QG porte le blason du club (`crestSVG`, réduit en pixels) : sur la façade en ville, sur un
+  panneau à côté du village aux autres échelons (`CREST_SPOT`, `js/career-map.js`).
+
 ## Guide des pièces (2026-11-21)
 
 - Onglet « Pièces » de la carrière (`js/piece-guide.js`) : pour chaque pièce, ses 5 niveaux

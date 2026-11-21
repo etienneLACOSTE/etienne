@@ -14,6 +14,7 @@ import { esc } from './club-art.js';
 import { loadCareer, newCareer, saveCareer } from './career-store.js';
 import { language, t } from '../../../assets/js/i18n.js';
 import { renderGuide } from './piece-guide.js';
+import { startTour, tourSeen } from './career-tour.js';
 
 const Career = globalThis.ChessdownCareer;
 const Quests = globalThis.ChessdownQuests;
@@ -38,6 +39,7 @@ const ui = {
     card: $('career-card'),
     back: $('career-back'),
     date: $('career-date'),
+    tourButton: $('career-tour-btn'),
     out: $('career-out'),
 };
 
@@ -128,7 +130,24 @@ function renderMarkers() {
     }
 }
 
+/** Gérard's tour (career-tour.js), when it runs. @type {{ stop: () => void } | null} */
+let tour = null;
+
+/** Gérard's tour of the career, on the map; back to the card of where the coach stands at the end. */
+function runTour() {
+    tour?.stop();
+    showView('map');
+    tour = startTour({
+        card: ui.card,
+        say: (text) => gerard.say(text),
+        setCard,
+        done: () => { tour = null; showCard(map.at()); ui.tourButton.focus(); },
+    });
+}
+
 function goTo(place) {
+    tour?.stop(); // A place chosen: the tour gives way
+    tour = null;
     ui.map.querySelectorAll('.career-marker').forEach((m) => m.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (m).dataset.place === place)));
     showTravel(place);
     const pixels = map.go(place); // showCard on arrival
@@ -429,6 +448,7 @@ TABS.forEach(([tab, view], i) => {
     });
 });
 ui.back.addEventListener('click', () => toClub());
+ui.tourButton.addEventListener('click', runTour);
 
 // Portraits blink while the screen shows
 let blinking = false;
@@ -445,7 +465,8 @@ function blinkLoop(now) {
  *   onClub: back to the club's page; onPlay: play a tournament match or a quest; word: what
  *   Gérard says first (his comment on the match just played; his welcome to the map
  *   otherwise); knockedOut: the match just played knocked the club out (the black screen);
- *   view: the tab shown first ('map', 'journal' or 'guide'; the club page's buttons)
+ *   view: the tab shown first ('map', 'journal' or 'guide'; the club page's buttons), or
+ *   'tour': Gérard's tour (it also opens by itself the first time)
  */
 export function openCareer(theClub, { onClub, onPlay, word = '', knockedOut = false, view = 'map' }) {
     club = theClub;
@@ -461,6 +482,7 @@ export function openCareer(theClub, { onClub, onPlay, word = '', knockedOut = fa
     blinking = true;
     requestAnimationFrame(blinkLoop);
     if (knockedOut && Career.knockedOut(career)) showKnockedOut();
+    else if (view === 'tour' || !tourSeen()) runTour();
 }
 
 /** Knocked out: the screen goes black, Gérard says it is over until next season. */
@@ -488,6 +510,8 @@ function showKnockedOut() {
 
 /** The career's screen is left: stop the animations. */
 export function closeCareer() {
+    tour?.stop();
+    tour = null;
     map.stop();
     gerard.stop();
     blinking = false;

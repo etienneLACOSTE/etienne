@@ -5,6 +5,7 @@
 // roads to a place; the page learns when they arrive. Water glints, a few cars drive, trains
 // pass and flags wave; with reduced motion nothing moves and the coach is there at once.
 // The places are buttons over the canvas (career-view.js labels them).
+import { crestSVG } from './club-art.js';
 
 const W = 320;
 const H = 192;
@@ -422,11 +423,15 @@ function drawMap(g, tier, colors) {
             R(x - 3, y + 1, 6, 6, '#3b2a1c'); text(x - 5, y - 12, 'GYM', '#ffffff');
         },
         hq(x, y) {
-            shadowUnder(x - 11, y + 7, 22);
-            box(x - 11, y - 5, 22, 12, P.wall); R(x - 12, y - 8, 24, 4, colors.primary); R(x - 12, y - 5, 24, 1, colors.secondary);
-            R(x - 7, y - 2, 3, 3, P.glassLit); R(x + 4, y - 2, 3, 3, P.glass); R(x - 2, y + 1, 4, 5, P.door);
-            R(x + 13, y - 2, 8, 9, P.pitch); R(x + 13, y + 2, 8, 1, P.line);
-            flag(x - 13, y - 17, colors.primary, colors.secondary);
+            // A wide facade: the club's crest on its left (CREST_SPOT, drawn by show()), clear of
+            // the coach standing at the door
+            shadowUnder(x - 16, y + 7, 32);
+            box(x - 16, y - 9, 32, 16, P.wall); R(x - 17, y - 12, 34, 4, colors.primary); R(x - 17, y - 9, 34, 1, colors.secondary);
+            R(x - 15, y - 8, 12, 13, colors.secondary);
+            R(x + 6, y - 5, 3, 3, P.glassLit); R(x + 11, y - 5, 3, 3, P.glass); R(x + 6, y + 1, 3, 3, P.glass); R(x + 11, y + 1, 3, 3, P.glassLit);
+            R(x - 2, y + 2, 4, 5, P.door);
+            R(x + 17, y - 2, 8, 9, P.pitch); R(x + 17, y + 2, 8, 1, P.line);
+            flag(x - 19, y - 17, colors.primary, colors.secondary);
         },
         busstation(x, y) {
             shadowUnder(x - 16, y + 8, 30);
@@ -458,6 +463,9 @@ function drawMap(g, tier, colors) {
             R(x - 26, y - 2, 10, 2, '#f4f4f4'); R(x - 22, y - 6, 2, 10, '#f4f4f4'); R(x - 26, y - 4, 2, 2, colors.primary);
         },
         village(x, y) {
+            // The club's sign beside the village (its crest: CREST_SPOT, drawn by show())
+            R(x - 33, y - 8, 14, 15, P.ink); R(x - 32, y - 7, 12, 13, colors.secondary);
+            R(x - 30, y + 7, 1, 4, P.ink); R(x - 23, y + 7, 1, 4, P.ink);
             house(x - 18, y - 4); house(x - 5, y - 8, 'slate'); house(x + 6, y - 2);
             R(x - 9, y - 22, 4, 14, '#d8d0c0'); R(x - 10, y - 25, 6, 3, P.slateDark); R(x - 8, y - 28, 2, 3, P.slateDark); R(x - 8, y - 17, 2, 2, P.ink);
             flag(x + 16, y - 14, colors.primary, colors.secondary);
@@ -715,8 +723,15 @@ function drawMap(g, tier, colors) {
     const waterPixels = [];
     for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) if (water[idx(x, y)] && rnd() < 0.18) waterPixels.push([x, y]);
     const rails = (map.rails || []).map((rl) => ({ s: curve(rl.p), kind: rl.k }));
-    return { roads, doors, waterPixels, flags, rails, rnd };
+    const [cx, cy, icon] = map.places.home;
+    const spot = CREST_SPOT[icon] || CREST_SPOT.village;
+    return { roads, doors, waterPixels, flags, rails, rnd, crest: { x: cx + spot[0], y: cy + spot[1] } };
 }
+
+/** Where the club's crest hangs, from the HQ's spot on the map (its facade; in a village, a sign above it). */
+const CREST_SPOT = { hq: [-14, -7], village: [-31, -6] };
+const CREST_W = 10;
+const CREST_H = 11;
 
 /** The road network: samples every 3 pixels, joined at junctions, each place's door linked to its nearest node. */
 function buildGraph(roads, doors) {
@@ -874,6 +889,35 @@ export function createCareerMap({ canvas, onArrive }) {
         return best;
     }
 
+    /**
+     * The club's crest (club-art.js) on the HQ, small and in pixels: drawn into the map's
+     * picture once its image is ready (the tier may have changed meanwhile: then nothing).
+     */
+    function paintCrest(club, forTier) {
+        if (!club || !club.shape || typeof Image === 'undefined') return;
+        const svg = crestSVG(club).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
+        const img = new Image();
+        img.onload = () => {
+            if (tier !== forTier || !image || !art) return;
+            const small = document.createElement('canvas');
+            small.width = CREST_W;
+            small.height = CREST_H;
+            const s = /** @type {CanvasRenderingContext2D} */ (small.getContext('2d'));
+            s.drawImage(img, 0, 0, CREST_W, CREST_H);
+            const base = document.createElement('canvas');
+            base.width = W;
+            base.height = H;
+            const b = /** @type {CanvasRenderingContext2D} */ (base.getContext('2d'));
+            b.putImageData(image, 0, 0);
+            b.drawImage(small, art.crest.x, art.crest.y);
+            image = b.getImageData(0, 0, W, H);
+            g.putImageData(image, 0, 0);
+            drawMover(0);
+            canvas.dataset.crest = 'on'; // For the tests: the crest is on the facade
+        };
+        img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
     return {
         /**
          * Show `tier`'s map, the coach at `place`, in the club's colours.
@@ -881,6 +925,7 @@ export function createCareerMap({ canvas, onArrive }) {
          */
         show(newTier, place, clubColors) {
             tier = newTier;
+            delete canvas.dataset.crest;
             colors = clubColors;
             g.imageSmoothingEnabled = false;
             art = drawMap(g, tier, colors);
@@ -898,6 +943,7 @@ export function createCareerMap({ canvas, onArrive }) {
             trains = art.rails.map((rl) => ({ s: rl.s, k: 0, kind: rl.kind }));
             g.putImageData(image, 0, 0);
             drawMover(0);
+            paintCrest(clubColors, tier);
         },
         /** Where a place stands, in map pixels (320 x 192), for its button. */
         placeAt: (place) => {

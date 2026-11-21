@@ -1239,3 +1239,10 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .piece-info h3 { margin: 0; font: 900 18px var(--display); text-transform: uppercase; color: var(--amber); }
 .piece-info ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
 .piece-info button { justify-self: end; padding: 4px 12px; font-size: 13px; }
+
+/* --- Gérard's tour (js/career-tour.js): what he speaks of, outlined --- */
+.tour-focus { outline: 3px solid var(--amber) !important; outline-offset: 3px; border-radius: 4px; animation: tour-pulse 1.2s ease-in-out infinite; }
+@keyframes tour-pulse { 50% { outline-color: var(--white); } }
+@media (prefers-reduced-motion: reduce) { .tour-focus { animation: none; } }
+.career-tour-text { margin: 0; line-height: 1.45; }
+.career-tour-row { flex-wrap: wrap; }
