@@ -67,13 +67,13 @@ test.describe('All Star club', () => {
     await page.getByRole('button', { name: 'Stitch the crest' }).click();
 
     // 6. Registered: the king and six rookies at level 1.
-    await expect(said).toContainText('Olympique Cavalier is registered in the School League.');
+    await expect(said).toContainText('Olympique Cavalier is registered in the Schools Tournament.');
     await expect(page.locator('.club-roster tbody tr')).toHaveCount(7);
     await page.getByRole('button', { name: 'Go to my club' }).click();
 
     // The club's page, kept after a reload.
     await expect(page.getByRole('heading', { name: 'Olympique Cavalier' })).toBeFocused();
-    await expect(page.locator('#club-screen').getByText('Coach: Etienne · School League · Season 1')).toBeVisible();
+    await expect(page.locator('#club-screen').getByText('Coach: Etienne · Schools Tournament · Season 1')).toBeVisible();
     expect(await axe(page)).toEqual([]);
     await page.reload();
     await page.getByRole('button', { name: 'All Star: my club' }).click();

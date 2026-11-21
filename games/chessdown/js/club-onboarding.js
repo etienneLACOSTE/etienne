@@ -7,7 +7,7 @@ import { state } from './state.js';
 import { createCommissioner } from './commissioner.js';
 import { EMBLEM_FAMILIES, PRESETS, colorName, crestSVG, distinctColors, emblemIcon, esc, jerseySVG } from './club-art.js';
 import { saveClub } from './club-store.js';
-import { rosterTable } from './club-view.js';
+import { clubMeta, rosterTable } from './club-view.js';
 import { t } from '../../../assets/js/i18n.js';
 
 const Club = globalThis.ChessdownClub;
@@ -249,7 +249,7 @@ const STEPS = [
         gerard.say(t('say.squad', { club: club.name }));
         controls(`<h2>${esc(t('onboarding.title.squad'))}</h2>
             <div class="club-card">${crestSVG(club)}<div><div class="club-card-name">${esc(club.name)}</div>
-              <div class="club-meta">${esc(t('club.meta', { coach: club.coach, season: club.season }))}</div></div></div>
+              <div class="club-meta">${esc(clubMeta(club))}</div></div></div>
             ${kept ? '' : `<p class="club-error" role="alert">${esc(t('club.notKept'))}</p>`}
             ${rosterTable(club, { rename: false })}
             <div class="club-row"><button type="button" class="btn-primary" id="club-go">${esc(t('onboarding.toMyClub'))}</button></div>`, () => {

@@ -4,7 +4,7 @@
 // campaign, and starting over with a new club.
 import { crestSVG, esc, jerseySVG } from './club-art.js';
 import { deleteClub, saveClub } from './club-store.js';
-import { deleteCareer } from './career-store.js';
+import { deleteCareer, loadCareer } from './career-store.js';
 import { ask } from '../../../assets/js/dialog.js';
 import { t } from '../../../assets/js/i18n.js';
 
@@ -58,6 +58,13 @@ export function rosterTable(club, { rename = true } = {}) {
  *   onPlay: a friendly match with the club against the bot; onCareer: the career, on its map,
  *   journal or pieces' guide ('map', 'journal', 'guide')
  */
+/** "Coach · the tournament of the career's tier · season" (the town's, season 1, before the career starts). */
+export function clubMeta(club) {
+    const career = loadCareer();
+    const tier = career ? career.tier : 'school';
+    return t('club.meta', { coach: club.coach, tournament: t(`career.tournament.${tier}`), season: career ? career.season : 1 });
+}
+
 export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
     const render = (focusId = '') => {
         box.innerHTML = `
@@ -65,7 +72,7 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
             ${crestSVG(club)}
             <div class="club-card-text">
               <h2 class="club-card-name" tabindex="-1">${esc(club.name)}</h2>
-              <div class="club-meta">${esc(t('club.meta', { coach: club.coach, season: club.season }))}</div>
+              <div class="club-meta">${esc(clubMeta(club))}</div>
             </div>
             <figure class="club-preview club-card-jersey">${jerseySVG(club)}</figure>
           </div>
