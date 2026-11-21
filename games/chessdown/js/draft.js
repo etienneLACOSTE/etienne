@@ -22,6 +22,7 @@ function beginMatch() {
     startGameplay(starter || (Math.random() < 0.5 ? 1 : 2), { coin: !starter });
 }
 import { t } from '../../../assets/js/i18n.js';
+import { updateResignButton } from './resign.js';
 
 // --- Draft Logic ---
 
@@ -50,6 +51,7 @@ export function startDraftPhase(player) {
     state.gameState = `draft${player}`;
     // A new army starts from the player's budget (a career underdog match has fewer points).
     if (!state.board.some((row) => row.some((p) => p && p.player === player))) state.draftPoints[player] = budgetOf(player);
+    updateResignButton(); // Resign shows during the draft too (not online)
     showScore(); // A best of 3 shows its score from the draft on
     
     if (!state.currentRoomCode) {

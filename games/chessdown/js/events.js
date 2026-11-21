@@ -351,6 +351,11 @@ export function setupEventListeners() {
         }
         // Against the bot, player 1 resigns; on the same screen, the player to move.
         const loser = state.isBotMatch ? 1 : state.currentPlayer;
+        if (state.gameState.startsWith('draft')) { // During the draft: the draft goes away
+            ui.draftHeader.classList.add('hidden');
+            ui.draftFooter.classList.add('hidden');
+            ui.gameContainer.classList.remove('draft-mode', 'rotate-180');
+        }
         const winner = loser === 1 ? 2 : 1;
         const title = state.isBotMatch ? t('end.defeat') : t('end.victory');
         const reason = state.isBotMatch ? t('end.youResigned') : t('end.playerResigned', { n: loser });

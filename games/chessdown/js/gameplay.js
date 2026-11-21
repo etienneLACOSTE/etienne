@@ -15,6 +15,10 @@ import { t } from '../../../assets/js/i18n.js';
 import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
 import { afterMove, beforeMove, noteGameStart, noteTouchdown, settleGame } from './all-star.js';
 import { hideLadderResult } from './ladder-view.js';
+import { closePieceInfo, markBoardSeen, showPieceInfo } from './piece-guide.js';
+
+/** Levels are in play: All Star (a club, the career, online), or any piece with a level. */
+const levelsInPlay = () => Boolean(state.allStar) || state.board.some((row) => row.some((p) => p && p.level !== undefined));
 import { esc } from './club-art.js';
 import { careerAfterGame, careerAfterMove, careerGameRules, careerNoTouchdowns, careerPuzzle, noteCareerTouchdown, puzzleTurn } from './career-match.js';
 
@@ -47,6 +51,7 @@ export function startGameplay(winner, { coin = true, text = '' } = {}) {
     showMatchup();
     showScore();
     noteGameStart(); // All Star: who of the club plays this game
+    if (levelsInPlay()) markBoardSeen(state.currentRoomCode ? (state.myPlayerNumber === 1 ? 2 : 1) : 2); // The levels met (piece-guide.js)
     ui.chessboard.classList.add('levels-shown'); // Levels in view until the first move
     if (coin) startCoinFlip(winner, finalizeGameplayStart);
     else showStarter(winner, text || t('series.loserStarts', { name: playerName(winner) }), finalizeGameplayStart);
@@ -223,6 +228,18 @@ export function skipTurn() {
 
 export function handleGameplaySquareClick(viewR, viewC) {
     if (state.isAnimating) return;
+    // A piece of the other side, with levels in play: its box (what it can do), at any time
+    {
+        const { r, c } = getBoardCoords(viewR, viewC);
+        const piece = state.board[r][c];
+        const me = state.currentRoomCode ? state.myPlayerNumber : state.isBotMatch ? 1 : state.currentPlayer;
+        const target = state.selectedBoardPiece && getSquareElement(viewR, viewC).classList.contains('highlight');
+        if (piece && piece.player !== me && !target && levelsInPlay()) {
+            state.selectedBoardPiece = null;
+            clearHighlights();
+            return showPieceInfo(piece, /** @type {HTMLElement} */ (getSquareElement(viewR, viewC)));
+        }
+    }
     if (state.currentRoomCode && state.currentPlayer !== state.myPlayerNumber) return; // Ignore if not our turn in online mode
     if (state.isBotMatch && state.currentPlayer === 2) return; // Block human clicks when bot is playing
 
@@ -337,6 +354,7 @@ export function movePiece(fromR, fromC, toR, toC) {
  */
 export function endGame(title, reason, winner, how, { match = false } = {}) {
     state.gameState = 'over';
+    closePieceInfo({ focus: false });
     // The series counts the game (online, the server sent it already: 'seriesUpdate').
     if (!state.currentRoomCode) recordLocalGame(winner);
     // The whole match resigned: the series is over, won by the other side.
@@ -420,6 +438,7 @@ export function showSeriesEnd() {
 
 export function resetGame() {
     clearInterval(state.timerInterval);
+    closePieceInfo({ focus: false });
     hideScore(); // Shown again when the next game of a series starts
     if (state.gameState === 'gameplay') state.gameState = 'over'; // No draw offer from the menu
     resetDrawOffers();

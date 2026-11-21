@@ -97,3 +97,18 @@ test.describe('Resign', () => {
     await ctx2.close();
   });
 });
+
+test('during the draft against the bot: resign the match before it starts', async ({ page }) => {
+  await blockExternalRequests(page);
+  await page.goto('/chessdown/');
+  await page.locator('#btn-start-bot').dispatchEvent('pointerdown');
+  await page.locator('#btn-confirm-campaign').dispatchEvent('pointerdown');
+  const resign = page.getByRole('button', { name: 'Resign' });
+  await expect(resign).toBeVisible(); // In the draft already
+  await resign.click();
+  await page.getByRole('alertdialog', { name: 'Resign the match before it starts?' }).getByRole('button', { name: 'Resign' }).click();
+  await expect(page.locator('#victory-screen')).toBeVisible();
+  await expect(page.locator('#victory-reason')).toHaveText('You resigned.');
+  await expect(page.locator('#draft-footer')).toBeHidden();
+  await expect.poll(() => page.evaluate(() => [chessdown.state.series.over, chessdown.state.series.winner])).toEqual([true, 2]);
+});

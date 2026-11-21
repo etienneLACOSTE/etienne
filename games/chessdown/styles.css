@@ -1047,7 +1047,7 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-lock { font: 700 10px var(--text); border: 1px solid #6b6b6b; border-radius: 3px; padding: 0 4px; }
 
 .career-stage { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 12px; min-height: 0; }
-.career-stage[hidden], .career-journal[hidden] { display: none; }
+.career-stage[hidden], .career-journal[hidden], .career-guide[hidden] { display: none; }
 /* The map keeps its 5:3 shape and fits the space left, whichever side is shorter. */
 .career-map-fit { container-type: size; min-height: 0; min-width: 0; display: grid; place-items: start center; }
 .career-map {
@@ -1218,3 +1218,24 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-table tr.you td, .career-table tr.you th { color: var(--amber); }
 @keyframes career-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .career-out { animation: none; } }
+
+/* --- The pieces' guide (js/piece-guide.js): the career's tab, and the box of a piece in a match --- */
+.career-guide { min-height: 0; overflow-y: auto; display: grid; gap: 10px; align-content: start; }
+.guide-intro { margin: 0; }
+.guide-pieces { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.guide-piece { background: #0d0f0e; border: 2px solid #2a2f2c; border-radius: 6px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; text-align: left; }
+.guide-piece h3 { margin: 0; display: flex; gap: 8px; align-items: center; font: 900 19px var(--display); text-transform: uppercase; color: var(--white); }
+.guide-glyph { font: 400 22px var(--pieces); color: var(--amber); }
+.guide-piece ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.guide-piece li { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 8px; align-items: baseline; font-size: 13px; }
+.guide-piece li.locked .guide-text { color: var(--muted-on-dark); font-style: italic; }
+.guide-stars { color: var(--amber); letter-spacing: 0.05em; white-space: nowrap; }
+.guide-cost { color: var(--muted-on-dark); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.guide-piece p { margin: 0; font-size: 13px; }
+.piece-info {
+    position: fixed; z-index: 60; width: min(300px, calc(100vw - 16px)); background: var(--black); color: var(--white);
+    border: 2px solid var(--amber); border-radius: 6px; padding: 10px 12px; display: grid; gap: 6px; text-align: left; box-shadow: 3px 3px 0 var(--black);
+}
+.piece-info h3 { margin: 0; font: 900 18px var(--display); text-transform: uppercase; color: var(--amber); }
+.piece-info ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+.piece-info button { justify-self: end; padding: 4px 12px; font-size: 13px; }

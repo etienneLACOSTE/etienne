@@ -41,6 +41,19 @@ international compris, un tournoi de 32 clubs à double élimination ; les coupe
 - Les carrières enregistrées avant (version 1, ligues) sont refusées : la page en recommence
   une (le club est gardé).
 
+## Guide des pièces (2026-11-21)
+
+- Onglet « Pièces » de la carrière (`js/piece-guide.js`) : pour chaque pièce, ses 5 niveaux
+  (étoiles, coût, capacité). Un niveau ne s'affiche qu'une fois débloqué : un joueur du club
+  de ce type l'a atteint (les niveaux en dessous aussi), ou il a été croisé en match (gardé dans
+  le navigateur, `pawnet.chessdown.seen`) ; le niveau 3 (la pièce classique) est toujours
+  visible. Les autres : « Pas encore découvert ».
+- En match avec des niveaux (carrière, All Star, en ligne), un clic ou Entrée sur une pièce
+  adverse ouvre un encadré : la pièce, son niveau et ce qu'elle sait faire (les capacités du
+  niveau 3 au sien) ; Échap ou « Fermer ». Les pièces adverses d'une partie comptent comme
+  croisées dès le début.
+- Le bouton « Abandonner » s'affiche aussi pendant la draft (hors ligne) : il abandonne le match.
+
 ## Variantes de quêtes (2026-11-21)
 
 Décidées par le propriétaire : toutes gardées. 3 quêtes de plus par échelon (11 par échelon),

@@ -13,6 +13,7 @@ import { createCommissioner } from './commissioner.js';
 import { esc } from './club-art.js';
 import { loadCareer, newCareer, saveCareer } from './career-store.js';
 import { language, t } from '../../../assets/js/i18n.js';
+import { renderGuide } from './piece-guide.js';
 
 const Career = globalThis.ChessdownCareer;
 const Quests = globalThis.ChessdownQuests;
@@ -25,6 +26,8 @@ const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const ui = {
     tabMap: $('career-tab-map'),
     tabJournal: $('career-tab-journal'),
+    tabGuide: $('career-tab-guide'),
+    guide: $('career-guide'),
     stage: $('career-stage'),
     journal: $('career-journal'),
     board: $('career-board'),
@@ -389,14 +392,17 @@ function renderJournal() {
     }));
 }
 
+/** The map, the journal or the pieces' guide (piece-guide.js), one at a time. */
 function showView(view) {
-    const onMap = view === 'map';
-    ui.stage.hidden = !onMap;
-    ui.journal.hidden = onMap;
-    ui.tabMap.setAttribute('aria-selected', String(onMap));
-    ui.tabJournal.setAttribute('aria-selected', String(!onMap));
-    ui.tabMap.tabIndex = onMap ? 0 : -1;
-    ui.tabJournal.tabIndex = onMap ? -1 : 0;
+    if (view === 'guide') renderGuide(ui.guide, club);
+    for (const [tab, name] of TABS) {
+        const on = name === view;
+        tab.setAttribute('aria-selected', String(on));
+        tab.tabIndex = on ? 0 : -1;
+    }
+    ui.stage.hidden = view !== 'map';
+    ui.journal.hidden = view !== 'journal';
+    ui.guide.hidden = view !== 'guide';
 }
 
 function showTier(place) {
@@ -412,16 +418,16 @@ function showTier(place) {
 
 // Tabs: click, or the arrow keys between them
 /** @type {[HTMLElement, string][]} */
-const TABS = [[ui.tabMap, 'map'], [ui.tabJournal, 'journal']];
-for (const [tab, view] of TABS) {
+const TABS = [[ui.tabMap, 'map'], [ui.tabJournal, 'journal'], [ui.tabGuide, 'guide']];
+TABS.forEach(([tab, view], i) => {
     tab.addEventListener('click', () => showView(view));
     tab.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-        const other = view === 'map' ? ui.tabJournal : ui.tabMap;
-        showView(view === 'map' ? 'journal' : 'map');
+        const [other, name] = TABS[(i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length];
+        showView(name);
         other.focus();
     });
-}
+});
 ui.back.addEventListener('click', () => toClub());
 
 // Portraits blink while the screen shows

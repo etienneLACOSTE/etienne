@@ -359,6 +359,44 @@ test.describe('Career', () => {
     expect(theirs).toEqual(['k', 'r4', 'r4']);
   });
 
+  test('the pieces\' guide: only the levels unlocked; a click on a boss\'s piece tells what it does', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await inCounty(page, ['old-bull', 'mud-match', 'ploughing', 'veteran']);
+    await page.getByRole('tab', { name: 'Pieces' }).click();
+    const rook = page.getByRole('region', { name: 'Rook' });
+    await expect(rook.locator('li').nth(0)).toContainText('Straight lines, 3 squares at most.'); // The club's rook: level 1
+    await expect(rook.locator('li').nth(1)).toContainText('Not discovered yet');
+    await expect(rook.locator('li').nth(2)).toContainText('The classic rook'); // Level 3 always shows
+    await expect(rook.locator('li').nth(3)).toContainText('Not discovered yet');
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()).violations.map((v) => v.id)).toEqual([]);
+    // The boss: its level 4 rooks
+    await page.getByRole('tab', { name: 'Map' }).click();
+    await page.getByRole('button', { name: 'Boss: Moulin farm' }).click();
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
+    await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    const at = await page.evaluate(() => {
+      const b = chessdown.state.board;
+      for (let r = 0; r < 12; r++) for (let c = 0; c < 8; c++) if (b[r][c] && b[r][c].player === 2 && b[r][c].type === 'r') return [r, c];
+      return null;
+    });
+    await page.locator(`#chessboard .square[data-vr="${at[0]}"][data-vc="${at[1]}"]`).click();
+    const info = page.getByRole('dialog', { name: 'Rook, level 4' });
+    await expect(info).toBeVisible();
+    await expect(info).toContainText('The classic rook'); // Level 3 and its level 4 bonus
+    await expect(info).toContainText('Also hops over a piece of its own side');
+    await expect(info.getByRole('button', { name: 'Close' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(info).toHaveCount(0);
+    // Met in a match: level 4 shows in the guide from now on
+    const seen = await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.seen') || '{}'));
+    expect(seen.r).toEqual([4]);
+    expect(errors).toEqual([]);
+  });
+
   test('touchdowns off: a piece in the end zone wins nothing; the rule is on the card', async ({ page }) => {
     await inCounty(page, ['mud-match', 'old-bull', 'ploughing', 'veteran']);
     await page.getByRole('button', { name: 'Side quest: Carp pond' }).click();
