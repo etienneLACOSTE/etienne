@@ -973,3 +973,38 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 @media (prefers-reduced-motion: reduce) {
     .club-licence.signed .club-stamp { animation: none; }
 }
+
+/* All Star in play: the club's bench in the draft, levels on the pieces, the end screen */
+.club-bench { display: grid; gap: 8px; padding: 6px 0; }
+.club-bench[hidden], #color-picker[hidden], .pieces-shop[hidden] { display: none; }
+.club-bench-players { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.club-bench-player {
+    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 6px; align-items: center;
+    padding: 4px 10px; border-radius: 10px; border-color: rgba(255, 255, 255, 0.45); text-align: left; font-size: 13px;
+}
+.club-bench-player .icon {
+    grid-row: span 2; font: 26px/1 var(--pieces); color: var(--club-colour, var(--white));
+    -webkit-text-stroke: 1px var(--black); paint-order: stroke;
+}
+.club-bench-name { font-weight: 800; }
+.club-bench-meta { font-size: 12px; color: var(--amber); white-space: nowrap; }
+.club-bench-player[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: var(--black); }
+.club-bench-player[aria-pressed="true"] .club-bench-meta { color: var(--black); }
+.club-lineups { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
+.club-lineups-label { font: 700 12px var(--text); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-on-dark); }
+.club-lineup { display: inline-flex; gap: 4px; }
+.club-lineup .btn-ghost { padding: 4px 10px; font-size: 12px; }
+
+.square { position: relative; }
+.piece-level {
+    position: absolute; right: 2px; bottom: 1px; font: 800 clamp(8px, 1.4vh, 11px)/1 var(--text);
+    color: var(--black); background: var(--amber); border-radius: 3px; padding: 1px 2px; pointer-events: none;
+    display: none;
+}
+/* Shown during the draft and until the first move; then on hover or keyboard focus. */
+#game-container.draft-mode .piece-level, #chessboard.levels-shown .piece-level,
+.square:hover .piece-level, .square:focus-visible .piece-level { display: block; }
+
+.victory-club { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; font-weight: 700; }
+.victory-club[hidden] { display: none; }
+.victory-club li::before { content: "★ "; color: var(--amber); }

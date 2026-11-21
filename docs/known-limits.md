@@ -83,6 +83,13 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   propose, l'autre répond dans la boîte de dialogue ; rien ne vérifie que ce n'est pas la
   même personne (sans conséquence : seules ses propres stats « Same screen » comptent).
 
+## All Star (2026-11-21)
+
+- **Le club est gardé dans le navigateur seulement :** pas encore sur le compte, ni en ligne.
+- **L'en-but et la barre du minuteur** prennent la couleur de maillot du jeu la plus proche
+  de la couleur 1 du club, pas sa nuance exacte (les pièces, elles, ont la vraie couleur).
+- **L'expérience de campagne est déclarée par la page** (comme les stats contre le bot).
+
 ## Best of 3 (2026-11-21)
 
 - **Les stats comptent chaque manche, pas la série :** le résultat d'une série n'est

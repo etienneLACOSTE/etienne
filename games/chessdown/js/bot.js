@@ -2,6 +2,7 @@
 // Campaign bot: difficulty profiles; the draft and the search live in bot-search.js
 // (shared with the trainer, tools/chessdown/train.js).
 import { Bot, COLOR_HEX, MAX_POINTS, state } from './state.js';
+import { botLevel, isAllStar, squadBudget } from './all-star.js';
 
 /**
  * Difficulty: the profile of an earlier or later generation of training_data.json
@@ -39,11 +40,17 @@ export function autoDraftBot() {
     state.playerColors[2] = availableColors[Math.floor(Math.random() * availableColors.length)];
 
     // The army is drafted by the shared bot (bot-search.js), as in training.
+    // All Star: an army worth the player's squad, at its average level (all-star.js).
+    const allStar = isAllStar();
     const { pieces, pointsLeft } = Bot.draftArmy(state.botProfile, 2, {
         difficulty: state.botDifficultyLevel,
         archetype: state.botArchetype,
+        ...(allStar ? { budget: squadBudget() } : {}),
     });
-    for (const p of pieces) state.board[p.r][p.c] = { type: p.type, player: 2, hasMoved: false };
+    const level = allStar ? botLevel() : undefined;
+    for (const p of pieces) {
+        state.board[p.r][p.c] = { type: p.type, player: 2, hasMoved: false, ...(level ? { level } : {}) };
+    }
     state.kingsPlaced[2] = true;
     state.draftPoints[2] = pointsLeft;
 }

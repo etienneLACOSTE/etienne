@@ -36,7 +36,7 @@ export const state = {
     myPlayerNumber: 1,
 
     // Game
-    /** @type {Array<Array<{type: string, player: number, hasMoved?: boolean}|null>>} */
+    /** @type {Array<Array<{type: string, player: number, hasMoved?: boolean, level?: number, clubId?: number}|null>>} */
     board: Array(ROWS).fill(null).map(() => Array(COLS).fill(null)),
     gameState: 'mainMenu', // mainMenu, draft1, draft2, gameplay, over
     currentPlayer: 1,
@@ -45,7 +45,7 @@ export const state = {
     draftPoints: { 1: MAX_POINTS, 2: MAX_POINTS },
     kingsPlaced: { 1: false, 2: false },
     playerColors: { 1: 'blue', 2: 'red' },
-    /** @type {{type: string, cost: number}|null} */
+    /** @type {{type: string, cost: number, clubId?: number}|null} All Star: clubId, the club player chosen */
     selectedDraftPiece: null,
     removeMode: false,
     /** @type {Record<string, number>} */
@@ -76,6 +76,13 @@ export const state = {
     lastMove: null, // { piece, fromR, fromC, toR, toC, isDoubleStep }
     touchdownTimer: { player: null, row: null, col: null },
     isAnimating: false,
+
+    /**
+     * All Star (all-star.js): the club playing this campaign match, who of it is on the
+     * board, and what each did in the current game. null in classic play.
+     * @type {{ club: any, lineupIds: number[], tally: Record<number, any> } | null}
+     */
+    allStar: null,
 
     // Match: a best of 3 or a single game (series.js); online, as the server keeps it.
     series: Series.newSeries('single'),

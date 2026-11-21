@@ -504,7 +504,8 @@
      * Returns the pieces `{ r, c, type }` (in `player`'s deployment rows) and the points left.
      * @param {Profile} profile
      * @param {number} player
-     * @param {{ difficulty?: string, archetype?: string, random?: () => number, strengthen?: boolean }} [options]
+     * @param {{ difficulty?: string, archetype?: string, random?: () => number, strengthen?: boolean, budget?: number }} [options]
+     *   budget: points to spend (All Star: the worth of the player's squad), at most MAX_POINTS
      */
     function draftArmy(profile, player, options = {}) {
         const difficulty = options.difficulty || 'master';
@@ -518,7 +519,8 @@
             placed.push({ r: row(r), c, type });
             taken.add(`${r},${c}`);
         };
-        let points = MAX_POINTS;
+        // All Star: an army worth as much as the player's squad (options.budget); else the full budget.
+        let points = Number.isInteger(options.budget) && options.budget > 0 ? Math.min(options.budget, MAX_POINTS) : MAX_POINTS;
 
         let kR = 0;
         let kC = 2 + Math.floor(random() * 4); // Safe central columns

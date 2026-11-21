@@ -132,11 +132,19 @@ export function onBoardKeydown(e) {
     }
 }
 
-/** "your rook", "opponent's rook", "bot's rook" or "player 2 rook" (one text per piece: articles agree with it). */
+/**
+ * "your rook", "opponent's rook", "bot's rook" or "player 2 rook" (one text per piece:
+ * articles agree with it). All Star: with the club player's name and the level.
+ */
 export function describePiece(piece) {
-    if (state.currentRoomCode) return t(`a11y.${piece.player === state.myPlayerNumber ? 'own' : 'opp'}.${piece.type}`);
-    if (state.isBotMatch) return t(`a11y.${piece.player === 1 ? 'own' : 'bot'}.${piece.type}`);
-    return t(`a11y.player.${piece.type}`, { n: piece.player });
+    let text;
+    if (state.currentRoomCode) text = t(`a11y.${piece.player === state.myPlayerNumber ? 'own' : 'opp'}.${piece.type}`);
+    else if (state.isBotMatch) text = t(`a11y.${piece.player === 1 ? 'own' : 'bot'}.${piece.type}`);
+    else text = t(`a11y.player.${piece.type}`, { n: piece.player });
+    const member = piece.clubId && state.allStar ? state.allStar.club.players.find((p) => p.id === piece.clubId) : null;
+    if (member) text = t('a11y.named', { piece: text, name: member.name });
+    if (piece.level !== undefined) text += t('a11y.levelSuffix', { n: ChessdownEngine.levelOf(piece) });
+    return text;
 }
 
 /** Each square says where it is, what it holds and whether it is selected or a legal target. */

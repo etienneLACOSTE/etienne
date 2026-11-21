@@ -1,11 +1,16 @@
 // @ts-check
 // Draft phase: buying and placing pieces, colours, validation.
-import { COLS, MAX_POINTS, PIECES, socket, state, ui } from './state.js';
+import { COLS, Engine, MAX_POINTS, PIECES, socket, state, ui } from './state.js';
 import { createBoardDOM, renderBoard, showScreen } from './board-view.js';
 import { getBoardCoords, getDraftZoneView } from './coords.js';
 import { startGameplay } from './gameplay.js';
 import { autoDraftBot } from './bot.js';
 import { nextStarter, showScore } from './match.js';
+import { LINEUP_SLOTS, benchPlayers, clubPlayer, isAllStar, lineup, pieceFor, saveLineup } from './all-star.js';
+import { esc } from './club-art.js';
+
+/** What a piece on the board cost in the draft (its level's cost; classic pieces: level 3). */
+const costOf = (piece) => Engine.pieceCost(piece.type, piece.level);
 
 /** Who starts: in a series, the loser of the last game; otherwise the coin. */
 function beginMatch() {
@@ -118,6 +123,7 @@ export function setupColorPicker() {
 
 export function updateDraftUI() {
     ui.draftPointsSpan.textContent = state.draftPoints[state.currentPlayer];
+    renderBench();
     
     ui.shopItems.forEach(item => {
         const cost = parseInt(item.dataset.cost);
@@ -165,7 +171,7 @@ export function handleDraftSquareClick(viewR, viewC) {
 
     if (state.removeMode) {
         if (currentPiece && currentPiece.player === state.currentPlayer) {
-            state.draftPoints[state.currentPlayer] += PIECES[currentPiece.type].value;
+            state.draftPoints[state.currentPlayer] += costOf(currentPiece);
             if (currentPiece.type === 'k') state.kingsPlaced[state.currentPlayer] = false;
             state.board[r][c] = null;
             updateDraftUI();
@@ -178,7 +184,7 @@ export function handleDraftSquareClick(viewR, viewC) {
 
     if (currentPiece) {
         if (currentPiece.player === state.currentPlayer) {
-            state.draftPoints[state.currentPlayer] += PIECES[currentPiece.type].value;
+            state.draftPoints[state.currentPlayer] += costOf(currentPiece);
             if (currentPiece.type === 'k') state.kingsPlaced[state.currentPlayer] = false;
             state.board[r][c] = null;
         } else {
@@ -188,13 +194,12 @@ export function handleDraftSquareClick(viewR, viewC) {
 
     if (state.selectedDraftPiece.type === 'k' && state.kingsPlaced[state.currentPlayer]) return;
     if (state.draftPoints[state.currentPlayer] >= state.selectedDraftPiece.cost) {
-        state.board[r][c] = {
-            type: state.selectedDraftPiece.type,
-            player: state.currentPlayer,
-            hasMoved: false
-        };
-        state.draftPoints[state.currentPlayer] -= state.selectedDraftPiece.cost;
-        if (state.selectedDraftPiece.type === 'k') state.kingsPlaced[state.currentPlayer] = true;
+        const chosen = state.selectedDraftPiece;
+        const member = chosen.clubId ? clubPlayer(chosen.clubId) : null;
+        state.board[r][c] = member ? pieceFor(member) : { type: chosen.type, player: state.currentPlayer, hasMoved: false };
+        state.draftPoints[state.currentPlayer] -= chosen.cost;
+        if (chosen.type === 'k') state.kingsPlaced[state.currentPlayer] = true;
+        if (member) state.selectedDraftPiece = null; // Each player of the club is placed once
         
         updateDraftUI();
         renderBoard();
@@ -262,4 +267,86 @@ export function validateDraft() {
             beginMatch();
         }
     }
+}
+
+// --- All Star: the bench of the club replaces the shop (all-star.js) ---
+
+/** The club's players not placed yet, each with its stars and cost; and the saved line-ups. */
+function renderBench() {
+    const shop = /** @type {HTMLElement} */ (ui.draftFooter.querySelector('.pieces-shop'));
+    let bench = /** @type {HTMLElement | null} */ (document.getElementById('club-bench'));
+    const show = isAllStar() && state.currentPlayer === 1 && !state.currentRoomCode;
+    shop.hidden = show;
+    /** @type {HTMLElement} */ (document.getElementById('color-picker')).hidden = show; // The club has its colours
+    if (!show) {
+        if (bench) bench.hidden = true;
+        return;
+    }
+    if (!bench) {
+        bench = document.createElement('div');
+        bench.id = 'club-bench';
+        bench.className = 'club-bench';
+        shop.before(bench);
+    }
+    bench.hidden = false;
+    const points = state.draftPoints[1];
+    const players = benchPlayers();
+    const selected = state.selectedDraftPiece && state.selectedDraftPiece.clubId;
+    const hadFocus = bench.contains(document.activeElement) ? /** @type {HTMLElement} */ (document.activeElement).dataset.focusKey : null;
+    bench.innerHTML = `
+      <div class="club-bench-players" role="group" aria-label="${esc(t('allStar.bench'))}">${players.length ? players.map((p) => {
+        const cost = Engine.pieceCost(p.type, p.level);
+        const blocked = (p.type === 'k' && state.kingsPlaced[1]) || (p.type !== 'k' && cost > points);
+        return `<button type="button" class="club-bench-player" style="--club-colour:${state.allStar.club.primary}" data-club-id="${p.id}" data-focus-key="p${p.id}"
+            aria-pressed="${selected === p.id}" ${blocked ? 'disabled' : ''}
+            aria-label="${esc(t('allStar.place', { name: p.name, piece: t(`piece.${p.type}`), n: p.level, cost }))}">
+            <span class="icon" aria-hidden="true">${PIECES[p.type].icon}</span>
+            <span class="club-bench-name">${esc(p.name)}</span>
+            <span class="club-bench-meta" aria-hidden="true">${'★'.repeat(p.level)} · ${cost}</span>
+          </button>`;
+      }).join('') : `<span class="muted">${esc(t('allStar.allPlaced'))}</span>`}</div>
+      <div class="club-lineups" role="group" aria-label="${esc(t('allStar.lineups'))}">
+        <span class="club-lineups-label" aria-hidden="true">${esc(t('allStar.lineups'))}</span>
+        ${LINEUP_SLOTS.map((n) => `<span class="club-lineup">
+          <button type="button" class="btn-ghost" data-lineup-load="${n}" data-focus-key="l${n}" ${lineup(n) ? '' : 'disabled'}>${esc(t('allStar.load', { n }))}</button>
+          <button type="button" class="btn-ghost" data-lineup-save="${n}" data-focus-key="s${n}">${esc(t('allStar.save', { n }))}</button></span>`).join('')}
+      </div>`;
+    bench.querySelectorAll('[data-club-id]').forEach((b) => b.addEventListener('click', () => {
+        const member = clubPlayer(Number(/** @type {HTMLElement} */ (b).dataset.clubId));
+        if (!member) return;
+        state.selectedDraftPiece = { type: member.type, cost: Engine.pieceCost(member.type, member.level), clubId: member.id };
+        renderBench();
+    }));
+    bench.querySelectorAll('[data-lineup-save]').forEach((b) => b.addEventListener('click', () => {
+        saveLineup(Number(/** @type {HTMLElement} */ (b).dataset.lineupSave));
+        announceDraft(t('allStar.saved', { n: /** @type {HTMLElement} */ (b).dataset.lineupSave }));
+        renderBench();
+    }));
+    bench.querySelectorAll('[data-lineup-load]').forEach((b) => b.addEventListener('click', () => loadLineup(Number(/** @type {HTMLElement} */ (b).dataset.lineupLoad))));
+    if (hadFocus) /** @type {HTMLElement | null} */ (bench.querySelector(`[data-focus-key="${hadFocus}"]`))?.focus();
+}
+
+/** Put the players of a saved line-up back on their squares (those still in the club). */
+function loadLineup(slot) {
+    const saved = lineup(slot);
+    if (!saved) return;
+    clearCurrentDraft();
+    for (const { id, r, c } of saved.pieces) {
+        const member = clubPlayer(id);
+        const cost = member ? Engine.pieceCost(member.type, member.level) : Infinity;
+        if (!member || state.board[r][c] || (member.type !== 'k' && cost > state.draftPoints[1])) continue;
+        if (member.type === 'k' && state.kingsPlaced[1]) continue;
+        state.board[r][c] = pieceFor(member);
+        state.draftPoints[1] -= cost;
+        if (member.type === 'k') state.kingsPlaced[1] = true;
+    }
+    state.selectedDraftPiece = null;
+    updateDraftUI();
+    renderBoard();
+    announceDraft(t('allStar.loaded', { n: slot }));
+}
+
+/** A short message in the status bar (also read out: it is a status region). */
+function announceDraft(text) {
+    ui.statusBar.textContent = text;
 }

@@ -13,6 +13,8 @@ import { chat } from './chat.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
 import { t } from '../../../assets/js/i18n.js';
 import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
+import { afterMove, beforeMove, noteGameStart, noteTouchdown, settleGame } from './all-star.js';
+import { esc } from './club-art.js';
 
 // --- Gameplay Logic ---
 
@@ -40,6 +42,8 @@ export function startGameplay(winner, { coin = true } = {}) {
     renderBoard();
     showMatchup();
     showScore();
+    noteGameStart(); // All Star: who of the club plays this game
+    ui.chessboard.classList.add('levels-shown'); // Levels in view until the first move
     if (coin) startCoinFlip(winner, finalizeGameplayStart);
     else showStarter(winner, t('series.loserStarts', { name: playerName(winner) }), finalizeGameplayStart);
 }
@@ -92,6 +96,7 @@ export function finalizeGameplayStart() {
 export function startTurn() {
     if (checkTouchdownWin()) {
         const winner = state.currentPlayer;
+        noteTouchdown(winner);
         const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
         
         if (state.myPlayerNumber === winner) {
@@ -283,7 +288,10 @@ export function movePiece(fromR, fromC, toR, toC) {
 
     // --- Resolution Phase (After 300ms) ---
     setTimeout(() => {
+        const before = beforeMove(); // All Star: to see who moved, took or was taken
         makeVirtualMove({ fromR, fromC, toR, toC }); // Also handles en passant and lastMove
+        afterMove(piece, before);
+        ui.chessboard.classList.remove('levels-shown');
         
         state.isAnimating = false;
         renderBoard();
@@ -331,6 +339,7 @@ export function endGame(title, reason, winner, how) {
     ui.victoryTitle.textContent = title;
     ui.victoryReason.textContent = reason;
     showSeriesEnd();
+    showClubResults(settleGame(winner));
     
     const canvas = document.getElementById('confetti-canvas');
     if (!state.currentRoomCode && winner === 2 && !state.isBotMatch) {
@@ -342,6 +351,28 @@ export function endGame(title, reason, winner, how) {
     }
     
     showScreen(ui.victoryScreen);
+}
+
+/**
+ * All Star: what the game brought the club (all-star.js): the players who went up a level,
+ * a recruit when the series is won. Nothing outside All Star.
+ * @param {{ levelUps: { name: string, level: number }[], recruit: boolean } | null} results
+ */
+function showClubResults(results) {
+    let box = document.getElementById('victory-club');
+    if (!box) {
+        box = document.createElement('ul');
+        box.id = 'victory-club';
+        box.className = 'victory-club';
+        document.getElementById('victory-series')?.after(box);
+    }
+    const lines = results ? [
+        ...results.levelUps.map((u) => t('allStar.levelUp', { name: u.name, n: u.level })),
+        ...(results.recruit ? [t('allStar.recruitWon')] : []),
+        ...(results.levelUps.length || results.recruit ? [] : [t('allStar.xpCounted')]),
+    ] : [];
+    box.innerHTML = lines.map((line) => `<li>${esc(line)}</li>`).join('');
+    box.hidden = !lines.length;
 }
 
 /** The end screen's line about the series, and its button: next game, or a new match. */

@@ -1,7 +1,7 @@
 // @ts-check
 // Drawing only: screens, the board, highlights and the coin flip. Square clicks are
 // routed by events.js (one listener on the board), never wired here.
-import { COLS, PIECES, ROWS, state, ui } from './state.js';
+import { COLS, Engine, PIECES, ROWS, state, ui } from './state.js';
 import { getBoardCoords, getDraftZoneView, getViewCoords } from './coords.js';
 import { enhanceBoardSquares, focusScreen, refreshSquareLabels } from './a11y.js';
 import { getValidMoves } from './rules-bridge.js';
@@ -174,6 +174,16 @@ export function renderBoard() {
                 square.appendChild(span);
                 square.classList.add('has-piece');
                 square.classList.add(`jersey-${state.playerColors[piece.player]}`);
+                // All Star: the club's own colour, and the level in stars (shown during the
+                // draft and until the first move, then on hover or focus: styles.css).
+                if (piece.clubId && state.allStar) span.style.color = state.allStar.club.primary;
+                if (piece.level !== undefined || (piece.type === 'k' && state.allStar)) {
+                    const badge = document.createElement('span');
+                    badge.className = 'piece-level';
+                    badge.setAttribute('aria-hidden', 'true'); // Said in the square's label (a11y.js)
+                    badge.textContent = `${Engine.levelOf(piece)}★`;
+                    square.appendChild(badge);
+                }
             }
         }
     }

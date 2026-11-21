@@ -53,9 +53,10 @@ export function rosterTable(club, { rename = true } = {}) {
  * Show the club's page in `box`.
  * @param {HTMLElement} box
  * @param {any} club
- * @param {{ onMenu: () => void, onDeleted: () => void }} handlers
+ * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void }} handlers
+ *   onPlay: a campaign match with the club
  */
-export function showClub(box, club, { onMenu, onDeleted }) {
+export function showClub(box, club, { onMenu, onDeleted, onPlay }) {
     const render = (focusId = '') => {
         box.innerHTML = `
           <div class="club-card">
@@ -66,6 +67,7 @@ export function showClub(box, club, { onMenu, onDeleted }) {
             </div>
             <figure class="club-preview club-card-jersey">${jerseySVG(club)}</figure>
           </div>
+          <div class="club-row"><button type="button" class="btn-primary btn-big" id="club-play">${esc(t('allStar.play'))}</button></div>
           <section class="club-section" aria-labelledby="club-register-title">
             <h3 id="club-register-title">${esc(t('club.registerTitle'))}</h3>
             ${rosterTable(club)}
@@ -95,6 +97,7 @@ export function showClub(box, club, { onMenu, onDeleted }) {
 
     function wire() {
         box.querySelector('#club-menu')?.addEventListener('click', onMenu);
+        box.querySelector('#club-play')?.addEventListener('click', () => onPlay(club));
         box.querySelector('#club-delete')?.addEventListener('click', async () => {
             if (!await ask(t('club.deleteAsk', { club: club.name }), { confirm: t('club.deleteConfirm'), cancel: t('dialog.cancel') })) return;
             deleteClub();

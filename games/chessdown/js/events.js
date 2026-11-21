@@ -17,6 +17,24 @@ import { askFormat, hideScore, startSeries } from './match.js';
 import { loadClub } from './club-store.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
+import { beginAllStar, endAllStar } from './all-star.js';
+
+/** The club chosen for the next campaign match (All Star), until the campaign starts or is cancelled. */
+let pendingClub = null;
+
+/** The jersey colour of the game nearest to the club's own (end zones, timer bar). */
+function nearestJersey(hex) {
+    const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [r, g, b] = rgb(hex);
+    let best = 'blue';
+    let dist = Infinity;
+    for (const [name, h] of Object.entries(COLOR_HEX)) {
+        const [x, y, z] = rgb(h);
+        const d = (r - x) ** 2 + (g - y) ** 2 + (b - z) ** 2;
+        if (d < dist) { dist = d; best = name; }
+    }
+    return best;
+}
 
 /** All Star: the club's page, or the commissioner's office when there is no club yet. */
 function openAllStar() {
@@ -36,7 +54,19 @@ function openAllStar() {
 
 function openClubPage(club, toMenu) {
     showScreen(/** @type {HTMLElement} */ (document.getElementById('club-screen')));
-    showClub(/** @type {HTMLElement} */ (document.getElementById('club-view')), club, { onMenu: toMenu, onDeleted: openAllStar });
+    showClub(/** @type {HTMLElement} */ (document.getElementById('club-view')), club, {
+        onMenu: toMenu,
+        onDeleted: openAllStar,
+        // A campaign match with the club: the campaign setup first (difficulty, opponent).
+        onPlay: (playing) => {
+            pendingClub = playing;
+            showScreen(ui.mainMenu);
+            ui.mainMenu.classList.add('hidden');
+            ui.difficultyModal.classList.remove('hidden');
+            ui.difficultyModal.querySelector('h2')?.setAttribute('tabindex', '-1');
+            /** @type {HTMLElement | null} */ (ui.difficultyModal.querySelector('h2'))?.focus();
+        },
+    });
 }
 
 const languageSelect = /** @type {HTMLSelectElement} */ (document.getElementById('language-select'));
@@ -63,6 +93,7 @@ export function setupEventListeners() {
             e.preventDefault(); // The mouse press must not take the focus out of the question below
             state.currentRoomCode = null;
             state.isBotMatch = false;
+            endAllStar();
             enterFullscreen(); // While the tap still counts as the player's gesture
             state.localSide = 0;
             const format = await askFormat();
@@ -85,6 +116,7 @@ export function setupEventListeners() {
     const btnStartBot = document.getElementById('btn-start-bot');
     if (btnStartBot) {
         btnStartBot.addEventListener('pointerdown', () => {
+            pendingClub = null; // The classic campaign
             ui.mainMenu.classList.add('hidden');
             ui.difficultyModal.classList.remove('hidden');
         });
@@ -94,6 +126,12 @@ export function setupEventListeners() {
     if (btnCloseDifficulty) {
         btnCloseDifficulty.addEventListener('pointerdown', () => {
             ui.difficultyModal.classList.add('hidden');
+            if (pendingClub) {
+                // Back to the club's page it came from.
+                const club = pendingClub;
+                pendingClub = null;
+                return openClubPage(club, () => { showScreen(ui.mainMenu); document.getElementById('btn-all-star')?.focus(); });
+            }
             ui.mainMenu.classList.remove('hidden');
         });
     }
@@ -125,6 +163,14 @@ export function setupEventListeners() {
             state.currentRoomCode = null;
             state.isBotMatch = true;
             enterFullscreen();
+            // All Star when it came from the club's page: the club plays, in its colours.
+            if (pendingClub) {
+                beginAllStar(pendingClub);
+                state.playerColors[1] = nearestJersey(pendingClub.primary);
+                pendingClub = null;
+            } else {
+                endAllStar();
+            }
             startSeries('bo3'); // The campaign is always played in best of 3
             startDraftPhase(1);
         });
@@ -185,6 +231,7 @@ export function setupEventListeners() {
     if (btnCreateRoom) {
         btnCreateRoom.addEventListener('pointerdown', async (e) => {
             if (!socket) return void notify(t('online.unavailable'));
+            endAllStar();
             e.preventDefault(); // The mouse press must not take the focus out of the question
             enterFullscreen();
             const format = await askFormat();
@@ -223,6 +270,7 @@ export function setupEventListeners() {
             forgetSeat('chessdown');
         }
         resetGame();
+        endAllStar();
         state.gameState = 'mainMenu';
         hideScore();
         showScreen(ui.mainMenu);
