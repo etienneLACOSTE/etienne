@@ -4,7 +4,7 @@
 // button per place, the card of the place where the coach stands (shown only once they get
 // there: a surprise), and the journal behind a tab (league table, side quests, trophies).
 // The transport takes the coach to the next tier with the ticket won in the league's top 3.
-// Matches open in the next step (docs/games/chessdown-career.md, step 4).
+// The stadium's card plays the next matchday, a quest's card its match (events.js).
 import { createCareerMap, moverOf } from './career-map.js';
 import { drawCoach } from './coach-portrait.js';
 import { createCommissioner } from './commissioner.js';
@@ -40,6 +40,8 @@ let career = null;
 let club = null;
 /** @type {() => void} */
 let toClub = () => {};
+/** @type {(spec: { kind: 'league' | 'quest', questId?: string, recruitType?: string }) => void} */
+let play = () => {};
 /** Quests whose place the coach has visited this session (their title shows in the journal). */
 const discovered = new Set();
 /** @type {HTMLCanvasElement | null} */
@@ -116,7 +118,6 @@ function setCard(kind, html) {
     ui.card.innerHTML = html;
     rivalCanvas = ui.card.querySelector('.career-rival canvas');
 }
-const toast = (text) => { const el = ui.card.querySelector('.career-toast'); if (el) el.textContent = text; };
 
 function showTravel(place) {
     setCard('travel', `<span class="career-kind">${esc(t('career.kind.travel'))}</span>
@@ -158,6 +159,10 @@ function showCard(place) {
     discovered.add(q.id);
     renderJournal();
     const goals = [goalText(q)];
+    const Club = globalThis.ChessdownClub;
+    const choice = q.reward.recruitChoice ? `<div class="career-choice" role="radiogroup" aria-label="${esc(t('career.chooseRecruit'))}">
+        <h4>${esc(t('career.chooseRecruit'))}</h4><div class="career-chips">${Club.RECRUIT_TYPES.map((type, i) =>
+            `<button type="button" class="career-pick" role="radio" data-type="${type}" aria-checked="${i === 0}"><span class="career-glyphs" aria-hidden="true">${GLYPHS[type]}</span> ${esc(t(`piece.${type}`))}</button>`).join('')}</div></div>` : '';
     const conditions = [esc(t(`rule.${q.format}`)), ...ruleTexts(q.rules), opponentLine(Career.questOpponent(career, q)), esc(t('career.once'))];
     setCard('side', `${kind('side')}
         <h3>${esc(t(`quest.${q.id}.title`))}</h3>
@@ -165,10 +170,14 @@ function showCard(place) {
         <p class="career-quote">${quoted(t(`quest.${q.id}.quote`))}</p>
         <h4>${esc(t('career.goals'))}</h4><ul>${goals.map((g) => `<li>${g}</li>`).join('')}</ul>
         <h4>${esc(t('career.conditions'))}</h4>${chips(conditions, 'limit')}
-        <h4>${esc(t('career.rewards'))}</h4>${chips([rewardText(q.reward)], 'reward')}
-        <div class="career-row"><button type="button" class="btn-primary" data-action="soon">${esc(t('career.accept'))}</button></div>
-        <p class="career-toast" role="status"></p>`);
-    ui.card.querySelector('[data-action="soon"]')?.addEventListener('click', () => toast(t('career.soon')));
+        <h4>${esc(t('career.rewards'))}</h4>${chips([rewardText(q.reward)], 'reward')}${choice}
+        <div class="career-row"><button type="button" class="btn-primary" data-action="play">${esc(t('career.accept'))}</button></div>`);
+    let recruitType = Club.RECRUIT_TYPES[0];
+    ui.card.querySelectorAll('.career-pick').forEach((b) => b.addEventListener('click', () => {
+        recruitType = /** @type {HTMLElement} */ (b).dataset.type;
+        ui.card.querySelectorAll('.career-pick').forEach((o) => o.setAttribute('aria-checked', String(o === b)));
+    }));
+    ui.card.querySelector('[data-action="play"]')?.addEventListener('click', () => play({ kind: 'quest', questId: q.id, ...(q.reward.recruitChoice ? { recruitType } : {}) }));
 }
 
 function goalText(q) {
@@ -220,10 +229,9 @@ function showMatchCard() {
         <h4>${esc(t('career.goals'))}</h4><ul><li>${esc(t('goal.winSeries'))}</li></ul>
         <h4>${esc(t('career.conditions'))}</h4>${chips([esc(t('rule.bo3')), esc(t('rule.timer', { n: 30 })), opponentLine(Career.rivalOpponent(career, rival.id))], 'limit')}
         <h4>${esc(t('career.rewards'))}</h4>${chips([esc(t('career.leaguePoints')), esc(t('career.matchXp'))], 'reward')}
-        <div class="career-row"><button type="button" class="btn-primary" data-action="soon">${esc(t('career.play'))}</button></div>
-        <p class="career-toast" role="status"></p>`);
+        <div class="career-row"><button type="button" class="btn-primary" data-action="play">${esc(t('career.play'))}</button></div>`);
     if (rivalCanvas) drawCoach(rivalCanvas, rivalLook, performance.now());
-    ui.card.querySelector('[data-action="soon"]')?.addEventListener('click', () => toast(t('career.soon')));
+    ui.card.querySelector('[data-action="play"]')?.addEventListener('click', () => play({ kind: 'league' }));
 }
 
 function showTransportCard() {
@@ -344,11 +352,14 @@ function blinkLoop(now) {
 
 /**
  * Open the career with `theClub` (its saved career, or a new one).
- * @param {any} theClub @param {{ onClub: () => void }} handlers onClub: back to the club's page
+ * @param {any} theClub
+ * @param {{ onClub: () => void, onPlay: (spec: { kind: 'league' | 'quest', questId?: string, recruitType?: string }) => void }} handlers
+ *   onClub: back to the club's page; onPlay: play a matchday or a quest
  */
-export function openCareer(theClub, { onClub }) {
+export function openCareer(theClub, { onClub, onPlay }) {
     club = theClub;
     toClub = () => { closeCareer(); onClub(); };
+    play = onPlay;
     career = loadCareer();
     if (!career) { career = newCareer(); save(); }
     showView('map');

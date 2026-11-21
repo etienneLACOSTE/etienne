@@ -3,6 +3,7 @@
 // (shared with the trainer, tools/chessdown/train.js).
 import { Bot, COLOR_HEX, MAX_POINTS, state } from './state.js';
 import { botLevel, isAllStar, squadBudget } from './all-star.js';
+import { careerOpponent } from './career-match.js';
 
 /**
  * Difficulty: the profile of an earlier or later generation of training_data.json
@@ -41,13 +42,15 @@ export function autoDraftBot() {
 
     // The army is drafted by the shared bot (bot-search.js), as in training.
     // All Star: an army worth the player's squad, at its average level (all-star.js).
+    // A career match: the rival's army (budget, level, banned types; career-match.js).
     const allStar = isAllStar();
+    const career = careerOpponent();
     const { pieces, pointsLeft } = Bot.draftArmy(state.botProfile, 2, {
         difficulty: state.botDifficultyLevel,
         archetype: state.botArchetype,
-        ...(allStar ? { budget: squadBudget() } : {}),
+        ...(career ? { budget: career.budget, banned: career.banned } : allStar ? { budget: squadBudget() } : {}),
     });
-    const level = allStar ? botLevel() : undefined;
+    const level = career ? career.level : allStar ? botLevel() : undefined;
     for (const p of pieces) {
         state.board[p.r][p.c] = { type: p.type, player: 2, hasMoved: false, ...(level ? { level } : {}) };
     }

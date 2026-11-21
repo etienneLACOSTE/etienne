@@ -84,6 +84,14 @@ export const state = {
      */
     allStar: null,
 
+    /**
+     * A career match (career-match.js): what it asks and how it goes. null otherwise.
+     * @type {any}
+     */
+    career: null,
+    /** Special rules of the game being played (engine.js matchRules), or null. @type {any} */
+    rules: null,
+
     // Match: a best of 3 or a single game (series.js); online, as the server keeps it.
     series: Series.newSeries('single'),
 

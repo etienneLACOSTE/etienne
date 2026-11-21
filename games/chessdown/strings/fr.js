@@ -337,6 +337,7 @@ export default {
     'club.deleteAsk': 'Supprimer {club} et tous ses joueurs ? Impossible de revenir en arrière.',
     'club.deleteConfirm': 'Supprimer le club',
     // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
+    'allStar.career': 'Carrière',
     'allStar.play': 'Jouer un match amical',
     'allStar.bench': 'Ton effectif : choisis un joueur, puis une case',
     'allStar.place': 'Placer {name}, {piece}, niveau {n}, {cost} points',

@@ -4,8 +4,8 @@ const { blockExternalRequests, trackPageErrors } = require('./helpers');
 
 // The career's screen (js/career-view.js, js/career-map.js; docs/games/chessdown-career.md):
 // the map of the tier, a button per place, the card shown only once the coach gets there,
-// the transport and its ticket, the journal behind a tab. Not on the menus yet (its matches
-// open in the next step): the tests open it from events.js.
+// the transport and its ticket, the journal behind a tab; and its matches
+// (js/career-match.js): a matchday, a quest with its rules, the result and the reward.
 
 const CLUB = {
   version: 1, coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227',
@@ -128,5 +128,104 @@ test.describe('Career', () => {
     await expect(page.getByRole('tab', { name: 'Journal' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Quête principale : Stade municipal Léo-Lagrange' })).toBeVisible();
     await expect(page.locator('#career-gerard-said')).toContainText('Bienvenue en ville, coach !');
+  });
+
+  test('from the club\'s page: a matchday played, recorded in the table, back to the map', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.addInitScript((club) => { if (!localStorage.getItem('pawnet.chessdown.club')) localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)); }, CLUB);
+    await page.goto('/chessdown/');
+    await page.getByRole('button', { name: 'All Star: my club' }).click();
+    await page.getByRole('button', { name: 'Career' }).click();
+    await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();
+    await card(page).getByRole('button', { name: 'Play the match' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
+    await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    const setup = await page.evaluate(() => ({ timer: chessdown.state.timerBaseSeconds, format: chessdown.state.series.format, career: chessdown.state.career.kind }));
+    expect(setup).toEqual({ timer: 30, format: 'bo3', career: 'league' });
+    // Two games won: the series, then the table
+    await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king'));
+    await expect(page.locator('#btn-restart')).toHaveText('Next game');
+    await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king'));
+    await expect(page.locator('#victory-club')).toContainText('Matchday played: you are 1/6 in the table.');
+    await expect(page.locator('#btn-restart')).toHaveText('Back to the map');
+    await page.locator('#btn-restart').dispatchEvent('pointerdown');
+    await expect(page.locator('#career-screen')).toBeVisible();
+    const career = await stored(page);
+    expect(career.league.results).toHaveLength(1);
+    await page.getByRole('tab', { name: 'Journal' }).click();
+    await expect(page.locator('.career-table tr.you')).toContainText('Racing Rook');
+    await expect(page.locator('.career-table tr.you td').last()).toHaveText('3');
+    expect(errors).toEqual([]);
+  });
+
+  test('a quest with a squad: only its pieces leave the bench; done, its reward given, gone from the map', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/chessdown/');
+    await page.evaluate(async (club) => {
+      localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club));
+      const c = /** @type {any} */ (window).ChessdownCareer.newCareer(8);
+      c.quests = { drawn: ['counter-bet', 'street-match', 'market-rush', 'shy-knight'], attempted: [] };
+      localStorage.setItem('pawnet.chessdown.career', JSON.stringify(c));
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    }, CLUB);
+    await page.getByRole('button', { name: 'Side quest: Café Le Touchdown' }).click();
+    await expect(card(page).locator('h3')).toHaveText('The counter bet');
+    await expect(card(page)).toContainText('Only these pieces');
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await expect(bench.getByRole('button', { name: /^Place Alex,/ })).toBeDisabled(); // A rook: not in this squad
+    await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
+    await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
+    for (const [name, vc] of [['Noah', 3], ['Mila', 4], ['Sam', 5]]) {
+      await bench.getByRole('button', { name: new RegExp(`^Place ${name},`) }).click();
+      await page.locator(`#chessboard .square[data-vr="4"][data-vc="${vc}"]`).click();
+    }
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    expect(await page.evaluate(() => chessdown.state.series.format)).toBe('single');
+    await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king'));
+    await expect(page.locator('#victory-club')).toContainText('Quest done: The counter bet.');
+    await expect(page.locator('#victory-club')).toContainText('+40 XP from the quest.');
+    const club = await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'));
+    expect(club.players.filter((p) => p.type === 'p').every((p) => p.xp >= 40 && p.level === 2)).toBe(true);
+    expect((await stored(page)).questsDone).toEqual(['counter-bet']);
+    await page.locator('#btn-restart').dispatchEvent('pointerdown');
+    await expect(page.locator('#career-screen')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Side quest: Café Le Touchdown' })).toHaveCount(0);
+  });
+
+  test('a quest\'s limits hold: five pieces at most on the bench, and its own turn time', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/chessdown/');
+    await page.evaluate(async (club) => {
+      localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club));
+      const c = /** @type {any} */ (window).ChessdownCareer.newCareer(8);
+      c.quests = { drawn: ['street-match', 'market-rush', 'counter-bet', 'shy-knight'], attempted: [] };
+      localStorage.setItem('pawnet.chessdown.career', JSON.stringify(c));
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    }, CLUB);
+    await page.getByRole('button', { name: 'Side quest: Covered market' }).click();
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    const place = async (name, vr, vc) => {
+      await bench.getByRole('button', { name: new RegExp(`^Place ${name},`) }).click();
+      await page.locator(`#chessboard .square[data-vr="${vr}"][data-vc="${vc}"]`).click();
+    };
+    await place('The Captain', 5, 4);
+    for (const [name, vc] of [['Noah', 1], ['Mila', 2], ['Sam', 3], ['Alex', 0]]) await place(name, 4, vc);
+    await expect(bench.getByRole('button', { name: /^Place Lina,/ })).toBeDisabled(); // Five pieces at most
+    // Street match: 15 s turns
+    await page.locator('#btn-main-menu').dispatchEvent('pointerdown').catch(() => {});
+    await page.evaluate(async (club) => (await import('/chessdown/js/events.js')).openCareerPage(club), CLUB);
+    await page.getByRole('button', { name: 'Side quest: North district street pitch' }).click();
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    await place('The Captain', 5, 4);
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    expect(await page.evaluate(() => chessdown.state.timerBaseSeconds)).toBe(15);
   });
 });

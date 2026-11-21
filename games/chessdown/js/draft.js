@@ -8,6 +8,7 @@ import { autoDraftBot } from './bot.js';
 import { nextStarter, showScore } from './match.js';
 import { LINEUP_SLOTS, benchPlayers, clubPlayer, isAllStar, lineup, pieceFor, saveLineup } from './all-star.js';
 import { esc } from './club-art.js';
+import { benchAllows, careerArmy, isCareerMatch, lockedLineup, noteDraft } from './career-match.js';
 
 /** What a piece on the board cost in the draft (its level's cost; classic pieces: level 3). */
 const costOf = (piece) => Engine.pieceCost(piece.type, piece.level);
@@ -70,7 +71,33 @@ export function startDraftPhase(player) {
         updateDraftUI();
         renderBoard();
         ui.statusBar.textContent = t('status.draftBuild');
+        if (player === 1) playLockedLineup();
     }
+}
+
+/** A career quest with a locked line-up: from its second game, the same players on the same squares. */
+function playLockedLineup() {
+    const saved = lockedLineup();
+    if (!saved) return;
+    for (const { id, r, c } of saved) {
+        const member = clubPlayer(id);
+        if (!member || state.board[r][c]) continue;
+        state.board[r][c] = pieceFor(member);
+        state.draftPoints[1] -= Engine.pieceCost(member.type, member.level);
+        if (member.type === 'k') state.kingsPlaced[1] = true;
+    }
+    renderBoard();
+    announceDraft(t('career.lineupLocked'));
+    validateDraft();
+}
+
+/** Player 1's pieces on the board, as the engine checks an army. */
+function myArmy() {
+    const pieces = [];
+    state.board.forEach((row, r) => row.forEach((p, c) => {
+        if (p && p.player === 1) pieces.push({ r, c, type: p.type, ...(p.level !== undefined ? { level: p.level } : {}), ...(p.clubId ? { clubId: p.clubId } : {}) });
+    }));
+    return pieces;
 }
 
 export function handleTransitionReady() {
@@ -252,6 +279,13 @@ export function validateDraft() {
         ui.btnValidateDraft.disabled = true;
     } else {
         if (state.currentPlayer === 1) {
+            if (isCareerMatch()) {
+                // The quest's limits (engine.js checkArmy): told in the status bar, the draft goes on.
+                const army = myArmy();
+                const errors = Engine.checkArmy(army, 1, { ...careerArmy(), budget: Engine.MAX_POINTS });
+                if (errors.length) return announceDraft(t(`career.armyError.${errors[0]}`));
+                noteDraft(army);
+            }
             if (state.isBotMatch) {
                 autoDraftBot();
                 ui.draftHeader.classList.add('hidden');
@@ -291,12 +325,13 @@ function renderBench() {
     bench.hidden = false;
     const points = state.draftPoints[1];
     const players = benchPlayers();
+    const onBoard = myArmy().map((p) => p.type); // A career quest limits who may still go on
     const selected = state.selectedDraftPiece && state.selectedDraftPiece.clubId;
     const hadFocus = bench.contains(document.activeElement) ? /** @type {HTMLElement} */ (document.activeElement).dataset.focusKey : null;
     bench.innerHTML = `
       <div class="club-bench-players" role="group" aria-label="${esc(t('allStar.bench'))}">${players.length ? players.map((p) => {
         const cost = Engine.pieceCost(p.type, p.level);
-        const blocked = (p.type === 'k' && state.kingsPlaced[1]) || (p.type !== 'k' && cost > points);
+        const blocked = (p.type === 'k' && state.kingsPlaced[1]) || (p.type !== 'k' && cost > points) || !benchAllows(p, onBoard);
         return `<button type="button" class="club-bench-player" style="--club-colour:${state.allStar.club.primary}" data-club-id="${p.id}" data-focus-key="p${p.id}"
             aria-pressed="${selected === p.id}" ${blocked ? 'disabled' : ''}
             aria-label="${esc(t('allStar.place', { name: p.name, piece: t(`piece.${p.type}`), n: p.level, cost }))}">

@@ -31,7 +31,7 @@
     const TIERS = {
         school: { clubs: 6, legs: 1, knockout: 0, bot: { difficulty: 'novice', budget: 10, level: 1 }, quests: 4 },
         county: { clubs: 6, legs: 2, knockout: 0, bot: { difficulty: 'apprentice', budget: 18, level: 2 }, quests: 4 },
-        region: { clubs: 6, legs: 2, knockout: 0, bot: { difficulty: 'apprentice', budget: 26, level: 3 }, quests: 5 },
+        region: { clubs: 6, legs: 2, knockout: 0, bot: { difficulty: 'apprentice', budget: 26, level: 3 }, quests: 4 },
         national: { clubs: 8, legs: 2, knockout: 0, bot: { difficulty: 'expert', budget: 32, level: 4 }, quests: 5 },
         international: { clubs: 4, legs: 1, knockout: 3, bot: { difficulty: 'master', budget: 39, level: 5 }, quests: 6 },
     };
@@ -261,10 +261,14 @@
     }
 
     // ---------- Side quests ----------
+    /** The goals the game can play now (puzzles need their positions: not drawn yet). */
+    const PLAYABLE_GOALS = ['win', 'touchdownWith', 'touchdowns', 'streak'];
+
     /** This season's draw: quests of the tier not done yet, open from this season on in the tier. */
     function drawQuests(career) {
         const seasons = career.seasonsIn[career.tier] || 1;
-        const pool = Quests.QUESTS.filter((q) => q.tier === career.tier && q.minSeason <= seasons && !career.questsDone.includes(q.id)).map((q) => q.id);
+        const pool = Quests.QUESTS.filter((q) => q.tier === career.tier && q.minSeason <= seasons && !career.questsDone.includes(q.id)
+            && PLAYABLE_GOALS.includes(q.goal.type)).map((q) => q.id);
         return shuffle(pool, rng(hash(career.seed, 'quests', career.season, career.tier))).slice(0, TIERS[career.tier].quests);
     }
 
@@ -344,7 +348,7 @@
     }
 
     return {
-        VERSION, YOU, TIER_IDS, TIERS, TICKET_RANK, KNOCKOUT_RANK,
+        VERSION, YOU, TIER_IDS, TIERS, TICKET_RANK, KNOCKOUT_RANK, PLAYABLE_GOALS,
         fixtures, leagueClubs, newCareer, nextMatch, recordSeries, standings, rank, seasonOver, finishSeason,
         canTravel, travel, rivalOpponent, questOpponent, availableQuests, attemptQuest, sanitizeCareer,
     };

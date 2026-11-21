@@ -41,5 +41,7 @@ export function getViewCoords(r, c) {
 
 // Returns the drafting zone on the VIEW (6x8)
 export function getDraftZoneView() {
-    return { min: 3, max: 5 }; // Bottom 3 rows of the 6x8 view
+    // A career quest may have player 1 draft on the 3 rows nearest the middle (engine.js draftRows).
+    const inverted = state.career && state.career.rules.invertedRows && state.currentPlayer === 1 && !state.currentRoomCode;
+    return inverted ? { min: 0, max: 2 } : { min: 3, max: 5 }; // Bottom 3 rows of the 6x8 view
 }

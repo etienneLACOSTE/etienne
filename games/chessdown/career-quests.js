@@ -43,7 +43,7 @@
      *   lockedLineup: the same line-up for every game of the quest
      */
     const RULES = ['squad', 'banned', 'maxPieces', 'originalSquad', 'noRetreat', 'invertedRows', 'noCaptureMoves', 'timer', 'lockedLineup'];
-    /** What must be done: win the match, score with a given piece, score n touchdowns in a game, solve a puzzle, win n games in a row. */
+    /** What must be done: win the match, score with a given piece, score n touchdowns in the best of 3 (a touchdown wins a game), solve a puzzle, win n games in a row. */
     const GOALS = ['win', 'touchdownWith', 'touchdowns', 'puzzle', 'streak'];
     /** Who the experience goes to: every club player, those who played, or the players of one type. */
     const XP_TARGETS = ['all', 'engaged', ...PIECES];
@@ -69,7 +69,7 @@
         quest('street-match', 'school', 'citystade', 'special', 'single', { timer: 15 }, win, xp('engaged', 15)),
         quest('market-rush', 'school', 'market', 'challenge', 'single', { maxPieces: 5 }, win, xp('all', 20)),
         quest('gym-warmup', 'school', 'gym', 'puzzle', 'single', {}, { type: 'puzzle', id: 'pawn-push', moves: 4 }, xp('p', 20)),
-        quest('mayor-photo', 'school', 'townhall', 'recruit', 'single', {}, { type: 'touchdowns', n: 2 }, { recruit: { type: 'p', level: 2, name: 'Basile' } }, 2),
+        quest('mayor-photo', 'school', 'townhall', 'recruit', 'bo3', {}, { type: 'touchdowns', n: 2 }, { recruit: { type: 'p', level: 2, name: 'Basile' } }, 2),
         quest('quiet-pitch', 'school', 'park', 'challenge', 'single', { noCaptureMoves: 6 }, win, xp('engaged', 25), 2),
         // County: Val-de-Loir
         quest('veteran', 'county', 'inn', 'recruit', 'bo3', {}, win, { recruit: { type: 'b', level: 3 } }, 1, { difficulty: 'expert', budget: 15 }),
@@ -97,7 +97,7 @@
         quest('grand-prix', 'national', 'racetrack', 'special', 'single', { timer: 10 }, win, xp('engaged', 70)),
         quest('museum-night', 'national', 'museum', 'recruit', 'single', { squad: ['k', 'q', 'r', 'r', 'b', 'n', 'p', 'p'] }, win, { recruit: { type: 'n', level: 3 } }),
         quest('state-visit', 'national', 'palace', 'special', 'bo3', { noRetreat: true }, win, xp('all', 90), 2),
-        quest('front-page', 'national', 'newspaper', 'challenge', 'single', {}, { type: 'touchdowns', n: 3 }, xp('engaged', 70), 2),
+        quest('front-page', 'national', 'newspaper', 'challenge', 'bo3', {}, { type: 'touchdowns', n: 2 }, xp('engaged', 70), 2),
         // International
         quest('midnight-blitz', 'international', 'seoul', 'special', 'bo3', { timer: 10 }, win, xp('all', 150)),
         quest('founders', 'international', 'lagos', 'cosmetic', 'single', { originalSquad: true }, win, { cosmetic: 'jersey-heritage' }),
@@ -131,6 +131,7 @@
         if (!GOALS.includes(g.type)) errors.push('goal');
         if (g.type === 'touchdownWith' && !PIECES.includes(g.piece)) errors.push('goal piece');
         if ((g.type === 'touchdowns' || g.type === 'streak') && !isInt(g.n, 2, 10)) errors.push('goal n');
+        if (g.type === 'touchdowns' && (q.format !== 'bo3' || g.n > 2)) errors.push('touchdowns: at most 2, in a best of 3');
         if (g.type === 'puzzle' && !(typeof g.id === 'string' && isInt(g.moves, 1, 10))) errors.push('puzzle');
         if (g.type === 'streak' && q.format !== 'single') errors.push('streak of single games');
         const w = q.reward || {};

@@ -49,7 +49,7 @@ test('the quest catalogue: every quest is well formed, 8 per tier, enough for a 
     for (const tier of Career.TIER_IDS) {
         const quests = Quests.QUESTS.filter((q) => q.tier === tier);
         assert.equal(quests.length, 8, tier);
-        assert.ok(quests.filter((q) => q.minSeason === 1).length >= Career.TIERS[tier].quests, tier);
+        assert.ok(quests.filter((q) => q.minSeason === 1 && Career.PLAYABLE_GOALS.includes(q.goal.type)).length >= Career.TIERS[tier].quests, tier);
     }
     // The checks catch mistakes
     const bad = { ...Quests.QUESTS[0], place: 'stadium', rules: { squad: ['p', 'p'], fly: true }, reward: { xp: { to: 'all', amount: 10 }, cosmetic: 'old-jersey' } };

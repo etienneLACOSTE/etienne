@@ -15,7 +15,8 @@ import { t } from '../../../assets/js/i18n.js';
 import { saveSettings, showSettings } from './settings.js';
 import { askFormat, hideScore, startSeries } from './match.js';
 import { loadClub } from './club-store.js';
-import { openCareer } from './career-view.js';
+import { closeCareer, openCareer } from './career-view.js';
+import { beginCareerMatch, endCareerMatch } from './career-match.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
 import { beginAllStar, endAllStar } from './all-star.js';
@@ -54,14 +55,42 @@ function openAllStar() {
 }
 
 /**
- * The career (docs/games/chessdown-career.md) with the club; back to the club's page from it.
- * Not on the menus yet: its matches open in the next step (the tests open it from here).
+ * The career (docs/games/chessdown-career.md) with the club, from the club's page; back to
+ * the club's page from it, or into a match (a matchday or a side quest).
  */
 export function openCareerPage(club) {
     showScreen(/** @type {HTMLElement} */ (document.getElementById('career-screen')));
     openCareer(club, {
         onClub: () => openClubPage(loadClub() || club, () => { showScreen(ui.mainMenu); document.getElementById('btn-all-star')?.focus(); }),
+        onPlay: (spec) => startCareerMatch(loadClub() || club, spec),
     });
+}
+
+/** A career match: the club against the rival's bot, with what the match asks (career-match.js). */
+function startCareerMatch(club, spec) {
+    closeCareer();
+    state.currentRoomCode = null;
+    state.isBotMatch = true;
+    beginAllStar(club);
+    state.playerColors[1] = nearestJersey(club.primary);
+    const format = beginCareerMatch(spec);
+    loadBotProfileForDifficulty(state.career.opponent.difficulty);
+    state.botArchetype = state.career.opponent.archetype;
+    enterFullscreen();
+    startSeries(format);
+    startDraftPhase(1);
+}
+
+/** The career match is over: back to the map, the club as it is now. */
+function backToCareer() {
+    const club = state.allStar ? state.allStar.club : loadClub();
+    resetGame();
+    endCareerMatch();
+    endAllStar();
+    state.gameState = 'mainMenu';
+    hideScore();
+    if (club) openCareerPage(club);
+    else showScreen(ui.mainMenu);
 }
 
 function openClubPage(club, toMenu) {
@@ -69,6 +98,7 @@ function openClubPage(club, toMenu) {
     showClub(/** @type {HTMLElement} */ (document.getElementById('club-view')), club, {
         onMenu: toMenu,
         onDeleted: openAllStar,
+        onCareer: (playing) => openCareerPage(playing),
         // A campaign match with the club: the campaign setup first (difficulty, opponent).
         onPlay: (playing) => {
             pendingClub = playing;
@@ -176,6 +206,7 @@ export function setupEventListeners() {
             state.isBotMatch = true;
             enterFullscreen();
             // All Star when it came from the club's page: the club plays, in its colours.
+            endCareerMatch(); // A friendly match or a quick game: no career rules
             if (pendingClub) {
                 beginAllStar(pendingClub);
                 state.playerColors[1] = nearestJersey(pendingClub.primary);
@@ -283,6 +314,7 @@ export function setupEventListeners() {
         }
         resetGame();
         endAllStar();
+        endCareerMatch();
         state.gameState = 'mainMenu';
         hideScore();
         showScreen(ui.mainMenu);
@@ -296,6 +328,8 @@ export function setupEventListeners() {
                 socket.emit('playAgainRequest', { roomCode: state.currentRoomCode });
                 btnRestart.textContent = t('end.waitingRematch');
                 btnRestart.disabled = true;
+            } else if (state.career && state.career.finished) {
+                backToCareer();
             } else {
                 // Local or bot: the next game of the series, or a new match once it is over.
                 const series = state.series;

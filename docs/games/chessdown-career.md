@@ -132,6 +132,31 @@ servent à faire progresser ses joueurs et à en recruter.
     gardée dans le navigateur (`pawnet.chessdown.career`) et effacée avec le club.
   - Les textes sont dans `strings/career/<langue>.js`, en 5 langues. Un test vérifie que
     chaque lieu, rival, quête, règle et récompense a son texte.
-  - L'écran n'est pas encore dans les menus : les boutons « Jouer le match » et « Accepter »
-    disent que les matchs arrivent avec l'étape 4. Les tests l'ouvrent depuis `events.js`
-    (`openCareerPage`).
+  - L'écran s'ouvre depuis la page du club, avec le bouton « Carrière » (depuis l'étape 4).
+- **Étape 4 (faite)** : les matchs (`js/career-match.js`) :
+  - le stade joue la journée suivante, en best of 3 avec 30 s par tour, contre l'armée du
+    rival (son style, et un budget qui dépend de sa force) ;
+  - une quête joue son match avec ses règles :
+    - effectif imposé, pièces interdites et nombre maximum de pièces : le banc ne propose que
+      les joueurs permis, et la draft est vérifiée (`checkArmy`) ;
+    - rangées inversées, aucun recul, pas de prise pendant N coups, chrono ;
+    - composition verrouillée (la même composition rejouée automatiquement) ;
+    - série de victoires (des parties simples enchaînées) ;
+  - à la fin, le résultat va dans la carrière : le classement, la quête réussie (elle disparaît)
+    ou ratée, la récompense (XP, recrue à son niveau, recrue au choix choisie avant le match,
+    maillot) ; en fin de saison, le rang, le ticket et le titre ;
+  - le bouton de l'écran de fin ramène à la carte.
+
+  Changements faits en route :
+  - un touchdown termine la partie, donc « 2 touchdowns dans une partie » était impossible :
+    ces quêtes demandent maintenant 2 touchdowns dans le best of 3 ;
+  - les quêtes « problème » ne sont pas encore tirées au sort : il leur faut leurs positions ;
+  - le Régional tire donc 4 quêtes par saison au lieu de 5.
+
+## Pas encore fait
+
+- Les problèmes (positions et objectifs en N coups) pour les 5 quêtes « problème ».
+- La Coupe de la ville et la coupe nationale.
+- Le maillot « Héritage » est gardé avec le club, mais pas encore proposé sur la page du club.
+- Le tutoriel scolaire scénarisé (étape 5) : les journées 1 à 4 ne limitent pas encore les
+  pièces, et Gérard ne commente pas encore les matchs.

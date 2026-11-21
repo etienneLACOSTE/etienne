@@ -1135,9 +1135,8 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-quests small { color: var(--muted-on-dark); font-weight: 600; }
 
 @media (max-width: 880px) {
-    .career-stage { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
-    .career-map-fit { container-type: inline-size; }
-    .career-map { width: 100%; }
+    /* The map and the card share the height left: both always in view. */
+    .career-stage { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr); }
     .career-journal { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
@@ -1147,10 +1146,13 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
     .career-board span:first-child { display: none; }
     .career-gerard { grid-template-columns: 36px 1fr; gap: 10px; }
     .career-gerard canvas { width: 36px; height: 36px; }
-    .career-bubble { font-size: 0.85rem; padding: 4px 10px; }
+    .career-bubble { font-size: 0.85rem; padding: 4px 10px; max-height: calc(3 * 1.4em + 26px); overflow-y: auto; }
     .career-marker .ex { min-width: 18px; height: 21px; font-size: 14px; border-width: 2px; }
     .career-scales li { font-size: 11px; padding: 2px 7px; }
     .career-lock { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .career-marker.transport .ex { font-size: 9px; }
 }
 @media (prefers-reduced-motion: reduce) { .career-marker .ex { animation: none; } .career-marker .tag { transition: none; } }
+.career-pick { font: 700 13px var(--text); border: 2px solid #8a8a8a; border-radius: 999px; padding: 3px 10px; background: transparent; color: var(--white); cursor: pointer; }
+.career-pick[aria-checked="true"] { background: var(--amber); border-color: var(--amber); color: var(--black); }
+.career-choice { display: grid; gap: 6px; }

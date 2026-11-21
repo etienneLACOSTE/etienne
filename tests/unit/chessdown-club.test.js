@@ -84,3 +84,18 @@ test('initials: up to 3 letters from the club name', () => {
     assert.equal(Club.initials('Les Fous du Roi'), 'LFR');
     assert.equal(Club.initials('!!'), 'FC');
 });
+
+test('career rewards: an experience bonus (never for the king), a recruit at its level', () => {
+    const club = Club.newClub(identity, 'Le Capitaine');
+    const [king, rook] = club.players;
+    assert.deepEqual([Club.gainXp(rook, 65).xp, Club.gainXp(rook, 65).level], [65, 3]);
+    assert.equal(Club.gainXp(king, 100), king);
+    assert.equal(Club.gainXp(rook, -5), rook);
+    const signed = Club.recruit(club, 'q', 'Prodige', { level: 3, fromQuest: true });
+    const queen = signed.players[signed.players.length - 1];
+    assert.deepEqual([queen.type, queen.name, queen.level, queen.xp], ['q', 'Prodige', 3, Club.XP_THRESHOLDS[2]]);
+    assert.equal(signed.recruits, club.recruits, 'a quest recruit does not use a pending one');
+    // Cosmetics kept when known, dropped otherwise
+    const kept = Club.sanitizeClub({ ...JSON.parse(JSON.stringify(club)), cosmetics: ['jersey-heritage', 'gold-boots'] });
+    assert.deepEqual(kept.cosmetics, ['jersey-heritage']);
+});

@@ -6,6 +6,7 @@
 import { Series, state } from './state.js';
 import { choose } from '../../../assets/js/dialog.js';
 import { t } from '../../../assets/js/i18n.js';
+import { careerTimer } from './career-match.js';
 
 const scoreBox = /** @type {HTMLElement | null} */ (document.getElementById('series-score'));
 
@@ -25,7 +26,7 @@ export function startSeries(format) {
 /** The series this page plays now (also the one an online server sends). */
 export function useSeries(series) {
     state.series = series;
-    const timer = Series.timerFor(series, state.chosenTimer);
+    const timer = careerTimer() || Series.timerFor(series, state.chosenTimer); // A career match: its own turn time
     if (!state.currentRoomCode) {
         state.timerMode = timer.mode;
         state.timerBaseSeconds = timer.seconds;

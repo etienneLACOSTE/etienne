@@ -1,7 +1,7 @@
 // @ts-check
 // Gameplay: turns, timer, moves, end of game.
 import { fireConfetti } from '../confetti.js';
-import { COLOR_HEX, COLS, MAX_POINTS, ROWS, playerName, socket, state, ui } from './state.js';
+import { COLOR_HEX, COLS, Engine, MAX_POINTS, ROWS, playerName, socket, state, ui } from './state.js';
 import { clearHighlights, createBoardDOM, getSquareElement, highlightValidMoves, renderBoard, showScreen, showStarter, startCoinFlip } from './board-view.js';
 import { getBoardCoords, getViewCoords } from './coords.js';
 import { chooseBotMove } from './bot.js';
@@ -15,6 +15,7 @@ import { t } from '../../../assets/js/i18n.js';
 import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
 import { afterMove, beforeMove, noteGameStart, noteTouchdown, settleGame } from './all-star.js';
 import { esc } from './club-art.js';
+import { careerAfterGame, careerGameRules, noteCareerTouchdown } from './career-match.js';
 
 // --- Gameplay Logic ---
 
@@ -29,6 +30,7 @@ export function startGameplay(winner, { coin = true } = {}) {
     resetDrawOffers();
     state.matchStartedAt = Date.now();
     state.positionHistory = {}; // Reset repetition history
+    state.rules = careerGameRules(); // A career quest's special rules (fresh each game), or none
     state.playerTimeRemaining[1] = state.timerBaseSeconds * 1000;
     state.playerTimeRemaining[2] = state.timerBaseSeconds * 1000;
     
@@ -97,6 +99,7 @@ export function startTurn() {
     if (checkTouchdownWin()) {
         const winner = state.currentPlayer;
         noteTouchdown(winner);
+        noteCareerTouchdown(winner, state.board[Engine.endzoneRow(winner)].filter((p) => p && p.player === winner).map((p) => p.type));
         const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
         
         if (state.myPlayerNumber === winner) {
@@ -339,7 +342,7 @@ export function endGame(title, reason, winner, how) {
     ui.victoryTitle.textContent = title;
     ui.victoryReason.textContent = reason;
     showSeriesEnd();
-    showClubResults(settleGame(winner));
+    showClubResults(settleGame(winner), careerAfterGame(winner));
     
     const canvas = document.getElementById('confetti-canvas');
     if (!state.currentRoomCode && winner === 2 && !state.isBotMatch) {
@@ -358,7 +361,7 @@ export function endGame(title, reason, winner, how) {
  * a recruit when the series is won. Nothing outside All Star.
  * @param {{ levelUps: { name: string, level: number }[], recruit: boolean } | null} results
  */
-function showClubResults(results) {
+function showClubResults(results, career = null) {
     let box = document.getElementById('victory-club');
     if (!box) {
         box = document.createElement('ul');
@@ -367,10 +370,15 @@ function showClubResults(results) {
         document.getElementById('victory-series')?.after(box);
     }
     const lines = results ? [
+        ...(career ? career.lines : []),
         ...results.levelUps.map((u) => t('allStar.levelUp', { name: u.name, n: u.level })),
         ...(results.recruit ? [t('allStar.recruitWon')] : []),
         ...(results.levelUps.length || results.recruit ? [] : [t('allStar.xpCounted')]),
     ] : [];
+    // A career match: once over, back to the map; a streak goes on with its next game.
+    const restart = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-restart'));
+    if (career && restart && career.finished) restart.textContent = t('career.backToMap');
+    else if (career && restart && career.next) restart.textContent = career.next;
     box.innerHTML = lines.map((line) => `<li>${esc(line)}</li>`).join('');
     box.hidden = !lines.length;
 }

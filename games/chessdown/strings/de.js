@@ -337,6 +337,7 @@ export default {
     'club.deleteAsk': '{club} und alle seine Spieler löschen? Das lässt sich nicht rückgängig machen.',
     'club.deleteConfirm': 'Verein löschen',
     // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
+    'allStar.career': 'Karriere',
     'allStar.play': 'Ein Freundschaftsspiel spielen',
     'allStar.bench': 'Dein Kader: Wähle einen Spieler, dann ein Feld',
     'allStar.place': '{name} aufstellen, {piece}, Stufe {n}, {cost} Punkte',

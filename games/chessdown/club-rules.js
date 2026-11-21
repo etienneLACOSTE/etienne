@@ -23,6 +23,8 @@
     const NAME_MAX = 24;
     const PATTERNS = ['plain', 'stripes', 'pinstripes', 'halves', 'quarters', 'hoops', 'sash', 'chevron', 'sleeves'];
     const SHAPES = ['shield', 'round', 'diamond', 'badge'];
+    /** What a club may unlock in the career (a quest's cosmetic reward). */
+    const COSMETICS = ['jersey-heritage'];
     const EMBLEMS = [
         'n', 'r', 'b', 'q', 'k',
         'wolf', 'lion', 'eagle', 'bull', 'bear', 'fox',
@@ -74,6 +76,13 @@
         return { ...player, xp, level: Math.max(player.level, levelForXp(xp)), stats };
     }
 
+    /** A bonus of experience (a career quest's reward): the level never goes down; the king gains none. */
+    function gainXp(player, amount) {
+        if (player.type === 'k' || !Number.isInteger(amount) || amount <= 0) return player;
+        const xp = player.xp + amount;
+        return { ...player, xp, level: Math.max(player.level, levelForXp(xp)) };
+    }
+
     const newStats = () => ({ games: 0, moves: 0, captures: 0, captured: 0, touchdowns: 0 });
 
     /** A new player of `type`, level 1 (the king: level 5). */
@@ -90,11 +99,19 @@
         return { version: 1, ...identity, season: 1, tier: 'school', players, recruits: 0, nextId: players.length + 1, lineups: [] };
     }
 
-    /** One more player for the squad (a recruit), or the club unchanged when it is full or the type is not allowed. */
-    function recruit(club, type, name) {
+    /**
+     * One more player for the squad (a recruit), or the club unchanged when it is full or the
+     * type is not allowed. A recruit won by a series uses one of the club's pending recruits;
+     * a career quest's (`fromQuest`) arrives directly, at its `level`, with that level's experience.
+     * @param {any} club @param {string} type @param {string} name
+     * @param {{ level?: number, fromQuest?: boolean }} [options]
+     */
+    function recruit(club, type, name, { level = 1, fromQuest = false } = {}) {
         if (!RECRUIT_TYPES.includes(type) || club.players.length >= MAX_SQUAD) return club;
-        const player = newPlayer(club.nextId, type, cleanName(name) || ROOKIE_NAMES[club.nextId % ROOKIE_NAMES.length]);
-        return { ...club, players: [...club.players, player], nextId: club.nextId + 1, recruits: Math.max(0, club.recruits - 1) };
+        const lv = Math.min(5, Math.max(1, Math.floor(level)));
+        const player = { ...newPlayer(club.nextId, type, cleanName(name) || ROOKIE_NAMES[club.nextId % ROOKIE_NAMES.length]), level: lv, xp: XP_THRESHOLDS[lv - 1] };
+        const recruits = fromQuest ? club.recruits : Math.max(0, club.recruits - 1);
+        return { ...club, players: [...club.players, player], nextId: club.nextId + 1, recruits };
     }
 
     /**
@@ -132,6 +149,7 @@
             tier: typeof data.tier === 'string' ? data.tier : 'school',
             players, recruits: Number.isInteger(data.recruits) && data.recruits >= 0 ? Math.min(data.recruits, 5) : 0,
             nextId, lineups,
+            ...(Array.isArray(data.cosmetics) && data.cosmetics.length ? { cosmetics: [...new Set(data.cosmetics.filter((c) => COSMETICS.includes(c)))] } : {}),
         };
     }
 
@@ -142,7 +160,7 @@
     }
 
     return {
-        XP_THRESHOLDS, XP, STARTING_SQUAD, RECRUIT_TYPES, MAX_SQUAD, NAME_MIN, NAME_MAX, PATTERNS, SHAPES, EMBLEMS, ROOKIE_NAMES,
-        cleanName, levelForXp, xpToNext, applyGame, newPlayer, newClub, recruit, sanitizeClub, initials,
+        XP_THRESHOLDS, XP, STARTING_SQUAD, RECRUIT_TYPES, MAX_SQUAD, NAME_MIN, NAME_MAX, PATTERNS, SHAPES, EMBLEMS, ROOKIE_NAMES, COSMETICS,
+        cleanName, levelForXp, xpToNext, applyGame, gainXp, newPlayer, newClub, recruit, sanitizeClub, initials,
     };
 });

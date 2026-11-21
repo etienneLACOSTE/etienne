@@ -54,10 +54,10 @@ export function rosterTable(club, { rename = true } = {}) {
  * Show the club's page in `box`.
  * @param {HTMLElement} box
  * @param {any} club
- * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void }} handlers
- *   onPlay: a friendly match with the club against the bot
+ * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void, onCareer: (club: any) => void }} handlers
+ *   onPlay: a friendly match with the club against the bot; onCareer: the career's map
  */
-export function showClub(box, club, { onMenu, onDeleted, onPlay }) {
+export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
     const render = (focusId = '') => {
         box.innerHTML = `
           <div class="club-card">
@@ -68,7 +68,8 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay }) {
             </div>
             <figure class="club-preview club-card-jersey">${jerseySVG(club)}</figure>
           </div>
-          <div class="club-row"><button type="button" class="btn-primary btn-big" id="club-play">${esc(t('allStar.play'))}</button></div>
+          <div class="club-row"><button type="button" class="btn-primary btn-big" id="club-career">${esc(t('allStar.career'))}</button>
+            <button type="button" class="btn-secondary" id="club-play">${esc(t('allStar.play'))}</button></div>
           <section class="club-section" aria-labelledby="club-register-title">
             <h3 id="club-register-title">${esc(t('club.registerTitle'))}</h3>
             ${rosterTable(club)}
@@ -99,6 +100,7 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay }) {
     function wire() {
         box.querySelector('#club-menu')?.addEventListener('click', onMenu);
         box.querySelector('#club-play')?.addEventListener('click', () => onPlay(club));
+        box.querySelector('#club-career')?.addEventListener('click', () => onCareer(club));
         box.querySelector('#club-delete')?.addEventListener('click', async () => {
             if (!await ask(t('club.deleteAsk', { club: club.name }), { confirm: t('club.deleteConfirm'), cancel: t('dialog.cancel') })) return;
             deleteClub();
