@@ -324,8 +324,12 @@ test.describe('Career', () => {
 
   test('a boss: its portrait and fixed army on the card, the same army on the board', async ({ page }) => {
     await inCounty(page, ['old-bull', 'mud-match', 'ploughing', 'veteran']);
-    await page.getByRole('button', { name: 'Side quest: Moulin farm' }).click();
+    // On the map: a horned skull for the boss, a crown for the championship
+    await expect(page.getByRole('button', { name: 'Boss: Moulin farm' }).locator('svg.pixel-icon.skull')).toBeVisible();
+    await expect(page.locator('.career-marker.main svg.pixel-icon.crown')).toBeVisible();
+    await page.getByRole('button', { name: 'Boss: Moulin farm' }).click();
     await expect(card(page).locator('h3')).toHaveText('The old bull');
+    await expect(card(page).locator('.career-kind')).toHaveText('Boss');
     await expect(card(page).locator('.career-rival')).toContainText('Marcel Taureau');
     await expect(card(page)).toContainText('Boss: Expert bot, a fixed army: ♜ Rook 4★, ♜ Rook 4★');
     await card(page).getByRole('button', { name: 'Accept' }).click();

@@ -1068,6 +1068,8 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 }
 .career-marker.main .ex { background: var(--amber); }
 .career-marker.side .ex { background: var(--quest-blue); }
+.career-marker.boss .ex { background: var(--quest-blue); }
+.career-marker .pixel-icon { display: block; }
 .career-marker.done .ex { background: #6b6b6b; animation: none; font-size: 15px; }
 .career-marker.home .ex { background: var(--white); animation: none; font: 400 16px var(--pieces); }
 .career-marker.transport .ex { background: var(--white); animation: none; font-size: 11px; letter-spacing: 0.02em; }
@@ -1104,6 +1106,10 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-dot { width: 13px; height: 13px; border: 2px solid var(--black); border-radius: 2px; display: inline-block; flex: none; background: #6b6b6b; }
 .career-dot.main { background: var(--amber); }
 .career-dot.side { background: var(--quest-blue); }
+/* A crown (championship) or a horned skull (boss) instead of the square */
+.career-dot.icon { width: auto; height: auto; border: 0; border-radius: 0; background: none; display: inline-grid; place-items: center; }
+.career-dot.icon.main { color: var(--amber); }
+.career-dot.icon.boss { color: var(--quest-blue); }
 .career-rival { display: grid; grid-template-columns: 60px 1fr; gap: 10px; align-items: center; border: 2px solid #2a2f2c; border-radius: 6px; padding: 6px; }
 .career-rival canvas { width: 60px; height: 60px; image-rendering: pixelated; border: 2px solid var(--white); border-radius: 4px; }
 .career-rival-name { font: 900 17px/1.05 var(--display); text-transform: uppercase; }

@@ -69,18 +69,36 @@ const quoted = (text) => esc(t('career.quoted', { text }));
 const save = () => saveCareer(career);
 
 // ---------- What stands on the map ----------
+/** Pixel icons of the markers, drawn from rows of 'X' (filled) and '.' (empty), in the text colour. */
+const PIXEL_ICONS = {
+    // The championship (the main quest): a crown
+    crown: ['X...X...X', 'XX.XXX.XX', 'XXXXXXXXX', 'X.XX.XX.X', 'XXXXXXXXX'],
+    // A boss: a horned skull
+    skull: ['X.........X', 'XX..XXX..XX', '.XXXXXXXXX.', '..XXXXXXX..', '..X..X..X..', '..X..X..X..', '..XXX.XXX..', '...XXXXX...', '...X.X.X...'],
+};
+/** `height`: in CSS pixels (the map's markers 18, the cards 16); whole pixels of the art stay crisp. */
+function pixelIcon(name, height = 18) {
+    const rows = PIXEL_ICONS[name];
+    const w = rows[0].length;
+    const scale = Math.max(1, Math.round(height / rows.length));
+    const rects = rows.flatMap((row, y) => [...row].map((ch, x) => (ch === 'X' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : ''))).join('');
+    return `<svg class="pixel-icon ${name}" viewBox="0 0 ${w} ${rows.length}" width="${w * scale}" height="${rows.length * scale}" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true" focusable="false">${rects}</svg>`;
+}
+
 /** The places with a button: the club, the stadium, the transport, and the places of this season's open quests. */
 function markers() {
+    /** @type {{ place: string, kind: string, face: string, icon?: string }[]} */
     const list = [{ place: 'home', kind: 'home', face: '♜' }];
     const next = Career.nextMatch(career);
     const away = cupAway(); // The City Cup is played at the town hall, not at the stadium
     const atStadium = next && !(next.phase === 'cup' && away);
-    list.push({ place: 'stadium', kind: atStadium ? 'main' : 'done', face: atStadium ? '!' : '✓' });
-    if (away && next && next.phase === 'cup') list.push({ place: away, kind: 'main', face: '!' });
+    list.push({ place: 'stadium', kind: atStadium ? 'main' : 'done', face: atStadium ? '' : '✓', ...(atStadium ? { icon: 'crown' } : {}) });
+    if (away && next && next.phase === 'cup') list.push({ place: away, kind: 'main', face: '', icon: 'crown' });
     const transport = Quests.TRANSPORT[career.tier];
     if (transport) list.push({ place: 'transport', kind: 'transport', face: t(`career.stub.${transport}`) });
     for (const q of Career.availableQuests(career)) {
-        if (!list.some((m) => m.place === q.place)) list.push({ place: q.place, kind: 'side', face: '!' });
+        if (list.some((m) => m.place === q.place)) continue;
+        list.push(q.kind === 'boss' ? { place: q.place, kind: 'boss', face: '', icon: 'skull' } : { place: q.place, kind: 'side', face: '!' });
     }
     if (away && !list.some((m) => m.place === away)) list.push({ place: away, kind: 'locked', face: '✕' });
     return list;
@@ -110,7 +128,7 @@ function renderMarkers() {
         const kind = m.kind === 'done' ? 'main' : m.kind;
         b.setAttribute('aria-label', t(`career.marker.${kind}`, { place: placeName(m.place) }));
         b.setAttribute('aria-pressed', String(map.at() === m.place));
-        b.innerHTML = `<span class="ex" aria-hidden="true">${esc(m.face)}</span><span class="tag" aria-hidden="true">${esc(placeName(m.place))}</span>`;
+        b.innerHTML = `<span class="ex" aria-hidden="true">${m.icon ? pixelIcon(m.icon) : esc(m.face)}</span><span class="tag" aria-hidden="true">${esc(placeName(m.place))}</span>`;
         b.addEventListener('click', () => goTo(m.place));
         ui.map.appendChild(b);
     }
@@ -158,7 +176,7 @@ function opponentLine(o) {
 }
 
 function showCard(place) {
-    const kind = (k) => `<span class="career-kind"><span class="career-dot ${k}" aria-hidden="true"></span>${esc(t(`career.kind.${k}`))}</span>`;
+    const kind = (k) => `<span class="career-kind">${k === 'boss' ? `<span class="career-dot icon boss" aria-hidden="true">${pixelIcon('skull', 16)}</span>` : `<span class="career-dot ${k}" aria-hidden="true"></span>`}${esc(t(`career.kind.${k}`))}</span>`;
     if (place === 'home') {
         setCard('home', `${kind('home')}<h3>${esc(club.name)}</h3><p class="career-place">${esc(placeName('home'))}</p>
             <p class="career-quote">${esc(t('career.homeText'))}</p>
@@ -186,7 +204,7 @@ function showCard(place) {
     const conditions = q.goal.type === 'puzzle'
         ? [esc(t('career.puzzle.still')), esc(t('career.once'))] // A puzzle: a set position, the other side never moves
         : [esc(t(`rule.${q.format}`)), ...ruleTexts(q.rules), opponentLine(Career.questOpponent(career, q)), esc(t('career.once'))];
-    setCard('side', `${kind('side')}
+    setCard('side', `${kind(q.kind === 'boss' ? 'boss' : 'side')}
         <h3>${esc(t(`quest.${q.id}.title`))}</h3>
         <p class="career-place">${esc(placeName(place))} · ${esc(t(`quest.${q.id}.giver`))}</p>
         <h4>${esc(t('career.rewards'))}</h4>${chips([rewardText(q.reward)], 'reward')}
@@ -238,7 +256,7 @@ function rewardText(r) {
 
 function showMatchCard() {
     const m = Career.nextMatch(career);
-    const head = `<span class="career-kind"><span class="career-dot main" aria-hidden="true"></span>${esc(t('career.kind.main'))}</span>`;
+    const head = `<span class="career-kind"><span class="career-dot icon main" aria-hidden="true">${pixelIcon('crown', 16)}</span>${esc(t('career.kind.main'))}</span>`;
     if (!m) {
         setCard('main', `${head}<h3>${esc(placeName('stadium'))}</h3><p class="career-quote">${esc(t('career.seasonDone'))}</p>`);
         return;
@@ -269,7 +287,7 @@ function showMatchCard() {
 
 /** The stadium once the league is over and the cup is played elsewhere: where to go. */
 function showCupElsewhere() {
-    setCard('main', `<span class="career-kind"><span class="career-dot main" aria-hidden="true"></span>${esc(t('career.kind.main'))}</span>
+    setCard('main', `<span class="career-kind"><span class="career-dot icon main" aria-hidden="true">${pixelIcon('crown', 16)}</span>${esc(t('career.kind.main'))}</span>
         <h3>${esc(placeName('stadium'))}</h3>
         <p class="career-quote">${esc(t('career.cup.goTo', { cup: cupName(), place: placeName(cupAway()) }))}</p>`);
 }
