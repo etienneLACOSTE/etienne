@@ -413,7 +413,9 @@ export function resetGame() {
     resetDrawOffers();
     chat?.stop();
     ui.sideStatus.classList.add('hidden');
-    ui.gameContainer.classList.remove('rotate-180');
+    // The pitch goes away with the game: a screen shown next (the career's map) gets the room.
+    ui.gameLayout.classList.add('hidden');
+    ui.gameContainer.classList.remove('rotate-180', 'draft-mode');
     ui.victoryScreen.classList.remove('rotate-180');
     const canvas = document.getElementById('confetti-canvas');
     if (canvas) canvas.classList.remove('rotate-180');

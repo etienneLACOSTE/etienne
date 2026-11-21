@@ -185,10 +185,10 @@ function showCard(place) {
     setCard('side', `${kind('side')}
         <h3>${esc(t(`quest.${q.id}.title`))}</h3>
         <p class="career-place">${esc(placeName(place))} · ${esc(t(`quest.${q.id}.giver`))}</p>
+        <h4>${esc(t('career.rewards'))}</h4>${chips([rewardText(q.reward)], 'reward')}
         <p class="career-quote">${quoted(t(`quest.${q.id}.quote`))}</p>
         <h4>${esc(t('career.goals'))}</h4><ul>${goals.map((g) => `<li>${g}</li>`).join('')}</ul>
-        <h4>${esc(t('career.conditions'))}</h4>${chips(conditions, 'limit')}
-        <h4>${esc(t('career.rewards'))}</h4>${chips([rewardText(q.reward)], 'reward')}${choice}
+        <h4>${esc(t('career.conditions'))}</h4>${chips(conditions, 'limit')}${choice}
         <div class="career-row"><button type="button" class="btn-primary" data-action="play">${esc(t('career.accept'))}</button></div>`);
     let recruitType = Club.RECRUIT_TYPES[0];
     ui.card.querySelectorAll('.career-pick').forEach((b) => b.addEventListener('click', () => {
@@ -249,12 +249,12 @@ function showMatchCard() {
     setCard('main', `${head}
         <h3>${esc(title)}</h3>
         <p class="career-place">${esc(placeName(where))} · ${esc(t('career.versus', { club: rival.club }))}</p>
+        <h4>${esc(t('career.rewards'))}</h4>${chips(cup ? [esc(t('career.cup.reward')), esc(t('career.matchXp'))] : [esc(t('career.leaguePoints')), esc(t('career.matchXp'))], 'reward')}
         <p class="career-quote">${esc(cup ? t('career.cup.quote') : t('career.matchQuote', { club: rival.club }))}</p>
         ${lesson ? `<div class="career-lesson"><h4>${esc(t('career.lessonTitle'))}</h4><p>${esc(lesson)}</p></div>` : ''}
         ${rivalBlock(rival.id)}
         <h4>${esc(t('career.goals'))}</h4><ul><li>${esc(t('goal.winSeries'))}</li></ul>
         <h4>${esc(t('career.conditions'))}</h4>${chips([esc(t('rule.bo3')), ...ruleTexts({ timer: 30, ...rules }), opponentLine(Career.rivalOpponent(career, rival.id))], 'limit')}
-        <h4>${esc(t('career.rewards'))}</h4>${chips(cup ? [esc(t('career.cup.reward')), esc(t('career.matchXp'))] : [esc(t('career.leaguePoints')), esc(t('career.matchXp'))], 'reward')}
         <div class="career-row"><button type="button" class="btn-primary" data-action="play">${esc(t('career.play'))}</button></div>`);
     if (rivalCanvas) drawCoach(rivalCanvas, rivalLook, performance.now());
     ui.card.querySelector('[data-action="play"]')?.addEventListener('click', () => play({ kind: 'league' }));

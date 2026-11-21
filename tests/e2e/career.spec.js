@@ -188,6 +188,8 @@ test.describe('Career', () => {
     await page.getByRole('button', { name: 'Side quest: Café Le Touchdown' }).click();
     await expect(card(page).locator('h3')).toHaveText('The counter bet');
     await expect(card(page)).toContainText('Only these pieces');
+    // The reward shows on arrival, without scrolling (375 px too).
+    await expect(card(page).locator('.career-chip.reward')).toBeInViewport({ ratio: 1 });
     await card(page).getByRole('button', { name: 'Accept' }).click();
     const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
     await expect(bench.getByRole('button', { name: /^Place Alex,/ })).toBeDisabled(); // A rook: not in this squad
@@ -209,6 +211,7 @@ test.describe('Career', () => {
     await page.locator('#btn-restart').dispatchEvent('pointerdown');
     await expect(page.locator('#career-screen')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Side quest: Café Le Touchdown' })).toHaveCount(0);
+    await expect(page.locator('#game-layout')).toBeHidden(); // The pitch went away with the match
   });
 
   test('a quest\'s limits hold: five pieces at most on the bench, and its own turn time', async ({ page }) => {
