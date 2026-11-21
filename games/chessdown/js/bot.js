@@ -3,7 +3,7 @@
 // (shared with the trainer, tools/chessdown/train.js).
 import { Bot, COLOR_HEX, MAX_POINTS, state } from './state.js';
 import { botLevel, isAllStar, squadBudget } from './all-star.js';
-import { careerOpponent } from './career-match.js';
+import { careerOpponent, careerPuzzle, puzzleMovesLeft } from './career-match.js';
 
 /**
  * Difficulty: the profile of an earlier or later generation of training_data.json
@@ -60,6 +60,8 @@ export function autoDraftBot() {
 
 /** The bot's move (gameplay.js plays it), or null when it has none. */
 export function chooseBotMove() {
+    // A career puzzle: the answer that holds out longest (bot-search.js puzzleDefense).
+    if (careerPuzzle()) return Bot.puzzleDefense(state, puzzleMovesLeft()) || null;
     // Deepens up to the level's depth, within the thinking time.
     return Bot.bestMove(state, 2, state.botProfile.depth, state.botProfile, Math.random, BOT_THINKING_MS) || null;
 }

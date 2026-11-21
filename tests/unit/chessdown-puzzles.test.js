@@ -1,66 +1,61 @@
-// The career's puzzles (games/chessdown/career-quests.js PUZZLES): each one can be solved in
-// its number of moves (its solution is played move by move on the engine) and not in fewer
-// (a breadth-first search over player 1's moves; the other side never moves).
+// The career's puzzles (games/chessdown/career-quests.js PUZZLES): the other side plays
+// between player 1's moves. Each puzzle is won by force (whatever the other side answers)
+// in its number of moves, and not in fewer (games/chessdown/bot-search.js puzzleFewest).
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const Engine = require('../../games/chessdown/engine.js');
+const Bot = require('../../games/chessdown/bot-search.js');
 const Quests = require('../../games/chessdown/career-quests.js');
 
-function boardOf(p) {
+function stateOf(p) {
     const board = Engine.createBoard();
     for (const [r, c, type, level] of p.mine) board[r][c] = { type, player: 1, hasMoved: true, level };
     board[p.king[0]][p.king[1]] = { type: 'k', player: 2, hasMoved: true };
     for (const [r, c] of p.stones) board[r][c] = { type: 'p', player: 2, hasMoved: true, level: 3 };
-    return board;
-}
-const copy = (board) => board.map((row) => row.map((x) => (x ? { ...x } : null)));
-const key = (board) => board.map((row) => row.map((x) => (x ? x.player + x.type : '.')).join('')).join('/');
-/** A move that solves: onto the end zone, or onto the king. */
-const solves = (board, m) => m.toR === 0 || Boolean(board[m.toR][m.toC] && board[m.toR][m.toC].type === 'k');
-
-/** The fewest moves that solve the puzzle (searching up to `limit`), or Infinity. */
-function fewestMoves(p, limit) {
-    let frontier = [boardOf(p)];
-    const seen = new Set([key(frontier[0])]);
-    for (let depth = 1; depth <= limit; depth++) {
-        const next = [];
-        for (const board of frontier) {
-            for (const m of Engine.generateAllMoves({ board, lastMove: null }, 1)) {
-                if (solves(board, m)) return depth;
-                const b = copy(board);
-                Engine.applyMove({ board: b, lastMove: null }, m);
-                const k = key(b);
-                if (!seen.has(k)) { seen.add(k); next.push(b); }
-            }
-        }
-        frontier = next;
-    }
-    return Infinity;
+    return { board, lastMove: null };
 }
 
 for (const [id, p] of Object.entries(Quests.PUZZLES)) {
-    test(`puzzle ${id}: solved in ${p.moves} moves, not fewer`, () => {
-        // Its solution, move by move, on the engine
-        const board = boardOf(p);
-        const moves = p.solution.split(' ').map((m) => m.slice(1).split('>').map((sq) => sq.split(',').map(Number)));
-        assert.equal(moves.length, p.moves);
-        moves.forEach(([[fr, fc], [tr, tc]], i) => {
-            const legal = Engine.getValidMoves({ board, lastMove: null }, fr, fc);
-            assert.ok(legal.some((m) => m.r === tr && m.c === tc), `move ${i + 1} is legal`);
-            const last = i === moves.length - 1;
-            assert.equal(solves(board, { toR: tr, toC: tc }), last, last ? 'the last move solves it' : 'not solved before the end');
-            Engine.applyMove({ board, lastMove: null }, { fromR: fr, fromC: fc, toR: tr, toC: tc });
-        });
-        assert.equal(fewestMoves(p, p.moves), p.moves, 'no shorter solution');
-        // The straight road is blocked: a stone stands in the hero's column, ahead of it
+    test(`puzzle ${id}: won by force in ${p.moves} moves, not fewer`, () => {
+        assert.equal(Bot.puzzleFewest(stateOf(p), p.moves), p.moves);
+        // The straight road is blocked: a pawn stands in the hero's column, ahead of it
         const [hr, hc] = p.mine[1];
-        assert.ok(p.stones.some(([r, c]) => c === hc && r < hr), 'a stone on the straight road');
+        assert.ok(p.stones.some(([r, c]) => c === hc && r < hr), 'a pawn on the straight road');
     });
 }
 
-test('every puzzle quest has its puzzle', () => {
+test('a puzzle played out: the solution against the defence wins within its moves', () => {
+    for (const [id, p] of Object.entries(Quests.PUZZLES)) {
+        const state = stateOf(p);
+        let won = false;
+        for (let left = p.moves; left > 0 && !won; left--) {
+            const m = Bot.puzzleSolution(state, left);
+            assert.ok(m, `${id}: a winning move with ${left} left`);
+            const target = state.board[m.toR][m.toC];
+            Engine.applyMove(state, m);
+            if (target && target.type === 'k') { won = true; break; }
+            assert.ok(!Engine.hasPieceInEndzone(state.board, 2), `${id}: no touchdown for the defence`);
+            const answer = Bot.puzzleDefense(state, left - 1);
+            if (answer) Engine.applyMove(state, answer);
+            if (Engine.hasPieceInEndzone(state.board, 1)) won = true; // The touchdown held
+        }
+        assert.ok(won, id);
+    }
+});
+
+test('the defence: takes the king when it can; null with no move', () => {
+    const board = Engine.createBoard();
+    board[11][6] = { type: 'k', player: 1, hasMoved: true };
+    board[10][5] = { type: 'k', player: 2, hasMoved: true };
+    assert.deepEqual(Bot.puzzleDefense({ board, lastMove: null }, 2), { fromR: 10, fromC: 5, toR: 11, toC: 6 });
+    const empty = Engine.createBoard();
+    empty[11][6] = { type: 'k', player: 1, hasMoved: true };
+    assert.equal(Bot.puzzleDefense({ board: empty, lastMove: null }, 2), null);
+});
+
+test('every puzzle quest has its puzzle, and its experience goes to the piece that played', () => {
     for (const q of Quests.QUESTS.filter((x) => x.goal.type === 'puzzle')) {
         assert.ok(Quests.PUZZLES[q.goal.id], q.id);
-        assert.deepEqual(q.reward.xp, { to: 'engaged', amount: Quests.QUEST_XP }, `${q.id}: the experience goes to the piece that played`);
+        assert.deepEqual(q.reward.xp, { to: 'engaged', amount: Quests.QUEST_XP });
     }
 });

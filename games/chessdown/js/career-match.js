@@ -113,17 +113,24 @@ export function careerTimer() {
 export const careerPuzzle = () => (state.career ? state.career.puzzle : null);
 
 /**
- * A turn starts during a puzzle: the other side always passes ('skip'); player 1's moves are
- * counted, and once they are all played without a touchdown the puzzle is lost ('out').
- * @returns {'skip' | 'out' | null}
+ * A turn starts during a puzzle: the other side answers (bot.js, bot-search.js
+ * puzzleDefense); player 1's moves are counted, and once they are all played without a
+ * score the puzzle is lost ('out').
+ * @returns {'out' | null}
  */
 export function puzzleTurn(player) {
     const c = state.career;
     if (!c || !c.puzzle) return null;
-    if (player === 2) return 'skip';
+    if (player === 2) return null;
     if (c.puzzleMoves >= c.puzzle.moves) return 'out';
     c.puzzleMoves++;
     return null;
+}
+
+/** Player 1's moves still to come in the puzzle (the defence looks that far). */
+export function puzzleMovesLeft() {
+    const c = state.career;
+    return c && c.puzzle ? Math.max(0, c.puzzle.moves - c.puzzleMoves) : 0;
 }
 
 /** "Move 2 of 3" during a puzzle: { n, total }, or null. */

@@ -113,17 +113,18 @@
 
     /**
      * The puzzles of the 'puzzle' quests: player 1's pieces ([row, col, type, level]), the other
-     * side's king and its stones (pawns that never move: the bot passes its turns). Reach the
-     * end zone (row 0) or take the king in `moves` moves at most. `solution` is a shortest one;
-     * tests/unit/chessdown-puzzles.test.js checks that none is shorter.
+     * side's king and its pawns (level 3). The other side plays too (bot-search.js
+     * puzzleDefense): win in `moves` moves at most, whatever it answers, by taking the king or
+     * by a touchdown it cannot take back. tests/unit/chessdown-puzzles.test.js checks that
+     * each one is won by force in exactly that many moves (bot-search.js puzzleFewest).
      */
     const PUZZLES = {
-        'rook-run': { moves: 3, mine: [[11, 6, 'k', 5], [9, 3, 'r', 1]], king: [0, 7], stones: [[8, 7], [5, 5], [6, 1], [3, 3]], solution: 'r9,3>6,3 r6,3>3,3 r3,3>0,3' },
-        'pawn-push': { moves: 4, mine: [[11, 6, 'k', 5], [4, 3, 'p', 3]], king: [0, 7], stones: [[3, 4], [3, 3], [3, 6], [1, 1]], solution: 'p4,3>3,4 p3,4>2,4 p2,4>1,4 p1,4>0,4' },
-        'knight-hop': { moves: 3, mine: [[11, 6, 'k', 5], [6, 3, 'n', 3]], king: [0, 7], stones: [[4, 7], [1, 4], [2, 2], [4, 0], [1, 3], [5, 5]], solution: 'n6,3>4,2 n4,2>2,1 n2,1>0,0' },
-        'lake-crossing': { moves: 4, mine: [[11, 6, 'k', 5], [11, 0, 'r', 1]], king: [0, 7], stones: [[6, 0], [6, 1], [7, 7], [4, 4]], solution: 'r11,0>9,0 r9,0>6,0 r6,0>3,0 r3,0>0,0' },
-        'bishop-ray': { moves: 3, mine: [[11, 6, 'k', 5], [8, 2, 'b', 2]], king: [0, 7], stones: [[5, 5], [7, 7], [1, 7], [3, 2], [7, 2], [7, 0]], solution: 'b8,2>7,3 b7,3>4,0 b4,0>0,4' },
-        'queen-tide': { moves: 4, mine: [[11, 6, 'k', 5], [11, 1, 'q', 1]], king: [0, 7], stones: [[7, 5], [8, 7], [6, 5], [6, 6], [2, 7], [10, 1], [4, 6], [7, 6], [3, 3], [8, 1], [10, 2]], solution: 'q11,1>10,1 q10,1>8,1 q8,1>4,1 q4,1>0,1' },
+        'rook-run': { moves: 3, mine: [[11, 6, 'k', 5], [4, 4, 'r', 1]], king: [1, 6], stones: [[2, 4], [7, 0], [4, 6], [2, 7]] },
+        'pawn-push': { moves: 4, mine: [[11, 6, 'k', 5], [4, 0, 'p', 3]], king: [1, 6], stones: [[3, 0], [6, 1], [6, 7], [3, 1], [7, 1]] },
+        'knight-hop': { moves: 3, mine: [[11, 6, 'k', 5], [4, 0, 'n', 3]], king: [1, 0], stones: [[3, 0], [6, 2], [7, 7], [2, 2], [1, 3], [3, 2]] },
+        'lake-crossing': { moves: 4, mine: [[11, 6, 'k', 5], [7, 3, 'r', 1]], king: [1, 2], stones: [[2, 3], [3, 5], [1, 7], [7, 2]] },
+        'bishop-ray': { moves: 3, mine: [[11, 6, 'k', 5], [5, 3, 'b', 2]], king: [0, 3], stones: [[3, 3], [1, 5], [2, 7], [3, 5], [2, 2], [5, 2]] },
+        'queen-tide': { moves: 4, mine: [[11, 6, 'k', 5], [9, 5, 'q', 1]], king: [0, 3], stones: [[8, 5], [3, 5], [1, 6], [3, 6], [2, 7], [1, 0], [6, 5], [1, 3]] },
     };
 
     const isInt = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;

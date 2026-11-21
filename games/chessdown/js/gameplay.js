@@ -118,9 +118,8 @@ export function startTurn() {
         return;
     }
     
-    // A career puzzle: the other side passes; player 1 has a number of moves to score.
+    // A career puzzle: player 1 has a number of moves to score; the other side answers.
     const puzzle = puzzleTurn(state.currentPlayer);
-    if (puzzle === 'skip') return skipTurn();
     if (puzzle === 'out') return endGame(t('end.defeat'), t('career.puzzle.outOfMoves'), 2); // Not a game for the stats
     if (careerPuzzle()) showScore(); // "Move 2/3"
 

@@ -265,21 +265,27 @@ test.describe('Career', () => {
     await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('#series-score')).toHaveText('Move 1/3');
   }
-  /** Player 1 plays a move, then the other side passes: back to player 1. */
+  /** Player 1 plays a move, then the other side answers: back to player 1 (or the game is over). */
   async function play(page, from, to) {
-    await expect.poll(() => page.evaluate(() => chessdown.state.currentPlayer)).toBe(1);
+    await expect.poll(() => page.evaluate(() => chessdown.state.currentPlayer === 1 && !chessdown.state.isAnimating)).toBe(true);
     await page.evaluate(([f, t]) => chessdown.movePiece(f[0], f[1], t[0], t[1]), [from, to]);
-    await expect.poll(() => page.evaluate(() => chessdown.state.lastMove && `${chessdown.state.lastMove.toR},${chessdown.state.lastMove.toC}`)).toBe(`${to[0]},${to[1]}`);
+    await expect.poll(() => page.evaluate(() => chessdown.state.gameState === 'over' || chessdown.state.lastMove?.piece?.player === 1)).toBe(true);
+    await expect.poll(() => page.evaluate(() => chessdown.state.gameState === 'over'
+      || (chessdown.state.currentPlayer === 1 && chessdown.state.lastMove?.piece?.player === 2 && !chessdown.state.isAnimating)), { timeout: 15_000 }).toBe(true);
   }
 
-  test('a puzzle: its position without a draft, the other side passing, solved in its moves', async ({ page }) => {
+  test('a puzzle: its position without a draft, the other side answering, solved in its moves', async ({ page }) => {
     await withPuzzle(page);
-    const rook = await page.evaluate(() => chessdown.state.board[9][3]);
+    const rook = await page.evaluate(() => chessdown.state.board[4][4]);
     expect([rook.type, rook.level, rook.player]).toEqual(['r', 1, 1]);
-    await play(page, [9, 3], [6, 3]);
-    await expect(page.locator('#series-score')).toHaveText('Move 2/3');
-    await play(page, [6, 3], [3, 3]); // Takes the stone in the way
-    await play(page, [3, 3], [0, 3]);
+    for (let left = 3; left > 0; left--) {
+      if (await page.evaluate(() => chessdown.state.gameState === 'over')) break;
+      // The winning move against whatever was answered (the shared solver, bot-search.js)
+      const m = await page.evaluate((n) => window.ChessdownBot.puzzleSolution(chessdown.state, n), left);
+      expect(m).not.toBeNull();
+      if (left === 3) await expect(page.locator('#series-score')).toHaveText('Move 1/3');
+      await play(page, [m.fromR, m.fromC], [m.toR, m.toC]);
+    }
     await expect(page.locator('#victory-club')).toContainText('Quest done: Sunday jog.', { timeout: 10_000 });
     await expect(page.locator('#victory-club')).toContainText('+5 XP from the quest.');
     const clubRook = (await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'))).players.find((p) => p.type === 'r');
@@ -287,12 +293,13 @@ test.describe('Career', () => {
     expect((await stored(page)).questsDone).toEqual(['sunday-jog']);
   });
 
-  test('a puzzle lost: no moves left before the end zone', async ({ page }) => {
+  test('a puzzle lost: no moves left, no score', async ({ page }) => {
     await withPuzzle(page);
-    await play(page, [9, 3], [9, 2]);
-    await play(page, [9, 2], [8, 2]);
-    await play(page, [8, 2], [8, 1]);
-    await expect(page.locator('#victory-reason')).toHaveText('No moves left: the end zone is still out of reach.', { timeout: 10_000 });
+    await play(page, [11, 6], [10, 6]); // The king wanders: no score
+    await expect(page.locator('#series-score')).toHaveText('Move 2/3');
+    await play(page, [10, 6], [11, 6]);
+    await play(page, [11, 6], [10, 6]);
+    await expect(page.locator('#victory-reason')).toHaveText('No moves left: no score yet.', { timeout: 10_000 });
     await expect(page.locator('#victory-club')).toContainText('Quest failed: Sunday jog.');
     const career = await stored(page);
     expect(career.questsDone).toEqual([]);

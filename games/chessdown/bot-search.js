@@ -612,5 +612,123 @@
         return { pieces: placed, pointsLeft: points };
     }
 
-    return { DEFAULT_PROFILE, evaluate, bestMove, draftArmy, formationFaults, kingExposed, attackers, structurePenalty };
+    // ---------- Career puzzles (career-quests.js PUZZLES) ----------
+    // Player 1 must win within n moves of its own whatever player 2 answers: take the king,
+    // or reach row 0 with a piece that player 2 cannot take back (a touchdown, as in a game).
+    // Player 2 loses at once if it has no answer to that; it wins (the puzzle is failed) if
+    // it takes player 1's king or if one of its pieces stands in its end zone when its turn
+    // starts. With no legal move, a side passes.
+
+    const sameMove = (m) => ({ fromR: m.fromR, fromC: m.fromC, toR: m.toR, toC: m.toC });
+    /** A position and the moves left; the last move too when it allows an en passant capture. */
+    const puzzleKey = (state, n) => {
+        const last = state.lastMove;
+        const passing = last && last.piece && last.piece.type === 'p' && (last.isDoubleStep || last.passedRows) ? `${last.toR},${last.toC}` : '';
+        return `${Engine.serializeBoard(state.board, 1)}|${n}|${passing}`;
+    };
+
+    /** Does player 1's move `m` (already played on `state`) score once player 2 has answered? */
+    function touchdownHolds(state) {
+        for (const o of Engine.generateAllMoves(state, 2)) {
+            const target = state.board[o.toR][o.toC];
+            if (target && target.type === 'k') return false;
+            const undo = Engine.applyMove(state, sameMove(o));
+            const still = Engine.hasPieceInEndzone(state.board, 1);
+            Engine.undoMove(state, sameMove(o), undo);
+            if (!still) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Player 1 (to move) wins within `n` of its moves against any defence.
+     * @param {any} state board and lastMove @param {number} n @param {Map<string, boolean>} [memo]
+     */
+    function puzzleWins(state, n, memo = new Map()) {
+        if (n < 1) return false;
+        const key = puzzleKey(state, n);
+        if (memo.has(key)) return /** @type {boolean} */ (memo.get(key));
+        let won = false;
+        for (const m of Engine.generateAllMoves(state, 1)) {
+            if (puzzleMoveWins(state, m, n, memo)) { won = true; break; }
+        }
+        memo.set(key, won);
+        return won;
+    }
+
+    /** Player 1's move `m` wins within `n` moves (itself included) against any defence. */
+    function puzzleMoveWins(state, m, n, memo) {
+        const target = state.board[m.toR][m.toC];
+        if (target && target.type === 'k' && target.player === 2) return true;
+        const move = sameMove(m);
+        const undo = Engine.applyMove(state, move);
+        let won;
+        if (Engine.hasPieceInEndzone(state.board, 2)) won = false; // Player 2 scores as its turn starts
+        else if (Engine.hasPieceInEndzone(state.board, 1) && touchdownHolds(state)) won = true;
+        else if (n === 1) won = false;
+        else won = everyAnswerLoses(state, n - 1, memo);
+        Engine.undoMove(state, move, undo);
+        return won;
+    }
+
+    /** Whatever player 2 answers (or passes, with no move), player 1 still wins within `n`. */
+    function everyAnswerLoses(state, n, memo) {
+        const answers = Engine.generateAllMoves(state, 2);
+        if (!answers.length) return puzzleWins(state, n, memo);
+        for (const o of answers) {
+            const target = state.board[o.toR][o.toC];
+            if (target && target.type === 'k') return false;
+            const move = sameMove(o);
+            const undo = Engine.applyMove(state, move);
+            const lost = puzzleWins(state, n, memo);
+            Engine.undoMove(state, move, undo);
+            if (!lost) return false;
+        }
+        return true;
+    }
+
+    /** The fewest moves player 1 needs to win by force (up to `limit`), or Infinity. */
+    function puzzleFewest(state, limit) {
+        const memo = new Map();
+        for (let n = 1; n <= limit; n++) if (puzzleWins(state, n, memo)) return n;
+        return Infinity;
+    }
+
+    /** A move that wins within `n` for player 1, or null (the e2e tests play it). */
+    function puzzleSolution(state, n) {
+        const memo = new Map();
+        for (let k = 1; k <= n; k++) {
+            for (const m of Engine.generateAllMoves(state, 1)) if (puzzleMoveWins(state, m, k, memo)) return sameMove(m);
+        }
+        return null;
+    }
+
+    /**
+     * Player 2's answer during a puzzle, `left` moves still to come for player 1: one after
+     * which player 1 needs the most moves (it holds out longest, and wins when player 1
+     * misses); among equals, the first found. null with no legal move.
+     */
+    function puzzleDefense(state, left) {
+        const answers = Engine.generateAllMoves(state, 2);
+        let best = null;
+        let bestNeed = -1;
+        const memo = new Map();
+        const regicide = answers.find((o) => { const t = state.board[o.toR][o.toC]; return t && t.type === 'k'; });
+        if (regicide) return sameMove(regicide); // Takes the king: the puzzle is failed
+        for (const o of answers) {
+            const move = sameMove(o);
+            const undo = Engine.applyMove(state, move);
+            let need = Infinity;
+            for (let n = 1; n <= left; n++) if (puzzleWins(state, n, memo)) { need = n; break; }
+            Engine.undoMove(state, move, undo);
+            if (need > bestNeed) { best = move; bestNeed = need; }
+            if (need === Infinity) break; // Player 1 can no longer force it
+        }
+        return best;
+    }
+
+    return {
+        DEFAULT_PROFILE, evaluate, bestMove, draftArmy, formationFaults, kingExposed, attackers, structurePenalty,
+        puzzleWins, puzzleFewest, puzzleSolution, puzzleDefense,
+    };
 });

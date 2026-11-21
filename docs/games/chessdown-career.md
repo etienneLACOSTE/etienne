@@ -169,13 +169,16 @@ servent à faire progresser ses joueurs et à en recruter.
   - Gérard explique la leçon en arrivant au stade (aussi écrite sur la fiche), puis commente le
     résultat au retour sur la carte et annonce la suite.
 
-- **Les problèmes (faits)** : 6 positions dans `career-quests.js` (`PUZZLES`). Ta pièce et
-  des obstacles adverses qui ne bougent jamais (le bot passe son tour) ; atteindre la zone
-  d'en-but (ou prendre le roi) en N coups au plus, 2 minutes par coup, sans draft. Un compteur
-  « Coup 2/3 » s'affiche. `tests/unit/chessdown-puzzles.test.js` rejoue chaque solution et
-  prouve, par une recherche exhaustive, qu'aucune n'est plus courte. Les positions ont été
-  trouvées par une recherche au hasard avec ce même solveur. Un problème n'est pas compté dans
-  les statistiques du compte.
+- **Les problèmes (faits ; l'adversaire joue depuis le 2026-11-21)** : 6 positions dans
+  `career-quests.js` (`PUZZLES`). Ta pièce contre le roi adverse et ses pions, qui jouent entre
+  tes coups (`bot-search.js` `puzzleDefense` : la réponse qui résiste le plus longtemps).
+  Gagner en N coups au plus : prendre le roi, ou un touchdown que l'adversaire ne peut pas
+  reprendre (comme en partie). 2 minutes par coup, sans draft, compteur « Coup 2/3 ».
+  `tests/unit/chessdown-puzzles.test.js` prouve que chaque position se gagne de force en
+  exactement N coups (`puzzleFewest`, recherche exhaustive des deux camps) et la rejoue
+  contre la défense. Positions trouvées au hasard avec ce solveur, en gardant celles où la
+  défense coûte un coup de plus que si l'adversaire ne bougeait pas (le pion : autant). Un
+  problème n'est pas compté dans les statistiques du compte.
 - En carrière, gagner une série ne donne plus de recrue en attente : les recrues viennent des
   quêtes (les matchs amicaux en donnent toujours).
 
