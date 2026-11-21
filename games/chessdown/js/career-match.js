@@ -48,6 +48,9 @@ export function beginCareerMatch(spec) {
         opponent: { ...opponent, banned: rules.banned || [] },
         streak: 0,
         touchdowns: 0,
+        captures: 0, // Pieces player 1 took this match
+        opponentMoves: 0, // Moves the other side played this match (holding out)
+        lostPiece: false, // A piece of player 1 was taken (a clean sheet is gone)
         /** @type {string[]} */
         touchdownTypes: [],
         /** @type {number[]} */
@@ -78,6 +81,7 @@ export function careerArmy() {
         ...(r.maxPieces ? { maxPieces: r.maxPieces } : {}),
         ...(r.invertedRows ? { invertedRows: true } : {}),
         ...(r.originalSquad ? { allowedIds: ORIGINAL_IDS } : {}),
+        budget: r.budget || Engine.MAX_POINTS,
     };
 }
 
@@ -105,7 +109,37 @@ export const careerOpponent = () => (state.career ? state.career.opponent : null
 /** Seconds a turn: the quest's, else the 30 s of the career (2 minutes to think on a puzzle); null outside the career. */
 export function careerTimer() {
     if (!state.career) return null;
-    return { mode: 'turn', seconds: state.career.puzzle ? 120 : state.career.rules.timer || 30 };
+    const r = state.career.rules;
+    // A blitz that speeds up: its own turn time for each game of the best of 3
+    const step = r.timerSteps ? r.timerSteps[Math.min(state.series ? state.series.games : 0, r.timerSteps.length - 1)] : 0;
+    return { mode: 'turn', seconds: state.career.puzzle ? 120 : step || r.timer || 30 };
+}
+
+/** Player 1's draft points in a career match (fewer in an underdog match); null outside the career. */
+export function careerBudget() {
+    return state.career ? state.career.rules.budget || Engine.MAX_POINTS : null;
+}
+
+/** Touchdowns do not count in this match (take the king). */
+export const careerNoTouchdowns = () => Boolean(state.career && state.career.rules.noTouchdowns);
+
+/**
+ * A move was played (by `mover`, taking `captured` pieces): the match's counts. Returns how
+ * the quest's goal ends the game now, or null: 'survived' (held out its turns) or 'captures'
+ * (the n-th piece taken).
+ * @returns {'survived' | 'captures' | null}
+ */
+export function careerAfterMove(mover, captured) {
+    const c = state.career;
+    if (!c || c.puzzle) return null;
+    if (mover === 1) c.captures += captured;
+    else {
+        c.opponentMoves++;
+        if (captured) c.lostPiece = true;
+    }
+    if (c.goal.type === 'captures' && mover === 1 && c.captures >= c.goal.n) return 'captures';
+    if (c.goal.type === 'survive' && mover === 2 && c.opponentMoves >= c.goal.n) return 'survived';
+    return null;
 }
 
 // ---------- Puzzles ----------
@@ -162,10 +196,11 @@ export function setPuzzleBoard() {
 /** Fresh special rules for a game (engine.js matchRules), or null. */
 export function careerGameRules() {
     const c = state.career;
-    if (!c || (!c.rules.noRetreat && !c.rules.noCaptureMoves)) return null;
+    if (!c || (!c.rules.noRetreat && !c.rules.noCaptureMoves && !c.rules.noKingCapture)) return null;
     return Engine.matchRules({
         ...(c.rules.noRetreat ? { noRetreat: [1] } : {}),
         ...(c.rules.noCaptureMoves ? { noCaptureMoves: { 1: c.rules.noCaptureMoves } } : {}),
+        ...(c.rules.noKingCapture ? { noKingCapture: [1] } : {}),
     });
 }
 
@@ -209,7 +244,8 @@ export function careerAfterGame(winner) {
     if (c.kind === 'league') return finish(won);
     if (g.type === 'touchdownWith') return finish(c.touchdownTypes.includes(g.piece));
     if (g.type === 'touchdowns') return finish(c.touchdowns >= g.n);
-    return finish(won);
+    if (g.type === 'cleanSheet') return finish(won && !c.lostPiece);
+    return finish(won); // A win; holding out or the n-th piece taken ends the game as a win
 }
 
 /**

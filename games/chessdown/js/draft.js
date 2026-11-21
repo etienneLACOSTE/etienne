@@ -8,7 +8,10 @@ import { autoDraftBot } from './bot.js';
 import { nextStarter, showScore } from './match.js';
 import { LINEUP_SLOTS, benchPlayers, clubPlayer, clubSeat, isAllStar, lineup, pieceFor, saveLineup } from './all-star.js';
 import { esc } from './club-art.js';
-import { benchAllows, careerArmy, isCareerMatch, lockedLineup, noteDraft } from './career-match.js';
+import { benchAllows, careerArmy, careerBudget, isCareerMatch, lockedLineup, noteDraft } from './career-match.js';
+
+/** The draft points of `player`: fewer in a career underdog match (career-match.js), else the full budget. */
+const budgetOf = (player) => (player === 1 && careerBudget()) || MAX_POINTS;
 
 /** What a piece on the board cost in the draft (its level's cost; classic pieces: level 3). */
 const costOf = (piece) => Engine.pieceCost(piece.type, piece.level);
@@ -45,6 +48,8 @@ export function showTransitionScreen() {
 export function startDraftPhase(player) {
     state.currentPlayer = player;
     state.gameState = `draft${player}`;
+    // A new army starts from the player's budget (a career underdog match has fewer points).
+    if (!state.board.some((row) => row.some((p) => p && p.player === player))) state.draftPoints[player] = budgetOf(player);
     showScore(); // A best of 3 shows its score from the draft on
     
     if (!state.currentRoomCode) {
@@ -150,6 +155,8 @@ export function setupColorPicker() {
 
 export function updateDraftUI() {
     ui.draftPointsSpan.textContent = state.draftPoints[state.currentPlayer];
+    const budget = document.getElementById('draft-budget');
+    if (budget) budget.textContent = String(budgetOf(state.currentPlayer));
     renderBench();
     
     ui.shopItems.forEach(item => {
@@ -243,7 +250,7 @@ export function clearCurrentDraft() {
             }
         }
     }
-    state.draftPoints[state.currentPlayer] = MAX_POINTS;
+    state.draftPoints[state.currentPlayer] = budgetOf(state.currentPlayer);
     state.kingsPlaced[state.currentPlayer] = false;
     updateDraftUI();
     renderBoard();
@@ -284,7 +291,7 @@ export function validateDraft() {
             if (isCareerMatch()) {
                 // The quest's limits (engine.js checkArmy): told in the status bar, the draft goes on.
                 const army = myArmy();
-                const errors = Engine.checkArmy(army, 1, { ...careerArmy(), budget: Engine.MAX_POINTS });
+                const errors = Engine.checkArmy(army, 1, careerArmy() || {});
                 if (errors.length) return announceDraft(t(`career.armyError.${errors[0]}`));
                 noteDraft(army);
             }

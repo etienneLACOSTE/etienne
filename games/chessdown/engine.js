@@ -240,6 +240,7 @@
      * `state.rules` (see matchRules); online and classic games have none.
      *   noRetreat: the players whose pieces may not move back towards their own end zone
      *   noCaptureMoves: per player, how many of its first moves may not capture
+     *   noKingCapture: the players who may not take the king (they win by touchdown)
      *   moves: the moves each player has made (kept by applyMove and undoMove)
      */
     function withMatchRules(state, piece, r, moves) {
@@ -250,6 +251,9 @@
             const forward = player === 1 ? -1 : 1;
             out = out.filter((m) => (m.r - r) * forward >= 0); // Forward or sideways
         }
+        if (rules.noKingCapture && rules.noKingCapture.includes(player)) {
+            out = out.filter((m) => !(state.board[m.r][m.c] && state.board[m.r][m.c].type === 'k'));
+        }
         const limit = rules.noCaptureMoves && rules.noCaptureMoves[player];
         if (limit && ((rules.moves && rules.moves[player]) || 0) < limit) {
             out = out.filter((m) => !m.isEnPassant && !(state.board[m.r][m.c] && state.board[m.r][m.c].player !== player));
@@ -259,12 +263,13 @@
 
     /**
      * Fresh special rules for a match (one object per game: it counts the moves).
-     * @param {{ noRetreat?: number[], noCaptureMoves?: Record<number, number> }} spec
+     * @param {{ noRetreat?: number[], noCaptureMoves?: Record<number, number>, noKingCapture?: number[] }} spec
      */
     function matchRules(spec = {}) {
         return {
             ...(spec.noRetreat && spec.noRetreat.length ? { noRetreat: spec.noRetreat.slice() } : {}),
             ...(spec.noCaptureMoves ? { noCaptureMoves: { ...spec.noCaptureMoves } } : {}),
+            ...(spec.noKingCapture && spec.noKingCapture.length ? { noKingCapture: spec.noKingCapture.slice() } : {}),
             moves: { 1: 0, 2: 0 },
         };
     }

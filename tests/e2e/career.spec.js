@@ -306,6 +306,93 @@ test.describe('Career', () => {
     expect(career.quests.attempted).toEqual(['sunday-jog']);
   });
 
+  /** The career in the county with these quests on the map (the school season won). */
+  async function inCounty(page, drawn) {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/chessdown/');
+    await page.evaluate(async ({ club, drawn }) => {
+      localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club));
+      const Career = /** @type {any} */ (window).ChessdownCareer;
+      let c = Career.newCareer(5);
+      while (Career.nextMatch(c)) c = Career.recordSeries(c, { won: 2, lost: 0 });
+      c = Career.travel(Career.finishSeason(c).career, 'county');
+      c.quests = { drawn, attempted: [] };
+      localStorage.setItem('pawnet.chessdown.career', JSON.stringify(c));
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    }, { club: CLUB, drawn });
+  }
+
+  test('a boss: its portrait and fixed army on the card, the same army on the board', async ({ page }) => {
+    await inCounty(page, ['old-bull', 'mud-match', 'ploughing', 'veteran']);
+    await page.getByRole('button', { name: 'Side quest: Moulin farm' }).click();
+    await expect(card(page).locator('h3')).toHaveText('The old bull');
+    await expect(card(page).locator('.career-rival')).toContainText('Marcel Taureau');
+    await expect(card(page)).toContainText('Boss: Expert bot, a fixed army: ♜ Rook 4★, ♜ Rook 4★');
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
+    await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    const theirs = await page.evaluate(() => chessdown.state.board.flat().filter((p) => p && p.player === 2).map((p) => `${p.type}${p.level || ''}`).sort());
+    expect(theirs).toEqual(['k', 'r4', 'r4']);
+  });
+
+  test('touchdowns off: a piece in the end zone wins nothing; the rule is on the card', async ({ page }) => {
+    await inCounty(page, ['mud-match', 'old-bull', 'ploughing', 'veteran']);
+    await page.getByRole('button', { name: 'Side quest: Carp pond' }).click();
+    await expect(card(page)).toContainText('Touchdowns do not count: take the king');
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
+    await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    // A piece of ours stands in the end zone as our turn starts: the game goes on.
+    await page.evaluate(async () => {
+      const s = chessdown.state;
+      s.board[0][0] = { type: 'r', player: 1, hasMoved: true, level: 1 };
+      s.currentPlayer = 1;
+      (await import('/chessdown/js/gameplay.js')).startTurn();
+    });
+    await expect(page.locator('#victory-screen')).toBeHidden();
+    expect(await page.evaluate(() => chessdown.state.gameState)).toBe('gameplay');
+  });
+
+  test('holding out: once the other side has played its moves, the game is won', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/chessdown/');
+    await page.evaluate(async (club) => {
+      localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club));
+      const c = /** @type {any} */ (window).ChessdownCareer.newCareer(8);
+      c.quests = { drawn: ['hide-and-seek', 'street-match', 'counter-bet', 'shy-knight'], attempted: [] };
+      localStorage.setItem('pawnet.chessdown.career', JSON.stringify(c));
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    }, CLUB);
+    await page.getByRole('button', { name: 'Side quest: Lime Tree Park' }).click();
+    await expect(card(page)).toContainText('Hold out for 10 of their moves (or win before)');
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
+    await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    await page.evaluate(() => { chessdown.state.career.opponentMoves = 9; }); // Nine moves held already
+    // Our moves (the king steps back and forth) until the other side plays its tenth.
+    for (let i = 0; i < 3; i++) {
+      if (await page.locator('#victory-screen').isVisible()) break;
+      await expect.poll(() => page.evaluate(() => chessdown.state.gameState === 'over' || (chessdown.state.currentPlayer === 1 && !chessdown.state.isAnimating)), { timeout: 15_000 }).toBe(true);
+      if (await page.evaluate(() => chessdown.state.gameState === 'over')) break;
+      await page.evaluate(() => {
+        const s = chessdown.state;
+        const m = chessdown.generateAllMoves(1)[0];
+        chessdown.movePiece(m.fromR, m.fromC, m.toR, m.toC);
+      });
+    }
+    await expect(page.locator('#victory-reason')).toHaveText('You held out for 10 moves!', { timeout: 15_000 });
+    await expect(page.locator('#victory-club')).toContainText('Quest done: Hide and seek.');
+  });
+
   test('the City Cup: closed during the league, then at the town hall; the final won brings the trophy and a recruit', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/chessdown/');

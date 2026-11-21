@@ -116,3 +116,15 @@ test('the bot drafts without the banned pieces, even when its style relies on th
         assert.deepEqual(Engine.checkArmy(pieces, 2, { banned: ['q', 'r'] }), []);
     }
 });
+
+test('noKingCapture: the player may not take the king; the other side still may', () => {
+    const board = Engine.createBoard();
+    board[5][3] = { type: 'r', player: 1, hasMoved: true };
+    board[1][3] = { type: 'k', player: 2, hasMoved: true };
+    board[1][0] = { type: 'r', player: 2, hasMoved: true };
+    board[11][0] = { type: 'k', player: 1, hasMoved: true };
+    const state = { board, lastMove: null, rules: Engine.matchRules({ noKingCapture: [1] }) };
+    assert.ok(!Engine.getValidMoves(state, 5, 3).some((m) => m.r === 1 && m.c === 3), 'the king is out of reach');
+    assert.ok(Engine.getValidMoves(state, 5, 3).some((m) => m.r === 2 && m.c === 3), 'the square before it is not');
+    assert.ok(Engine.getValidMoves(state, 1, 0).some((m) => m.r === 11 && m.c === 0), 'player 2 may take the king');
+});

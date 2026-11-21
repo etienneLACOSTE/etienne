@@ -41,18 +41,32 @@
      *   noCaptureMoves: no capture by the player during its first N moves
      *   timer: seconds per turn
      *   lockedLineup: the same line-up for every game of the quest
+     *   budget: the player's draft points (fewer than the opponent's: an underdog match)
+     *   timerSteps: seconds per turn in games 1, 2 and 3 of a best of 3 (a blitz that speeds up)
+     *   noTouchdowns: touchdowns do not count, for either side: take the king
+     *   noKingCapture: the player may not take the king: a touchdown wins
      */
-    const RULES = ['squad', 'banned', 'maxPieces', 'originalSquad', 'noRetreat', 'invertedRows', 'noCaptureMoves', 'timer', 'lockedLineup'];
-    /** What must be done: win the match, score with a given piece, score n touchdowns in the best of 3 (a touchdown wins a game), solve a puzzle, win n games in a row. */
-    const GOALS = ['win', 'touchdownWith', 'touchdowns', 'puzzle', 'streak'];
+    const RULES = ['squad', 'banned', 'maxPieces', 'originalSquad', 'noRetreat', 'invertedRows', 'noCaptureMoves', 'timer', 'lockedLineup',
+        'budget', 'timerSteps', 'noTouchdowns', 'noKingCapture'];
+    /**
+     * What must be done: win the match, score with a given piece (the king: an escort), score n
+     * touchdowns in the best of 3 (a touchdown wins a game), solve a puzzle, win n games in a
+     * row, hold out n turns of the opponent (a win too), take n pieces (the game is won when
+     * the n-th falls), win without losing a piece.
+     */
+    const GOALS = ['win', 'touchdownWith', 'touchdowns', 'puzzle', 'streak', 'survive', 'captures', 'cleanSheet'];
     /** Who the experience goes to: every club player, those who played, or the players of one type. */
     const XP_TARGETS = ['all', 'engaged', ...PIECES];
 
     /**
-     * @typedef {{ squad?: string[], banned?: string[], maxPieces?: number, originalSquad?: boolean, noRetreat?: boolean, invertedRows?: boolean, noCaptureMoves?: number, timer?: number, lockedLineup?: boolean }} Rules
+     * @typedef {{ squad?: string[], banned?: string[], maxPieces?: number, originalSquad?: boolean, noRetreat?: boolean, invertedRows?: boolean, noCaptureMoves?: number, timer?: number, lockedLineup?: boolean,
+     *   budget?: number, timerSteps?: number[], noTouchdowns?: boolean, noKingCapture?: boolean }} Rules
      * @typedef {{ type: string, piece?: string, n?: number, id?: string, moves?: number }} Goal
      * @typedef {{ xp?: { to: string, amount: number }, recruit?: { type: string, level: number, name?: string }, recruitChoice?: { level: number }, cosmetic?: string }} Reward
-     * @typedef {{ id: string, tier: string, place: string, kind: string, format: string, rules: Rules, goal: Goal, reward: Reward, minSeason: number, opponent?: { difficulty?: string, budget?: number, level?: number, archetype?: string } }} Quest
+     * A boss (opponent.army, opponent.boss): a named coach (career-coaches.js, `boss`) whose
+     * army is fixed, a king and a few pieces at high levels ([type, level]).
+     * @typedef {{ difficulty?: string, budget?: number, level?: number, archetype?: string, army?: [string, number][], boss?: string }} Opponent
+     * @typedef {{ id: string, tier: string, place: string, kind: string, format: string, rules: Rules, goal: Goal, reward: Reward, minSeason: number, opponent?: Opponent }} Quest
      */
     /** @returns {Quest} */
     const quest = (id, tier, place, kind, format, rules, goal, reward, minSeason = 1, opponent = undefined) =>
@@ -109,6 +123,23 @@
         quest('fjord', 'international', 'oslo', 'special', 'bo3', { noRetreat: true }, win, XP),
         quest('castle-hill', 'international', 'prague', 'recruit', 'single', { maxPieces: 5 }, win, { recruit: { type: 'r', level: 4 } }, 2),
         quest('cold-snap', 'international', 'montreal', 'challenge', 'bo3', { noCaptureMoves: 15 }, win, XP, 2),
+
+        // Variants (2026-11-21): escorts, holding out, hunting, clean sheets, bosses, underdogs, blitzes
+        quest('kings-walk', 'school', 'school', 'challenge', 'single', {}, { type: 'touchdownWith', piece: 'k' }, XP),
+        quest('hide-and-seek', 'school', 'park', 'challenge', 'single', {}, { type: 'survive', n: 10 }, XP, 1, { budget: 16 }),
+        quest('pillow-fight', 'school', 'gym', 'challenge', 'single', {}, { type: 'captures', n: 3 }, XP),
+        quest('old-bull', 'county', 'farm', 'boss', 'single', {}, win, { recruit: { type: 'r', level: 3 } }, 1, { difficulty: 'expert', boss: 'taureau', army: [['r', 4], ['r', 4]] }),
+        quest('mud-match', 'county', 'pond', 'special', 'single', { noTouchdowns: true }, win, XP),
+        quest('clean-harvest', 'county', 'mill', 'challenge', 'single', {}, { type: 'cleanSheet' }, XP, 2),
+        quest('peak-queen', 'region', 'pass', 'boss', 'single', {}, win, { recruitChoice: { level: 3 } }, 1, { difficulty: 'expert', boss: 'cimes', army: [['q', 5], ['b', 4]] }),
+        quest('avalanche', 'region', 'refuge', 'challenge', 'single', {}, { type: 'survive', n: 16 }, XP, 1, { budget: 39 }),
+        quest('grape-race', 'region', 'winery', 'special', 'single', { noKingCapture: true }, win, XP),
+        quest('champion', 'national', 'palace', 'boss', 'bo3', {}, win, { recruit: { type: 'q', level: 4 } }, 1, { difficulty: 'master', boss: 'valmont', army: [['q', 5], ['n', 5], ['b', 5]] }),
+        quest('underdog', 'national', 'studio', 'challenge', 'bo3', { budget: 25 }, win, XP, 1, { budget: 39 }),
+        quest('press-blitz', 'national', 'newspaper', 'special', 'bo3', { timerSteps: [20, 15, 10] }, win, XP),
+        quest('legend', 'international', 'oslo', 'boss', 'bo3', {}, win, { recruit: { type: 'r', level: 5 } }, 1, { difficulty: 'master', boss: 'kingsley', army: [['q', 5], ['q', 5], ['r', 5], ['n', 5]] }),
+        quest('samba-escort', 'international', 'rio', 'challenge', 'single', {}, { type: 'touchdownWith', piece: 'k' }, XP),
+        quest('night-hunt', 'international', 'seoul', 'special', 'single', { noTouchdowns: true }, { type: 'captures', n: 5 }, XP),
     ];
 
     /**
@@ -135,7 +166,7 @@
         if (!/^[a-z0-9-]{2,32}$/.test(q.id)) errors.push('id');
         if (!TIER_IDS.includes(q.tier)) errors.push('tier');
         else if (!PLACES[q.tier].includes(q.place) || ['home', 'stadium', 'transport'].includes(q.place)) errors.push('place');
-        if (!['challenge', 'recruit', 'puzzle', 'special', 'streak', 'cosmetic'].includes(q.kind)) errors.push('kind');
+        if (!['challenge', 'recruit', 'puzzle', 'special', 'streak', 'cosmetic', 'boss'].includes(q.kind)) errors.push('kind');
         if (!FORMATS.includes(q.format)) errors.push('format');
         if (!isInt(q.minSeason, 1, 99)) errors.push('minSeason');
         const r = q.rules || {};
@@ -145,9 +176,16 @@
         if (r.maxPieces !== undefined && !isInt(r.maxPieces, 2, 24)) errors.push('maxPieces');
         if (r.noCaptureMoves !== undefined && !isInt(r.noCaptureMoves, 1, 40)) errors.push('noCaptureMoves');
         if (r.timer !== undefined && !isInt(r.timer, 5, 60)) errors.push('timer');
+        if (r.budget !== undefined && !isInt(r.budget, 10, 38)) errors.push('budget');
+        if (r.timerSteps !== undefined && !(q.format === 'bo3' && Array.isArray(r.timerSteps) && r.timerSteps.length === 3 && r.timerSteps.every((n) => isInt(n, 5, 60)))) errors.push('timerSteps');
+        if (r.timer !== undefined && r.timerSteps !== undefined) errors.push('one timer');
+        if (r.noTouchdowns && r.noKingCapture) errors.push('a way to win');
         const g = q.goal || {};
         if (!GOALS.includes(g.type)) errors.push('goal');
-        if (g.type === 'touchdownWith' && !PIECES.includes(g.piece)) errors.push('goal piece');
+        if (g.type === 'touchdownWith' && !['k', ...PIECES].includes(g.piece)) errors.push('goal piece');
+        if (r.noTouchdowns && ['touchdownWith', 'touchdowns'].includes(g.type)) errors.push('touchdowns are off');
+        if ((g.type === 'survive' && !isInt(g.n, 4, 40)) || (g.type === 'captures' && !isInt(g.n, 2, 10))) errors.push('goal n');
+        if (['survive', 'captures'].includes(g.type) && q.format !== 'single') errors.push('one game');
         if ((g.type === 'touchdowns' || g.type === 'streak') && !isInt(g.n, 2, 10)) errors.push('goal n');
         if (g.type === 'touchdowns' && (q.format !== 'bo3' || g.n > 2)) errors.push('touchdowns: at most 2, in a best of 3');
         if (g.type === 'puzzle' && !(PUZZLES[g.id] && PUZZLES[g.id].moves === g.moves)) errors.push('puzzle');
@@ -164,7 +202,10 @@
             if (o.difficulty !== undefined && !['novice', 'apprentice', 'expert', 'master'].includes(o.difficulty)) errors.push('opponent difficulty');
             if (o.budget !== undefined && !isInt(o.budget, 4, 39)) errors.push('opponent budget');
             if (o.level !== undefined && !isInt(o.level, 1, 5)) errors.push('opponent level');
-        }
+            if (o.army !== undefined && !(Array.isArray(o.army) && o.army.length >= 1 && o.army.length <= 6
+                && o.army.every((a) => Array.isArray(a) && PIECES.includes(a[0]) && isInt(a[1], 1, 5)))) errors.push('opponent army');
+            if ((o.boss !== undefined) !== (o.army !== undefined) || (o.army !== undefined) !== (q.kind === 'boss')) errors.push('boss');
+        } else if (q.kind === 'boss') errors.push('boss');
         return errors;
     }
 

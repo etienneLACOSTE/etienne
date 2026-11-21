@@ -309,14 +309,24 @@
 
     // ---------- Side quests ----------
     /** The goals the game can play (every one now; kept to hold a new kind back until it plays). */
-    const PLAYABLE_GOALS = ['win', 'touchdownWith', 'touchdowns', 'streak', 'puzzle'];
+    const PLAYABLE_GOALS = ['win', 'touchdownWith', 'touchdowns', 'streak', 'puzzle', 'survive', 'captures', 'cleanSheet'];
 
-    /** This season's draw: quests of the tier not done yet, open from this season on in the tier. */
+    /**
+     * This season's draw: quests of the tier not done yet, open from this season on in the tier;
+     * one a place (a place shows one quest).
+     */
     function drawQuests(career) {
         const seasons = career.seasonsIn[career.tier] || 1;
         const pool = Quests.QUESTS.filter((q) => q.tier === career.tier && q.minSeason <= seasons && !career.questsDone.includes(q.id)
-            && PLAYABLE_GOALS.includes(q.goal.type)).map((q) => q.id);
-        return shuffle(pool, rng(hash(career.seed, 'quests', career.season, career.tier))).slice(0, TIERS[career.tier].quests);
+            && PLAYABLE_GOALS.includes(q.goal.type));
+        const places = new Set();
+        const drawn = [];
+        for (const q of shuffle(pool, rng(hash(career.seed, 'quests', career.season, career.tier)))) {
+            if (places.has(q.place)) continue;
+            places.add(q.place);
+            drawn.push(q.id);
+        }
+        return drawn.slice(0, TIERS[career.tier].quests);
     }
 
     /** The quests on the map this season: drawn, not tried yet. */

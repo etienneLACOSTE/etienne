@@ -37,6 +37,8 @@ export function useSeries(series) {
 /** A game of a local or bot match ended (winner 1 or 2, or 0 for a draw). */
 export function recordLocalGame(winner) {
     state.series = Series.recordGame(state.series, winner);
+    const timer = careerTimer(); // A career blitz speeds up from one game to the next
+    if (timer && !state.currentRoomCode) state.timerBaseSeconds = timer.seconds;
     showScore();
 }
 

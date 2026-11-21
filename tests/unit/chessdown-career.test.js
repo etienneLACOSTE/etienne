@@ -43,17 +43,46 @@ test('rival coaches: enough per tier, each one complete and recognisable', () =>
     }
 });
 
-test('the quest catalogue: every quest is well formed, 8 per tier, enough for a first season', () => {
+test('the quest catalogue: every quest is well formed, 11 per tier, enough for a first season', () => {
     assert.equal(new Set(Quests.QUESTS.map((q) => q.id)).size, Quests.QUESTS.length);
     for (const q of Quests.QUESTS) assert.deepEqual(Quests.checkQuest(q), [], q.id);
     for (const tier of Career.TIER_IDS) {
         const quests = Quests.QUESTS.filter((q) => q.tier === tier);
-        assert.equal(quests.length, 8, tier);
+        assert.equal(quests.length, 11, tier);
         assert.ok(quests.filter((q) => q.minSeason === 1 && Career.PLAYABLE_GOALS.includes(q.goal.type)).length >= Career.TIERS[tier].quests, tier);
     }
     // The checks catch mistakes
     const bad = { ...Quests.QUESTS[0], place: 'stadium', rules: { squad: ['p', 'p'], fly: true }, reward: { xp: { to: 'all', amount: 10 }, cosmetic: 'old-jersey' } };
     assert.deepEqual(Quests.checkQuest(bad), ['place', 'rule fly', 'squad', 'one reward']);
+    const odd = { ...Quests.QUESTS[0], format: 'bo3', rules: { noTouchdowns: true, noKingCapture: true, timerSteps: [20, 15] }, goal: { type: 'survive', n: 2 } };
+    assert.deepEqual(Quests.checkQuest(odd), ['timerSteps', 'a way to win', 'goal n', 'one game']);
+    assert.deepEqual(Quests.checkQuest({ ...Quests.QUESTS[0], kind: 'boss' }), ['boss']);
+});
+
+test('bosses: one per tier from the county on, a coach of their tier never met in the league', () => {
+    const bosses = Quests.QUESTS.filter((q) => q.kind === 'boss');
+    assert.deepEqual(bosses.map((q) => q.tier), ['county', 'region', 'national', 'international']);
+    for (const q of bosses) {
+        const coach = Coaches.coachById(q.opponent.boss);
+        assert.ok(coach && coach.boss && coach.tier === q.tier, q.id);
+        assert.ok(!Coaches.coachesOf(q.tier).includes(coach), 'not a league rival');
+        assert.ok(q.opponent.army.every(([, level]) => level >= 4), 'high levels');
+    }
+    for (let seed = 0; seed < 40; seed++) {
+        const c = Career.newCareer(seed);
+        for (const tier of Career.TIER_IDS) assert.ok(c.rivals[tier].every((id) => !Coaches.coachById(id).boss));
+    }
+});
+
+test('a season\'s quests: one a place, so that each one shows on the map', () => {
+    for (let seed = 0; seed < 60; seed++) {
+        let c = Career.newCareer(seed);
+        for (let s = 0; s < 3; s++) {
+            const places = c.quests.drawn.map((id) => Quests.questById(id).place);
+            assert.equal(new Set(places).size, places.length, `seed ${seed}`);
+            c = Career.finishSeason(playSeason(c)).career;
+        }
+    }
 });
 
 test('fixtures: every club meets every other once per leg, one match per round', () => {

@@ -16,7 +16,7 @@ import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
 import { afterMove, beforeMove, noteGameStart, noteTouchdown, settleGame } from './all-star.js';
 import { hideLadderResult } from './ladder-view.js';
 import { esc } from './club-art.js';
-import { careerAfterGame, careerGameRules, careerPuzzle, noteCareerTouchdown, puzzleTurn } from './career-match.js';
+import { careerAfterGame, careerAfterMove, careerGameRules, careerNoTouchdowns, careerPuzzle, noteCareerTouchdown, puzzleTurn } from './career-match.js';
 
 // --- Gameplay Logic ---
 
@@ -98,7 +98,7 @@ export function finalizeGameplayStart() {
 }
 
 export function startTurn() {
-    if (checkTouchdownWin()) {
+    if (checkTouchdownWin() && !careerNoTouchdowns()) { // A career quest may switch touchdowns off
         const winner = state.currentPlayer;
         noteTouchdown(winner);
         noteCareerTouchdown(winner, state.board[Engine.endzoneRow(winner)].filter((p) => p && p.player === winner).map((p) => p.type));
@@ -299,8 +299,12 @@ export function movePiece(fromR, fromC, toR, toC) {
     // --- Resolution Phase (After 300ms) ---
     setTimeout(() => {
         const before = beforeMove(); // All Star: to see who moved, took or was taken
+        const mover = state.currentPlayer;
+        const theirs = () => state.board.flat().filter((p) => p && p.player !== mover).length;
+        const theirsBefore = theirs();
         makeVirtualMove({ fromR, fromC, toR, toC }); // Also handles en passant and lastMove
         afterMove(piece, before);
+        const goal = careerAfterMove(mover, theirsBefore - theirs()); // A career quest's goal may end the game
         ui.chessboard.classList.remove('levels-shown');
         
         state.isAnimating = false;
@@ -311,6 +315,12 @@ export function movePiece(fromR, fromC, toR, toC) {
             const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
             fireConfetti([winnerColorHex, '#f1c40f']);
             endGame(t('end.victory'), t('end.playerCapturedKing', { n: winner }), winner, 'king');
+            return;
+        }
+        if (goal) {
+            fireConfetti([COLOR_HEX[state.playerColors[1]], '#f1c40f']);
+            const c = /** @type {any} */ (state.career);
+            endGame(t('end.victory'), t(`career.end.${goal}`, { n: c.goal.n }), 1); // Not a game for the stats
             return;
         }
 

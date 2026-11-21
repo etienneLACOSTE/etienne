@@ -45,6 +45,17 @@ export function autoDraftBot() {
     // A career match: the rival's army (budget, level, banned types; career-match.js).
     const allStar = isAllStar();
     const career = careerOpponent();
+    // A career boss: its fixed army, the king behind, the pieces in front of it, at their levels.
+    if (career && career.army) {
+        state.board[0][3] = { type: 'k', player: 2, hasMoved: false };
+        const files = [3, 4, 2, 5, 1, 6];
+        career.army.forEach(([type, level], i) => {
+            state.board[1 + Math.floor(i / files.length)][files[i % files.length]] = { type, player: 2, hasMoved: false, level };
+        });
+        state.kingsPlaced[2] = true;
+        state.draftPoints[2] = 0;
+        return;
+    }
     const { pieces, pointsLeft } = Bot.draftArmy(state.botProfile, 2, {
         difficulty: state.botDifficultyLevel,
         archetype: state.botArchetype,

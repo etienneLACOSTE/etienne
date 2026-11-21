@@ -150,6 +150,10 @@ function rivalBlock(coachId) {
 }
 
 function opponentLine(o) {
+    if (o.army) { // A boss: its fixed army
+        const army = o.army.map(([type, level]) => `${GLYPHS[type]} ${t(`piece.${type}`)} ${level}★`).join(', ');
+        return esc(t('career.bossArmy', { level: t(`level.${o.difficulty}`), army }));
+    }
     return esc(t('career.opponent', { level: t(`level.${o.difficulty}`), budget: o.budget, stars: o.level }));
 }
 
@@ -187,9 +191,11 @@ function showCard(place) {
         <p class="career-place">${esc(placeName(place))} · ${esc(t(`quest.${q.id}.giver`))}</p>
         <h4>${esc(t('career.rewards'))}</h4>${chips([rewardText(q.reward)], 'reward')}
         <p class="career-quote">${quoted(t(`quest.${q.id}.quote`))}</p>
+        ${q.opponent && q.opponent.boss ? rivalBlock(q.opponent.boss) : ''}
         <h4>${esc(t('career.goals'))}</h4><ul>${goals.map((g) => `<li>${g}</li>`).join('')}</ul>
         <h4>${esc(t('career.conditions'))}</h4>${chips(conditions, 'limit')}${choice}
         <div class="career-row"><button type="button" class="btn-primary" data-action="play">${esc(t('career.accept'))}</button></div>`);
+    if (q.opponent && q.opponent.boss && rivalCanvas) drawCoach(rivalCanvas, rivalLook, performance.now());
     let recruitType = Club.RECRUIT_TYPES[0];
     ui.card.querySelectorAll('.career-pick').forEach((b) => b.addEventListener('click', () => {
         recruitType = /** @type {HTMLElement} */ (b).dataset.type;
@@ -210,8 +216,9 @@ function ruleTexts(rules) {
     const out = [];
     if (rules.squad) out.push(esc(t('rule.squad', { pieces: '§' })).replace('§', pieces(rules.squad)));
     if (rules.banned) out.push(esc(t('rule.banned', { pieces: '§' })).replace('§', pieces(rules.banned)));
-    for (const key of ['maxPieces', 'noCaptureMoves', 'timer']) if (rules[key] !== undefined) out.push(esc(t(`rule.${key}`, { n: rules[key] })));
-    for (const key of ['originalSquad', 'noRetreat', 'invertedRows', 'lockedLineup']) if (rules[key]) out.push(esc(t(`rule.${key}`)));
+    for (const key of ['maxPieces', 'noCaptureMoves', 'timer', 'budget']) if (rules[key] !== undefined) out.push(esc(t(`rule.${key}`, { n: rules[key] })));
+    if (rules.timerSteps) out.push(esc(t('rule.timerSteps', { a: rules.timerSteps[0], b: rules.timerSteps[1], c: rules.timerSteps[2] })));
+    for (const key of ['originalSquad', 'noRetreat', 'invertedRows', 'lockedLineup', 'noTouchdowns', 'noKingCapture']) if (rules[key]) out.push(esc(t(`rule.${key}`)));
     return out;
 }
 

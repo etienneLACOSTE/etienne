@@ -9,6 +9,27 @@ Une quête réussie qui donne de l'expérience donne **+5 XP à chaque pièce qu
 pour tout le club) faisaient monter les niveaux trop vite. Les recrues et le maillot ne
 changent pas.
 
+## Variantes de quêtes (2026-11-21)
+
+Décidées par le propriétaire : toutes gardées. 3 quêtes de plus par échelon (11 par échelon),
+une seule quête tirée par lieu et par saison (`drawQuests`).
+
+- **Escorte** : le roi doit marquer (`touchdownWith` avec `k`) : école, Rio.
+- **Tenir N coups** (`survive`) : la partie est gagnée quand l'adversaire a joué N coups
+  (gagner avant compte aussi) ; souvent face à une armée plus riche : parc, refuge.
+- **Prendre N pièces** (`captures`) : la partie est gagnée à la N-ième prise : gymnase, Séoul.
+- **Sans perte** (`cleanSheet`) : gagner sans perdre une pièce : moulin.
+- **Roi seulement** (règle `noTouchdowns`) : les touchdowns ne comptent pour personne : étang,
+  Séoul. **Touchdown seulement** (`noKingCapture`, `engine.js`) : le joueur ne peut pas
+  prendre le roi : vignoble.
+- **Outsider** (règle `budget`) : 25 points contre 39 : studio de télé.
+- **Blitz qui accélère** (règle `timerSteps`) : 20 s, puis 15 s, puis 10 s par manche : journal.
+- **Boss** (`kind: 'boss'`, `opponent.army` et `opponent.boss`) : un entraîneur nommé avec son
+  portrait (`career-coaches.js`, `boss: true`, jamais rival de ligue) et une armée fixe à 4 ou
+  5 étoiles. Taureau (comté, 2 tours ★4), Hélène des Cimes (région, dame ★5 et fou ★4), Victor
+  Valmont (national, dame, cavalier, fou ★5, best of 3), Ada Kingsley (international, deux
+  dames, tour, cavalier ★5). Récompenses : des recrues de haut niveau.
+
 ## Principe
 
 La carrière se joue avec son club All Star (`docs/games/chessdown-levels.md`). On y apprend

@@ -26,12 +26,14 @@
     /**
      * @typedef {{ skin: string, hair: string, cut: string, beard: string, glasses: string, hat: string, hatColor: string, top: string, extra: string }} Look
      * @typedef {{ primary: string, secondary: string, pattern: string, shape: string, emblem: string }} Colors
-     * @typedef {{ id: string, tier: string, name: string, club: string, archetype: string, strength: number, colors: Colors, look: Look }} Coach
+     * @typedef {{ id: string, tier: string, name: string, club: string, archetype: string, strength: number, colors: Colors, look: Look, boss?: boolean }} Coach
      */
     const look = (skin, hair, cut, beard, glasses, hat, hatColor, top, extra) => ({ skin, hair, cut, beard, glasses, hat, hatColor, top, extra });
     const colors = (primary, secondary, pattern, shape, emblem) => ({ primary, secondary, pattern, shape, emblem });
     /** strength: 0 (the weakest of its tier) to 1 (the strongest); it sets the army and the simulated results. */
     const coach = (id, tier, name, club, archetype, strength, c, l) => ({ id, tier, name, club, archetype, strength, colors: c, look: l });
+    /** A boss (a side quest's, career-quests.js): never a league rival. */
+    const boss = (...args) => ({ ...coach(...args), boss: true });
 
     /** @type {Coach[]} */
     const COACHES = [
@@ -76,14 +78,22 @@
         coach('hansen', 'international', 'Erik Hansen', 'Oslo Fjord', 'chair', 0.6, colors('#c0392b', '#ffffff', 'stripes', 'badge', 'wolf'), look('#f4d8c4', '#e8d080', 'long', 'full', '', '', '', '#c0392b', '')),
     ];
 
+    // Bosses: one per tier from the county on, met in a side quest with a fixed army
+    COACHES.push(
+        boss('taureau', 'county', 'Marcel Taureau', 'Les Cornes du Loir', 'chair', 1, colors('#5a2d0c', '#e8c070', 'halves', 'badge', 'bull'), look('#c88a5c', '#2a1a10', 'short', 'full', '', 'cap', '#5a2d0c', '#5a2d0c', 'whistle')),
+        boss('cimes', 'region', 'Hélène des Cimes', 'Pic Blanc', 'sorcieres', 1, colors('#e8eef4', '#2f4a6a', 'chevron', 'diamond', 'mountain'), look('#f4dcc8', '#f0f0f0', 'long', '', 'round', '', '', '#2f4a6a', 'scarf')),
+        boss('valmont', 'national', 'Victor Valmont', 'Valmont Royal', 'citadelle', 1, colors('#2a1a4a', '#d4af37', 'sash', 'shield', 'crown'), look('#e8c0a0', '#1a1a1a', 'short', 'goatee', 'square', '', '', '#2a1a4a', 'tie')),
+        boss('kingsley', 'international', 'Ada Kingsley', 'London Legends', 'normal', 1, colors('#0a0a0a', '#c0392b', 'pinstripes', 'round', 'lion'), look('#8a5a3c', '#1a1a1a', 'curly', '', '', 'beret', '#c0392b', '#0a0a0a', 'pearls')),
+    );
+
     /** A coach by id, or null. */
     function coachById(id) {
         return COACHES.find((c) => c.id === id) || null;
     }
 
-    /** The coaches of a tier. */
+    /** The league coaches of a tier (bosses left out). */
     function coachesOf(tier) {
-        return COACHES.filter((c) => c.tier === tier);
+        return COACHES.filter((c) => c.tier === tier && !c.boss);
     }
 
     return { ARCHETYPES, LOOK, COACHES, coachById, coachesOf };
