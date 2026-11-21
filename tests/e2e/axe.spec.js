@@ -41,7 +41,7 @@ const CHESSDOWN = {
       (await import('/chessdown/js/events.js')).openCareerPage(club);
     });
     await page.locator('.career-marker.main').click();
-    await expect(page.locator('#career-card h3')).toHaveText("Schools Tournament · Winners' bracket · round 1");
+    await expect(page.locator('#career-card h3')).toHaveText('Schools Tournament · Round 1');
   },
   'career tour': async (page) => { // Gérard's tour opens by itself the first time (js/career-tour.js)
     await page.evaluate(async () => {

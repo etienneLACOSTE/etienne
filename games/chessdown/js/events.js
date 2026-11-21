@@ -18,7 +18,7 @@ import { askFormat, hideScore, startSeries } from './match.js';
 import { loadClub } from './club-store.js';
 import { loadCareer } from './career-store.js';
 import { closeCareer, openCareer, showKnockedOut } from './career-view.js';
-import { bracketProgress } from './bracket-view.js';
+import { bracketProgress, scrollBracketToClub } from './bracket-view.js';
 import { beginCareerMatch, careerKnockedOut, careerPuzzle, careerWord, endCareerMatch, setPuzzleBoard } from './career-match.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
@@ -105,9 +105,11 @@ function startCareerMatch(club, spec) {
 function showBracketBefore(club, spec) {
     const career = loadCareer();
     if (!career) return;
-    /** @type {HTMLElement} */ (document.getElementById('bracket-view')).innerHTML = bracketProgress(career, club);
+    const view = /** @type {HTMLElement} */ (document.getElementById('bracket-view'));
+    view.innerHTML = bracketProgress(career, club);
     const screen = /** @type {HTMLElement} */ (document.getElementById('bracket-screen'));
     showScreen(screen);
+    scrollBracketToClub(view); // The club's next match in view
     const start = /** @type {HTMLElement} */ (document.getElementById('bracket-start'));
     const back = /** @type {HTMLElement} */ (document.getElementById('bracket-back'));
     start.onclick = () => startCareerMatch(club, { ...spec, ready: true });

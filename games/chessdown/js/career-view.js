@@ -284,11 +284,11 @@ function showMatchCard() {
         <h3>${esc(tournament)} · ${esc(t(`career.stage.${m.stage}`))}</h3>
         <p class="career-place">${esc(placeName('stadium'))} · ${esc(t('career.versus', { club: rival.club }))}</p>
         <h4>${esc(t('career.rewards'))}</h4>${chips([esc(t(m.stage === 'GF' ? 'career.reward.title' : 'career.reward.through')), esc(t('career.matchXp'))], 'reward')}
-        <p class="career-quote">${esc(t(m.losses ? 'career.matchQuoteLosers' : 'career.matchQuote', { club: rival.club }))}</p>
+        <p class="career-quote">${esc(t('career.matchQuote', { club: rival.club }))}</p>
         ${lesson ? `<div class="career-lesson"><h4>${esc(t('career.lessonTitle'))}</h4><p>${esc(lesson)}</p></div>` : ''}
         ${rivalBlock(m.opponent)}
         <h4>${esc(t('career.goals'))}</h4><ul><li>${esc(t(m.format === 'bo3' ? 'goal.winSeries' : 'goal.winSingle'))}</li></ul>
-        <h4>${esc(t('career.conditions'))}</h4>${chips([esc(t(`rule.${m.format}`)), ...ruleTexts({ timer: 30 }), esc(t(m.losses ? 'career.lastChance' : 'career.secondChance')), opponentLine(Career.rivalOpponent(career, m.opponent))], 'limit')}
+        <h4>${esc(t('career.conditions'))}</h4>${chips([esc(t(`rule.${m.format}`)), ...ruleTexts({ timer: 30 }), esc(t('career.lastChance')), opponentLine(Career.rivalOpponent(career, m.opponent))], 'limit')}
         <div class="career-row"><button type="button" class="btn-primary" data-action="play">${esc(t('career.play'))}</button></div>`);
     if (rivalCanvas) drawCoach(rivalCanvas, rivalLook, performance.now());
     ui.card.querySelector('[data-action="play"]')?.addEventListener('click', () => play({ kind: 'league' }));
@@ -368,7 +368,7 @@ function renderJournal() {
         }
     }
     if (b.next) mine.push(`<tr class="you"><th scope="row">${esc(t(`career.stage.${b.next.stage}`))}</th><td>${esc(clubName(b.next.opponent))}</td><td class="num">${esc(t('career.journal.toPlay'))}</td></tr>`);
-    const status = b.next ? t(b.losses ? 'career.journal.inLosers' : 'career.journal.inWinners')
+    const status = b.next ? t('career.journal.inRunning')
         : b.place === 1 ? t('career.journal.champion') : t('career.journal.finished', { place: b.place });
     // Every stage played so far, folded away
     const stages = b.stages.filter((st) => st.matches.length).map((st) => `<li><b>${esc(t(`career.stage.${st.id}`))}</b>

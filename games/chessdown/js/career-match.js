@@ -286,8 +286,8 @@ function finish(success) {
         const next = Career.nextMatch(career);
         const stage = (id) => t(`career.stage.${id}`);
         if (next) {
-            // Still in the running: through, or down to the losers' bracket
-            lines.push(t(success ? 'career.result.through' : 'career.result.toLosers', { stage: stage(next.stage) }));
+            // Still in the running: through to the next round
+            lines.push(t('career.result.through', { stage: stage(next.stage) }));
         } else if (Career.placing(career) === 1) {
             lines.push(t('career.result.title'));
             const transport = Quests.TRANSPORT[career.tier];

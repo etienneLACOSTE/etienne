@@ -15,7 +15,7 @@ import { t } from '../../../assets/js/i18n.js';
 import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
 import { afterMove, beforeMove, noteGameStart, noteTouchdown, settleGame } from './all-star.js';
 import { hideLadderResult } from './ladder-view.js';
-import { bracketProgress } from './bracket-view.js';
+import { bracketProgress, scrollBracketToClub } from './bracket-view.js';
 import { loadCareer } from './career-store.js';
 
 const Career = globalThis.ChessdownCareer;
@@ -429,6 +429,7 @@ function showClubResults(results, career = null) {
     if (tournament && restart && state.allStar) {
         const saved = loadCareer();
         bracket.innerHTML = saved ? bracketProgress(saved, state.allStar.club) : '';
+        requestAnimationFrame(() => scrollBracketToClub(bracket)); // Once the end screen shows
         restart.textContent = t('bracket.nextMatch');
         restart.hidden = !(saved && Career.nextMatch(saved));
     } else if (career && restart && career.finished) restart.textContent = t('career.backToMap');

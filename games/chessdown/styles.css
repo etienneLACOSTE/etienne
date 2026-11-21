@@ -1334,17 +1334,25 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 
 /* --- The tournament's progress (js/bracket-view.js): before a match, on its end screen --- */
 .bracket-page { justify-content: flex-start; overflow-y: auto; }
-.bracket-page > * { width: min(100%, 720px); }
+.bracket-page > * { width: min(100%, 1320px); }
 .bracket-progress { display: grid; gap: 10px; text-align: left; }
 .bracket-progress h3 { margin: 0; font: 900 clamp(24px, 6vw, 34px) var(--display); text-transform: uppercase; color: var(--amber); }
 .bracket-status { margin: 0; font-weight: 700; }
-.bracket-row h4 { margin: 0 0 4px; font: 800 12px var(--text); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-on-dark); }
-.bracket-row ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.bracket-row li { border: 2px solid #2a2f2c; border-radius: 4px; padding: 4px 8px; display: grid; gap: 2px; font-size: 13px; color: var(--muted-on-dark); min-width: 64px; }
-.bracket-round { font: 800 12px var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
-.bracket-row li.won { border-color: var(--turf-light); background: var(--turf); color: var(--white); }
-.bracket-row li.lost { border-color: #6b6b6b; color: var(--white); }
-.bracket-row li.next { border-color: var(--amber); color: var(--amber); }
-.bracket-match { font-weight: 700; }
-.victory-bracket { width: min(100%, 720px); max-height: 40vh; overflow-y: auto; }
+.bracket-tree { overflow-x: auto; border: 2px solid #2a2f2c; border-radius: 6px; background: #0d0f0e; padding: 6px; }
+.bracket-tree:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.bracket-tree svg { display: block; }
+.bt-round { font: 800 13px var(--display); fill: var(--muted-on-dark); text-transform: uppercase; letter-spacing: 0.06em; }
+.bt-box { fill: var(--black); stroke: #4a4f4c; stroke-width: 1.5; }
+.bt-box.mine { stroke: var(--amber); stroke-width: 2.5; }
+.bt-box.next { stroke-dasharray: 6 3; }
+.bt-split { stroke: #2a2f2c; stroke-width: 1; }
+.bt-name, .bt-score { font: 700 12px var(--text); fill: var(--white); }
+.bt-name.lost, .bt-score.lost { fill: #8a8a8a; font-weight: 600; }
+.bt-name.tbd { fill: #6b6b6b; font-style: italic; font-weight: 600; }
+.bt-name.you, .bt-score.you { fill: var(--amber); font-weight: 800; }
+.bt-branch { fill: none; stroke: #4a4f4c; stroke-width: 1.5; }
+.bt-branch.road { stroke: var(--amber); stroke-width: 3; }
+.bt-champion { font: 900 15px var(--display); fill: var(--white); text-transform: uppercase; letter-spacing: 0.04em; }
+.bt-champion.you { fill: var(--amber); }
+.victory-bracket { width: min(100%, 1320px); max-height: 45vh; overflow-y: auto; }
 .victory-bracket[hidden] { display: none; }

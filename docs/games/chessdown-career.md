@@ -12,14 +12,15 @@ changent pas.
 ## Le tournoi remplace la ligue (2026-11-21)
 
 Décisions du propriétaire : plus de contrainte en match de compétition ; à chaque échelon,
-international compris, un tournoi de 32 clubs à double élimination ; les coupes sont retirées.
+international compris, un tournoi de 32 clubs ; les coupes sont retirées. Le 2026-11-22, la
+double élimination est abandonnée (trop compliquée) : élimination directe.
 
-- **Format** (`career-rules.js`, `STAGES`) : tableau des gagnants (W1 à W5) et des perdants
-  (L1 à L8 ; les perdants d'un tour W y entrent en L2, L4, L6, L8), puis la grande finale (un
-  seul match, pas de revanche). Une partie unique aux premiers tours (une nulle est rejouée),
-  best of 3 en demi-finale et finale de chaque tableau et en grande finale. Invaincu : 6
-  matchs ; par le tableau des perdants : jusqu'à 10.
-- **Élimination** à la deuxième défaite (ou la grande finale perdue) : l'écran passe au noir,
+- **Format** (`career-rules.js`, `STAGES`) : élimination directe en 5 tours, 1er tour (16
+  matchs), 2e tour, quarts, demies, finale. Une partie unique aux trois premiers tours (une
+  nulle est rejouée), best of 3 en demi-finale et en finale. Places : 17e (1er tour), 9e,
+  5e, 3e, 2e. Une carrière de la version 2 (double élimination) est reprise : ses matchs
+  jusqu'à la première défaite (les mêmes premiers tours).
+- **Élimination** à la première défaite (la finale perdue aussi) : l'écran passe au noir,
   Gérard dit que c'est fini jusqu'à la saison prochaine. Les quêtes annexes restent jouables ;
   la saison suivante se lance depuis le stade.
 - **Ticket** : seul le vainqueur du tournoi monte à l'échelon suivant.
@@ -29,7 +30,7 @@ international compris, un tournoi de 32 clubs à double élimination ; les coupe
   matchs sont simulés depuis la graine. Seuls les résultats du joueur sont enregistrés
   (`tournament.results`), le tableau se recalcule (`bracket`).
 - **Progression** : l'armée adverse dépend de l'échelon et de la profondeur du tour
-  (`DEPTH`, de 0 au premier tour à 1 en grande finale). École : 10 points, niveaux 1 et 2 au
+  (`DEPTH`, de 0 au premier tour à 1 en finale). École : 10 points, niveaux 1 et 2 au
   premier tour ; environ 30 points, niveaux 2 et quelques 3 en finale. Le niveau est une
   moyenne : chaque pièce prend le niveau du dessous ou du dessus (`js/bot.js`).
 - **Première saison en ville** : Gérard donne une leçon avant chacun des 5 premiers matchs,
@@ -49,9 +50,12 @@ international compris, un tournoi de 32 clubs à double élimination ; les coupe
   serveur). Un roi et 39 points au plus pour enregistrer. En draft, « Charger : nom » place
   l'équipe ; les joueurs que le match n'autorise pas (budget, quête, rangées) restent sur le
   banc, et un message le dit.
-- **Tableau du tournoi** (`js/bracket-view.js`) : tableau des gagnants, des perdants et grande
-  finale en lignes de tours, le parcours du club en doré (score de chaque match, prochain
-  adversaire), les clubs encore en course, le tableau complet replié. Avant un match de
+- **Tableau du tournoi** (`js/bracket-view.js`) : un arbre à branches en SVG, 16 clubs à gauche,
+  16 à droite, les tours qui se rejoignent vers la finale au centre ; chaque match avec ses deux
+  clubs et son score, le parcours du club en doré, son prochain match en pointillés, le
+  champion au-dessus de la finale. Les résultats du tour en cours n'apparaissent qu'après le
+  match du club. Il défile sur le côté (centré sur le club) ; la liste de tous les matchs est
+  repliée dessous. Avant un match de
   tournoi (« Commencer la draft » ou « Retour à la carte ») et sur l'écran de fin, avec
   « Match suivant » et « Rentrer au club » ; éliminé : seulement « Rentrer au club », et l'écran
   noir de Gérard par-dessus le club. Les quêtes gardent « Retour à la carte ».

@@ -5,9 +5,7 @@
 // random is drawn from the career's seed, so the same career always gives the same clubs,
 // brackets, results and quests.
 //   - Five tiers, from the town (school) to the world (international). A tier is played in
-//     seasons; each season is a tournament of 32 clubs, double elimination: a first defeat
-//     sends a club to the losers' bracket, a second one knocks it out. The winners' and the
-//     losers' champions meet in the grand final (one match, no reset).
+//     seasons; each season is a knockout tournament of 32 clubs: one defeat and a club is out.
 //   - Winning the tournament earns the ticket to the next tier (bus, RER, TGV, plane); one
 //     travels between two seasons only.
 //   - The opponents grow stronger round after round: small armies of level 1 and 2 pieces in
@@ -27,7 +25,9 @@
 })(/** @type {any} */ (typeof self !== 'undefined' ? self : this), function (Coaches, Quests) {
     'use strict';
 
-    const VERSION = 2; // 1: leagues and cups (2026-11-21, replaced by the tournaments)
+    // 1: leagues and cups; 2: double elimination (both 2026-11-21). A version 2 career is
+    // carried over: its matches up to the first defeat (the same first rounds).
+    const VERSION = 3;
     const YOU = 'you';
     const TIER_IDS = Quests.TIER_IDS;
     const FIELD = 32; // Clubs in a tournament, the player's included
@@ -50,31 +50,20 @@
     const MAX_GAMES = 5; // A best of 3 lasts at most 5 games (draws count for nobody)
 
     /**
-     * The stages of a tournament, in the order they are played. W: the winners' bracket
-     * (W1 the 16 first-round matches ... W5 its final); L: the losers' bracket, where the
-     * losers of a W stage come in (L2, L4, L6, L8) against the survivors of the stage before;
-     * GF: the grand final. The last rounds are best of 3; the others, one game.
+     * The rounds of the tournament: 16 matches, then 8, the quarter-finals, the semi-finals and
+     * the final. The first rounds are one game; the semi-finals and the final, best of 3.
      */
     const STAGES = [
-        { id: 'W1', matches: 16, bo3: false },
-        { id: 'W2', matches: 8, bo3: false },
-        { id: 'L1', matches: 8, bo3: false },
-        { id: 'L2', matches: 8, bo3: false },
-        { id: 'W3', matches: 4, bo3: false },
-        { id: 'L3', matches: 4, bo3: false },
-        { id: 'L4', matches: 4, bo3: false },
-        { id: 'W4', matches: 2, bo3: true },
-        { id: 'L5', matches: 2, bo3: false },
-        { id: 'L6', matches: 2, bo3: false },
-        { id: 'W5', matches: 1, bo3: true },
-        { id: 'L7', matches: 1, bo3: true },
-        { id: 'L8', matches: 1, bo3: true },
-        { id: 'GF', matches: 1, bo3: true },
+        { id: 'R1', matches: 16, bo3: false },
+        { id: 'R2', matches: 8, bo3: false },
+        { id: 'QF', matches: 4, bo3: false },
+        { id: 'SF', matches: 2, bo3: true },
+        { id: 'F', matches: 1, bo3: true },
     ];
-    /** How far into the tournament a stage is, 0 (the first round) to 1 (the grand final): the opponents' strength. */
-    const DEPTH = { W1: 0, L1: 0.1, W2: 0.2, L2: 0.25, L3: 0.35, W3: 0.4, L4: 0.45, L5: 0.55, W4: 0.6, L6: 0.65, L7: 0.75, W5: 0.8, L8: 0.85, GF: 1 };
-    /** A club knocked out in a stage finishes in this place (the best one of its group of places). */
-    const PLACE_IF_OUT = { L1: 25, L2: 17, L3: 13, L4: 9, L5: 7, L6: 5, L7: 4, L8: 3, GF: 2 };
+    /** How far into the tournament a round is, 0 (the first) to 1 (the final): the opponents' strength. */
+    const DEPTH = { R1: 0, R2: 0.25, QF: 0.5, SF: 0.75, F: 1 };
+    /** A club knocked out in a round finishes in this place (the best one of its group of places). */
+    const PLACE_IF_OUT = { R1: 17, R2: 9, QF: 5, SF: 3, F: 2 };
 
     // ---------- Randomness from the seed ----------
     function hash(...parts) {
@@ -152,9 +141,9 @@
     }
 
     /**
-     * The whole bracket as far as it can be played: every stage's matches with their scores,
+     * The whole bracket as far as it can be played: every round's matches with their scores,
      * the player's from `tournament.results` (in order), the others simulated. It stops at the
-     * player's next match (not played yet).
+     * player's next match (not played yet); once the player is out, the rest is played without them.
      * @returns {{ stages: { id: string, bo3: boolean, matches: { a: string, b: string, wa: number, wb: number }[] }[],
      *   next: { stage: string, opponent: string, bo3: boolean, played: number } | null, used: number,
      *   losses: number, champion: string | null, place: number | null }}
@@ -162,38 +151,15 @@
     function bracket(career) {
         const results = career.tournament.results;
         const stages = [];
-        /** @type {Record<string, string[]>} */
-        const winners = {};
-        /** @type {Record<string, string[]>} */
-        const losers = {};
+        let clubs = fieldOf(career);
         let used = 0;
         let losses = 0;
         let place = null;
-        const pairUp = (list) => Array.from({ length: list.length / 2 }, (_, i) => [list[2 * i], list[2 * i + 1]]);
-        // The losers coming in meet the survivors in the reverse order: no rematch too soon.
-        const against = (survivors, dropped) => survivors.map((club, i) => [club, dropped[dropped.length - 1 - i]]);
-        const pairsOf = (id) => {
-            switch (id) {
-                case 'W1': return pairUp(fieldOf(career));
-                case 'W2': return pairUp(winners.W1);
-                case 'W3': return pairUp(winners.W2);
-                case 'W4': return pairUp(winners.W3);
-                case 'W5': return pairUp(winners.W4);
-                case 'L1': return pairUp(losers.W1);
-                case 'L2': return against(winners.L1, losers.W2);
-                case 'L3': return pairUp(winners.L2);
-                case 'L4': return against(winners.L3, losers.W3);
-                case 'L5': return pairUp(winners.L4);
-                case 'L6': return against(winners.L5, losers.W4);
-                case 'L7': return pairUp(winners.L6);
-                case 'L8': return against(winners.L7, losers.W5);
-                default: return [[winners.W5[0], winners.L8[0]]]; // GF
-            }
-        };
         for (const stage of STAGES) {
             const matches = [];
             let pending = null;
-            for (const [a, b] of pairsOf(stage.id)) {
+            for (let i = 0; i < clubs.length; i += 2) {
+                const a = clubs[i], b = clubs[i + 1];
                 let wa, wb;
                 if (a === YOU || b === YOU) {
                     if (used >= results.length) {
@@ -202,22 +168,17 @@
                     }
                     const r = results[used++];
                     [wa, wb] = a === YOU ? [r.won, r.lost] : [r.lost, r.won];
-                    if (r.won <= r.lost) {
-                        losses++;
-                        if (stage.id === 'GF') place = 2;
-                        else if (losses === 2) place = PLACE_IF_OUT[stage.id];
-                    }
+                    if (r.won <= r.lost) { losses++; place = PLACE_IF_OUT[stage.id]; }
                 } else {
                     [wa, wb] = simulate(rng(hash(career.seed, 'match', career.season, career.tier, stage.id, a, b)), career, a, b, stage.bo3);
                 }
                 matches.push({ a, b, wa, wb });
             }
             stages.push({ id: stage.id, bo3: stage.bo3, matches });
-            if (pending) return { stages, next: losses >= 2 ? null : pending, used, losses, champion: null, place };
-            winners[stage.id] = matches.map((m) => (m.wa > m.wb ? m.a : m.b));
-            losers[stage.id] = matches.map((m) => (m.wa > m.wb ? m.b : m.a));
+            if (pending) return { stages, next: pending, used, losses, champion: null, place };
+            clubs = matches.map((m) => (m.wa > m.wb ? m.a : m.b));
         }
-        const champion = winners.GF[0];
+        const champion = clubs[0];
         if (champion === YOU) place = 1;
         return { stages, next: null, used, losses, champion, place };
     }
@@ -249,7 +210,7 @@
         return nextMatch(career) === null;
     }
 
-    /** The season is over without the title: knocked out (a second defeat), or the grand final lost. */
+    /** The season is over without the title: knocked out (the final lost too). */
     function knockedOut(career) {
         return seasonOver(career) && placing(career) !== 1;
     }
@@ -385,6 +346,12 @@
 
     /** A career read back from storage, checked and rebuilt; null when it cannot be trusted (an older version too). */
     function sanitizeCareer(data) {
+        if (data && data.version === 2 && data.tournament && Array.isArray(data.tournament.results)) {
+            // Double elimination (version 2): the matches up to the first defeat are this tournament's
+            const kept = [];
+            for (const r of data.tournament.results) { if (kept.length >= STAGES.length) break; kept.push(r); if (r && r.won <= r.lost) break; }
+            data = { ...data, version: VERSION, tournament: { results: kept } };
+        }
         if (!data || typeof data !== 'object' || data.version !== VERSION) return null;
         if (!isInt(data.seed, 0, 0xffffffff) || !isInt(data.season, 1, 9999) || !TIER_IDS.includes(data.tier)) return null;
         if (!uniqueIds(data.tickets, (id) => TIER_IDS.includes(id) && id !== 'school')) return null;
