@@ -108,3 +108,16 @@ servent à faire progresser ses joueurs et à en recruter.
 
   Pas encore fait : la Coupe de la ville et la coupe nationale, et les textes des quêtes et
   des entraîneurs (ils viendront avec l'interface).
+
+- **Étape 2 (faite)** : les règles spéciales de match dans le moteur
+  (`games/chessdown/engine.js`), testées dans `tests/unit/chessdown-match-rules.test.js` :
+  - `matchRules` : aucun recul (`noRetreat`, par joueur) et pas de prise pendant les N premiers
+    coups (`noCaptureMoves`, en-passant compris). Les coups sont comptés par `applyMove` et
+    `undoMove`, donc le bot respecte ces règles dans sa recherche.
+  - `draftRows` : les 3 rangées arrière, ou les 3 plus proches du milieu (`invertedRows`).
+  - `checkArmy` : vérifie l'armée d'un joueur (un roi, les rangées, une pièce par case, le
+    budget avec le coût des niveaux, l'effectif imposé, les pièces interdites, le nombre
+    maximum, les joueurs autorisés).
+  - Le bot fait sa draft sans les pièces interdites (`draftArmy`, option `banned`).
+  - Le chrono et la composition verrouillée relèvent du déroulé du match : ils seront
+    branchés à l'étape 4. Sans `state.rules`, le moteur ne change pas, en ligne compris.

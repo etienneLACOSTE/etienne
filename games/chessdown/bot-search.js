@@ -504,8 +504,9 @@
      * Returns the pieces `{ r, c, type }` (in `player`'s deployment rows) and the points left.
      * @param {Profile} profile
      * @param {number} player
-     * @param {{ difficulty?: string, archetype?: string, random?: () => number, strengthen?: boolean, budget?: number }} [options]
+     * @param {{ difficulty?: string, archetype?: string, random?: () => number, strengthen?: boolean, budget?: number, banned?: string[] }} [options]
      *   budget: points to spend (All Star: the worth of the player's squad), at most MAX_POINTS
+     *   banned: piece types the army may not hold (a career quest's rule)
      */
     function draftArmy(profile, player, options = {}) {
         const difficulty = options.difficulty || 'master';
@@ -542,12 +543,13 @@
 
         // Archetypes spend about half the budget on one piece type.
         const ARCHETYPES = { ecuries: ['n', 6], citadelle: ['r', 3], chapiteau: ['b', 6], chair: ['p', 19], sorcieres: ['q', 2] };
-        if (ARCHETYPES[archetype]) {
+        const banned = options.banned || [];
+        if (ARCHETYPES[archetype] && !banned.includes(ARCHETYPES[archetype][0])) {
             const [type, count] = ARCHETYPES[archetype];
             for (let i = 0; i < count; i++) if (points >= PIECE_VALUES[type]) buy(type);
         }
 
-        const pool = ['p', 'n', 'b', 'r', 'q'];
+        const pool = ['p', 'n', 'b', 'r', 'q'].filter((t) => !banned.includes(t));
         const subOptimalChance = { expert: 0.15, apprentice: 0.5 }[difficulty] ?? 0.05;
         while (points > 0) {
             const affordable = pool.filter((t) => PIECE_VALUES[t] <= points);

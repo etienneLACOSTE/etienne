@@ -101,7 +101,8 @@
     /**
      * Legal destinations of the piece on (r, c). There is no check in Chessdown:
      * a king may move into danger. En passant uses `state.lastMove`.
-     * @param {{board: Array<Array<object|null>>, lastMove: object|null}} state
+     * @param {{board: Array<Array<object|null>>, lastMove: object|null, rules?: any}} state
+     *   rules: special match rules (matchRules), when a career quest sets some
      * @returns {Array<{r: number, c: number, isEnPassant?: boolean}>}
      */
     function getValidMoves(state, r, c) {
@@ -220,15 +221,97 @@
                 KING_STEPS.forEach(([dr, dc]) => addIfValid(r + dr, c + dc));
                 break;
         }
-        if (level === 3 || piece.type === 'k') return moves;
-        // Bonus moves may reach a square a normal move reaches too: keep it once.
+        let legal = moves;
+        if (level !== 3 && piece.type !== 'k') {
+            // Bonus moves may reach a square a normal move reaches too: keep it once.
+            const seen = new Set();
+            legal = moves.filter((m) => {
+                const key = m.r * COLS + m.c;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+        return state.rules ? withMatchRules(state, piece, r, legal) : legal;
+    }
+
+    /**
+     * Special match rules (career quests, docs/games/chessdown-career.md), kept in
+     * `state.rules` (see matchRules); online and classic games have none.
+     *   noRetreat: the players whose pieces may not move back towards their own end zone
+     *   noCaptureMoves: per player, how many of its first moves may not capture
+     *   moves: the moves each player has made (kept by applyMove and undoMove)
+     */
+    function withMatchRules(state, piece, r, moves) {
+        const rules = state.rules;
+        const player = piece.player;
+        let out = moves;
+        if (rules.noRetreat && rules.noRetreat.includes(player)) {
+            const forward = player === 1 ? -1 : 1;
+            out = out.filter((m) => (m.r - r) * forward >= 0); // Forward or sideways
+        }
+        const limit = rules.noCaptureMoves && rules.noCaptureMoves[player];
+        if (limit && ((rules.moves && rules.moves[player]) || 0) < limit) {
+            out = out.filter((m) => !m.isEnPassant && !(state.board[m.r][m.c] && state.board[m.r][m.c].player !== player));
+        }
+        return out;
+    }
+
+    /**
+     * Fresh special rules for a match (one object per game: it counts the moves).
+     * @param {{ noRetreat?: number[], noCaptureMoves?: Record<number, number> }} spec
+     */
+    function matchRules(spec = {}) {
+        return {
+            ...(spec.noRetreat && spec.noRetreat.length ? { noRetreat: spec.noRetreat.slice() } : {}),
+            ...(spec.noCaptureMoves ? { noCaptureMoves: { ...spec.noCaptureMoves } } : {}),
+            moves: { 1: 0, 2: 0 },
+        };
+    }
+
+    /** The rows a player drafts on: its 3 back rows, or (invertedRows) its 3 rows nearest the middle. */
+    function draftRows(player, invertedRows = false) {
+        const half = ROWS / 2;
+        if (player === 1) return invertedRows ? [half, half + 2] : [ROWS - 3, ROWS - 1];
+        return invertedRows ? [half - 3, half - 1] : [0, 2];
+    }
+
+    /**
+     * What is wrong with an army (empty when it is legal): exactly one king, inside the draft
+     * rows, one piece a square, within the budget (levels' costs), and the quest's limits.
+     * @param {{ r: number, c: number, type: string, level?: number, clubId?: number }[]} pieces
+     * @param {number} player
+     * @param {{ budget?: number, squad?: string[], banned?: string[], maxPieces?: number, invertedRows?: boolean, allowedIds?: number[] }} [army]
+     *   squad: the only pieces allowed (each type at most as many times as listed);
+     *   allowedIds: the only club players allowed (the club's original squad)
+     */
+    function checkArmy(pieces, player, army = {}) {
+        const errors = [];
+        const [minRow, maxRow] = draftRows(player, army.invertedRows);
         const seen = new Set();
-        return moves.filter((m) => {
-            const key = m.r * COLS + m.c;
-            if (seen.has(key)) return false;
+        let cost = 0;
+        for (const p of pieces) {
+            if (!Number.isInteger(p.r) || !Number.isInteger(p.c) || p.c < 0 || p.c >= COLS || p.r < minRow || p.r > maxRow) errors.push('square');
+            const key = `${p.r},${p.c}`;
+            if (seen.has(key)) errors.push('twice');
             seen.add(key);
-            return true;
-        });
+            if (!Object.hasOwn(PIECE_VALUES, p.type)) { errors.push('type'); continue; }
+            cost += p.type === 'k' ? 0 : pieceCost(p.type, p.level === undefined ? 3 : p.level);
+        }
+        if (pieces.filter((p) => p.type === 'k').length !== 1) errors.push('king');
+        if (cost > (army.budget === undefined ? MAX_POINTS : army.budget)) errors.push('budget');
+        if (army.banned && pieces.some((p) => army.banned.includes(p.type))) errors.push('banned');
+        if (army.maxPieces !== undefined && pieces.length > army.maxPieces) errors.push('maxPieces');
+        if (army.squad) {
+            const left = army.squad.slice();
+            for (const p of pieces) {
+                const i = left.indexOf(p.type);
+                if (i === -1) { errors.push('squad'); break; }
+                left.splice(i, 1);
+            }
+        }
+        if (army.allowedIds && pieces.some((p) => !army.allowedIds.includes(p.clubId))) errors.push('players');
+        return [...new Set(errors)];
     }
 
     function findKing(board, player) {
@@ -294,6 +377,11 @@
             piece.transformed = true;
         }
 
+        if (state.rules) {
+            if (!state.rules.moves) state.rules.moves = { 1: 0, 2: 0 };
+            state.rules.moves[piece.player]++;
+        }
+
         const oldLastMove = state.lastMove;
         state.lastMove = { piece, fromR: move.fromR, fromC: move.fromC, toR: move.toR, toC: move.toC, isDoubleStep };
         if (stepped === 3) {
@@ -308,6 +396,7 @@
     function undoMove(state, move, undoData) {
         const board = state.board;
         const piece = board[move.toR][move.toC];
+        if (state.rules && state.rules.moves) state.rules.moves[piece.player]--;
         board[move.fromR][move.fromC] = piece;
         board[move.toR][move.toC] = undoData.targetPiece;
         piece.hasMoved = undoData.oldHasMoved;
@@ -354,7 +443,7 @@
 
     return {
         ROWS, COLS, MAX_POINTS, PIECE_VALUES, LEVELS, LEVEL_COSTS,
-        levelOf, pieceCost, lineOfSight,
+        levelOf, pieceCost, lineOfSight, matchRules, draftRows, checkArmy,
         createBoard, endzoneRow, getValidMoves, generateAllMoves,
         applyMove, undoMove, hasPieceInEndzone, serializeBoard,
     };
