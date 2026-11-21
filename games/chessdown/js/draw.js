@@ -6,6 +6,7 @@ import { socket, state } from './state.js';
 import { ask } from '../../../assets/js/dialog.js';
 import { watchDrawOffers } from '../../../assets/js/draw-offer.js';
 import { t } from '../../../assets/js/i18n.js';
+import { updateResignButton } from './resign.js';
 
 const button = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-offer-draw'));
 const inMatch = () => state.gameState === 'gameplay' && !state.isBotMatch;
@@ -18,6 +19,7 @@ const online = socket && button ? watchDrawOffers(socket, {
 
 /** Show the button during a match against a person; online, as the offers allow. */
 export function updateDrawButton() {
+    updateResignButton(); // Shown while a game is played, as this one
     if (!button) return;
     button.hidden = !inMatch();
     if (state.currentRoomCode && online) return online.refresh();

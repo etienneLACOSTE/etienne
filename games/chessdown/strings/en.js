@@ -146,6 +146,16 @@ export default {
 
     'draw.localAsk': 'Player {a} offers a draw. Player {b}, do you accept?',
 
+    'resign.button': "Resign",
+    'resign.question': "Resign this game, or the whole match?",
+    'resign.game': "This game",
+    'resign.match': "The whole match",
+    'resign.keep': "Keep playing",
+    'resign.confirm': "Resign the game?",
+    'resign.yes': "Resign",
+    'end.youResigned': "You resigned.",
+    'end.playerResigned': "Player {n} resigned.",
+    'end.theyResigned': "{name} resigned.",
     'end.victory': 'Victory!',
     'end.defeat': 'Defeat...',
     'end.draw': 'DRAW',

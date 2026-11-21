@@ -8,6 +8,7 @@ import { loadBotProfileForDifficulty } from './bot.js';
 import { setupNetwork } from './network.js';
 import { choose, notify } from '../../../assets/js/dialog.js';
 import { setupDraw } from './draw.js';
+import { setupResign } from './resign.js';
 import { fireConfetti } from '../confetti.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
 import { clearFieldError, showFieldError } from '../../../assets/js/field-error.js';
@@ -21,6 +22,23 @@ import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
 import { beginAllStar, endAllStar, nearestJersey } from './all-star.js';
 import { joinQueue, setupLadder } from './ladder-view.js';
+
+/** Back to the menu from a game (online: the room is left, a forfeit while it is played). */
+function leaveToMenu() {
+    if (state.currentRoomCode) {
+        socket.emit('leaveRoom', { roomCode: state.currentRoomCode });
+        state.currentRoomCode = null;
+        forgetSeat('chessdown');
+    }
+    state.ranked = null;
+    resetGame();
+    endAllStar();
+    endCareerMatch();
+    state.gameState = 'mainMenu';
+    hideScore();
+    showScreen(ui.mainMenu);
+    ui.statusBar.textContent = t('status.welcome');
+}
 
 /** The club chosen for the next campaign match (All Star), until the campaign starts or is cancelled. */
 let pendingClub = null;
@@ -319,20 +337,22 @@ export function setupEventListeners() {
         endGame(t('end.draw'), t('end.byAgreement'), 0, 'agreement');
     });
     
-    ui.btnMainMenu.addEventListener('pointerdown', () => {
+    ui.btnMainMenu.addEventListener('pointerdown', leaveToMenu);
+
+    // Resign (resign.js): this game, or the whole match. Online, the server decides: a game
+    // resigned is given to the opponent; the match resigned is left (a forfeit).
+    setupResign((what) => {
         if (state.currentRoomCode) {
-            socket.emit('leaveRoom', { roomCode: state.currentRoomCode });
-            state.currentRoomCode = null;
-            forgetSeat('chessdown');
+            if (what === 'match') return leaveToMenu();
+            socket.emit('resignGame', { roomCode: state.currentRoomCode });
+            return;
         }
-        state.ranked = null;
-        resetGame();
-        endAllStar();
-        endCareerMatch();
-        state.gameState = 'mainMenu';
-        hideScore();
-        showScreen(ui.mainMenu);
-        ui.statusBar.textContent = t('status.welcome');
+        // Against the bot, player 1 resigns; on the same screen, the player to move.
+        const loser = state.isBotMatch ? 1 : state.currentPlayer;
+        const winner = loser === 1 ? 2 : 1;
+        const title = state.isBotMatch ? t('end.defeat') : t('end.victory');
+        const reason = state.isBotMatch ? t('end.youResigned') : t('end.playerResigned', { n: loser });
+        endGame(title, reason, winner, 'resign', { match: what === 'match' });
     });
 
     const btnRestart = /** @type {HTMLButtonElement} */ (document.getElementById('btn-restart'));

@@ -145,6 +145,16 @@ export default {
 
     'draw.localAsk': 'Il giocatore {a} propone la patta. Giocatore {b}, accetti?',
 
+    'resign.button': "Abbandona",
+    'resign.question': "Abbandonare questa partita o tutto l’incontro?",
+    'resign.game': "Questa partita",
+    'resign.match': "Tutto l’incontro",
+    'resign.keep': "Continua a giocare",
+    'resign.confirm': "Abbandonare la partita?",
+    'resign.yes': "Abbandona",
+    'end.youResigned': "Hai abbandonato.",
+    'end.playerResigned': "Il giocatore {n} ha abbandonato.",
+    'end.theyResigned': "{name} ha abbandonato.",
     'end.victory': 'Vittoria!',
     'end.defeat': 'Sconfitta...',
     'end.draw': 'PATTA',

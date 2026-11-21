@@ -546,6 +546,17 @@ function registerChessdown(io, { sessions = null, stats = null, friends = null, 
             skipTurn(room);
         });
 
+        // A player resigns the game being played: it goes to the other side (and the series).
+        safeOn(socket, 'resignGame', (data) => {
+            const room = getRoom(chessdownRooms, data && data.roomCode);
+            if (!room || room.gameState !== 'playing') return;
+            const player = playerOf(room, socket);
+            if (player === null) return;
+            draws.turnPlayed(room, player);
+            gameOver(room, player === 1 ? 2 : 1, 'resign');
+            ioChessdown.to(room.id).emit('gameResigned', { loser: player });
+        });
+
         safeOn(socket, 'offerDraw', (data) => {
             const room = getRoom(chessdownRooms, data && data.roomCode);
             const player = room && playerOf(room, socket);

@@ -332,12 +332,15 @@ export function movePiece(fromR, fromC, toR, toC) {
 /**
  * @param {string} title @param {string} reason what the end screen says
  * @param {number} winner 1 or 2, or 0 for a draw
- * @param {'king' | 'touchdown' | 'time' | 'repetition' | 'agreement'} [how] for the stats
+ * @param {'king' | 'touchdown' | 'time' | 'repetition' | 'agreement' | 'resign'} [how] for the stats
+ * @param {{ match?: boolean }} [options] match: the whole match was resigned (not only this game)
  */
-export function endGame(title, reason, winner, how) {
+export function endGame(title, reason, winner, how, { match = false } = {}) {
     state.gameState = 'over';
     // The series counts the game (online, the server sent it already: 'seriesUpdate').
     if (!state.currentRoomCode) recordLocalGame(winner);
+    // The whole match resigned: the series is over, won by the other side.
+    if (match && !state.currentRoomCode && !state.series.over) state.series = { ...state.series, over: true, winner: /** @type {0 | 1 | 2} */ (winner) };
     // Online, once the match is over nothing is left to come back to after a reload (a
     // rematch brings a new seat); between two games of a series, the seat is kept.
     if (state.currentRoomCode && state.series.over) forgetSeat('chessdown');

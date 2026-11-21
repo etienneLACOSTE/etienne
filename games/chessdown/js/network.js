@@ -212,6 +212,18 @@ export function setupNetwork() {
         startTurn();
     });
 
+    // A player resigned this game (resign.js): the series goes on, or ends.
+    socket.on('gameResigned', (data) => {
+        if (state.gameState === 'over' || !data) return;
+        const winner = data.loser === 1 ? 2 : 1;
+        if (state.myPlayerNumber === winner) {
+            fireConfetti([COLOR_HEX[state.playerColors[winner]], '#f1c40f']);
+            endGame(t('end.victory'), t('end.theyResigned', { name: playerName(data.loser) }), winner);
+        } else {
+            endGame(t('end.defeat'), t('end.youResigned'), winner);
+        }
+    });
+
     // Both players agreed on a draw (offers: draw.js).
     socket.on('drawAgreed', () => {
         if (state.gameState === 'over') return;

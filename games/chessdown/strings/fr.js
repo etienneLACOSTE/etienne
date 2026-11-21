@@ -145,6 +145,16 @@ export default {
 
     'draw.localAsk': 'Le joueur {a} propose une nulle. Joueur {b}, acceptes-tu ?',
 
+    'resign.button': "Abandonner",
+    'resign.question': "Abandonner cette manche, ou tout le match ?",
+    'resign.game': "Cette manche",
+    'resign.match': "Tout le match",
+    'resign.keep': "Continuer",
+    'resign.confirm': "Abandonner la partie ?",
+    'resign.yes': "Abandonner",
+    'end.youResigned': "Tu as abandonné.",
+    'end.playerResigned': "Le joueur {n} a abandonné.",
+    'end.theyResigned': "{name} a abandonné.",
     'end.victory': 'Victoire !',
     'end.defeat': 'Défaite...',
     'end.draw': 'NULLE',

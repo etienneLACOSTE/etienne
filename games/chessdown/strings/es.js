@@ -145,6 +145,16 @@ export default {
 
     'draw.localAsk': 'El jugador {a} ofrece tablas. Jugador {b}, ¿aceptas?',
 
+    'resign.button': "Abandonar",
+    'resign.question': "¿Abandonar esta partida o todo el encuentro?",
+    'resign.game': "Esta partida",
+    'resign.match': "Todo el encuentro",
+    'resign.keep': "Seguir jugando",
+    'resign.confirm': "¿Abandonar la partida?",
+    'resign.yes': "Abandonar",
+    'end.youResigned': "Has abandonado.",
+    'end.playerResigned': "El jugador {n} ha abandonado.",
+    'end.theyResigned': "{name} ha abandonado.",
     'end.victory': '¡Victoria!',
     'end.defeat': 'Derrota...',
     'end.draw': 'TABLAS',

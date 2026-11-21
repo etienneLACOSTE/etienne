@@ -145,6 +145,16 @@ export default {
 
     'draw.localAsk': 'Spieler {a} bietet ein Remis an. Spieler {b}, nimmst du an?',
 
+    'resign.button': "Aufgeben",
+    'resign.question': "Dieses Spiel aufgeben oder die ganze Begegnung?",
+    'resign.game': "Dieses Spiel",
+    'resign.match': "Die ganze Begegnung",
+    'resign.keep': "Weiterspielen",
+    'resign.confirm': "Das Spiel aufgeben?",
+    'resign.yes': "Aufgeben",
+    'end.youResigned': "Du hast aufgegeben.",
+    'end.playerResigned': "Spieler {n} hat aufgegeben.",
+    'end.theyResigned': "{name} hat aufgegeben.",
     'end.victory': 'Sieg!',
     'end.defeat': 'Niederlage...',
     'end.draw': 'REMIS',
