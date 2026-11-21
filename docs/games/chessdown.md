@@ -78,7 +78,8 @@ Décisions du propriétaire du projet, dans l'ordre de réalisation :
    enregistrées.
 5. **All Star en ligne** : club enregistré sur le serveur (migration à demander), pour
    que le serveur connaisse les vrais niveaux. L'expérience de campagne reste déclarée
-   par le navigateur (à noter dans `docs/known-limits.md`).
+   par le navigateur (à noter dans `docs/known-limits.md`). Fait le 2026-11-21, avec les
+   ladders : voir `docs/games/chessdown-ladders.md`.
 6. **La carrière** : scolaire, départementale, régionale, nationale, internationale ;
    l'échelon scolaire sert de tutoriel (pièces et règles débloquées au fil des matchs).
 

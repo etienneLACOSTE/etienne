@@ -85,10 +85,32 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
 
 ## All Star (2026-11-21)
 
-- **Le club est gardé dans le navigateur seulement :** pas encore sur le compte, ni en ligne.
 - **L'en-but et la barre du minuteur** prennent la couleur de maillot du jeu la plus proche
   de la couleur 1 du club, pas sa nuance exacte (les pièces, elles, ont la vraie couleur).
 - **L'expérience de campagne est déclarée par la page** (comme les stats contre le bot).
+
+## Ladders et All Star en ligne (2026-11-21)
+
+- **Un club modifié à la main peut jouer en ligne.** Le club vient du navigateur (la
+  carrière s'y joue) ; le serveur vérifie ses règles (`sanitizeClub`) et que chaque niveau
+  correspond à l'expérience du joueur (`plausibleClub`), mais quelqu'un qui modifie aussi
+  l'expérience passe. Le budget de 39 points, le même pour les deux, limite l'avantage :
+  un niveau 5 coûte plus cher. Piste : jouer la carrière côté serveur (envoyer les coups
+  des matchs contre le bot), ou des ladders All Star avec des niveaux imposés.
+- **Les parties en ligne ne donnent pas d'expérience** au club (pour ne pas pouvoir monter
+  ses joueurs en jouant contre soi-même avec deux comptes). Piste : de l'expérience en
+  classé seulement, plafonnée par jour.
+- **Deux comptes d'une même personne peuvent s'affronter en classé** : 3 séries par jour
+  au plus entre les deux mêmes comptes comptent. Piste : repérer les paires qui reviennent
+  souvent, ou une limite par adresse.
+- **Le classement d'un joueur qui ne joue plus reste au tableau du mois** : chaque mois
+  repart de zéro au tableau (il faut jouer pour y figurer), la cote est reportée à
+  mi-chemin de 1000.
+- **Une série classée abandonnée pendant la draft par inactivité** (la salle se ferme
+  après 15 minutes sans rien) ne compte pour personne. Piste : une horloge de draft.
+- **Le club gardé sur le compte : le dernier enregistré gagne.** Deux navigateurs qui
+  changent le club en même temps s'écrasent l'un l'autre ; à la connexion, le club du
+  compte remplace celui du navigateur (sauf changement fait avant la réponse du serveur).
 
 ## Best of 3 (2026-11-21)
 

@@ -311,6 +311,9 @@ button.pill:disabled { opacity: 0.55; cursor: progress; transform: none; box-sha
 .panel input:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 .panel input[aria-invalid="true"] { background: var(--coral); }
 .hint { font-size: 1rem; margin: 0 !important; }
+.check-row { display: flex; align-items: center; gap: 0.6rem; margin-top: 1rem; }
+.panel .check-row input { width: 1.4rem; height: 1.4rem; flex: none; padding: 0; accent-color: var(--ink); }
+.panel .check-row label { margin-top: 0; }
 .panel button[type="submit"] { margin-top: 1rem; }
 .form-error {
     width: 100%;

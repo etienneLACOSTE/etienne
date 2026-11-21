@@ -194,6 +194,7 @@ async function showAccount() {
     $('fact-links').replaceChildren(...linkable.map((p) => providerLink(p, { link: true })));
     $('fact-links-row').hidden = !linkable.length;
     $('fact-since').textContent = new Date(account.createdAt).toLocaleDateString('en-GB', { dateStyle: 'long' });
+    /** @type {HTMLInputElement} */ ($('ladder-hidden')).checked = Boolean(account.ladderHidden);
     $('delete-password-field').hidden = !account.hasPassword;
     $('signed-out').hidden = true;
     $('signed-in').hidden = false;
@@ -304,6 +305,22 @@ $('logout-all-button').addEventListener('click', async () => {
     signOut($('logout-all-button'), '/api/account/sessions/logout-all');
 });
 
+// "Hide me from the public leaderboard": saved at once; put back as it was if it fails.
+$('ladder-hidden').addEventListener('change', async () => {
+    const box = /** @type {HTMLInputElement} */ ($('ladder-hidden'));
+    const error = $('ladder-error');
+    error.hidden = true;
+    box.disabled = true;
+    try {
+        await send('PUT', '/api/account/ladder', { hidden: box.checked });
+    } catch (err) {
+        box.checked = !box.checked;
+        error.textContent = err.message;
+        error.hidden = false;
+    } finally {
+        box.disabled = false;
+    }
+});
 $('logout-button').addEventListener('click', () => signOut($('logout-button'), '/api/auth/logout'));
 
 const next = nextPage();
