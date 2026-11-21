@@ -89,3 +89,22 @@ servent à faire progresser ses joueurs et à en recruter.
    - chaque lieu est un bouton ;
    - on peut aussi choisir un lieu dans une liste ;
    - les animations respectent la réduction des mouvements.
+
+## Avancement
+
+- **Étape 0 (faite)** : le mode contre le bot s'appelle « Partie rapide », et le club joue des
+  « matchs amicaux ».
+- **Étape 1 (faite)** : les règles de la carrière, sans interface, testées dans
+  `tests/unit/chessdown-career.test.js` :
+  - `career-coaches.js` : 34 entraîneurs rivaux, en réserves de 6 à 8 par échelon ;
+  - `career-quests.js` : les lieux de chaque carte et 40 quêtes (8 par échelon, dont 2 qui
+    n'ouvrent qu'à partir de la 2e saison dans l'échelon) ;
+  - `career-rules.js` : les ligues, la simulation des autres matchs, le classement, les
+    tickets, les voyages, le tirage des quêtes et la vérification d'une carrière enregistrée.
+
+  Les ligues : 6 clubs en match simple au Scolaire (5 journées) ; 6 clubs en aller-retour au
+  Départemental et au Régional (10 journées) ; 8 clubs en aller-retour au National
+  (14 journées) ; à l'International, une poule de 4 puis 3 tours à élimination directe.
+
+  Pas encore fait : la Coupe de la ville et la coupe nationale, et les textes des quêtes et
+  des entraîneurs (ils viendront avec l'interface).
