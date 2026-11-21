@@ -84,6 +84,10 @@ export default {
     'career.debrief.tutorial.2': "Lignes droites et diagonales, c'est noté. Prochaine journée : ta première vraie draft.",
     'career.debrief.tutorial.3': 'Belle draft ! Il ne reste que la finale : best of 3, 30 secondes par tour.',
     'career.debrief.tutorial.4': 'Le tournoi est fini. Regarde le classement dans le journal : le top 3 prend le bus pour le département.',
+    'career.puzzle.start': "{n} coups pour atteindre la zone d'en-but. L'adversaire ne bouge pas : à toi !",
+    'career.puzzle.outOfMoves': "Plus de coups : la zone d'en-but est encore hors de portée.",
+    'career.puzzle.counter': 'Coup {n}/{total}',
+    'career.puzzle.still': "Une position donnée ; l'adversaire ne bouge jamais",
     'career.rival': 'Entraîneur adverse',
 
     'career.transport.bus': 'Bus pour le Département',

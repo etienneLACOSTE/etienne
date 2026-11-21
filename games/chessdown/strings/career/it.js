@@ -84,6 +84,10 @@ export default {
     'career.debrief.tutorial.2': 'Linee rette e diagonali, fatto. Prossima giornata: il tuo primo vero draft.',
     'career.debrief.tutorial.3': 'Bel draft! Resta solo la finale: al meglio di 3, 30 secondi a turno.',
     'career.debrief.tutorial.4': "Il torneo è finito. Guarda la classifica nel diario: i primi 3 prendono l'autobus per la provincia.",
+    'career.puzzle.start': "{n} mosse per raggiungere la zona di meta. L'avversario non si muove: tocca a te!",
+    'career.puzzle.outOfMoves': 'Mosse finite: la zona di meta è ancora fuori portata.',
+    'career.puzzle.counter': 'Mossa {n}/{total}',
+    'career.puzzle.still': "Una posizione data; l'avversario non si muove mai",
     'career.rival': 'Allenatore avversario',
 
     'career.transport.bus': 'Autobus per la provincia',

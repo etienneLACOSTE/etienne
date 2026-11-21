@@ -41,6 +41,9 @@ export function beginCareerMatch(spec) {
         format: quest ? quest.format : 'bo3',
         rules,
         tutorial: quest ? -1 : Career.tutorialStep(career),
+        // A puzzle quest: its position (career-quests.js PUZZLES), and the moves played
+        puzzle: quest && quest.goal.type === 'puzzle' ? Quests.PUZZLES[quest.goal.id] : null,
+        puzzleMoves: 0,
         goal: quest ? quest.goal : { type: 'win' },
         opponent: { ...opponent, banned: rules.banned || [] },
         streak: 0,
@@ -99,10 +102,46 @@ export const invertedRows = () => Boolean(state.career && state.career.rules.inv
 /** The bot's army and level, or null outside the career. */
 export const careerOpponent = () => (state.career ? state.career.opponent : null);
 
-/** Seconds a turn: the quest's, else the 30 s of the career; null outside the career. */
+/** Seconds a turn: the quest's, else the 30 s of the career (2 minutes to think on a puzzle); null outside the career. */
 export function careerTimer() {
     if (!state.career) return null;
-    return { mode: 'turn', seconds: state.career.rules.timer || 30 };
+    return { mode: 'turn', seconds: state.career.puzzle ? 120 : state.career.rules.timer || 30 };
+}
+
+// ---------- Puzzles ----------
+/** The puzzle being played, or null. */
+export const careerPuzzle = () => (state.career ? state.career.puzzle : null);
+
+/**
+ * A turn starts during a puzzle: the other side always passes ('skip'); player 1's moves are
+ * counted, and once they are all played without a touchdown the puzzle is lost ('out').
+ * @returns {'skip' | 'out' | null}
+ */
+export function puzzleTurn(player) {
+    const c = state.career;
+    if (!c || !c.puzzle) return null;
+    if (player === 2) return 'skip';
+    if (c.puzzleMoves >= c.puzzle.moves) return 'out';
+    c.puzzleMoves++;
+    return null;
+}
+
+/** "Move 2 of 3" during a puzzle: { n, total }, or null. */
+export function puzzleCounter() {
+    const c = state.career;
+    return c && c.puzzle ? { n: Math.max(1, c.puzzleMoves), total: c.puzzle.moves } : null;
+}
+
+/** The puzzle's position on the board (player 1's pieces, the other side's king and stones). */
+export function setPuzzleBoard() {
+    const p = careerPuzzle();
+    if (!p) return;
+    state.board = Engine.createBoard();
+    for (const [r, c, type, level] of p.mine) state.board[r][c] = { type, player: 1, hasMoved: true, level };
+    state.board[p.king[0]][p.king[1]] = { type: 'k', player: 2, hasMoved: true };
+    for (const [r, c] of p.stones) state.board[r][c] = { type: 'p', player: 2, hasMoved: true }; // Classic pawns: no level badge
+    state.kingsPlaced = { 1: true, 2: true };
+    state.lastMove = null;
 }
 
 /** Fresh special rules for a game (engine.js matchRules), or null. */

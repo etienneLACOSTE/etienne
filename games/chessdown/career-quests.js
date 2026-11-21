@@ -109,6 +109,21 @@
         quest('cold-snap', 'international', 'montreal', 'challenge', 'bo3', { noCaptureMoves: 15 }, win, xp('all', 130), 2),
     ];
 
+    /**
+     * The puzzles of the 'puzzle' quests: player 1's pieces ([row, col, type, level]), the other
+     * side's king and its stones (pawns that never move: the bot passes its turns). Reach the
+     * end zone (row 0) or take the king in `moves` moves at most. `solution` is a shortest one;
+     * tests/unit/chessdown-puzzles.test.js checks that none is shorter.
+     */
+    const PUZZLES = {
+        'rook-run': { moves: 3, mine: [[11, 6, 'k', 5], [9, 3, 'r', 1]], king: [0, 7], stones: [[8, 7], [5, 5], [6, 1], [3, 3]], solution: 'r9,3>6,3 r6,3>3,3 r3,3>0,3' },
+        'pawn-push': { moves: 4, mine: [[11, 6, 'k', 5], [4, 3, 'p', 3]], king: [0, 7], stones: [[3, 4], [3, 3], [3, 6], [1, 1]], solution: 'p4,3>3,4 p3,4>2,4 p2,4>1,4 p1,4>0,4' },
+        'knight-hop': { moves: 3, mine: [[11, 6, 'k', 5], [6, 3, 'n', 3]], king: [0, 7], stones: [[4, 7], [1, 4], [2, 2], [4, 0], [1, 3], [5, 5]], solution: 'n6,3>4,2 n4,2>2,1 n2,1>0,0' },
+        'lake-crossing': { moves: 4, mine: [[11, 6, 'k', 5], [11, 0, 'r', 1]], king: [0, 7], stones: [[6, 0], [6, 1], [7, 7], [4, 4]], solution: 'r11,0>9,0 r9,0>6,0 r6,0>3,0 r3,0>0,0' },
+        'bishop-ray': { moves: 3, mine: [[11, 6, 'k', 5], [8, 2, 'b', 2]], king: [0, 7], stones: [[5, 5], [7, 7], [1, 7], [3, 2], [7, 2], [7, 0]], solution: 'b8,2>7,3 b7,3>4,0 b4,0>0,4' },
+        'queen-tide': { moves: 4, mine: [[11, 6, 'k', 5], [11, 1, 'q', 1]], king: [0, 7], stones: [[7, 5], [8, 7], [6, 5], [6, 6], [2, 7], [10, 1], [4, 6], [7, 6], [3, 3], [8, 1], [10, 2]], solution: 'q11,1>10,1 q10,1>8,1 q8,1>4,1 q4,1>0,1' },
+    };
+
     const isInt = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
 
     /** What is wrong with a quest (empty when it is fine); the tests run it on the whole catalogue. */
@@ -132,7 +147,7 @@
         if (g.type === 'touchdownWith' && !PIECES.includes(g.piece)) errors.push('goal piece');
         if ((g.type === 'touchdowns' || g.type === 'streak') && !isInt(g.n, 2, 10)) errors.push('goal n');
         if (g.type === 'touchdowns' && (q.format !== 'bo3' || g.n > 2)) errors.push('touchdowns: at most 2, in a best of 3');
-        if (g.type === 'puzzle' && !(typeof g.id === 'string' && isInt(g.moves, 1, 10))) errors.push('puzzle');
+        if (g.type === 'puzzle' && !(PUZZLES[g.id] && PUZZLES[g.id].moves === g.moves)) errors.push('puzzle');
         if (g.type === 'streak' && q.format !== 'single') errors.push('streak of single games');
         const w = q.reward || {};
         const rewards = ['xp', 'recruit', 'recruitChoice', 'cosmetic'].filter((k) => w[k] !== undefined);
@@ -155,5 +170,5 @@
         return QUESTS.find((q) => q.id === id) || null;
     }
 
-    return { TIER_IDS, PLACES, TRANSPORT, RULES, GOALS, XP_TARGETS, QUESTS, checkQuest, questById };
+    return { TIER_IDS, PLACES, TRANSPORT, RULES, GOALS, XP_TARGETS, QUESTS, PUZZLES, checkQuest, questById };
 });

@@ -162,8 +162,17 @@ servent à faire progresser ses joueurs et à en recruter.
   - Gérard explique la leçon en arrivant au stade (aussi écrite sur la fiche), puis commente le
     résultat au retour sur la carte et annonce la suite.
 
+- **Les problèmes (faits)** : 6 positions dans `career-quests.js` (`PUZZLES`). Ta pièce et
+  des obstacles adverses qui ne bougent jamais (le bot passe son tour) ; atteindre la zone
+  d'en-but (ou prendre le roi) en N coups au plus, 2 minutes par coup, sans draft. Un compteur
+  « Coup 2/3 » s'affiche. `tests/unit/chessdown-puzzles.test.js` rejoue chaque solution et
+  prouve, par une recherche exhaustive, qu'aucune n'est plus courte. Les positions ont été
+  trouvées par une recherche au hasard avec ce même solveur. Un problème n'est pas compté dans
+  les statistiques du compte.
+- En carrière, gagner une série ne donne plus de recrue en attente : les recrues viennent des
+  quêtes (les matchs amicaux en donnent toujours).
+
 ## Pas encore fait
 
-- Les problèmes (positions et objectifs en N coups) pour les 5 quêtes « problème ».
 - La Coupe de la ville et la coupe nationale.
 - Le maillot « Héritage » est gardé avec le club, mais pas encore proposé sur la page du club.

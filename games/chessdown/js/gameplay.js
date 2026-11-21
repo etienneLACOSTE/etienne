@@ -15,16 +15,17 @@ import { t } from '../../../assets/js/i18n.js';
 import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
 import { afterMove, beforeMove, noteGameStart, noteTouchdown, settleGame } from './all-star.js';
 import { esc } from './club-art.js';
-import { careerAfterGame, careerGameRules, noteCareerTouchdown } from './career-match.js';
+import { careerAfterGame, careerGameRules, careerPuzzle, noteCareerTouchdown, puzzleTurn } from './career-match.js';
 
 // --- Gameplay Logic ---
 
 /**
  * Both armies are drafted: the match starts with the coin flip, or, in a series, with the
  * loser of the last game (`coin` false).
- * @param {number} winner who starts @param {{ coin?: boolean }} [options]
+ * @param {number} winner who starts @param {{ coin?: boolean, text?: string }} [options]
+ *   text: what is said instead of "the loser starts" (a career puzzle's instruction)
  */
-export function startGameplay(winner, { coin = true } = {}) {
+export function startGameplay(winner, { coin = true, text = '' } = {}) {
     resetAnnouncements(); // a11y.js
     state.gameState = 'gameplay';
     resetDrawOffers();
@@ -47,7 +48,7 @@ export function startGameplay(winner, { coin = true } = {}) {
     noteGameStart(); // All Star: who of the club plays this game
     ui.chessboard.classList.add('levels-shown'); // Levels in view until the first move
     if (coin) startCoinFlip(winner, finalizeGameplayStart);
-    else showStarter(winner, t('series.loserStarts', { name: playerName(winner) }), finalizeGameplayStart);
+    else showStarter(winner, text || t('series.loserStarts', { name: playerName(winner) }), finalizeGameplayStart);
 }
 
 /** Online, the coin flip shows who plays whom: "Alice vs Bob" (a guest is "Player N"). */
@@ -116,6 +117,12 @@ export function startTurn() {
         return;
     }
     
+    // A career puzzle: the other side passes; player 1 has a number of moves to score.
+    const puzzle = puzzleTurn(state.currentPlayer);
+    if (puzzle === 'skip') return skipTurn();
+    if (puzzle === 'out') return endGame(t('end.defeat'), t('career.puzzle.outOfMoves'), 2); // Not a game for the stats
+    if (careerPuzzle()) showScore(); // "Move 2/3"
+
     const position = serializeBoard();
     state.positionHistory[position] = (state.positionHistory[position] || 0) + 1;
     if (state.positionHistory[position] >= 3) {
@@ -329,7 +336,7 @@ export function endGame(title, reason, winner, how) {
     // Against the bot, the signed-in player is player 1; on the same screen, the side they
     // chose at the start (none: not counted). Online, the server records the result.
     const side = state.isBotMatch ? 1 : state.localSide;
-    if (!state.currentRoomCode && state.account && how && side) {
+    if (!state.currentRoomCode && state.account && how && side && !careerPuzzle()) { // A puzzle is not a game against the bot
         reportResult({
             game: 'chessdown',
             mode: state.isBotMatch ? 'bot' : 'local',

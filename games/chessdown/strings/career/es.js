@@ -84,6 +84,10 @@ export default {
     'career.debrief.tutorial.2': 'Líneas rectas y diagonales, aprendidas. Próxima jornada: tu primer draft de verdad.',
     'career.debrief.tutorial.3': '¡Buen draft! Solo queda la final: al mejor de 3, 30 segundos por turno.',
     'career.debrief.tutorial.4': 'El torneo ha terminado. Mira la clasificación en el diario: los 3 primeros cogen el autobús a la provincia.',
+    'career.puzzle.start': '{n} jugadas para llegar a la zona de anotación. El rival no se mueve: ¡adelante!',
+    'career.puzzle.outOfMoves': 'No quedan jugadas: la zona de anotación sigue fuera de alcance.',
+    'career.puzzle.counter': 'Jugada {n}/{total}',
+    'career.puzzle.still': 'Una posición dada; el rival nunca se mueve',
     'career.rival': 'Entrenador rival',
 
     'career.transport.bus': 'Autobús a la provincia',

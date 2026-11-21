@@ -117,7 +117,8 @@ export function settleGame(winner) {
         if (after.level > p.level) levelUps.push({ name: after.name, level: after.level });
         return after;
     });
-    const recruit = state.series.over && state.series.winner === 1 && club.recruits < MAX_RECRUITS;
+    // A friendly series won brings a recruit; in the career, recruits come from the quests.
+    const recruit = !state.career && state.series.over && state.series.winner === 1 && club.recruits < MAX_RECRUITS;
     club = { ...club, players, recruits: club.recruits + (recruit ? 1 : 0) };
     state.allStar.club = club;
     saveClub(club);

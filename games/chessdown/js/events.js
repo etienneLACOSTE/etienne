@@ -3,7 +3,7 @@
 import { COLOR_HEX, socket, state, ui } from './state.js';
 import { enterFullscreen, renderBoard, showScreen } from './board-view.js';
 import { clearCurrentDraft, draftHooks, handleDraftSquareClick, handleTransitionReady, startDraftPhase, toggleRemoveMode, updateShopColors, validateDraft } from './draft.js';
-import { endGame, handleGameplaySquareClick, resetGame } from './gameplay.js';
+import { endGame, handleGameplaySquareClick, resetGame, startGameplay } from './gameplay.js';
 import { loadBotProfileForDifficulty } from './bot.js';
 import { setupNetwork } from './network.js';
 import { choose, notify } from '../../../assets/js/dialog.js';
@@ -16,7 +16,7 @@ import { saveSettings, showSettings } from './settings.js';
 import { askFormat, hideScore, startSeries } from './match.js';
 import { loadClub } from './club-store.js';
 import { closeCareer, openCareer } from './career-view.js';
-import { beginCareerMatch, careerWord, endCareerMatch } from './career-match.js';
+import { beginCareerMatch, careerPuzzle, careerWord, endCareerMatch, setPuzzleBoard } from './career-match.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
 import { beginAllStar, endAllStar } from './all-star.js';
@@ -79,7 +79,13 @@ function startCareerMatch(club, spec) {
     state.botArchetype = state.career.opponent.archetype;
     enterFullscreen();
     startSeries(format);
-    startDraftPhase(1);
+    const puzzle = careerPuzzle();
+    if (!puzzle) return startDraftPhase(1);
+    // A puzzle: no draft, its position on the board, player 1 to play
+    setPuzzleBoard();
+    state.playerColors[2] = state.playerColors[1] === 'black' ? 'white' : 'black';
+    state.currentPlayer = 1;
+    startGameplay(1, { coin: false, text: t('career.puzzle.start', { n: puzzle.moves }) });
 }
 
 /** The career match is over: back to the map, the club as it is now. */

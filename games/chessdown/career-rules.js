@@ -31,7 +31,7 @@
     const TIERS = {
         school: { clubs: 6, legs: 1, knockout: 0, bot: { difficulty: 'novice', budget: 10, level: 1 }, quests: 4 },
         county: { clubs: 6, legs: 2, knockout: 0, bot: { difficulty: 'apprentice', budget: 18, level: 2 }, quests: 4 },
-        region: { clubs: 6, legs: 2, knockout: 0, bot: { difficulty: 'apprentice', budget: 26, level: 3 }, quests: 4 },
+        region: { clubs: 6, legs: 2, knockout: 0, bot: { difficulty: 'apprentice', budget: 26, level: 3 }, quests: 5 },
         national: { clubs: 8, legs: 2, knockout: 0, bot: { difficulty: 'expert', budget: 32, level: 4 }, quests: 5 },
         international: { clubs: 4, legs: 1, knockout: 3, bot: { difficulty: 'master', budget: 39, level: 5 }, quests: 6 },
     };
@@ -288,8 +288,8 @@
     }
 
     // ---------- Side quests ----------
-    /** The goals the game can play now (puzzles need their positions: not drawn yet). */
-    const PLAYABLE_GOALS = ['win', 'touchdownWith', 'touchdowns', 'streak'];
+    /** The goals the game can play (every one now; kept to hold a new kind back until it plays). */
+    const PLAYABLE_GOALS = ['win', 'touchdownWith', 'touchdowns', 'streak', 'puzzle'];
 
     /** This season's draw: quests of the tier not done yet, open from this season on in the tier. */
     function drawQuests(career) {

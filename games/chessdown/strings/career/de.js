@@ -84,6 +84,10 @@ export default {
     'career.debrief.tutorial.2': 'Geraden und Diagonalen, erledigt. Nächster Spieltag: dein erster richtiger Draft.',
     'career.debrief.tutorial.3': 'Starker Draft! Es bleibt nur das Finale: Best of 3, 30 Sekunden pro Zug.',
     'career.debrief.tutorial.4': 'Das Turnier ist vorbei. Schau dir die Tabelle im Tagebuch an: Die ersten 3 nehmen den Bus in den Bezirk.',
+    'career.puzzle.start': '{n} Züge bis in die Endzone. Die Gegenseite bewegt sich nicht: los!',
+    'career.puzzle.outOfMoves': 'Keine Züge mehr: Die Endzone ist noch außer Reichweite.',
+    'career.puzzle.counter': 'Zug {n}/{total}',
+    'career.puzzle.still': 'Eine vorgegebene Stellung; die Gegenseite zieht nie',
     'career.rival': 'Gegnerischer Trainer',
 
     'career.transport.bus': 'Bus in den Bezirk',

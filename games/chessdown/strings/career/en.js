@@ -86,6 +86,10 @@ export default {
     'career.debrief.tutorial.2': 'Straight lines and diagonals, done. Next matchday: your first real draft.',
     'career.debrief.tutorial.3': 'A fine draft! Only the final is left: best of 3, 30 seconds a turn.',
     'career.debrief.tutorial.4': 'The tournament is over. Look at the table in the journal: the top 3 takes the bus to the county.',
+    'career.puzzle.start': '{n} moves to reach the end zone. The other side does not move: go!',
+    'career.puzzle.outOfMoves': 'No moves left: the end zone is still out of reach.',
+    'career.puzzle.counter': 'Move {n}/{total}',
+    'career.puzzle.still': 'A set position; the other side never moves',
     'career.rival': 'Rival coach',
 
     // Transports (one per map, towards the next tier)

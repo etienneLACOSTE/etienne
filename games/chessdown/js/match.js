@@ -6,7 +6,7 @@
 import { Series, state } from './state.js';
 import { choose } from '../../../assets/js/dialog.js';
 import { t } from '../../../assets/js/i18n.js';
-import { careerTimer } from './career-match.js';
+import { careerTimer, puzzleCounter } from './career-match.js';
 
 const scoreBox = /** @type {HTMLElement | null} */ (document.getElementById('series-score'));
 
@@ -55,8 +55,10 @@ function sides() {
 export function showScore() {
     if (!scoreBox) return;
     const s = state.series;
-    scoreBox.hidden = s.format !== 'bo3' || state.gameState === 'mainMenu';
+    const puzzle = puzzleCounter(); // A career puzzle shows its moves instead
+    scoreBox.hidden = (s.format !== 'bo3' && !puzzle) || state.gameState === 'mainMenu';
     if (scoreBox.hidden) return;
+    if (puzzle) { scoreBox.textContent = t('career.puzzle.counter', puzzle); return; }
     const { me, other } = sides();
     scoreBox.textContent = t('series.score', { a: s.wins[me], b: s.wins[other] });
 }

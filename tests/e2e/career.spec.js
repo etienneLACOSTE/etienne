@@ -240,4 +240,54 @@ test.describe('Career', () => {
     await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
     expect(await page.evaluate(() => chessdown.state.timerBaseSeconds)).toBe(15);
   });
+
+  /** The career with the town's puzzle (the rook run) drawn this season. */
+  async function withPuzzle(page) {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/chessdown/');
+    await page.evaluate(async (club) => {
+      localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club));
+      const c = /** @type {any} */ (window).ChessdownCareer.newCareer(8);
+      c.quests = { drawn: ['sunday-jog', 'street-match', 'market-rush', 'counter-bet'], attempted: [] };
+      localStorage.setItem('pawnet.chessdown.career', JSON.stringify(c));
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    }, CLUB);
+    await page.getByRole('button', { name: 'Side quest: Lime Tree Park' }).click();
+    await expect(card(page).locator('h3')).toHaveText('Sunday jog');
+    await expect(card(page)).toContainText('Solve the puzzle in 3 moves');
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('#series-score')).toHaveText('Move 1/3');
+  }
+  /** Player 1 plays a move, then the other side passes: back to player 1. */
+  async function play(page, from, to) {
+    await expect.poll(() => page.evaluate(() => chessdown.state.currentPlayer)).toBe(1);
+    await page.evaluate(([f, t]) => chessdown.movePiece(f[0], f[1], t[0], t[1]), [from, to]);
+    await expect.poll(() => page.evaluate(() => chessdown.state.lastMove && `${chessdown.state.lastMove.toR},${chessdown.state.lastMove.toC}`)).toBe(`${to[0]},${to[1]}`);
+  }
+
+  test('a puzzle: its position without a draft, the other side passing, solved in its moves', async ({ page }) => {
+    await withPuzzle(page);
+    const rook = await page.evaluate(() => chessdown.state.board[9][3]);
+    expect([rook.type, rook.level, rook.player]).toEqual(['r', 1, 1]);
+    await play(page, [9, 3], [6, 3]);
+    await expect(page.locator('#series-score')).toHaveText('Move 2/3');
+    await play(page, [6, 3], [3, 3]); // Takes the stone in the way
+    await play(page, [3, 3], [0, 3]);
+    await expect(page.locator('#victory-club')).toContainText('Quest done: Sunday jog.', { timeout: 10_000 });
+    await expect(page.locator('#victory-club')).toContainText('+25 XP from the quest.');
+    expect((await stored(page)).questsDone).toEqual(['sunday-jog']);
+  });
+
+  test('a puzzle lost: no moves left before the end zone', async ({ page }) => {
+    await withPuzzle(page);
+    await play(page, [9, 3], [9, 2]);
+    await play(page, [9, 2], [8, 2]);
+    await play(page, [8, 2], [8, 1]);
+    await expect(page.locator('#victory-reason')).toHaveText('No moves left: the end zone is still out of reach.', { timeout: 10_000 });
+    await expect(page.locator('#victory-club')).toContainText('Quest failed: Sunday jog.');
+    const career = await stored(page);
+    expect(career.questsDone).toEqual([]);
+    expect(career.quests.attempted).toEqual(['sunday-jog']);
+  });
 });

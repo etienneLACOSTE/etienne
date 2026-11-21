@@ -163,7 +163,9 @@ function showCard(place) {
     const choice = q.reward.recruitChoice ? `<div class="career-choice" role="radiogroup" aria-label="${esc(t('career.chooseRecruit'))}">
         <h4>${esc(t('career.chooseRecruit'))}</h4><div class="career-chips">${Club.RECRUIT_TYPES.map((type, i) =>
             `<button type="button" class="career-pick" role="radio" data-type="${type}" aria-checked="${i === 0}"><span class="career-glyphs" aria-hidden="true">${GLYPHS[type]}</span> ${esc(t(`piece.${type}`))}</button>`).join('')}</div></div>` : '';
-    const conditions = [esc(t(`rule.${q.format}`)), ...ruleTexts(q.rules), opponentLine(Career.questOpponent(career, q)), esc(t('career.once'))];
+    const conditions = q.goal.type === 'puzzle'
+        ? [esc(t('career.puzzle.still')), esc(t('career.once'))] // A puzzle: a set position, the other side never moves
+        : [esc(t(`rule.${q.format}`)), ...ruleTexts(q.rules), opponentLine(Career.questOpponent(career, q)), esc(t('career.once'))];
     setCard('side', `${kind('side')}
         <h3>${esc(t(`quest.${q.id}.title`))}</h3>
         <p class="career-place">${esc(placeName(place))} · ${esc(t(`quest.${q.id}.giver`))}</p>
