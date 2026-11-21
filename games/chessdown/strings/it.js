@@ -419,7 +419,6 @@ export default {
     'club.deleteAsk': 'Eliminare {club} e tutti i suoi giocatori? Non si può annullare.',
     'club.deleteConfirm': 'Elimina il club',
     // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
-    'allStar.career': 'Carriera',
     'allStar.play': "Gioca un'amichevole",
     'allStar.bench': 'La tua rosa: scegli un giocatore, poi una casella',
     'allStar.place': 'Schiera {name}, {piece}, livello {n}, {cost} punti',

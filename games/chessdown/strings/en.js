@@ -420,7 +420,6 @@ export default {
     'club.deleteAsk': 'Delete {club} and all its players? This cannot be undone.',
     'club.deleteConfirm': 'Delete the club',
     // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
-    'allStar.career': 'Career',
     'allStar.play': 'Play a friendly match',
     'allStar.bench': 'Your squad: choose a player, then a square',
     'allStar.place': 'Place {name}, {piece}, level {n}, {cost} points',

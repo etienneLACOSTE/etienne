@@ -63,11 +63,12 @@ function openAllStar() {
  * The career (docs/games/chessdown-career.md) with the club, from the club's page; back to
  * the club's page from it, or into a match (a matchday or a side quest).
  */
-export function openCareerPage(club, word = '', knockedOut = false) {
+export function openCareerPage(club, word = '', knockedOut = false, view = 'map') {
     showScreen(/** @type {HTMLElement} */ (document.getElementById('career-screen')));
     openCareer(club, {
         word,
         knockedOut,
+        view,
         onClub: () => openClubPage(loadClub() || club, () => { showScreen(ui.mainMenu); document.getElementById('btn-all-star')?.focus(); }),
         onPlay: (spec) => startCareerMatch(loadClub() || club, spec),
     });
@@ -113,7 +114,7 @@ function openClubPage(club, toMenu) {
     showClub(/** @type {HTMLElement} */ (document.getElementById('club-view')), club, {
         onMenu: toMenu,
         onDeleted: openAllStar,
-        onCareer: (playing) => openCareerPage(playing),
+        onCareer: (playing, view) => openCareerPage(playing, '', false, view),
         // A campaign match with the club: the campaign setup first (difficulty, opponent).
         onPlay: (playing) => {
             pendingClub = playing;

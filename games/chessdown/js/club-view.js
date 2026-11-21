@@ -54,8 +54,9 @@ export function rosterTable(club, { rename = true } = {}) {
  * Show the club's page in `box`.
  * @param {HTMLElement} box
  * @param {any} club
- * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void, onCareer: (club: any) => void }} handlers
- *   onPlay: a friendly match with the club against the bot; onCareer: the career's map
+ * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void, onCareer: (club: any, view: string) => void }} handlers
+ *   onPlay: a friendly match with the club against the bot; onCareer: the career, on its map,
+ *   journal or pieces' guide ('map', 'journal', 'guide')
  */
 export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
     const render = (focusId = '') => {
@@ -68,8 +69,10 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
             </div>
             <figure class="club-preview club-card-jersey">${jerseySVG(club)}</figure>
           </div>
-          <div class="club-row"><button type="button" class="btn-primary btn-big" id="club-career">${esc(t('allStar.career'))}</button>
-            <button type="button" class="btn-secondary" id="club-play">${esc(t('allStar.play'))}</button></div>
+          <div class="club-row club-career-row"><button type="button" class="btn-primary btn-big" data-career="map">${esc(t('career.tabMap'))}</button>
+            <button type="button" class="btn-secondary" data-career="journal">${esc(t('career.tabJournal'))}</button>
+            <button type="button" class="btn-secondary" data-career="guide">${esc(t('guide.tab'))}</button></div>
+          <div class="club-row"><button type="button" class="btn-secondary" id="club-play">${esc(t('allStar.play'))}</button></div>
           <section class="club-section" aria-labelledby="club-register-title">
             <h3 id="club-register-title">${esc(t('club.registerTitle'))}</h3>
             ${rosterTable(club)}
@@ -113,7 +116,7 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
     function wire() {
         box.querySelector('#club-menu')?.addEventListener('click', onMenu);
         box.querySelector('#club-play')?.addEventListener('click', () => onPlay(club));
-        box.querySelector('#club-career')?.addEventListener('click', () => onCareer(club));
+        box.querySelectorAll('[data-career]').forEach((b) => b.addEventListener('click', () => onCareer(club, /** @type {HTMLElement} */ (b).dataset.career)));
         box.querySelector('#club-delete')?.addEventListener('click', async () => {
             if (!await ask(t('club.deleteAsk', { club: club.name }), { confirm: t('club.deleteConfirm'), cancel: t('dialog.cancel') })) return;
             deleteClub();

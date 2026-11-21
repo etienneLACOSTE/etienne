@@ -126,6 +126,19 @@ test.describe('Career', () => {
     await expect(page.locator('#club-screen')).toBeVisible();
   });
 
+  test('from the club\'s page: Map, Journal and Pieces open the career on that tab', async ({ page }) => {
+    await page.addInitScript((club) => { if (!localStorage.getItem('pawnet.chessdown.club')) localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)); }, CLUB);
+    await page.goto('/chessdown/');
+    for (const [button, tab, panel] of [['Journal', 'Journal', '#career-journal'], ['Pieces', 'Pieces', '#career-guide'], ['Map', 'Map', '#career-stage']]) {
+      await page.getByRole('button', { name: 'All Star: my club' }).click();
+      await page.getByRole('button', { name: button, exact: true }).click();
+      await expect(page.getByRole('tab', { name: tab })).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator(panel)).toBeVisible();
+      await page.locator('#career-back').click(); // Back to the club, then the menu
+      await page.locator('#club-menu').click();
+    }
+  });
+
   test('in French', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('pawnet.language', 'fr'));
     await openCareer(page);
@@ -141,7 +154,7 @@ test.describe('Career', () => {
     await page.addInitScript((club) => { if (!localStorage.getItem('pawnet.chessdown.club')) localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)); }, CLUB);
     await page.goto('/chessdown/');
     await page.getByRole('button', { name: 'All Star: my club' }).click();
-    await page.getByRole('button', { name: 'Career' }).click();
+    await page.getByRole('button', { name: 'Map' }).click();
     await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();
     await expect(card(page).locator('.career-lesson')).toContainText('Your first tournament match!');
     await expect(page.locator('#career-gerard-said')).toContainText('Your first tournament match!');

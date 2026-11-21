@@ -441,19 +441,20 @@ function blinkLoop(now) {
 /**
  * Open the career with `theClub` (its saved career, or a new one).
  * @param {any} theClub
- * @param {{ onClub: () => void, onPlay: (spec: { kind: 'league' | 'quest', questId?: string, recruitType?: string }) => void, word?: string, knockedOut?: boolean }} handlers
+ * @param {{ onClub: () => void, onPlay: (spec: { kind: 'league' | 'quest', questId?: string, recruitType?: string }) => void, word?: string, knockedOut?: boolean, view?: string }} handlers
  *   onClub: back to the club's page; onPlay: play a tournament match or a quest; word: what
  *   Gérard says first (his comment on the match just played; his welcome to the map
- *   otherwise); knockedOut: the match just played knocked the club out (the black screen)
+ *   otherwise); knockedOut: the match just played knocked the club out (the black screen);
+ *   view: the tab shown first ('map', 'journal' or 'guide'; the club page's buttons)
  */
-export function openCareer(theClub, { onClub, onPlay, word = '', knockedOut = false }) {
+export function openCareer(theClub, { onClub, onPlay, word = '', knockedOut = false, view = 'map' }) {
     club = theClub;
     toClub = () => { closeCareer(); onClub(); };
     play = onPlay;
     career = loadCareer();
     if (!career) { career = newCareer(); save(); }
-    showView('map');
     showTier('home');
+    showView(['map', 'journal', 'guide'].includes(view) ? view : 'map');
     map.start();
     gerard.start();
     gerard.say(word || t(`career.intro.${career.tier}`));
