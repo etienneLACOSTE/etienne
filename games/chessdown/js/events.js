@@ -19,24 +19,11 @@ import { closeCareer, openCareer } from './career-view.js';
 import { beginCareerMatch, careerPuzzle, careerWord, endCareerMatch, setPuzzleBoard } from './career-match.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
-import { beginAllStar, endAllStar } from './all-star.js';
+import { beginAllStar, endAllStar, nearestJersey } from './all-star.js';
+import { joinQueue, setupLadder } from './ladder-view.js';
 
 /** The club chosen for the next campaign match (All Star), until the campaign starts or is cancelled. */
 let pendingClub = null;
-
-/** The jersey colour of the game nearest to the club's own (end zones, timer bar). */
-function nearestJersey(hex) {
-    const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-    const [r, g, b] = rgb(hex);
-    let best = 'blue';
-    let dist = Infinity;
-    for (const [name, h] of Object.entries(COLOR_HEX)) {
-        const [x, y, z] = rgb(h);
-        const d = (r - x) ** 2 + (g - y) ** 2 + (b - z) ** 2;
-        if (d < dist) { dist = d; best = name; }
-    }
-    return best;
-}
 
 /** All Star: the club's page, or the commissioner's office when there is no club yet. */
 function openAllStar() {
@@ -285,11 +272,17 @@ export function setupEventListeners() {
             endAllStar();
             e.preventDefault(); // The mouse press must not take the focus out of the question
             enterFullscreen();
+            // With a club, the room may be All Star: each side drafts its own club (the one
+            // kept with the account, checked by the server).
+            const mode = loadClub()
+                ? await choose(t('online.modeQuestion'), [{ label: t('online.modeClassic'), value: 'classic' }, { label: t('online.modeAllStar'), value: 'allstar' }])
+                : 'classic';
+            if (!mode) return;
             const format = await askFormat();
             if (!format) return;
             // The creator's match applies to both players; the server keeps the clock
             // (30 s turns for a best of 3, the timer chosen in Settings for a single game).
-            socket.emit('createRoom', { format, timerMode: state.chosenTimer.mode, timerSeconds: state.chosenTimer.seconds });
+            socket.emit('createRoom', { format, mode, timerMode: state.chosenTimer.mode, timerSeconds: state.chosenTimer.seconds });
         });
     }
 
@@ -307,6 +300,18 @@ export function setupEventListeners() {
         });
     }
 
+    // Ranked: a ladder to queue for (All Star only with a club), and the leaderboards.
+    setupLadder({
+        onRanked: async () => {
+            if (!socket) return void notify(t('online.unavailable'));
+            endAllStar();
+            const mode = loadClub()
+                ? await choose(t('ladder.modeQuestion'), [{ label: t('online.modeClassic'), value: 'classic' }, { label: t('online.modeAllStar'), value: 'allstar' }])
+                : 'classic';
+            if (mode) joinQueue(mode);
+        },
+    });
+
     setupNetwork(); // Socket.io handlers, see network.js
     // Same screen: both players agreed on a draw (online, the server ends the game).
     setupDraw(() => {
@@ -320,6 +325,7 @@ export function setupEventListeners() {
             state.currentRoomCode = null;
             forgetSeat('chessdown');
         }
+        state.ranked = null;
         resetGame();
         endAllStar();
         endCareerMatch();

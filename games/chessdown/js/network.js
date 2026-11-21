@@ -3,7 +3,9 @@
 import { fireConfetti } from '../confetti.js';
 import { COLOR_HEX, Engine, MAX_POINTS, playerName, socket, state, ui } from './state.js';
 import { clearHighlights, renderBoard, showScreen } from './board-view.js';
-import { setupColorPicker, startDraftPhase } from './draft.js';
+import { draftRefused, setupColorPicker, startDraftPhase } from './draft.js';
+import { beginAllStar, endAllStar, nearestJersey } from './all-star.js';
+import { queueJoined, rankedMatch, showLadderResult } from './ladder-view.js';
 import { endGame, resetGame, resumeGameplay, startGameplay, startTurn } from './gameplay.js';
 import { makeVirtualMove } from './rules-bridge.js';
 import { refreshInvites } from './invites.js';
@@ -14,6 +16,27 @@ import { chat } from './chat.js';
 import { forgetSeat, keepSeat, resumeFailedText } from '../../../assets/js/seat.js';
 import { useSeries } from './match.js';
 import { serverText, t } from '../../../assets/js/i18n.js';
+
+/** Online All Star: the club the server holds for this account plays, in its colours. */
+function playClub(club) {
+    beginAllStar(club, { online: true });
+    state.playerColors[state.myPlayerNumber] = nearestJersey(club.primary);
+}
+
+/** The opponent's pieces carry their own club's ids: only this page's club names its pieces. */
+function forgetOpponentClub() {
+    for (const row of state.board) for (const piece of row) if (piece && piece.player !== state.myPlayerNumber) delete piece.clubId;
+}
+
+/** Back to the menu: the room is gone. */
+function leftRoom(message) {
+    state.currentRoomCode = null;
+    state.ranked = null;
+    resetGame();
+    endAllStar();
+    showScreen(ui.mainMenu);
+    notify(message);
+}
 
 /**
  * Show the game the server sent back to a reloaded page: the waiting room, the draft
@@ -32,6 +55,9 @@ function resumeOnlineGame(data) {
     state.playerColors = data.playerColors;
     state.board = data.board;
     state.lastMove = data.lastMove;
+    state.ranked = data.ranked ? data.mode : null;
+    if (data.club) playClub(data.club);
+    forgetOpponentClub();
     if (data.series) useSeries(data.series);
     if (data.gameState === 'waiting') {
         document.getElementById('waiting-room-code').textContent = data.id;
@@ -51,7 +77,7 @@ function resumeOnlineGame(data) {
         const me = state.myPlayerNumber;
         // Points and king of the pieces already placed (only once drafted).
         const mine = state.board.flat().filter((piece) => piece && piece.player === me);
-        state.draftPoints[me] = MAX_POINTS - mine.reduce((sum, piece) => sum + Engine.PIECE_VALUES[piece.type], 0);
+        state.draftPoints[me] = MAX_POINTS - mine.reduce((sum, piece) => sum + Engine.pieceCost(piece.type, piece.level), 0);
         state.kingsPlaced[me] = mine.some((piece) => piece.type === 'k');
         startDraftPhase(me);
         if (data.drafted) {
@@ -89,15 +115,28 @@ export function setupNetwork() {
             state.timerBaseSeconds = timer.seconds;
         }
         state.playerNames = (data && data.roomState && data.roomState.names) || { 1: null, 2: null };
+        state.ranked = data && data.roomState && data.roomState.ranked ? data.roomState.mode : null;
         if (data && data.roomState && data.roomState.series) useSeries(data.roomState.series);
-        startDraftPhase(state.myPlayerNumber);
         chat?.start(); // Both players are in the room
+        // All Star: the draft starts once the server sent this page its club ('allStarClub').
+        if (data && data.roomState && data.roomState.mode === 'allstar') return;
+        endAllStar();
+        startDraftPhase(state.myPlayerNumber);
     });
+
+    socket.on('allStarClub', (data) => {
+        if (!data || !data.club) return;
+        playClub(data.club);
+        startDraftPhase(state.myPlayerNumber);
+    });
+
+    socket.on('draftRefused', draftRefused);
 
     socket.on('draftPhaseEnded', (data) => {
         // Sync the fully merged board and colors from server
         state.board = data.roomState.board;
         state.playerColors = data.roomState.playerColors;
+        forgetOpponentClub();
         startGameplay(data.roomState.currentPlayer, { coin: data.roomState.coinFlip !== false });
     });
 
@@ -218,19 +257,24 @@ export function setupNetwork() {
     });
 
     socket.on('opponentLeft', () => {
+        if (!state.ranked) return leftRoom(t('online.opponentLeft'));
+        // Ranked: the series is won (the server counts it); the end screen shows the rating.
         state.currentRoomCode = null;
+        forgetSeat('chessdown');
+        if (state.gameState === 'over' && state.series.over) return; // Already on the end screen
+        const me = state.myPlayerNumber;
         resetGame();
-        showScreen(ui.mainMenu);
-        notify(t('online.opponentLeft'));
+        state.series = { ...state.series, over: true, winner: /** @type {1 | 2} */ (me) };
+        endGame(t('end.victory'), t('ladder.opponentLeft'), me);
     });
 
+    // Ranked queue (ladder-view.js).
+    socket.on('queueJoined', queueJoined);
+    socket.on('rankedMatch', rankedMatch);
+    socket.on('ladderResult', showLadderResult);
+
     // The server closed an idle room (see server/socket-utils.js).
-    socket.on('roomClosed', (reason) => {
-        state.currentRoomCode = null;
-        resetGame();
-        showScreen(ui.mainMenu);
-        notify(serverText(reason));
-    });
+    socket.on('roomClosed', (reason) => leftRoom(serverText(reason)));
 
     socket.on('errorMsg', (msg) => {
         notify(serverText(msg));
@@ -250,9 +294,7 @@ export function setupNetwork() {
             state.currentRoomCode = null; // The room is gone: nothing to leave
             forgetSeat('chessdown');
             if (state.gameState === 'over') return; // The end screen stays up
-            resetGame();
-            showScreen(ui.mainMenu);
-            notify(t('online.connectionLost'));
+            leftRoom(t('online.connectionLost'));
         },
     });
     } // End of if (socket)

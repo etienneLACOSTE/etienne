@@ -61,6 +61,8 @@ export const state = {
     botTrainingData: null, // training_data.json
     /** @type {{ id: number, username: string } | null} The signed-in player (assets/js/session.js). */
     account: null,
+    /** Online: the ladder of this room's ranked series ('classic' or 'allstar'), null when unranked. @type {string | null} */
+    ranked: null,
     /** Same screen: the signed-in player's side (1 or 2) for their stats, 0: not counted. */
     localSide: 0,
     /** When the current match started (Date.now()), for the time played. */
@@ -80,7 +82,7 @@ export const state = {
     /**
      * All Star (all-star.js): the club playing this campaign match, who of it is on the
      * board, and what each did in the current game. null in classic play.
-     * @type {{ club: any, lineupIds: number[], tally: Record<number, any> } | null}
+     * @type {{ club: any, lineupIds: number[], tally: Record<number, any>, online?: boolean } | null}
      */
     allStar: null,
 

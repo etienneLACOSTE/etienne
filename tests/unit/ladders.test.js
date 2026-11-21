@@ -113,3 +113,28 @@ test('deleting an account takes its ladder lines and series along', async () => 
     assert.equal(left, 0);
     assert.equal((await db.query('SELECT count(*)::int AS n FROM ladder_ratings WHERE user_id = $1', [ivy.id])).rows[0].n, 0);
 });
+
+test('the board route: signed-in players only, known modes only', async () => {
+    const http = require('node:http');
+    const express = require('express');
+    const { authRouter } = require('../../server/accounts/routes');
+    const app = express();
+    app.use('/api/auth', authRouter(db, { attemptsPerWindow: 1000 }));
+    app.use('/api/ladders', L.ladderRouter(db));
+    const server = http.createServer(app).listen(0);
+    const base = `http://localhost:${server.address().port}`;
+    try {
+        assert.equal((await fetch(`${base}/api/ladders/classic`)).status, 401);
+        const res = await fetch(`${base}/api/auth/signup`, {
+            method: 'POST', headers: { 'content-type': 'application/json', origin: base },
+            body: JSON.stringify({ username: 'Kim', email: 'kim@example.com', password: 'correct horse battery' }),
+        });
+        const cookie = res.headers.get('set-cookie').split(';')[0];
+        const board = await (await fetch(`${base}/api/ladders/allstar`, { headers: { cookie } })).json();
+        assert.equal(board.mode, 'allstar');
+        assert.deepEqual(board.me, { rating: 1000, series: 0, wins: 0, losses: 0, draws: 0, rank: null, hidden: false });
+        assert.equal((await fetch(`${base}/api/ladders/constructor`, { headers: { cookie } })).status, 404);
+    } finally {
+        server.close();
+    }
+});

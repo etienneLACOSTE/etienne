@@ -139,6 +139,9 @@ export function serverText(message) {
         'You can only invite your friends.': 'server.inviteFriendsOnly',
         'Too many invitations: wait a minute.': 'server.tooManyInvites',
         'Create an online room first.': 'server.createRoomFirst',
+        'Create your All Star club first.': 'server.noClub',
+        'Your club cannot play online: its levels do not match its experience.': 'server.badClub',
+        'Finish your game first.': 'server.inAGame',
     };
     if (typeof message !== 'string') return '';
     if (known[message]) return t(known[message]);

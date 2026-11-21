@@ -34,6 +34,10 @@
             </div>
             <div class="menu-group menu-online">
                 <div class="online-controls" id="online-controls">
+                    <div class="ranked-row">
+                        <button id="btn-ranked" class="btn-secondary" data-i18n="ladder.play">Ranked match</button>
+                        <button id="btn-leaderboard" class="btn-ghost" data-i18n="ladder.open">Leaderboard</button>
+                    </div>
                     <button id="btn-create-room" class="btn-secondary" data-i18n="menu.createRoom">Create Online Room</button>
                     <div class="join-row">
                         <input type="text" id="room-code-input" placeholder="CODE" aria-label="Room code (6 letters)" maxlength="6" data-i18n-attr="placeholder: menu.codePlaceholder; aria-label: menu.codeLabel">
@@ -55,6 +59,25 @@
             <p data-i18n="waiting.share">Share this code with your opponent.</p>
             <p class="muted" data-i18n="waiting.forPlayer2">Waiting for Player 2 to join...</p>
             <div class="invite-friends" id="invite-friends" hidden></div>
+        </div>
+
+        <!-- Ranked queue: waiting to be paired (js/ladder-view.js) -->
+        <div id="queue-screen" class="screen hidden">
+            <h2 data-i18n="ladder.searching">Looking for an opponent…</h2>
+            <p id="queue-info"></p>
+            <p class="muted" id="queue-time"></p>
+            <button id="btn-leave-queue" type="button" class="btn-secondary" data-i18n="ladder.cancel">Cancel</button>
+        </div>
+
+        <!-- Leaderboards of the month, for signed-in players (js/ladder-view.js) -->
+        <div id="ladder-screen" class="screen hidden ladder-page">
+            <h2 data-i18n="ladder.title">Leaderboard</h2>
+            <div class="ladder-tabs" role="tablist" data-i18n-attr="aria-label: ladder.modes">
+                <button type="button" role="tab" id="ladder-tab-classic" aria-selected="true" aria-controls="ladder-panel" data-mode="classic" data-i18n="ladder.classic">Classic</button>
+                <button type="button" role="tab" id="ladder-tab-allstar" aria-selected="false" aria-controls="ladder-panel" tabindex="-1" data-mode="allstar" data-i18n="ladder.allStar">All Star</button>
+            </div>
+            <div class="ladder-panel" id="ladder-panel" role="tabpanel" aria-labelledby="ladder-tab-classic" aria-live="polite"></div>
+            <button id="btn-ladder-back" type="button" class="btn-secondary" data-i18n="ladder.back">Back to the menu</button>
         </div>
 
         <!-- All Star: the commissioner names the coach and registers the club (js/club-onboarding.js) -->
@@ -299,6 +322,7 @@
             <h2 id="victory-title">Victory!</h2>
             <p id="victory-reason">Reason for victory</p>
             <p id="victory-series" class="victory-series" hidden></p>
+            <p id="victory-ladder" class="victory-ladder" role="status" hidden></p>
             <div class="victory-controls">
                 <button id="btn-restart" class="btn-primary" data-i18n="end.playAgain">Play Again</button>
                 <button id="btn-main-menu" class="btn-secondary" data-i18n="end.mainMenu">Main Menu</button>

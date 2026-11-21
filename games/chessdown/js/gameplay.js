@@ -14,6 +14,7 @@ import { forgetSeat } from '../../../assets/js/seat.js';
 import { t } from '../../../assets/js/i18n.js';
 import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
 import { afterMove, beforeMove, noteGameStart, noteTouchdown, settleGame } from './all-star.js';
+import { hideLadderResult } from './ladder-view.js';
 import { esc } from './club-art.js';
 import { careerAfterGame, careerGameRules, careerPuzzle, noteCareerTouchdown, puzzleTurn } from './career-match.js';
 
@@ -400,6 +401,8 @@ export function showSeriesEnd() {
     }
     const restart = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-restart'));
     if (restart && !restart.disabled) restart.textContent = button;
+    // A ranked series once over: no rematch (the next one goes through the queue).
+    if (restart) restart.hidden = Boolean(state.ranked && state.series.over);
     showScore();
 }
 
@@ -422,4 +425,5 @@ export function resetGame() {
     state.currentDraftIndex = 0;
     state.positionHistory = {};
     state.playerNames = { 1: null, 2: null };
+    hideLadderResult();
 }

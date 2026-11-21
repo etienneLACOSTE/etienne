@@ -84,4 +84,7 @@ export default {
     'server.inviteFriendsOnly': 'Tu ne peux inviter que tes amis.',
     'server.tooManyInvites': 'Trop d\'invitations : attends une minute.',
     'server.createRoomFirst': "Crée d'abord une salle en ligne.",
+    'server.noClub': "Crée d'abord ton club All Star.",
+    'server.badClub': "Ton club ne peut pas jouer en ligne : ses niveaux ne correspondent pas à son expérience.",
+    'server.inAGame': "Termine d'abord ta partie.",
 };

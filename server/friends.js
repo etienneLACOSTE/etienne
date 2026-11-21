@@ -39,6 +39,15 @@ function friendStore(db) {
             return rows.length > 0;
         },
 
+        /** Every account that blocked `userId` or that it blocked (never paired in the ranked queue). */
+        async blockedEither(userId) {
+            const { rows } = await db.query(
+                'SELECT blocked AS id FROM blocks WHERE blocker = $1 UNION SELECT blocker FROM blocks WHERE blocked = $1',
+                [userId],
+            );
+            return rows.map((r) => Number(r.id));
+        },
+
         async areFriends(a, b) {
             const { rows } = await db.query('SELECT 1 FROM friendships WHERE user_a = $1 AND user_b = $2', pair(a, b));
             return rows.length > 0;

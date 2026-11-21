@@ -16,6 +16,8 @@ const { friendsRouter, friendStore } = require('./friends');
 const { registerPresence } = require('./presence');
 const { forgetSignedOut } = require('./sign-out');
 const { reportStore } = require('./reports');
+const { clubStore } = require('./chessdown-clubs');
+const { ladderStore, ladderRouter } = require('./ladders');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -69,7 +71,7 @@ async function start() {
     let friendsChanged = () => {};
     const onBlock = (ids) => friendsChanged(ids);
     const chesspell = registerChesspell(io, { sessions, stats, friends, reports, onBlock });
-    const chessdown = registerChessdown(io, { sessions, stats, friends, reports, onBlock });
+    const chessdown = registerChessdown(io, { sessions, stats, friends, reports, onBlock, clubs: clubStore(db), ladders: ladderStore(db) });
     const rooms = { chesspell: chesspell.rooms, chessdown: chessdown.rooms };
     const presence = registerPresence(io, { sessions, friends, rooms });
     friendsChanged = (ids) => presence.friendsChanged(ids).catch(logError('Presence: friends update failed'));
@@ -78,6 +80,7 @@ async function start() {
     app.use('/api/auth', authRouter(db, { onSignOut }));
     app.use('/api/account', accountRouter(db, { onSignOut }));
     app.use('/api/friends', friendsRouter(db, { onChange: friendsChanged }));
+    app.use('/api/ladders', ladderRouter(db));
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));
     const cleanUp = () => {
         sessions.deleteExpired().catch(logError('Cleanup: expired sessions'));

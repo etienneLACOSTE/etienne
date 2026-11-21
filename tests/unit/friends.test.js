@@ -6,7 +6,7 @@ const http = require('node:http');
 const express = require('express');
 const { openDb } = require('../../server/db');
 const { authRouter } = require('../../server/accounts/routes');
-const { friendsRouter } = require('../../server/friends');
+const { friendsRouter, friendStore } = require('../../server/friends');
 
 let db; let server; let base;
 const changes = [];
@@ -181,4 +181,14 @@ test('the production driver returns bigint ids as numbers', () => {
     const { types } = require('pg');
     useNumbersForBigint();
     assert.equal(types.getTypeParser(types.builtins.INT8)('12'), 12);
+});
+
+test('blockedEither: the accounts a player blocked and those that blocked them', async () => {
+    const { rows } = await db.query("INSERT INTO users (username) VALUES ('Bq1'), ('Bq2'), ('Bq3'), ('Bq4') RETURNING id");
+    const [a, b, c, d] = rows.map((r) => Number(r.id));
+    const friends = friendStore(db);
+    await friends.block(a, b);
+    await friends.block(c, a);
+    assert.deepEqual((await friends.blockedEither(a)).sort((x, y) => x - y), [b, c]);
+    assert.deepEqual(await friends.blockedEither(d), []);
 });

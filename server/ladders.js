@@ -5,6 +5,9 @@
 // Tables ladder_ratings and ladder_series (migration 009); users.ladder_hidden keeps a
 // player's name off the public board.
 
+const express = require('express');
+const { sessionStore } = require('./accounts/sessions');
+
 const MODES = ['classic', 'allstar'];
 const START = 1000;
 const K = 32;
@@ -192,7 +195,30 @@ function ladderStore(db) {
     return store;
 }
 
+/**
+ * GET /api/ladders/:mode: the board of a ladder, for signed-in players only (names are
+ * shown to other players, never to the public web).
+ * @param {import('./db').Db} db
+ */
+function ladderRouter(db) {
+    const sessions = sessionStore(db);
+    const ladders = ladderStore(db);
+    const router = express.Router();
+    router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+    router.get('/:mode', async (req, res) => {
+        const user = await sessions.userFor(req.headers.cookie);
+        if (!user) return res.status(401).json({ error: 'Sign in first.' });
+        if (!isMode(req.params.mode)) return res.status(404).json({ error: 'Not found.' });
+        res.json(await ladders.board(req.params.mode, user.id));
+    });
+    router.use((err, req, res, next) => {
+        console.error(`Ladder API error on ${req.path}: ${err.message}`);
+        res.status(500).json({ error: 'Something went wrong. Try again.' });
+    });
+    return router;
+}
+
 module.exports = {
-    ladderStore, seasonOf, previousSeason, daysLeft, carryOver, expected, newRatings, isMode,
+    ladderStore, ladderRouter, seasonOf, previousSeason, daysLeft, carryOver, expected, newRatings, isMode,
     MODES, START, K, K_NEW, NEW_SERIES, PAIR_LIMIT, BOARD_SIZE,
 };

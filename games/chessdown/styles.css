@@ -1171,3 +1171,26 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 }
 .club-wear[aria-checked="true"] { border-color: var(--amber); }
 .club-wear-shirt svg { width: 72px; height: 72px; display: block; }
+
+/* --- Ladders (js/ladder-view.js): ranked match, queue, leaderboards --- */
+.ranked-row { display: flex; gap: 8px; }
+.ranked-row .btn-secondary { flex: 1; }
+.victory-ladder { font: 800 17px var(--text); color: var(--white); margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+.victory-ladder[hidden] { display: none; }
+.ladder-page { justify-content: flex-start; gap: 12px; overflow-y: auto; }
+.ladder-page > * { width: min(100%, 640px); }
+.ladder-tabs { display: flex; gap: 6px; }
+.ladder-tabs button {
+    font: 900 15px var(--display); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
+    padding: 5px 14px; border-radius: 4px; border: 2px solid #2a2f2c; background: var(--black); color: var(--muted-on-dark);
+}
+.ladder-tabs button { transition: none; } /* The chosen tab changes at once (no colours in between) */
+.ladder-tabs button[aria-selected="true"] { border-color: var(--amber); background: var(--amber); color: var(--black); }
+.ladder-panel { background: #0d0f0e; border: 2px solid #2a2f2c; border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; text-align: left; min-width: 0; }
+.ladder-panel p { margin: 0; }
+.ladder-season { font: 900 19px var(--display); text-transform: uppercase; color: var(--amber); }
+.ladder-mine { font-weight: 700; }
+.ladder-table-wrap { overflow-x: auto; max-height: 50vh; overflow-y: auto; }
+.ladder-table td, .ladder-table th { font-variant-numeric: tabular-nums; }
+.ladder-table .ladder-me th, .ladder-table .ladder-me td { color: var(--amber); }
+.ladder-rules { font-size: 13px; }

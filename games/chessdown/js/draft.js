@@ -6,7 +6,7 @@ import { getBoardCoords, getDraftZoneView } from './coords.js';
 import { startGameplay } from './gameplay.js';
 import { autoDraftBot } from './bot.js';
 import { nextStarter, showScore } from './match.js';
-import { LINEUP_SLOTS, benchPlayers, clubPlayer, isAllStar, lineup, pieceFor, saveLineup } from './all-star.js';
+import { LINEUP_SLOTS, benchPlayers, clubPlayer, clubSeat, isAllStar, lineup, pieceFor, saveLineup } from './all-star.js';
 import { esc } from './club-art.js';
 import { benchAllows, careerArmy, isCareerMatch, lockedLineup, noteDraft } from './career-match.js';
 
@@ -259,8 +259,10 @@ export function validateDraft() {
         for (let viewR = zone.min; viewR <= zone.max; viewR++) {
             for (let viewC = 0; viewC < COLS; viewC++) {
                 const { r, c } = getBoardCoords(viewR, viewC);
-                if (state.board[r][c] && state.board[r][c].player === state.myPlayerNumber) {
-                    myPieces.push({ r, c, type: state.board[r][c].type });
+                const piece = state.board[r][c];
+                if (piece && piece.player === state.myPlayerNumber) {
+                    // All Star: which club player stands here (the server knows its type and level)
+                    myPieces.push({ r, c, type: piece.type, ...(piece.clubId ? { clubId: piece.clubId } : {}) });
                 }
             }
         }
@@ -309,7 +311,8 @@ export function validateDraft() {
 function renderBench() {
     const shop = /** @type {HTMLElement} */ (ui.draftFooter.querySelector('.pieces-shop'));
     let bench = /** @type {HTMLElement | null} */ (document.getElementById('club-bench'));
-    const show = isAllStar() && state.currentPlayer === 1 && !state.currentRoomCode;
+    const seat = clubSeat();
+    const show = isAllStar() && state.currentPlayer === seat;
     shop.hidden = show;
     /** @type {HTMLElement} */ (document.getElementById('color-picker')).hidden = show; // The club has its colours
     if (!show) {
@@ -323,7 +326,7 @@ function renderBench() {
         shop.before(bench);
     }
     bench.hidden = false;
-    const points = state.draftPoints[1];
+    const points = state.draftPoints[seat];
     const players = benchPlayers();
     const onBoard = myArmy().map((p) => p.type); // A career quest limits who may still go on
     const selected = state.selectedDraftPiece && state.selectedDraftPiece.clubId;
@@ -331,7 +334,7 @@ function renderBench() {
     bench.innerHTML = `
       <div class="club-bench-players" role="group" aria-label="${esc(t('allStar.bench'))}">${players.length ? players.map((p) => {
         const cost = Engine.pieceCost(p.type, p.level);
-        const blocked = (p.type === 'k' && state.kingsPlaced[1]) || (p.type !== 'k' && cost > points) || !benchAllows(p, onBoard);
+        const blocked = (p.type === 'k' && state.kingsPlaced[seat]) || (p.type !== 'k' && cost > points) || !benchAllows(p, onBoard);
         return `<button type="button" class="club-bench-player" style="--club-colour:${state.allStar.club.primary}" data-club-id="${p.id}" data-focus-key="p${p.id}"
             aria-pressed="${selected === p.id}" ${blocked ? 'disabled' : ''}
             aria-label="${esc(t('allStar.place', { name: p.name, piece: t(`piece.${p.type}`), n: p.level, cost }))}">
@@ -369,16 +372,25 @@ function loadLineup(slot) {
     for (const { id, r, c } of saved.pieces) {
         const member = clubPlayer(id);
         const cost = member ? Engine.pieceCost(member.type, member.level) : Infinity;
-        if (!member || state.board[r][c] || (member.type !== 'k' && cost > state.draftPoints[1])) continue;
-        if (member.type === 'k' && state.kingsPlaced[1]) continue;
+        const seat = clubSeat();
+        if (!member || state.board[r][c] || (member.type !== 'k' && cost > state.draftPoints[seat])) continue;
+        if (member.type === 'k' && state.kingsPlaced[seat]) continue;
         state.board[r][c] = pieceFor(member);
-        state.draftPoints[1] -= cost;
-        if (member.type === 'k') state.kingsPlaced[1] = true;
+        state.draftPoints[seat] -= cost;
+        if (member.type === 'k') state.kingsPlaced[seat] = true;
     }
     state.selectedDraftPiece = null;
     updateDraftUI();
     renderBoard();
     announceDraft(t('allStar.loaded', { n: slot }));
+}
+
+/** Online: the server refused the draft (a club changed elsewhere, say): drafting goes on. */
+export function draftRefused() {
+    ui.draftHeader.classList.remove('hidden');
+    ui.draftFooter.classList.remove('hidden');
+    updateDraftUI();
+    announceDraft(t('online.draftRefused'));
 }
 
 /** A short message in the status bar (also read out: it is a status region). */

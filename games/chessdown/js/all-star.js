@@ -3,16 +3,35 @@
 // fields an army of the same worth at the squad's level, and every game of the best of 3
 // brings experience (docs/games/chessdown-levels.md). Only campaign games count.
 // The page's pieces carry `clubId` (which player of the club it is) and `level`.
-import { state } from './state.js';
+// Online (docs/games/chessdown-ladders.md), the club is the one the server holds for the
+// account; it plays from either seat, and online games bring no experience.
+import { COLOR_HEX, state } from './state.js';
 import { saveClub } from './club-store.js';
 
 const Club = globalThis.ChessdownClub;
 const Engine = globalThis.ChessdownEngine;
 const MAX_RECRUITS = 5;
 
-/** The club plays this match (campaign, best of 3). */
-export function beginAllStar(club) {
-    state.allStar = { club, lineupIds: [], tally: {} };
+/** The club plays this match (campaign, best of 3; or online: `online`). */
+export function beginAllStar(club, { online = false } = {}) {
+    state.allStar = { club, lineupIds: [], tally: {}, online };
+}
+
+/** The seat of the club: 1 against the bot, the page's seat online. */
+export const clubSeat = () => (state.allStar && state.allStar.online ? state.myPlayerNumber : 1);
+
+/** The jersey colour of the game nearest to the club's own (end zones, timer bar). */
+export function nearestJersey(hex) {
+    const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const [r, g, b] = rgb(hex);
+    let best = 'blue';
+    let dist = Infinity;
+    for (const [name, h] of Object.entries(COLOR_HEX)) {
+        const [x, y, z] = rgb(h);
+        const d = (r - x) ** 2 + (g - y) ** 2 + (b - z) ** 2;
+        if (d < dist) { dist = d; best = name; }
+    }
+    return best;
 }
 
 /** Back to classic play. */
@@ -36,12 +55,13 @@ export function benchPlayers() {
 
 function clubIdsOnBoard() {
     const ids = [];
-    for (const row of state.board) for (const piece of row) if (piece && piece.clubId) ids.push(piece.clubId);
+    const seat = clubSeat();
+    for (const row of state.board) for (const piece of row) if (piece && piece.clubId && piece.player === seat) ids.push(piece.clubId);
     return ids;
 }
 
-/** A club player as a piece on the board (player 1). */
-export const pieceFor = (p) => ({ type: p.type, player: 1, hasMoved: false, level: p.level, clubId: p.id });
+/** A club player as a piece on the board (on the club's seat). */
+export const pieceFor = (p) => ({ type: p.type, player: clubSeat(), hasMoved: false, level: p.level, clubId: p.id });
 
 /** What the bot's army may cost: what the squad is worth in classic points (at most the full budget). */
 export function squadBudget() {
@@ -105,7 +125,7 @@ export function noteTouchdown(player) {
  * @returns {{ levelUps: { name: string, level: number }[], recruit: boolean } | null}
  */
 export function settleGame(winner) {
-    if (!state.allStar) return null;
+    if (!state.allStar || state.allStar.online) return null;
     const onBoard = new Set(clubIdsOnBoard());
     const played = new Set(state.allStar.lineupIds);
     const levelUps = [];
@@ -128,18 +148,24 @@ export function settleGame(winner) {
 /** Line-ups kept with the club: 3 slots, each the squares of the players placed. */
 export const LINEUP_SLOTS = [1, 2, 3];
 
+/** Line-ups are kept as seen from seat 1: seat 2 (online) sees them turned around. */
+const turned = ({ id, r, c }) => ({ id, r: Engine.ROWS - 1 - r, c: Engine.COLS - 1 - c });
+const fromSeat = (pieces) => (clubSeat() === 2 ? pieces.map(turned) : pieces);
+
 export function lineup(slot) {
     if (!state.allStar) return null;
-    return state.allStar.club.lineups.find((l) => l.name === `slot${slot}`) || null;
+    const saved = state.allStar.club.lineups.find((l) => l.name === `slot${slot}`);
+    return saved ? { ...saved, pieces: fromSeat(saved.pieces) } : null;
 }
 
 /** Keep the players placed now in `slot`. */
 export function saveLineup(slot) {
     if (!state.allStar) return;
     const pieces = [];
-    state.board.forEach((row, r) => row.forEach((piece, c) => { if (piece && piece.clubId) pieces.push({ id: piece.clubId, r, c }); }));
+    const seat = clubSeat();
+    state.board.forEach((row, r) => row.forEach((piece, c) => { if (piece && piece.clubId && piece.player === seat) pieces.push({ id: piece.clubId, r, c }); }));
     const club = state.allStar.club;
-    const lineups = [...club.lineups.filter((l) => l.name !== `slot${slot}`), { name: `slot${slot}`, pieces }];
+    const lineups = [...club.lineups.filter((l) => l.name !== `slot${slot}`), { name: `slot${slot}`, pieces: fromSeat(pieces) }];
     state.allStar.club = { ...club, lineups };
     saveClub(state.allStar.club);
 }
