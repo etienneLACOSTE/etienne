@@ -524,7 +524,7 @@ export default {
     'career.out.text': "Two defeats, coach: the {tournament} is over for us. Place {place}.",
     'career.out.final': "Beaten in the grand final, coach. Second out of 32, but the title goes elsewhere.",
     'career.out.after': "All we can do now is wait for next season. The side quests are still there in the meantime.",
-    'career.out.close': "Back to the map",
+    'career.out.close': "Understood",
     // Gérard's tour (js/career-tour.js)
     'tour.button': "Tour with Gérard",
     'tour.speaker': "Gérard · {n}/{total}",

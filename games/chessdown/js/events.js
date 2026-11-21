@@ -16,7 +16,9 @@ import { language, t } from '../../../assets/js/i18n.js';
 import { saveSettings, showSettings } from './settings.js';
 import { askFormat, hideScore, startSeries } from './match.js';
 import { loadClub } from './club-store.js';
-import { closeCareer, openCareer } from './career-view.js';
+import { loadCareer } from './career-store.js';
+import { closeCareer, openCareer, showKnockedOut } from './career-view.js';
+import { bracketProgress } from './bracket-view.js';
 import { beginCareerMatch, careerKnockedOut, careerPuzzle, careerWord, endCareerMatch, setPuzzleBoard } from './career-match.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
@@ -74,9 +76,13 @@ export function openCareerPage(club, word = '', knockedOut = false, view = 'map'
     });
 }
 
-/** A career match: the club against the rival's bot, with what the match asks (career-match.js). */
+/**
+ * A career match: the club against the rival's bot, with what the match asks (career-match.js).
+ * A tournament match shows the tournament's progress first (bracket-view.js).
+ */
 function startCareerMatch(club, spec) {
     closeCareer();
+    if (spec.kind === 'league' && !spec.ready) return showBracketBefore(club, spec);
     state.currentRoomCode = null;
     state.isBotMatch = true;
     beginAllStar(club);
@@ -93,6 +99,44 @@ function startCareerMatch(club, spec) {
     state.playerColors[2] = state.playerColors[1] === 'black' ? 'white' : 'black';
     state.currentPlayer = 1;
     startGameplay(1, { coin: false, text: t('career.puzzle.start', { n: puzzle.moves }) });
+}
+
+/** Before a tournament match: where the club stands, then the draft (or back to the map). */
+function showBracketBefore(club, spec) {
+    const career = loadCareer();
+    if (!career) return;
+    /** @type {HTMLElement} */ (document.getElementById('bracket-view')).innerHTML = bracketProgress(career, club);
+    const screen = /** @type {HTMLElement} */ (document.getElementById('bracket-screen'));
+    showScreen(screen);
+    const start = /** @type {HTMLElement} */ (document.getElementById('bracket-start'));
+    const back = /** @type {HTMLElement} */ (document.getElementById('bracket-back'));
+    start.onclick = () => startCareerMatch(club, { ...spec, ready: true });
+    back.onclick = () => openCareerPage(club);
+    start.focus();
+}
+
+/** Leave a finished career match: the club as it is now, and whether it was knocked out. */
+function leaveCareerMatch() {
+    const club = state.allStar ? state.allStar.club : loadClub();
+    const out = careerKnockedOut();
+    resetGame();
+    endCareerMatch();
+    endAllStar();
+    state.gameState = 'mainMenu';
+    hideScore();
+    return { club, out };
+}
+
+/** After a tournament match: the next one (its progress first), or the club's page. */
+function nextTournamentMatch() {
+    const { club } = leaveCareerMatch();
+    if (club) startCareerMatch(club, { kind: 'league' });
+}
+function tournamentToClub() {
+    const { club, out } = leaveCareerMatch();
+    if (!club) return showScreen(ui.mainMenu);
+    openClubPage(club, () => { showScreen(ui.mainMenu); document.getElementById('btn-all-star')?.focus(); });
+    if (out) showKnockedOut(); // Knocked out: the black screen, over the club
 }
 
 /** The career match is over: back to the map, the club as it is now. */
@@ -365,6 +409,7 @@ export function setupEventListeners() {
     });
     
     ui.btnMainMenu.addEventListener('pointerdown', leaveToMenu);
+    document.getElementById('btn-to-club')?.addEventListener('click', tournamentToClub);
 
     // Resign (resign.js): this game, or the whole match. Online, the server decides: a game
     // resigned is given to the opponent; the match resigned is left (a forfeit).
@@ -395,7 +440,9 @@ export function setupEventListeners() {
                 btnRestart.textContent = t('end.waitingRematch');
                 btnRestart.disabled = true;
             } else if (state.career && state.career.finished) {
-                backToCareer();
+                // A tournament match: the next one; a quest: back to the map
+                if (state.career.kind === 'league') nextTournamentMatch();
+                else backToCareer();
             } else {
                 // Local or bot: the next game of the series, or a new match once it is over.
                 const series = state.series;

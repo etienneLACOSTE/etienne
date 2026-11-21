@@ -57,10 +57,10 @@ test.describe('All Star friendly matches', () => {
 
     // Line-up 1: saved, cleared, loaded back.
     await page.getByRole('button', { name: 'Save 1' }).click();
-    await expect(page.locator('#status-bar')).toHaveText('Line-up 1 saved.');
+    await expect(page.locator('#status-bar')).toHaveText('“Line-up 1” saved.');
     await page.locator('#btn-clear-draft').dispatchEvent('pointerdown');
     await expect(bench.getByRole('button')).toHaveCount(7);
-    await page.getByRole('button', { name: 'Load 1' }).click();
+    await page.getByRole('button', { name: 'Load: Line-up 1' }).click();
     await expect(bench.getByRole('button')).toHaveCount(4);
     expect((await stored(page)).lineups).toEqual([{ name: 'slot1', pieces: [{ id: 3, r: 10, c: 2 }, { id: 2, r: 11, c: 0 }, { id: 1, r: 11, c: 4 }] }]);
 

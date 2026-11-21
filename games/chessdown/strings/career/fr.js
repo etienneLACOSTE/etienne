@@ -513,7 +513,7 @@ export default {
     'career.out.text': "Deux défaites, coach : le {tournament}, c’est fini pour nous. {place}e place.",
     'career.out.final': "Battus en grande finale, coach. Deuxièmes sur 32, mais le titre part ailleurs.",
     'career.out.after': "Il ne nous reste plus qu’à attendre la saison prochaine. Les quêtes annexes sont toujours là en attendant.",
-    'career.out.close': "Retour à la carte",
+    'career.out.close': "Compris",
     // Gérard's tour (js/career-tour.js)
     'tour.button': "Visite avec Gérard",
     'tour.speaker': "Gérard · {n}/{total}",

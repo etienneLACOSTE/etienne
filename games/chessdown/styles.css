@@ -1312,3 +1312,39 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 }
 .club-settings:hover:not(:disabled) { transform: none; background: var(--white); color: var(--black); }
 .club-settings:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+/* --- The club's line-ups (js/lineup-editor.js) --- */
+.lineup-head { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.lineup-head h2 { margin: 0; font-size: clamp(28px, 7vw, 44px); }
+.lineup-slots { display: flex; flex-wrap: wrap; gap: 6px; }
+.lineup-slots [aria-pressed="true"] { background: var(--amber); color: var(--black); border-color: var(--amber); }
+.lineup-name { display: grid; gap: 4px; max-width: 360px; }
+.lineup-name input { font: inherit; padding: 8px 10px; border: 2px solid var(--white); border-radius: 4px; background: var(--black); color: var(--white); }
+.lineup-points { margin: 0; font-weight: 800; font-variant-numeric: tabular-nums; }
+.lineup-points.over { color: var(--amber); }
+.lineup-board { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); width: min(100%, 420px); border: 3px solid var(--white); }
+.lineup-square { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 0; display: grid; place-items: center; cursor: pointer; min-width: 0; }
+.lineup-square.dark { background: var(--square-dark); }
+.lineup-square.light { background: var(--square-light); }
+.lineup-square:hover:not(:disabled) { transform: none; outline: 2px solid var(--amber); outline-offset: -2px; }
+.lineup-square:focus-visible { outline: 3px solid var(--amber); outline-offset: -3px; }
+.lineup-square .icon { font: 400 clamp(22px, 6vw, 34px) var(--pieces); line-height: 1; }
+.lineup-stars { position: absolute; right: 2px; bottom: 1px; font: 800 10px var(--text); color: var(--black); background: var(--amber); border-radius: 3px; padding: 0 2px; }
+.lineup-message { margin: 0; min-height: 1.4em; font-weight: 700; }
+
+/* --- The tournament's progress (js/bracket-view.js): before a match, on its end screen --- */
+.bracket-page { justify-content: flex-start; overflow-y: auto; }
+.bracket-page > * { width: min(100%, 720px); }
+.bracket-progress { display: grid; gap: 10px; text-align: left; }
+.bracket-progress h3 { margin: 0; font: 900 clamp(24px, 6vw, 34px) var(--display); text-transform: uppercase; color: var(--amber); }
+.bracket-status { margin: 0; font-weight: 700; }
+.bracket-row h4 { margin: 0 0 4px; font: 800 12px var(--text); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-on-dark); }
+.bracket-row ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.bracket-row li { border: 2px solid #2a2f2c; border-radius: 4px; padding: 4px 8px; display: grid; gap: 2px; font-size: 13px; color: var(--muted-on-dark); min-width: 64px; }
+.bracket-round { font: 800 12px var(--display); text-transform: uppercase; letter-spacing: 0.04em; }
+.bracket-row li.won { border-color: var(--turf-light); background: var(--turf); color: var(--white); }
+.bracket-row li.lost { border-color: #6b6b6b; color: var(--white); }
+.bracket-row li.next { border-color: var(--amber); color: var(--amber); }
+.bracket-match { font-weight: 700; }
+.victory-bracket { width: min(100%, 720px); max-height: 40vh; overflow-y: auto; }
+.victory-bracket[hidden] { display: none; }

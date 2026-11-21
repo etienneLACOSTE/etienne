@@ -8,6 +8,7 @@ import { autoDraftBot } from './bot.js';
 import { nextStarter, showScore } from './match.js';
 import { LINEUP_SLOTS, benchPlayers, clubPlayer, clubSeat, isAllStar, lineup, pieceFor, saveLineup } from './all-star.js';
 import { esc } from './club-art.js';
+import { lineupTitle } from './lineup-editor.js';
 import { benchAllows, careerArmy, careerBudget, isCareerMatch, lockedLineup, noteDraft } from './career-match.js';
 
 /** The draft points of `player`: fewer in a career underdog match (career-match.js), else the full budget. */
@@ -355,7 +356,7 @@ function renderBench() {
       <div class="club-lineups" role="group" aria-label="${esc(t('allStar.lineups'))}">
         <span class="club-lineups-label" aria-hidden="true">${esc(t('allStar.lineups'))}</span>
         ${LINEUP_SLOTS.map((n) => `<span class="club-lineup">
-          <button type="button" class="btn-ghost" data-lineup-load="${n}" data-focus-key="l${n}" ${lineup(n) ? '' : 'disabled'}>${esc(t('allStar.load', { n }))}</button>
+          <button type="button" class="btn-ghost" data-lineup-load="${n}" data-focus-key="l${n}" ${lineup(n) && lineup(n).pieces.length ? '' : 'disabled'}>${esc(t('allStar.loadNamed', { name: lineupTitle(state.allStar.club, n) }))}</button>
           <button type="button" class="btn-ghost" data-lineup-save="${n}" data-focus-key="s${n}">${esc(t('allStar.save', { n }))}</button></span>`).join('')}
       </div>`;
     bench.querySelectorAll('[data-club-id]').forEach((b) => b.addEventListener('click', () => {
@@ -366,7 +367,7 @@ function renderBench() {
     }));
     bench.querySelectorAll('[data-lineup-save]').forEach((b) => b.addEventListener('click', () => {
         saveLineup(Number(/** @type {HTMLElement} */ (b).dataset.lineupSave));
-        announceDraft(t('allStar.saved', { n: /** @type {HTMLElement} */ (b).dataset.lineupSave }));
+        announceDraft(t('allStar.savedNamed', { name: lineupTitle(state.allStar.club, Number(/** @type {HTMLElement} */ (b).dataset.lineupSave)) }));
         renderBench();
     }));
     bench.querySelectorAll('[data-lineup-load]').forEach((b) => b.addEventListener('click', () => loadLineup(Number(/** @type {HTMLElement} */ (b).dataset.lineupLoad))));
@@ -378,12 +379,16 @@ function loadLineup(slot) {
     const saved = lineup(slot);
     if (!saved) return;
     clearCurrentDraft();
+    const seat = clubSeat();
+    const army = careerArmy();
+    const [minRow, maxRow] = Engine.draftRows(seat, Boolean(army && army.invertedRows));
+    let left = 0; // Players of the line-up that this match does not allow (budget, rules, rows)
     for (const { id, r, c } of saved.pieces) {
         const member = clubPlayer(id);
         const cost = member ? Engine.pieceCost(member.type, member.level) : Infinity;
-        const seat = clubSeat();
-        if (!member || state.board[r][c] || (member.type !== 'k' && cost > state.draftPoints[seat])) continue;
-        if (member.type === 'k' && state.kingsPlaced[seat]) continue;
+        const onBoard = myArmy().map((p) => p.type);
+        if (!member || r < minRow || r > maxRow || state.board[r][c] || (member.type !== 'k' && cost > state.draftPoints[seat])
+            || (member.type === 'k' && state.kingsPlaced[seat]) || !benchAllows(member, onBoard)) { left++; continue; }
         state.board[r][c] = pieceFor(member);
         state.draftPoints[seat] -= cost;
         if (member.type === 'k') state.kingsPlaced[seat] = true;
@@ -391,7 +396,8 @@ function loadLineup(slot) {
     state.selectedDraftPiece = null;
     updateDraftUI();
     renderBoard();
-    announceDraft(t('allStar.loaded', { n: slot }));
+    const name = lineupTitle(state.allStar.club, slot);
+    announceDraft(left ? t('allStar.loadedPartly', { name, n: left }) : t('allStar.loadedNamed', { name }));
 }
 
 /** Online: the server refused the draft (a club changed elsewhere, say): drafting goes on. */

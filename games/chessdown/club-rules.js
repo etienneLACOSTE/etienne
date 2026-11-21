@@ -142,7 +142,7 @@
         if (players.filter((p) => p.type === 'k').length !== 1) return null;
         const nextId = Math.max(...players.map((p) => p.id)) + 1;
         const cosmetics = Array.isArray(data.cosmetics) ? [...new Set(data.cosmetics.filter((c) => COSMETICS.includes(c)))] : [];
-        const lineups = Array.isArray(data.lineups) ? data.lineups.filter((l) => l && cleanName(l.name) && Array.isArray(l.pieces)).slice(0, 10) : [];
+        const lineups = sanitizeLineups(data.lineups, players);
         return {
             version: 1, coach, name, primary: data.primary.toLowerCase(), secondary: data.secondary.toLowerCase(),
             pattern: data.pattern, shape: data.shape, emblem: data.emblem,
@@ -156,6 +156,38 @@
         };
     }
 
+    /** The line-ups kept with a club: 3 slots (`slot1` to `slot3`), each with a name the coach gives. */
+    const LINEUP_SLOTS = ['slot1', 'slot2', 'slot3'];
+    const LINEUP_ROWS = [9, 10, 11]; // Seen from the first seat: the three back rows
+    const LINEUP_COLS = 8;
+
+    /**
+     * The line-ups of a stored club, checked: a known slot each, its name (2 to 24 characters,
+     * or none), and its pieces: players of the club, each once, on its own square of the three
+     * back rows. A piece that does not fit is dropped; a slot met twice keeps the first.
+     */
+    function sanitizeLineups(list, players) {
+        if (!Array.isArray(list)) return [];
+        const ids = new Set(players.map((p) => p.id));
+        const out = [];
+        for (const l of list) {
+            if (!l || !LINEUP_SLOTS.includes(l.name) || out.some((o) => o.name === l.name) || !Array.isArray(l.pieces)) continue;
+            const squares = new Set();
+            const used = new Set();
+            const pieces = [];
+            for (const p of l.pieces.slice(0, 24)) {
+                if (!p || !ids.has(p.id) || used.has(p.id) || !LINEUP_ROWS.includes(p.r) || !Number.isInteger(p.c) || p.c < 0 || p.c >= LINEUP_COLS) continue;
+                if (squares.has(`${p.r},${p.c}`)) continue;
+                squares.add(`${p.r},${p.c}`);
+                used.add(p.id);
+                pieces.push({ id: p.id, r: p.r, c: p.c });
+            }
+            const title = cleanName(l.title);
+            out.push({ name: l.name, ...(title ? { title } : {}), pieces });
+        }
+        return out;
+    }
+
     /** The club's initials ("namecode") shown on its crest: up to 3 letters. */
     function initials(name) {
         const words = String(name).replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter((w) => w.length > 2 || /^\p{Lu}/u.test(w));
@@ -164,6 +196,7 @@
 
     return {
         XP_THRESHOLDS, XP, STARTING_SQUAD, RECRUIT_TYPES, MAX_SQUAD, NAME_MIN, NAME_MAX, PATTERNS, SHAPES, EMBLEMS, ROOKIE_NAMES, COSMETICS,
+        LINEUP_SLOTS, LINEUP_ROWS, LINEUP_COLS, sanitizeLineups,
         cleanName, levelForXp, xpToNext, applyGame, gainXp, newPlayer, newClub, recruit, sanitizeClub, initials,
     };
 });

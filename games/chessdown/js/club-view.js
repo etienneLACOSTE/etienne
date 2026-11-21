@@ -5,6 +5,7 @@
 import { crestSVG, esc, jerseySVG } from './club-art.js';
 import { deleteClub, saveClub } from './club-store.js';
 import { deleteCareer, loadCareer } from './career-store.js';
+import { showLineups } from './lineup-editor.js';
 import { ask } from '../../../assets/js/dialog.js';
 import { t } from '../../../assets/js/i18n.js';
 
@@ -84,6 +85,7 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer, onSet
           <div class="club-row club-career-row"><button type="button" class="btn-primary btn-big" data-career="map">${esc(t('career.tabMap'))}</button>
             <button type="button" class="btn-secondary" data-career="journal">${esc(t('career.tabJournal'))}</button>
             <button type="button" class="btn-secondary" data-career="guide">${esc(t('guide.tab'))}</button>
+            <button type="button" class="btn-secondary" id="club-lineups">${esc(t('lineup.title'))}</button>
             <button type="button" class="btn-ghost" data-career="tour">${esc(t('tour.button'))}</button></div>
           <div class="club-row"><button type="button" class="btn-secondary" id="club-play">${esc(t('allStar.play'))}</button></div>
           <section class="club-section" aria-labelledby="club-register-title">
@@ -130,6 +132,10 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer, onSet
         box.querySelector('#club-menu')?.addEventListener('click', onMenu);
         box.querySelector('#club-play')?.addEventListener('click', () => onPlay(club));
         box.querySelector('#club-settings')?.addEventListener('click', () => onSettings());
+        // The line-ups' editor (lineup-editor.js), back to the club's page with the club as saved
+        box.querySelector('#club-lineups')?.addEventListener('click', () => showLineups(box, club, {
+            onBack: (saved) => { club = saved; render('club-lineups'); },
+        }));
         box.querySelectorAll('[data-career]').forEach((b) => b.addEventListener('click', () => onCareer(club, /** @type {HTMLElement} */ (b).dataset.career)));
         box.querySelector('#club-delete')?.addEventListener('click', async () => {
             if (!await ask(t('club.deleteAsk', { club: club.name }), { confirm: t('club.deleteConfirm'), cancel: t('dialog.cancel') })) return;

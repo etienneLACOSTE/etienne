@@ -165,7 +165,8 @@ export function saveLineup(slot) {
     const seat = clubSeat();
     state.board.forEach((row, r) => row.forEach((piece, c) => { if (piece && piece.clubId && piece.player === seat) pieces.push({ id: piece.clubId, r, c }); }));
     const club = state.allStar.club;
-    const lineups = [...club.lineups.filter((l) => l.name !== `slot${slot}`), { name: `slot${slot}`, pieces: fromSeat(pieces) }];
+    const before = club.lineups.find((l) => l.name === `slot${slot}`); // Its name stays
+    const lineups = [...club.lineups.filter((l) => l.name !== `slot${slot}`), { name: `slot${slot}`, ...(before && before.title ? { title: before.title } : {}), pieces: fromSeat(pieces) }];
     state.allStar.club = { ...club, lineups };
     saveClub(state.allStar.club);
 }

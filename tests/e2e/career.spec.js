@@ -224,6 +224,43 @@ test.describe('Career', () => {
     await expect(page.getByRole('button', { name: 'Réglages' })).toBeVisible();
   });
 
+  test('line-ups: built and named on the club page, loaded in one click during the draft', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.addInitScript((club) => { if (!localStorage.getItem('pawnet.chessdown.club')) localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)); }, CLUB);
+    await page.goto('/chessdown/');
+    await page.getByRole('button', { name: 'All Star: my club' }).click();
+    await page.getByRole('button', { name: 'Line-ups' }).click();
+    await expect(page.getByRole('heading', { name: 'Line-ups' })).toBeVisible();
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()).violations.map((v) => v.id)).toEqual([]);
+    await page.getByLabel('Name of this line-up').fill('Attack');
+    const bench = page.getByRole('group', { name: 'Your players: choose one, then a square' });
+    // Without the king: refused
+    await bench.getByRole('button', { name: /^Alex\b/ }).click();
+    await page.getByRole('button', { name: 'd3: empty' }).click();
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.locator('.lineup-message')).toHaveText('Your king must play: place him first.');
+    await bench.getByRole('button', { name: /^The Captain\b/ }).click();
+    await page.getByRole('button', { name: 'e1: empty' }).click();
+    await expect(page.locator('.lineup-points')).toHaveText('Points: 3/39');
+    await page.getByRole('button', { name: 'Save' }).click();
+    await expect(page.locator('.lineup-message')).toHaveText('“Attack” saved.');
+    await expect(page.getByRole('button', { name: '1 · Attack' })).toBeVisible();
+    const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null').lineups);
+    expect(kept).toEqual([{ name: 'slot1', title: 'Attack', pieces: [{ id: 2, r: 9, c: 3 }, { id: 1, r: 11, c: 4 }] }]);
+    await page.getByRole('button', { name: 'Back to the club' }).click();
+    // In a tournament match's draft: one click
+    await page.getByRole('button', { name: 'Map', exact: true }).click();
+    await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();
+    await card(page).getByRole('button', { name: 'Play the match' }).click();
+    await page.getByRole('button', { name: 'Start the draft' }).click(); // After the tournament's progress
+    await page.getByRole('button', { name: 'Load: Attack' }).click();
+    await expect(page.locator('#status-bar')).toHaveText('“Attack” loaded.');
+    const placed = await page.evaluate(() => chessdown.state.board.flat().filter((p) => p && p.player === 1).map((p) => p.clubId).sort());
+    expect(placed).toEqual([1, 2]);
+    expect(errors).toEqual([]);
+  });
+
   test('in French', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('pawnet.language', 'fr'));
     await openCareer(page);
@@ -244,6 +281,11 @@ test.describe('Career', () => {
     await expect(page.locator('#career-gerard-said')).toContainText('Your first tournament match!');
     await expect(card(page)).toContainText('30 seconds a turn');
     await card(page).getByRole('button', { name: 'Play the match' }).click();
+    // The tournament's progress first: the winners' bracket, the next opponent
+    await expect(page.locator('#bracket-screen')).toBeVisible();
+    await expect(page.locator('#bracket-view .bracket-row li.next')).toContainText('Next:');
+    await expect(page.locator('#bracket-view')).toContainText('32 clubs still in.');
+    await page.getByRole('button', { name: 'Start the draft' }).click();
     const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
     await expect(bench.getByRole('button', { name: /^Place Alex,/ })).toBeEnabled(); // No special rule
     await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
@@ -261,10 +303,16 @@ test.describe('Career', () => {
     // One game won: through to the second round
     await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king'));
     await expect(page.locator('#victory-club')).toContainText("Won! Next: Winners' bracket · round 2.");
-    await expect(page.locator('#btn-restart')).toHaveText('Back to the map');
+    // The end screen: the progress, the next match or the club
+    await expect(page.locator('#victory-bracket .bracket-row li.won')).toHaveCount(1);
+    await expect(page.locator('#btn-restart')).toHaveText('Next match');
+    await expect(page.locator('#btn-to-club')).toBeVisible();
+    await expect(page.locator('#btn-main-menu')).toBeHidden();
     await page.locator('#btn-restart').dispatchEvent('pointerdown');
+    await expect(page.locator('#bracket-screen')).toBeVisible(); // Straight on: the next match's progress
+    await expect(page.locator('#bracket-view .bracket-row li.next .bracket-round')).toHaveText('R2');
+    await page.getByRole('button', { name: 'Back to the map' }).click();
     await expect(page.locator('#career-screen')).toBeVisible();
-    await expect(page.locator('#career-gerard-said')).toHaveText('A fine win, coach! That is the game. Next, a word about the knight.');
     const career = await stored(page);
     expect(career.tournament.results).toEqual([{ won: 1, lost: 0 }]);
     await careerView(page, 'journal');
@@ -278,6 +326,7 @@ test.describe('Career', () => {
     await openCareer(page);
     await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();
     await card(page).getByRole('button', { name: 'Play the match' }).click();
+    await page.getByRole('button', { name: 'Start the draft' }).click(); // After the tournament's progress
     const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
     await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
     await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
@@ -564,6 +613,7 @@ test.describe('Career', () => {
     await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();
     await expect(card(page)).toContainText('A defeat knocks you out');
     await card(page).getByRole('button', { name: 'Play the match' }).click();
+    await page.getByRole('button', { name: 'Start the draft' }).click(); // After the tournament's progress
     const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
     await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
     await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
@@ -571,16 +621,19 @@ test.describe('Career', () => {
     await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
     await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Defeat...', '', 2, 'king'));
     await expect(page.locator('#victory-club')).toContainText('Knocked out: place 25.');
-    await page.locator('#btn-restart').dispatchEvent('pointerdown');
-    // The black screen
+    await expect(page.locator('#btn-restart')).toBeHidden(); // No next match: only the club
+    await page.locator('#btn-to-club').click();
+    await expect(page.locator('#club-screen')).toBeVisible();
+    // The black screen, over the club
     const out = page.getByRole('alertdialog', { name: 'It is over' });
     await expect(out).toBeVisible();
     await expect(out).toContainText('Two defeats, coach: the Schools Tournament is over for us. Place 25.');
     await expect(out).toContainText('All we can do now is wait for next season.');
-    await expect(out.getByRole('button', { name: 'Back to the map' })).toBeFocused();
+    await expect(out.getByRole('button', { name: 'Understood' })).toBeFocused();
     expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()).violations.map((v) => v.id)).toEqual([]);
-    await out.getByRole('button', { name: 'Back to the map' }).click();
+    await out.getByRole('button', { name: 'Understood' }).click();
     await expect(out).toBeHidden();
+    await page.getByRole('button', { name: 'Map', exact: true }).click();
     // The side quests are still there; the stadium starts the next season
     await expect(page.locator('.career-marker.side')).toHaveCount(4);
     await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();

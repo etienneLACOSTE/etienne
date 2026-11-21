@@ -15,6 +15,10 @@ import { t } from '../../../assets/js/i18n.js';
 import { hideScore, recordLocalGame, seriesEnd, showScore } from './match.js';
 import { afterMove, beforeMove, noteGameStart, noteTouchdown, settleGame } from './all-star.js';
 import { hideLadderResult } from './ladder-view.js';
+import { bracketProgress } from './bracket-view.js';
+import { loadCareer } from './career-store.js';
+
+const Career = globalThis.ChessdownCareer;
 import { closePieceInfo, markBoardSeen, showPieceInfo } from './piece-guide.js';
 
 /** Levels are in play: All Star (a club, the career, online), or any piece with a level. */
@@ -413,9 +417,21 @@ function showClubResults(results, career = null) {
         ...(results.recruit ? [t('allStar.recruitWon')] : []),
         ...(results.levelUps.length || results.recruit ? [] : [t('allStar.xpCounted')]),
     ] : [];
-    // A career match: once over, back to the map; a streak goes on with its next game.
+    // A career match: once over, back to the map; a streak goes on with its next game. A
+    // tournament match: its progress, then the next match or the club's page.
     const restart = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-restart'));
-    if (career && restart && career.finished) restart.textContent = t('career.backToMap');
+    const toClub = /** @type {HTMLElement} */ (document.getElementById('btn-to-club'));
+    const bracket = /** @type {HTMLElement} */ (document.getElementById('victory-bracket'));
+    const tournament = Boolean(career && career.finished && state.career && state.career.kind === 'league');
+    toClub.hidden = !tournament;
+    ui.btnMainMenu.hidden = tournament;
+    bracket.hidden = !tournament;
+    if (tournament && restart && state.allStar) {
+        const saved = loadCareer();
+        bracket.innerHTML = saved ? bracketProgress(saved, state.allStar.club) : '';
+        restart.textContent = t('bracket.nextMatch');
+        restart.hidden = !(saved && Career.nextMatch(saved));
+    } else if (career && restart && career.finished) restart.textContent = t('career.backToMap');
     else if (career && restart && career.next) restart.textContent = career.next;
     box.innerHTML = lines.map((line) => `<li>${esc(line)}</li>`).join('');
     box.hidden = !lines.length;

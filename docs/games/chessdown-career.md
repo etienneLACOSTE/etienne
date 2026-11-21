@@ -41,6 +41,21 @@ international compris, un tournoi de 32 clubs à double élimination ; les coupe
 - Les carrières enregistrées avant (version 1, ligues) sont refusées : la page en recommence
   une (le club est gardé).
 
+## Compositions et tableau du tournoi (2026-11-21)
+
+- **Compositions** (`js/lineup-editor.js`, bouton « Compositions » de la page du club) : 3
+  emplacements nommés (`club.lineups` : `slot1` à `slot3`, `title`, pièces vues du premier
+  siège, rangées 9 à 11), vérifiés par `sanitizeLineups` (`club-rules.js`, aussi sur le
+  serveur). Un roi et 39 points au plus pour enregistrer. En draft, « Charger : nom » place
+  l'équipe ; les joueurs que le match n'autorise pas (budget, quête, rangées) restent sur le
+  banc, et un message le dit.
+- **Tableau du tournoi** (`js/bracket-view.js`) : tableau des gagnants, des perdants et grande
+  finale en lignes de tours, le parcours du club en doré (score de chaque match, prochain
+  adversaire), les clubs encore en course, le tableau complet replié. Avant un match de
+  tournoi (« Commencer la draft » ou « Retour à la carte ») et sur l'écran de fin, avec
+  « Match suivant » et « Rentrer au club » ; éliminé : seulement « Rentrer au club », et l'écran
+  noir de Gérard par-dessus le club. Les quêtes gardent « Retour à la carte ».
+
 ## Plus d'onglets sur l'écran de carrière (2026-11-21)
 
 La carte, le Journal et les Pièces s'ouvrent depuis la page du club (trois boutons) ; l'écran

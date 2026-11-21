@@ -104,3 +104,18 @@ test('career rewards: an experience bonus (never for the king), a recruit at its
     assert.equal(worn({ wear: 'jersey-heritage' }), undefined, 'not unlocked');
     assert.equal(worn({ cosmetics: ['jersey-heritage'], wear: 'gold-boots' }), undefined);
 });
+
+test('line-ups: three named slots, checked players and squares', () => {
+    const club = Club.newClub({ coach: 'Ana', name: 'Racing Pawns', primary: '#1e90ff', secondary: '#ffffff', pattern: 'plain', shape: 'shield', emblem: 'wolf' }, 'Rex');
+    const lineups = [
+        { name: 'slot1', title: '  Attack  ', pieces: [{ id: 1, r: 11, c: 4 }, { id: 2, r: 9, c: 3 }, { id: 2, r: 9, c: 4 }, { id: 99, r: 10, c: 0 }, { id: 3, r: 4, c: 0 }, { id: 4, r: 11, c: 4 }] },
+        { name: 'slot1', title: 'Twice', pieces: [] },
+        { name: 'slot9', title: 'Nowhere', pieces: [] },
+        { name: 'slot2', title: 'x', pieces: [{ id: 5, r: 10, c: 7 }] },
+    ];
+    const back = Club.sanitizeClub({ ...club, lineups });
+    assert.deepEqual(back.lineups, [
+        { name: 'slot1', title: 'Attack', pieces: [{ id: 1, r: 11, c: 4 }, { id: 2, r: 9, c: 3 }] },
+        { name: 'slot2', pieces: [{ id: 5, r: 10, c: 7 }] }, // A name too short is dropped
+    ]);
+});

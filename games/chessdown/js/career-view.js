@@ -467,13 +467,15 @@ export function openCareer(theClub, { onClub, onPlay, word = '', knockedOut = fa
     else if (view === 'tour' || !tourSeen()) runTour();
 }
 
-/** Knocked out: the screen goes black, Gérard says it is over until next season. */
-function showKnockedOut() {
-    const place = Career.placing(career);
+/** Knocked out: the screen goes black, Gérard says it is over until next season (over the map or the club). */
+export function showKnockedOut() {
+    const current = loadCareer() || career; // As saved just now (the match may have ended the tournament)
+    if (!current) return;
+    const place = Career.placing(current);
     ui.out.innerHTML = `<div class="career-out-box">
         <canvas width="56" height="56" id="career-out-gerard" role="img" aria-label="${esc(t('commissioner.portrait'))}"></canvas>
         <h2 id="career-out-title">${esc(t('career.out.title'))}</h2>
-        <p>${esc(t(place === 2 ? 'career.out.final' : 'career.out.text', { place, tournament: t(`career.tournament.${career.tier}`) }))}</p>
+        <p>${esc(t(place === 2 ? 'career.out.final' : 'career.out.text', { place, tournament: t(`career.tournament.${current.tier}`) }))}</p>
         <p class="muted">${esc(t('career.out.after'))}</p>
         <button type="button" class="btn-primary" data-action="out-close">${esc(t('career.out.close'))}</button>
       </div>`;

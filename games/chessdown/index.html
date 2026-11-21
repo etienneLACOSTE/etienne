@@ -117,9 +117,19 @@
         </div>
 
         <!-- Career: the map, its places and quests, the journal (js/career-view.js, js/career-map.js) -->
+        <!-- Knocked out of the tournament: the screen goes black, over the club or the map (js/career-view.js) -->
+        <div class="career-out" id="career-out" role="alertdialog" aria-modal="true" aria-labelledby="career-out-title" hidden></div>
+
+        <!-- The tournament's progress before a match (js/bracket-view.js, events.js) -->
+        <div id="bracket-screen" class="screen hidden bracket-page">
+            <div id="bracket-view"></div>
+            <div class="club-row">
+                <button type="button" class="btn-primary btn-big" id="bracket-start" data-i18n="bracket.start">Start the draft</button>
+                <button type="button" class="btn-secondary" id="bracket-back" data-i18n="bracket.backToMap">Back to the map</button>
+            </div>
+        </div>
+
         <div id="career-screen" class="screen hidden career-page">
-            <!-- Knocked out of the tournament: the screen goes black (js/career-view.js) -->
-            <div class="career-out" id="career-out" role="alertdialog" aria-modal="true" aria-labelledby="career-out-title" hidden></div>
             <div class="career-top">
                 <!-- The view shown (map, journal, pieces): each opens from the club's page -->
                 <h2 id="career-title">Map</h2>
@@ -326,9 +336,11 @@
             <p id="victory-reason">Reason for victory</p>
             <p id="victory-series" class="victory-series" hidden></p>
             <p id="victory-ladder" class="victory-ladder" role="status" hidden></p>
+            <div id="victory-bracket" class="victory-bracket" tabindex="0" role="region" data-i18n-attr="aria-label: career.journal.road" hidden></div>
             <div class="victory-controls">
                 <button id="btn-restart" class="btn-primary" data-i18n="end.playAgain">Play Again</button>
                 <button id="btn-main-menu" class="btn-secondary" data-i18n="end.mainMenu">Main Menu</button>
+                <button id="btn-to-club" type="button" class="btn-secondary" hidden data-i18n="bracket.toClub">Back to the club</button>
             </div>
         </div>
 
