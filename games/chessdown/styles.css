@@ -1162,3 +1162,12 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-marker.tag-below .tag { bottom: auto; top: calc(100% + 3px); }
 .career-marker.locked .ex { background: #6b6b6b; color: #111; animation: none; font-size: 14px; }
 .career-card.locked { border-color: #6b6b6b; }
+
+/* The club's wardrobe (career rewards): a radio choice of jerseys */
+.club-wardrobe { display: flex; flex-wrap: wrap; gap: 10px; }
+.club-wear {
+    display: grid; justify-items: center; gap: 4px; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.35); background: transparent; color: var(--white); font: 700 14px var(--text);
+}
+.club-wear[aria-checked="true"] { border-color: var(--amber); }
+.club-wear-shirt svg { width: 72px; height: 72px; display: block; }

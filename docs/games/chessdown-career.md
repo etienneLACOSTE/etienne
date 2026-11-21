@@ -180,6 +180,14 @@ servent à faire progresser ses joueurs et à en recruter.
   rapporte un trophée (dans le journal) et une recrue à signer sur la page du club. Les
   journées du tutoriel ne touchent pas la coupe.
 
+- **Le maillot « Héritage » (fait)** : gagné par la quête « Les fondateurs », il apparaît dans un
+  vestiaire sur la page du club (le vestiaire n'existe qu'une fois un maillot gagné). On y
+  choisit entre le maillot du club et le maillot Héritage (crème, bande de poitrine aux
+  couleurs du club, col lacé). Le choix est gardé dans `club.wear`, accepté seulement si le
+  maillot a été gagné.
+
 ## Pas encore fait
 
-- Le maillot « Héritage » est gardé avec le club, mais pas encore proposé sur la page du club.
+- Rien de prévu dans la feuille de route de la carrière. Pistes : plus de quêtes par palier,
+  plus de maillots à gagner, la carrière gardée sur le compte (All Star en ligne).
+

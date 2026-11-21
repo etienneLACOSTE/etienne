@@ -98,4 +98,9 @@ test('career rewards: an experience bonus (never for the king), a recruit at its
     // Cosmetics kept when known, dropped otherwise
     const kept = Club.sanitizeClub({ ...JSON.parse(JSON.stringify(club)), cosmetics: ['jersey-heritage', 'gold-boots'] });
     assert.deepEqual(kept.cosmetics, ['jersey-heritage']);
+    // The jersey worn: only one the club has unlocked
+    const worn = (data) => Club.sanitizeClub({ ...JSON.parse(JSON.stringify(club)), ...data }).wear;
+    assert.equal(worn({ cosmetics: ['jersey-heritage'], wear: 'jersey-heritage' }), 'jersey-heritage');
+    assert.equal(worn({ wear: 'jersey-heritage' }), undefined, 'not unlocked');
+    assert.equal(worn({ cosmetics: ['jersey-heritage'], wear: 'gold-boots' }), undefined);
 });

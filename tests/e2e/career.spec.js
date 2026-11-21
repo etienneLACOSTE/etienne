@@ -1,5 +1,6 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
+const AxeBuilder = require('@axe-core/playwright').default;
 const { blockExternalRequests, trackPageErrors } = require('./helpers');
 
 // The career's screen (js/career-view.js, js/career-map.js; docs/games/chessdown-career.md):
@@ -337,5 +338,34 @@ test.describe('Career', () => {
     await page.locator('#btn-restart').dispatchEvent('pointerdown');
     await page.getByRole('tab', { name: 'Journal' }).click();
     await expect(page.locator('.career-titles')).toContainText('City Cup, season 1');
+  });
+
+  test('the Heritage jersey won in the career: worn from the club\'s wardrobe', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await page.addInitScript((club) => localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)), { ...CLUB, cosmetics: ['jersey-heritage'] });
+    await page.goto('/chessdown/');
+    await page.getByRole('button', { name: 'All Star: my club' }).click();
+    const wardrobe = page.getByRole('radiogroup', { name: 'Wardrobe' });
+    await expect(wardrobe.getByRole('radio', { name: 'Home jersey' })).toHaveAttribute('aria-checked', 'true');
+    await wardrobe.getByRole('radio', { name: 'Heritage jersey' }).click();
+    await expect(wardrobe.getByRole('radio', { name: 'Heritage jersey' })).toHaveAttribute('aria-checked', 'true');
+    await expect(wardrobe.getByRole('radio', { name: 'Heritage jersey' })).toBeFocused();
+    await expect(page.locator('.club-card-jersey svg')).toHaveAttribute('aria-label', /^Heritage jersey: cream/);
+    const club = await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'));
+    expect(club.wear).toBe('jersey-heritage');
+    const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+    expect(violations.map((v) => v.id)).toEqual([]);
+    // Back to the home jersey
+    await wardrobe.getByRole('radio', { name: 'Home jersey' }).click();
+    await expect(page.locator('.club-card-jersey svg')).toHaveAttribute('aria-label', /^Jersey: /);
+    expect(errors).toEqual([]);
+  });
+
+  test('without the Heritage jersey, no wardrobe', async ({ page }) => {
+    await page.addInitScript((club) => localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)), CLUB);
+    await page.goto('/chessdown/');
+    await page.getByRole('button', { name: 'All Star: my club' }).click();
+    await expect(page.getByRole('heading', { name: 'Register' })).toBeVisible();
+    await expect(page.getByRole('radiogroup', { name: 'Wardrobe' })).toHaveCount(0);
   });
 });

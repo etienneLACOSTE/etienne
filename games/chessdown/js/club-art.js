@@ -116,8 +116,15 @@ export function crestSVG(c) {
 }
 
 let jerseyCount = 0;
-/** The home jersey: its pattern in the two colours, the crest on the chest. */
+/** The "Heritage" jersey's cream (career reward): a game colour, like the jerseys'. */
+const HERITAGE_CREAM = '#efe6cf';
+
+/**
+ * The jersey the club wears: its home jersey (its pattern in the two colours), or, when it
+ * wears one won in the career (`c.wear`), that one. The crest is on the chest.
+ */
 export function jerseySVG(c) {
+    if (c.wear === 'jersey-heritage') return heritageSVG(c);
     const a = c.primary;
     const b = c.secondary;
     let fill = `<rect width="120" height="120" fill="${a}"/>`;
@@ -140,6 +147,27 @@ export function jerseySVG(c) {
         <path d="${shirt}" fill="none" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
         <path d="M50 6 Q60 16 70 6" fill="none" stroke="#000" stroke-width="4"/>
         <g transform="translate(64 34) scale(.2)">${crestInner(c)}</g>
+    </svg>`;
+}
+
+/** The "Heritage" jersey: cream, a broad band of the club's colour across the chest, a laced collar. */
+function heritageSVG(c) {
+    const a = c.primary;
+    const b = c.secondary;
+    const shirt = 'M38 10 L50 6 Q60 16 70 6 L82 10 L110 30 L98 50 L88 44 L88 112 L32 112 L32 44 L22 50 L10 30 Z';
+    const clip = `jersey-clip-${++jerseyCount}`;
+    const label = t('club.jerseyHeritageLabel', { a: colorName(a), b: colorName(b) });
+    return `<svg viewBox="0 0 120 120" role="img" aria-label="${esc(label)}">
+        <defs><clipPath id="${clip}"><path d="${shirt}"/></clipPath></defs>
+        <g clip-path="url(#${clip})">
+          <rect width="120" height="120" fill="${HERITAGE_CREAM}"/>
+          <rect y="52" width="120" height="22" fill="${a}"/><rect y="49" width="120" height="3" fill="${b}"/><rect y="74" width="120" height="3" fill="${b}"/>
+          <path d="M10 30 L22 50 L32 44 L32 40 L18 26 Z M110 30 L98 50 L88 44 L88 40 L102 26 Z" fill="${a}"/>
+        </g>
+        <path d="${shirt}" fill="none" stroke="#000" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M50 6 Q60 22 70 6" fill="${a}" stroke="#000" stroke-width="3"/>
+        <path d="M56 12 L64 12 M56 16 L64 16" stroke="${HERITAGE_CREAM}" stroke-width="2"/>
+        <g transform="translate(48 22) scale(.2)">${crestInner(c)}</g>
     </svg>`;
 }
 

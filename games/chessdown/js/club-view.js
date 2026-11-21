@@ -75,6 +75,7 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
             ${rosterTable(club)}
             <div class="club-rename-form" id="club-rename-form" hidden></div>
           </section>
+          ${(club.cosmetics || []).includes('jersey-heritage') ? wardrobe(club) : ''}
           <section class="club-section" aria-labelledby="club-recruit-title">
             <h3 id="club-recruit-title">${esc(t('club.recruitTitle'))}</h3>
             ${club.recruits > 0 ? recruitForm(club) : `<p class="muted">${esc(t('club.recruitNone'))}</p>`}
@@ -86,6 +87,18 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
         wire();
         if (focusId) /** @type {HTMLElement | null} */ (box.querySelector(`#${focusId}`))?.focus();
     };
+
+    /** The wardrobe: the jerseys won in the career, to wear instead of the home one. */
+    function wardrobe(c) {
+        const option = (wear, label) => `<button type="button" class="club-wear" role="radio" data-wear="${wear}" aria-checked="${(c.wear || '') === wear}">
+            <span class="club-wear-shirt" aria-hidden="true">${jerseySVG({ ...c, wear })}</span>${esc(label)}</button>`;
+        return `<section class="club-section" aria-labelledby="club-wardrobe-title">
+            <h3 id="club-wardrobe-title">${esc(t('club.wardrobe'))}</h3>
+            <div class="club-wardrobe" role="radiogroup" aria-labelledby="club-wardrobe-title">
+              ${option('', t('club.wearHome'))}${option('jersey-heritage', t('club.wearHeritage'))}
+            </div>
+          </section>`;
+    }
 
     function recruitForm(c) {
         return `<p>${esc(t('club.recruitText', { n: c.recruits }))}</p>
@@ -107,6 +120,14 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
             deleteCareer(); // A new club starts a new career
             onDeleted();
         });
+        box.querySelectorAll('[data-wear]').forEach((b) => b.addEventListener('click', () => {
+            const wear = /** @type {HTMLElement} */ (b).dataset.wear;
+            club = { ...club };
+            if (wear) club.wear = wear; else delete club.wear;
+            saveClub(club);
+            render();
+            /** @type {HTMLElement | null} */ (box.querySelector(`[data-wear="${wear}"]`))?.focus();
+        }));
         box.querySelectorAll('.club-rename').forEach((b) => b.addEventListener('click', () => openRename(Number(/** @type {HTMLElement} */ (b).dataset.player))));
         let recruitType = Club.RECRUIT_TYPES[0];
         box.querySelectorAll('[data-recruit]').forEach((b) => b.addEventListener('click', () => {

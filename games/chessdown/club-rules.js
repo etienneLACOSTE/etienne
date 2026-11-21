@@ -141,6 +141,7 @@
         }
         if (players.filter((p) => p.type === 'k').length !== 1) return null;
         const nextId = Math.max(...players.map((p) => p.id)) + 1;
+        const cosmetics = Array.isArray(data.cosmetics) ? [...new Set(data.cosmetics.filter((c) => COSMETICS.includes(c)))] : [];
         const lineups = Array.isArray(data.lineups) ? data.lineups.filter((l) => l && cleanName(l.name) && Array.isArray(l.pieces)).slice(0, 10) : [];
         return {
             version: 1, coach, name, primary: data.primary.toLowerCase(), secondary: data.secondary.toLowerCase(),
@@ -149,7 +150,9 @@
             tier: typeof data.tier === 'string' ? data.tier : 'school',
             players, recruits: Number.isInteger(data.recruits) && data.recruits >= 0 ? Math.min(data.recruits, 5) : 0,
             nextId, lineups,
-            ...(Array.isArray(data.cosmetics) && data.cosmetics.length ? { cosmetics: [...new Set(data.cosmetics.filter((c) => COSMETICS.includes(c)))] } : {}),
+            ...(cosmetics.length ? { cosmetics } : {}),
+            // The jersey worn: an unlocked one (the career's "Heritage"); the club's own otherwise
+            ...(cosmetics.includes(data.wear) ? { wear: data.wear } : {}),
         };
     }
 
