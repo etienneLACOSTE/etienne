@@ -17,7 +17,7 @@ import { saveSettings, showSettings } from './settings.js';
 import { askFormat, hideScore, startSeries } from './match.js';
 import { loadClub } from './club-store.js';
 import { closeCareer, openCareer } from './career-view.js';
-import { beginCareerMatch, careerPuzzle, careerWord, endCareerMatch, setPuzzleBoard } from './career-match.js';
+import { beginCareerMatch, careerKnockedOut, careerPuzzle, careerWord, endCareerMatch, setPuzzleBoard } from './career-match.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
 import { beginAllStar, endAllStar, nearestJersey } from './all-star.js';
@@ -63,10 +63,11 @@ function openAllStar() {
  * The career (docs/games/chessdown-career.md) with the club, from the club's page; back to
  * the club's page from it, or into a match (a matchday or a side quest).
  */
-export function openCareerPage(club, word = '') {
+export function openCareerPage(club, word = '', knockedOut = false) {
     showScreen(/** @type {HTMLElement} */ (document.getElementById('career-screen')));
     openCareer(club, {
         word,
+        knockedOut,
         onClub: () => openClubPage(loadClub() || club, () => { showScreen(ui.mainMenu); document.getElementById('btn-all-star')?.focus(); }),
         onPlay: (spec) => startCareerMatch(loadClub() || club, spec),
     });
@@ -97,12 +98,13 @@ function startCareerMatch(club, spec) {
 function backToCareer() {
     const club = state.allStar ? state.allStar.club : loadClub();
     const word = careerWord(); // Gérard's comment on the match
+    const out = careerKnockedOut(); // Knocked out: the black screen
     resetGame();
     endCareerMatch();
     endAllStar();
     state.gameState = 'mainMenu';
     hideScore();
-    if (club) openCareerPage(club, word);
+    if (club) openCareerPage(club, word, out);
     else showScreen(ui.mainMenu);
 }
 

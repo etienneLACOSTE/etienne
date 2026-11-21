@@ -42,13 +42,15 @@ test.describe('Resign', () => {
     await expect(resign).toBeHidden();
 
     await page.locator('#btn-restart').dispatchEvent('pointerdown');
+    await expect(page.locator('#victory-screen')).toBeHidden();
     await place(page, 'k', 5, 4);
     await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
     await expect(resign).toBeVisible({ timeout: 15_000 });
     await resign.click();
     await question.getByRole('button', { name: 'The whole match' }).click();
+    await expect(page.locator('#victory-screen')).toBeVisible();
     await expect(page.locator('#victory-reason')).toHaveText('You resigned.');
-    expect(await page.evaluate(() => [chessdown.state.series.over, chessdown.state.series.winner])).toEqual([true, 2]);
+    await expect.poll(() => page.evaluate(() => [chessdown.state.series.over, chessdown.state.series.winner])).toEqual([true, 2]);
     await expect(page.locator('#btn-restart')).toHaveText('New match');
     expect(errors).toEqual([]);
   });

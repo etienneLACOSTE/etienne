@@ -9,6 +9,38 @@ Une quête réussie qui donne de l'expérience donne **+5 XP à chaque pièce qu
 pour tout le club) faisaient monter les niveaux trop vite. Les recrues et le maillot ne
 changent pas.
 
+## Le tournoi remplace la ligue (2026-11-21)
+
+Décisions du propriétaire : plus de contrainte en match de compétition ; à chaque échelon,
+international compris, un tournoi de 32 clubs à double élimination ; les coupes sont retirées.
+
+- **Format** (`career-rules.js`, `STAGES`) : tableau des gagnants (W1 à W5) et des perdants
+  (L1 à L8 ; les perdants d'un tour W y entrent en L2, L4, L6, L8), puis la grande finale (un
+  seul match, pas de revanche). Une partie unique aux premiers tours (une nulle est rejouée),
+  best of 3 en demi-finale et finale de chaque tableau et en grande finale. Invaincu : 6
+  matchs ; par le tableau des perdants : jusqu'à 10.
+- **Élimination** à la deuxième défaite (ou la grande finale perdue) : l'écran passe au noir,
+  Gérard dit que c'est fini jusqu'à la saison prochaine. Les quêtes annexes restent jouables ;
+  la saison suivante se lance depuis le stade.
+- **Ticket** : seul le vainqueur du tournoi monte à l'échelon suivant.
+- **31 adversaires** : les entraîneurs nommés de l'échelon (hors boss) et des clubs générés
+  depuis la graine (`career-coaches.js`, `generatedCoach` : nom, club, couleurs, portrait,
+  style, force ; ni surnom ni réplique). Tableau tiré à nouveau chaque saison ; les autres
+  matchs sont simulés depuis la graine. Seuls les résultats du joueur sont enregistrés
+  (`tournament.results`), le tableau se recalcule (`bracket`).
+- **Progression** : l'armée adverse dépend de l'échelon et de la profondeur du tour
+  (`DEPTH`, de 0 au premier tour à 1 en grande finale). École : 10 points, niveaux 1 et 2 au
+  premier tour ; environ 30 points, niveaux 2 et quelques 3 en finale. Le niveau est une
+  moyenne : chaque pièce prend le niveau du dessous ou du dessus (`js/bot.js`).
+- **Première saison en ville** : Gérard donne une leçon avant chacun des 5 premiers matchs,
+  sans aucune restriction de pièces.
+- **Date** (décorative) : 1er septembre 8 h au début de chaque saison ; un déplacement prend
+  du temps selon la distance et l'échelon (`minutesPerPixel`), un match ou une quête une
+  demi-journée, un changement d'échelon un jour. Affichée en haut à droite de la carte.
+- **Abandon** : bouton « Abandonner » en partie ; en best of 3, la manche ou le match.
+- Les carrières enregistrées avant (version 1, ligues) sont refusées : la page en recommence
+  une (le club est gardé).
+
 ## Variantes de quêtes (2026-11-21)
 
 Décidées par le propriétaire : toutes gardées. 3 quêtes de plus par échelon (11 par échelon),

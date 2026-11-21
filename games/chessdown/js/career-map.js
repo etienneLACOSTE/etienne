@@ -906,19 +906,31 @@ export function createCareerMap({ canvas, onArrive }) {
         },
         /** The places of the shown map. */
         places: () => Object.keys(MAPS[tier].places),
-        /** Go to `place`; onArrive(place) when there (at once with reduced motion, or when already there). */
+        /**
+         * Go to `place`; onArrive(place) when there (at once with reduced motion, or when already
+         * there). Returns the length of the way, in map pixels (0 when already there): the calendar.
+         */
         go(place) {
-            if (!art || !MAPS[tier].places[place]) return;
+            if (!art || !MAPS[tier].places[place]) return 0;
             const goal = art.doors[place];
-            if (reducedMotion() || (at === place && !route.length)) {
+            if (at === place && !route.length) {
+                onArrive(place);
+                return 0;
+            }
+            const way = graph ? shortest(graph, nearestNode(pos), graph.doorNode[place]) : flightArc(pos, goal);
+            let length = 0;
+            let from = pos;
+            for (const p of way) { length += Math.hypot(p.x - from.x, p.y - from.y); from = p; }
+            if (reducedMotion()) {
                 pos = { ...goal }; route = []; at = place; arriving = null;
                 if (image) { g.putImageData(image, 0, 0); drawMover(0); }
                 onArrive(place);
-                return;
+                return length;
             }
-            route = graph ? shortest(graph, nearestNode(pos), graph.doorNode[place]) : flightArc(pos, goal);
+            route = way;
             at = place;
             arriving = place;
+            return length;
         },
         /** Where the coach is (or is going). */
         at: () => at,

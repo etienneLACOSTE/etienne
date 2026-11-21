@@ -1,14 +1,21 @@
 // @ts-check
-// Chessdown career (docs/games/chessdown-career.md): tiers, leagues, tickets and side quests.
-// Pure functions on a plain career object (kept in the browser for now, checked by
-// sanitizeCareer every time it is read). Everything random is drawn from the career's seed,
-// so the same career always gives the same rivals, results and quests.
+// Chessdown career (docs/games/chessdown-career.md): tiers, tournaments, tickets, side quests
+// and the calendar. Pure functions on a plain career object (kept in the browser and with a
+// signed-in player's account, checked by sanitizeCareer every time it is read). Everything
+// random is drawn from the career's seed, so the same career always gives the same clubs,
+// brackets, results and quests.
 //   - Five tiers, from the town (school) to the world (international). A tier is played in
-//     seasons: a league (and, at the international tier, a knockout after the group).
-//   - Finishing in the top 3 of a league earns the ticket to the next tier (bus, RER, TGV,
-//     plane); one travels between two seasons only.
+//     seasons; each season is a tournament of 32 clubs, double elimination: a first defeat
+//     sends a club to the losers' bracket, a second one knocks it out. The winners' and the
+//     losers' champions meet in the grand final (one match, no reset).
+//   - Winning the tournament earns the ticket to the next tier (bus, RER, TGV, plane); one
+//     travels between two seasons only.
+//   - The opponents grow stronger round after round: small armies of level 1 and 2 pieces in
+//     the first round in town, bigger ones with a few level 3 pieces at the end.
 //   - Each season draws a few side quests from the tier's catalogue; each may be tried once
 //     that season, and a quest that is done is gone for good.
+//   - A calendar (decorative for now): a season starts on 1 September; moving on the map,
+//     playing a match and travelling to another tier take time.
 // Loaded by the browser (as `window.ChessdownCareer`, after career-coaches.js and
 // career-quests.js) and by Node (`require`).
 (function (root, factory) {
@@ -20,29 +27,54 @@
 })(/** @type {any} */ (typeof self !== 'undefined' ? self : this), function (Coaches, Quests) {
     'use strict';
 
-    const VERSION = 1;
+    const VERSION = 2; // 1: leagues and cups (2026-11-21, replaced by the tournaments)
     const YOU = 'you';
     const TIER_IDS = Quests.TIER_IDS;
+    const FIELD = 32; // Clubs in a tournament, the player's included
     /**
-     * Each tier: how many clubs in its league (the player's club included), how many legs,
-     * the knockout rounds after it (international only), the bot it fields (difficulty, army
-     * budget in classic points, level of the pieces) and how many side quests a season draws.
-     * `cup`: a knockout cup played once the league is over (the City Cup at the town hall, the
-     * National Cup at the stadium), against the league's best rivals, the weakest of them first.
+     * Each tier: the bot of its tournament, from the first round to the last (`difficulty`,
+     * army `budget` in classic points, average `level` of its pieces: 1.3 means mostly level 1
+     * with some level 2), how many side quests a season draws, and how many minutes a map
+     * pixel takes to cross (the calendar).
      */
     const TIERS = {
-        school: { clubs: 6, legs: 1, knockout: 0, bot: { difficulty: 'novice', budget: 10, level: 1 }, quests: 4, cup: { rounds: 2, place: 'townhall' } },
-        county: { clubs: 6, legs: 2, knockout: 0, bot: { difficulty: 'apprentice', budget: 18, level: 2 }, quests: 4 },
-        region: { clubs: 6, legs: 2, knockout: 0, bot: { difficulty: 'apprentice', budget: 26, level: 3 }, quests: 5 },
-        national: { clubs: 8, legs: 2, knockout: 0, bot: { difficulty: 'expert', budget: 32, level: 4 }, quests: 5, cup: { rounds: 3, place: 'stadium' } },
-        international: { clubs: 4, legs: 1, knockout: 3, bot: { difficulty: 'master', budget: 39, level: 5 }, quests: 6 },
+        school: { bot: { difficulty: ['novice', 'apprentice'], budget: [10, 30], level: [1.3, 2.3] }, quests: 4, minutesPerPixel: 1 },
+        county: { bot: { difficulty: ['apprentice', 'expert'], budget: [18, 34], level: [2, 3] }, quests: 4, minutesPerPixel: 3 },
+        region: { bot: { difficulty: ['apprentice', 'expert'], budget: [24, 37], level: [2.5, 3.5] }, quests: 5, minutesPerPixel: 6 },
+        national: { bot: { difficulty: ['expert', 'master'], budget: [30, 39], level: [3, 4.2] }, quests: 5, minutesPerPixel: 12 },
+        international: { bot: { difficulty: ['master', 'master'], budget: [34, 39], level: [3.8, 4.8] }, quests: 6, minutesPerPixel: 40 },
     };
-    /** Rivals drawn per tier: the league's other clubs, and the knockout's opponents. */
-    const rivalsNeeded = (tier) => TIERS[tier].clubs - 1 + TIERS[tier].knockout;
-    /** The top 3 earns the ticket; at the international tier, the top 2 of the group go on. */
-    const TICKET_RANK = 3;
-    const KNOCKOUT_RANK = 2;
+    /** A match takes half a day; travelling to another tier, a day. */
+    const MATCH_MINUTES = 12 * 60;
+    const TRAVEL_MINUTES = 24 * 60;
     const MAX_GAMES = 5; // A best of 3 lasts at most 5 games (draws count for nobody)
+
+    /**
+     * The stages of a tournament, in the order they are played. W: the winners' bracket
+     * (W1 the 16 first-round matches ... W5 its final); L: the losers' bracket, where the
+     * losers of a W stage come in (L2, L4, L6, L8) against the survivors of the stage before;
+     * GF: the grand final. The last rounds are best of 3; the others, one game.
+     */
+    const STAGES = [
+        { id: 'W1', matches: 16, bo3: false },
+        { id: 'W2', matches: 8, bo3: false },
+        { id: 'L1', matches: 8, bo3: false },
+        { id: 'L2', matches: 8, bo3: false },
+        { id: 'W3', matches: 4, bo3: false },
+        { id: 'L3', matches: 4, bo3: false },
+        { id: 'L4', matches: 4, bo3: false },
+        { id: 'W4', matches: 2, bo3: true },
+        { id: 'L5', matches: 2, bo3: false },
+        { id: 'L6', matches: 2, bo3: false },
+        { id: 'W5', matches: 1, bo3: true },
+        { id: 'L7', matches: 1, bo3: true },
+        { id: 'L8', matches: 1, bo3: true },
+        { id: 'GF', matches: 1, bo3: true },
+    ];
+    /** How far into the tournament a stage is, 0 (the first round) to 1 (the grand final): the opponents' strength. */
+    const DEPTH = { W1: 0, L1: 0.1, W2: 0.2, L2: 0.25, L3: 0.35, W3: 0.4, L4: 0.45, L5: 0.55, W4: 0.6, L6: 0.65, L7: 0.75, W5: 0.8, L8: 0.85, GF: 1 };
+    /** A club knocked out in a stage finishes in this place (the best one of its group of places). */
+    const PLACE_IF_OUT = { L1: 25, L2: 17, L3: 13, L4: 9, L5: 7, L6: 5, L7: 4, L8: 3, GF: 2 };
 
     // ---------- Randomness from the seed ----------
     function hash(...parts) {
@@ -67,241 +99,243 @@
         }
         return out;
     }
+    const lerp = (a, b, p) => a + (b - a) * p;
 
-    // ---------- Fixtures ----------
-    /**
-     * Round robin (circle method) for n clubs (n even): each round pairs every club once;
-     * with 2 legs the second half replays the first with home and away swapped.
-     * @returns {[number, number][][]} rounds of [home, away] indexes
-     */
-    function fixtures(n, legs) {
-        const order = Array.from({ length: n }, (_, i) => i);
-        const first = [];
-        for (let r = 0; r < n - 1; r++) {
-            const round = [];
-            for (let i = 0; i < n / 2; i++) {
-                const a = order[i], b = order[n - 1 - i];
-                round.push(/** @type {[number, number]} */ ((r + i) % 2 === 0 ? [a, b] : [b, a]));
-            }
-            first.push(round);
-            order.splice(1, 0, /** @type {number} */ (order.pop())); // Rotate, the first club fixed
-        }
-        if (legs === 1) return first;
-        return [...first, ...first.map((round) => round.map(([a, b]) => /** @type {[number, number]} */ ([b, a])))];
+    // ---------- The clubs ----------
+    /** The rivals of a tier: its named coaches (bosses left out), then generated clubs, 31 in all. */
+    function rivalsOf(career, tier) {
+        const named = Coaches.coachesOf(tier).map((c) => c.id);
+        const generated = Array.from({ length: FIELD - 1 - named.length }, (_, n) => Coaches.generatedId(tier, n));
+        return [...named, ...generated];
     }
+    /** A rival coach (named or generated) of this career. */
+    const coachOf = (career, id) => Coaches.coachById(id, career.seed);
 
-    /** The clubs of the current league, the player's first. */
-    function leagueClubs(career) {
-        return [YOU, ...career.rivals[career.tier].slice(0, TIERS[career.tier].clubs - 1)];
+    /** This season's 32 clubs in bracket order (drawn again each season). */
+    function fieldOf(career) {
+        return shuffle([YOU, ...rivalsOf(career, career.tier)], rng(hash(career.seed, 'field', career.season, career.tier)));
     }
-    const roundsOf = (career) => fixtures(TIERS[career.tier].clubs, TIERS[career.tier].legs);
 
     // ---------- A new career, a new season ----------
-    /** A new career from a seed (an integer): rivals drawn for every tier, first season in town. */
+    /** A new career from a seed (an integer): the first season in town. */
     function newCareer(seed) {
         const s = Number.isInteger(seed) ? seed >>> 0 : hash(String(seed));
-        const rivals = {};
-        for (const tier of TIER_IDS) {
-            rivals[tier] = shuffle(Coaches.coachesOf(tier).map((c) => c.id), rng(hash(s, 'rivals', tier))).slice(0, rivalsNeeded(tier));
-        }
         const career = {
-            version: VERSION, seed: s, season: 0, tier: 'school', rivals, tickets: [], seasonsIn: {},
-            league: { results: [] }, cup: null, cupRun: null, quests: { drawn: [], attempted: [] }, questsDone: [], titles: [],
+            version: VERSION, seed: s, season: 0, tier: 'school', tickets: [], seasonsIn: {},
+            tournament: { results: [] }, quests: { drawn: [], attempted: [] }, questsDone: [], titles: [], minutes: 0,
         };
         return startSeason(career, 'school');
     }
 
-    /** The next season, in `tier`: an empty league, a fresh knockout, new side quests. */
+    /** The next season, in `tier`: a new tournament, new side quests, the calendar on 1 September. */
     function startSeason(career, tier) {
         const seasonsIn = { ...career.seasonsIn, [tier]: (career.seasonsIn[tier] || 0) + 1 };
-        const next = {
-            ...career, tier, season: career.season + 1, seasonsIn,
-            league: { results: [] }, cup: TIERS[tier].knockout ? { stage: 0, out: false } : null,
-            cupRun: TIERS[tier].cup ? { stage: 0, out: false } : null,
-        };
+        const next = { ...career, tier, season: career.season + 1, seasonsIn, tournament: { results: [] }, minutes: 0 };
         return { ...next, quests: { drawn: drawQuests(next), attempted: [] } };
     }
 
-    // ---------- Matches ----------
-    /** The cup's opponent in `round`: the league's best rivals, the weakest of them first, the best in the final. */
-    function cupOpponent(career, round) {
-        const rounds = TIERS[career.tier].cup.rounds;
-        const best = standings(career).filter((r) => r.club !== YOU).slice(0, rounds).map((r) => r.club);
-        return best[rounds - 1 - round];
-    }
-
-    /**
-     * The player's next match, or null when the season is over: the league, then the
-     * international knockout or the cup.
-     * @returns {{ phase: 'league' | 'knockout' | 'cup', round: number, opponent: string, home: boolean } | null}
-     */
-    function nextMatch(career) {
-        const rounds = roundsOf(career);
-        const r = career.league.results.length;
-        if (r < rounds.length) {
-            const pair = rounds[r].find(([a, b]) => a === 0 || b === 0);
-            if (!pair) return null;
-            const clubs = leagueClubs(career);
-            return { phase: 'league', round: r, opponent: clubs[pair[0] === 0 ? pair[1] : pair[0]], home: pair[0] === 0 };
-        }
-        const run = career.cupRun;
-        if (run && !run.out && run.stage < TIERS[career.tier].cup.rounds) {
-            return { phase: 'cup', round: run.stage, opponent: cupOpponent(career, run.stage), home: true };
-        }
-        const cup = career.cup;
-        if (!cup || cup.out || cup.stage >= TIERS[career.tier].knockout || rank(career) > KNOCKOUT_RANK) return null;
-        const opponent = career.rivals[career.tier][TIERS[career.tier].clubs - 1 + cup.stage];
-        return { phase: 'knockout', round: cup.stage, opponent, home: true };
-    }
-
-    /** A series between two rivals, from their strengths: 2-0, 2-1, 1-1 (a draw) and so on. */
-    function simulate(random, a, b) {
-        const sa = Coaches.coachById(a).strength, sb = Coaches.coachById(b).strength;
-        if (random() < 0.1) return [1, 1];
+    // ---------- The tournament ----------
+    /** A match between two rivals, from their strengths: [1, 0] for one game, [2, 1] and so on for a best of 3. */
+    function simulate(random, career, a, b, bo3) {
+        const sa = coachOf(career, a).strength, sb = coachOf(career, b).strength;
         const aWins = random() < 0.5 + (sa - sb) * 0.6;
+        if (!bo3) return aWins ? [1, 0] : [0, 1];
         const loser = random() < 0.45 ? 1 : 0;
         return aWins ? [2, loser] : [loser, 2];
     }
 
-    const validScore = (won, lost) => Number.isInteger(won) && Number.isInteger(lost) && won >= 0 && lost >= 0 && won + lost <= MAX_GAMES && won <= 2 && lost <= 2 && !(won === 2 && lost === 2);
+    /** A score the player's match may end with: one game won or lost, or a best of 3 decided. */
+    function validScore(won, lost, bo3) {
+        if (!Number.isInteger(won) || !Number.isInteger(lost) || won < 0 || lost < 0) return false;
+        if (!bo3) return won + lost === 1;
+        return won + lost <= MAX_GAMES && won <= 2 && lost <= 2 && won !== lost && (won === 2 || lost === 2);
+    }
 
     /**
-     * The player's series is over (`won` and `lost`: games won and lost). The round's other
-     * matches are simulated. Returns the new career, or null when there is no match to play
+     * The whole bracket as far as it can be played: every stage's matches with their scores,
+     * the player's from `tournament.results` (in order), the others simulated. It stops at the
+     * player's next match (not played yet).
+     * @returns {{ stages: { id: string, bo3: boolean, matches: { a: string, b: string, wa: number, wb: number }[] }[],
+     *   next: { stage: string, opponent: string, bo3: boolean, played: number } | null, used: number,
+     *   losses: number, champion: string | null, place: number | null }}
+     */
+    function bracket(career) {
+        const results = career.tournament.results;
+        const stages = [];
+        /** @type {Record<string, string[]>} */
+        const winners = {};
+        /** @type {Record<string, string[]>} */
+        const losers = {};
+        let used = 0;
+        let losses = 0;
+        let place = null;
+        const pairUp = (list) => Array.from({ length: list.length / 2 }, (_, i) => [list[2 * i], list[2 * i + 1]]);
+        // The losers coming in meet the survivors in the reverse order: no rematch too soon.
+        const against = (survivors, dropped) => survivors.map((club, i) => [club, dropped[dropped.length - 1 - i]]);
+        const pairsOf = (id) => {
+            switch (id) {
+                case 'W1': return pairUp(fieldOf(career));
+                case 'W2': return pairUp(winners.W1);
+                case 'W3': return pairUp(winners.W2);
+                case 'W4': return pairUp(winners.W3);
+                case 'W5': return pairUp(winners.W4);
+                case 'L1': return pairUp(losers.W1);
+                case 'L2': return against(winners.L1, losers.W2);
+                case 'L3': return pairUp(winners.L2);
+                case 'L4': return against(winners.L3, losers.W3);
+                case 'L5': return pairUp(winners.L4);
+                case 'L6': return against(winners.L5, losers.W4);
+                case 'L7': return pairUp(winners.L6);
+                case 'L8': return against(winners.L7, losers.W5);
+                default: return [[winners.W5[0], winners.L8[0]]]; // GF
+            }
+        };
+        for (const stage of STAGES) {
+            const matches = [];
+            let pending = null;
+            for (const [a, b] of pairsOf(stage.id)) {
+                let wa, wb;
+                if (a === YOU || b === YOU) {
+                    if (used >= results.length) {
+                        pending = { stage: stage.id, opponent: a === YOU ? b : a, bo3: stage.bo3, played: used };
+                        continue;
+                    }
+                    const r = results[used++];
+                    [wa, wb] = a === YOU ? [r.won, r.lost] : [r.lost, r.won];
+                    if (r.won <= r.lost) {
+                        losses++;
+                        if (stage.id === 'GF') place = 2;
+                        else if (losses === 2) place = PLACE_IF_OUT[stage.id];
+                    }
+                } else {
+                    [wa, wb] = simulate(rng(hash(career.seed, 'match', career.season, career.tier, stage.id, a, b)), career, a, b, stage.bo3);
+                }
+                matches.push({ a, b, wa, wb });
+            }
+            stages.push({ id: stage.id, bo3: stage.bo3, matches });
+            if (pending) return { stages, next: losses >= 2 ? null : pending, used, losses, champion: null, place };
+            winners[stage.id] = matches.map((m) => (m.wa > m.wb ? m.a : m.b));
+            losers[stage.id] = matches.map((m) => (m.wa > m.wb ? m.b : m.a));
+        }
+        const champion = winners.GF[0];
+        if (champion === YOU) place = 1;
+        return { stages, next: null, used, losses, champion, place };
+    }
+
+    /**
+     * The player's next match, or null when the season's tournament is over for the player
+     * (knocked out, or the grand final played).
+     * @returns {{ phase: 'tournament', stage: string, opponent: string, format: 'single' | 'bo3', played: number, losses: number } | null}
+     */
+    function nextMatch(career) {
+        const b = bracket(career);
+        if (!b.next) return null;
+        return { phase: 'tournament', stage: b.next.stage, opponent: b.next.opponent, format: b.next.bo3 ? 'bo3' : 'single', played: b.next.played, losses: b.losses };
+    }
+
+    /**
+     * The player's match is over (`won` and `lost`: games won and lost; a single game: 1-0 or
+     * 0-1). Returns the new career (half a day later), or null when there is no match to play
      * or the score cannot be.
      */
     function recordSeries(career, { won, lost }) {
         const match = nextMatch(career);
-        if (!match || !validScore(won, lost)) return null;
-        if (match.phase === 'knockout') {
-            const cup = won > lost ? { stage: career.cup.stage + 1, out: false } : { stage: career.cup.stage, out: true };
-            return { ...career, cup };
-        }
-        if (match.phase === 'cup') {
-            const run = career.cupRun;
-            return { ...career, cupRun: won > lost ? { stage: run.stage + 1, out: false } : { stage: run.stage, out: true } };
-        }
-        const clubs = leagueClubs(career);
-        const random = rng(hash(career.seed, 'round', career.season, career.tier, match.round));
-        const round = roundsOf(career)[match.round].map(([a, b]) => {
-            if (a === 0) return { a: clubs[a], b: clubs[b], wa: won, wb: lost };
-            if (b === 0) return { a: clubs[a], b: clubs[b], wa: lost, wb: won };
-            const [wa, wb] = simulate(random, clubs[a], clubs[b]);
-            return { a: clubs[a], b: clubs[b], wa, wb };
-        });
-        return { ...career, league: { results: [...career.league.results, round] } };
+        if (!match || !validScore(won, lost, match.format === 'bo3')) return null;
+        return { ...career, tournament: { results: [...career.tournament.results, { won, lost }] }, minutes: career.minutes + MATCH_MINUTES };
     }
 
-    /**
-     * The league table: 3 points for a series won, 1 for a draw; then games won minus lost,
-     * games won, and the drawing order.
-     */
-    function standings(career) {
-        const clubs = leagueClubs(career);
-        const rows = clubs.map((club, order) => ({ club, order, played: 0, won: 0, drawn: 0, lost: 0, gamesFor: 0, gamesAgainst: 0, points: 0 }));
-        const row = (id) => rows[clubs.indexOf(id)];
-        for (const round of career.league.results) {
-            for (const m of round) {
-                for (const [me, mine, theirs] of [[m.a, m.wa, m.wb], [m.b, m.wb, m.wa]]) {
-                    const r = row(me);
-                    r.played++; r.gamesFor += mine; r.gamesAgainst += theirs;
-                    if (mine > theirs) { r.won++; r.points += 3; } else if (mine === theirs) { r.drawn++; r.points += 1; } else r.lost++;
-                }
-            }
-        }
-        return rows.sort((x, y) => y.points - x.points || (y.gamesFor - y.gamesAgainst) - (x.gamesFor - x.gamesAgainst) || y.gamesFor - x.gamesFor || x.order - y.order);
-    }
-
-    /** The player's place in the league table (1 is first). */
-    function rank(career) {
-        return standings(career).findIndex((r) => r.club === YOU) + 1;
-    }
-
-    const leagueOver = (career) => career.league.results.length === roundsOf(career).length;
-    /** The season is over: every league round played, and the knockout (if any) decided. */
+    /** The season is over: the player is out of the tournament, or it is finished. */
     function seasonOver(career) {
-        return leagueOver(career) && nextMatch(career) === null;
+        return nextMatch(career) === null;
+    }
+
+    /** The season is over without the title: knocked out (a second defeat), or the grand final lost. */
+    function knockedOut(career) {
+        return seasonOver(career) && placing(career) !== 1;
+    }
+
+    /** Where the player finished (1 the champion); null while still in the running. */
+    function placing(career) {
+        return seasonOver(career) ? bracket(career).place : null;
     }
 
     /**
-     * End of the season: the ticket (top 3, towards the next tier), the title (first of the
-     * league, or the knockout won), then the next season in the same tier. Null before the end.
-     * `cupWon`: the cup (City Cup, National Cup) won this season.
-     * @returns {{ career: any, rank: number, ticket: string | null, title: boolean, cupWon: boolean } | null}
+     * End of the season: the title and the ticket (the tournament won: towards the next tier),
+     * then the next season in the same tier. Null before the end.
+     * @returns {{ career: any, place: number, ticket: string | null, title: boolean } | null}
      */
     function finishSeason(career) {
         if (!seasonOver(career)) return null;
-        const place = rank(career);
+        const place = /** @type {number} */ (placing(career));
         const t = TIER_IDS.indexOf(career.tier);
         const nextTier = TIER_IDS[t + 1] || null;
-        const ticket = nextTier && place <= TICKET_RANK && !career.tickets.includes(nextTier) ? nextTier : null;
-        const knockout = TIERS[career.tier].knockout;
-        const title = knockout ? career.cup.stage === knockout : place === 1;
-        const cupWon = Boolean(career.cupRun && career.cupRun.stage === TIERS[career.tier].cup.rounds);
-        const titles = [...career.titles];
-        if (title) titles.push({ tier: career.tier, season: career.season });
-        if (cupWon) titles.push({ tier: career.tier, season: career.season, cup: true });
+        const title = place === 1;
+        const ticket = title && nextTier && !career.tickets.includes(nextTier) ? nextTier : null;
+        const titles = title ? [...career.titles, { tier: career.tier, season: career.season }] : career.titles;
         const updated = { ...career, tickets: ticket ? [...career.tickets, ticket] : career.tickets, titles };
-        return { career: startSeason(updated, career.tier), rank: place, ticket, title, cupWon };
+        return { career: startSeason(updated, career.tier), place, ticket, title };
     }
 
     /** One travels between two seasons only (no match played yet), to a tier one has the ticket for. */
     function canTravel(career, tier) {
-        return TIER_IDS.includes(tier) && tier !== career.tier && career.league.results.length === 0
+        return TIER_IDS.includes(tier) && tier !== career.tier && career.tournament.results.length === 0
             && (tier === 'school' || career.tickets.includes(tier));
     }
 
-    /** Travel to another tier: the season starts again there. Null when not allowed. */
+    /** Travel to another tier: the season starts again there, a day later. Null when not allowed. */
     function travel(career, tier) {
         if (!canTravel(career, tier)) return null;
         const seasonsIn = { ...career.seasonsIn, [career.tier]: career.seasonsIn[career.tier] - 1 }; // The season left unplayed
-        return startSeason({ ...career, season: career.season - 1, seasonsIn }, tier);
+        const next = startSeason({ ...career, season: career.season - 1, seasonsIn }, tier);
+        return { ...next, minutes: career.minutes + TRAVEL_MINUTES };
     }
 
-    // ---------- The school tutorial ----------
-    /**
-     * The first season in town teaches the game, matchday by matchday: kings and pawns, then
-     * the knights, then rooks and bishops, then a full draft; 60 s a turn to think. The final
-     * (matchday 5) is a real match. Banned pieces count for both sides.
-     */
-    const TUTORIAL = [
-        { banned: ['n', 'b', 'r', 'q'], timer: 60 },
-        { banned: ['b', 'r', 'q'], timer: 60 },
-        { banned: ['q'], timer: 60 },
-        { timer: 60 },
-        {},
-    ];
+    // ---------- The calendar ----------
+    /** Time passes (minutes): a walk on the map. */
+    function advance(career, minutes) {
+        return { ...career, minutes: Math.min(MAX_MINUTES, career.minutes + Math.max(0, Math.round(minutes))) };
+    }
+    const MAX_MINUTES = 400 * 24 * 60;
+    /** Minutes a walk of `pixels` on the tier's map takes. */
+    const walkMinutes = (career, pixels) => Math.round(pixels * TIERS[career.tier].minutesPerPixel);
+    /** The career's date: a season starts on 1 September at 8:00 (the first one in 2026). */
+    function dateOf(career) {
+        return new Date(Date.UTC(2025 + career.season, 8, 1, 8, 0) + career.minutes * 60_000);
+    }
 
-    /** The tutorial's step of the next matchday (0 to 4), or -1 outside the first season in town. */
+    // ---------- The first season in town ----------
+    /** Gérard's lesson before each of the first 5 matches of the first season in town (0 to 4), or -1. */
     function tutorialStep(career) {
         if (career.tier !== 'school' || career.seasonsIn.school !== 1) return -1;
         const m = nextMatch(career);
-        return m && m.phase === 'league' ? m.round : -1;
-    }
-
-    /** The special rules of the next matchday (the tutorial's; none otherwise). */
-    function matchdayRules(career) {
-        const step = tutorialStep(career);
-        return step >= 0 ? { ...TUTORIAL[step], ...(TUTORIAL[step].banned ? { banned: TUTORIAL[step].banned.slice() } : {}) } : {};
+        return m && m.played < 5 ? m.played : -1;
     }
 
     // ---------- Opponents ----------
-    /** The bot a rival coach fields: the tier's, its army bigger or smaller with the coach's strength. */
+    /**
+     * The bot a rival fields in the player's next tournament match: the tier's, stronger the
+     * deeper the round (the first round small and of level 1 and 2), its army
+     * a little bigger or smaller with the coach's strength. `level` is an average: each piece
+     * is of the level below or above it.
+     */
     function rivalOpponent(career, coachId) {
-        const coach = Coaches.coachById(coachId);
-        const base = TIERS[coach.tier].bot;
-        const budget = Math.min(39, Math.max(4, base.budget + Math.round((coach.strength - 0.5) * 8)));
-        return { difficulty: base.difficulty, budget, level: base.level, archetype: coach.archetype };
+        const coach = coachOf(career, coachId);
+        const m = nextMatch(career);
+        const p = m ? DEPTH[m.stage] : 0;
+        const bot = TIERS[career.tier].bot;
+        const budget = Math.min(39, Math.max(4, Math.round(lerp(bot.budget[0], bot.budget[1], p) + (coach.strength - 0.5) * 4)));
+        const level = Math.round(lerp(bot.level[0], bot.level[1], p) * 10) / 10;
+        return { difficulty: p < 0.5 ? bot.difficulty[0] : bot.difficulty[1], budget, level, archetype: coach.archetype };
     }
 
-    /** The bot of a side quest: the tier's, stronger with every season spent in the tier; the quest may set its own. */
+    /** The bot of a side quest: the tier's middle strength, stronger with every season spent in the tier; the quest may set its own. */
     function questOpponent(career, quest) {
-        const base = TIERS[quest.tier].bot;
+        const bot = TIERS[quest.tier].bot;
         const extra = Math.max(0, (career.seasonsIn[quest.tier] || 1) - 1);
         return {
-            difficulty: base.difficulty,
-            budget: Math.min(39, base.budget + 2 * extra),
-            level: Math.min(5, base.level + Math.floor(extra / 2)),
+            difficulty: bot.difficulty[0],
+            budget: Math.min(39, Math.round(lerp(bot.budget[0], bot.budget[1], 0.5)) + 2 * extra),
+            level: Math.min(5, Math.round((lerp(bot.level[0], bot.level[1], 0.5) + extra / 2) * 10) / 10),
             archetype: 'normal',
             ...(quest.opponent || {}),
         };
@@ -334,13 +368,14 @@
         return career.quests.drawn.filter((id) => !career.quests.attempted.includes(id)).map((id) => Quests.questById(id));
     }
 
-    /** A quest was tried (once a season); when it succeeded it is gone for good. Null if it was not open. */
+    /** A quest was tried (once a season, half a day); when it succeeded it is gone for good. Null if it was not open. */
     function attemptQuest(career, id, success) {
         if (!career.quests.drawn.includes(id) || career.quests.attempted.includes(id)) return null;
         return {
             ...career,
             quests: { drawn: career.quests.drawn, attempted: [...career.quests.attempted, id] },
             questsDone: success ? [...career.questsDone, id] : career.questsDone,
+            minutes: Math.min(MAX_MINUTES, career.minutes + MATCH_MINUTES),
         };
     }
 
@@ -348,16 +383,10 @@
     const isInt = (v, min, max = Number.MAX_SAFE_INTEGER) => Number.isInteger(v) && v >= min && v <= max;
     const uniqueIds = (list, valid) => Array.isArray(list) && list.every((id) => typeof id === 'string' && valid(id)) && new Set(list).size === list.length;
 
-    /** A career read back from storage, checked and rebuilt; null when it cannot be trusted. */
+    /** A career read back from storage, checked and rebuilt; null when it cannot be trusted (an older version too). */
     function sanitizeCareer(data) {
         if (!data || typeof data !== 'object' || data.version !== VERSION) return null;
         if (!isInt(data.seed, 0, 0xffffffff) || !isInt(data.season, 1, 9999) || !TIER_IDS.includes(data.tier)) return null;
-        const rivals = {};
-        for (const tier of TIER_IDS) {
-            const list = data.rivals && data.rivals[tier];
-            if (!uniqueIds(list, (id) => Coaches.coachById(id)?.tier === tier) || list.length !== rivalsNeeded(tier)) return null;
-            rivals[tier] = list.slice();
-        }
         if (!uniqueIds(data.tickets, (id) => TIER_IDS.includes(id) && id !== 'school')) return null;
         if (data.tier !== 'school' && !data.tickets.includes(data.tier)) return null;
         const seasonsIn = {};
@@ -368,34 +397,17 @@
             seasonsIn[tier] = n;
         }
         if (!isInt(seasonsIn[data.tier], 1)) return null;
-        const base = { version: VERSION, seed: data.seed, season: data.season, tier: data.tier, rivals, tickets: data.tickets.slice(), seasonsIn };
-        // The league: every round must be the fixture's, scores possible
-        const clubs = leagueClubs(base);
-        const rounds = roundsOf(base);
-        const stored = data.league && data.league.results;
-        if (!Array.isArray(stored) || stored.length > rounds.length) return null;
-        const results = [];
-        for (let r = 0; r < stored.length; r++) {
-            if (!Array.isArray(stored[r]) || stored[r].length !== rounds[r].length) return null;
-            const round = [];
-            for (let i = 0; i < rounds[r].length; i++) {
-                const m = stored[r][i], [a, b] = rounds[r][i];
-                if (!m || m.a !== clubs[a] || m.b !== clubs[b] || !validScore(m.wa, m.wb)) return null;
-                round.push({ a: m.a, b: m.b, wa: m.wa, wb: m.wb });
-            }
-            results.push(round);
-        }
-        let cupRun = null;
-        if (TIERS[data.tier].cup) {
-            const c = data.cupRun;
-            if (!c || !isInt(c.stage, 0, TIERS[data.tier].cup.rounds) || typeof c.out !== 'boolean') return null;
-            cupRun = { stage: c.stage, out: c.out };
-        }
-        let cup = null;
-        if (TIERS[data.tier].knockout) {
-            const c = data.cup;
-            if (!c || !isInt(c.stage, 0, TIERS[data.tier].knockout) || typeof c.out !== 'boolean') return null;
-            cup = { stage: c.stage, out: c.out };
+        if (!isInt(data.minutes, 0, MAX_MINUTES)) return null;
+        const base = { version: VERSION, seed: data.seed, season: data.season, tier: data.tier, tickets: data.tickets.slice(), seasonsIn, minutes: data.minutes };
+        // The tournament: each result must be a possible score of the player's match, in order
+        const stored = data.tournament && data.tournament.results;
+        if (!Array.isArray(stored) || stored.length > STAGES.length) return null;
+        let replay = { ...base, tournament: { results: [] } };
+        for (const r of stored) {
+            if (!r || typeof r !== 'object') return null;
+            const after = recordSeries(replay, { won: r.won, lost: r.lost });
+            if (!after) return null;
+            replay = after;
         }
         const valid = (id) => Quests.questById(id) !== null;
         if (!uniqueIds(data.questsDone, valid)) return null;
@@ -403,16 +415,16 @@
         if (!q || !uniqueIds(q.drawn, (id) => Quests.questById(id)?.tier === data.tier) || !uniqueIds(q.attempted, (id) => q.drawn.includes(id))) return null;
         if (!Array.isArray(data.titles) || !data.titles.every((t) => t && TIER_IDS.includes(t.tier) && isInt(t.season, 1, data.season))) return null;
         return {
-            ...base, league: { results }, cup, cupRun,
+            ...base, tournament: { results: stored.map((r) => ({ won: r.won, lost: r.lost })) },
             quests: { drawn: q.drawn.slice(), attempted: q.attempted.slice() },
             questsDone: data.questsDone.slice(),
-            titles: data.titles.map((t) => ({ tier: t.tier, season: t.season, ...(t.cup === true ? { cup: true } : {}) })),
+            titles: data.titles.map((t) => ({ tier: t.tier, season: t.season })),
         };
     }
 
     return {
-        VERSION, YOU, TIER_IDS, TIERS, TICKET_RANK, KNOCKOUT_RANK, PLAYABLE_GOALS,
-        fixtures, leagueClubs, newCareer, nextMatch, tutorialStep, matchdayRules, recordSeries, standings, rank, seasonOver, finishSeason,
-        canTravel, travel, rivalOpponent, questOpponent, availableQuests, attemptQuest, sanitizeCareer,
+        VERSION, YOU, TIER_IDS, TIERS, FIELD, STAGES, MATCH_MINUTES, TRAVEL_MINUTES, PLAYABLE_GOALS,
+        rivalsOf, coachOf, fieldOf, newCareer, bracket, nextMatch, recordSeries, seasonOver, knockedOut, placing, finishSeason,
+        canTravel, travel, advance, walkMinutes, dateOf, tutorialStep, rivalOpponent, questOpponent, availableQuests, attemptQuest, sanitizeCareer,
     };
 });

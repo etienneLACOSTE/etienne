@@ -61,8 +61,15 @@ export function autoDraftBot() {
         archetype: state.botArchetype,
         ...(career ? { budget: career.budget, banned: career.banned } : allStar ? { budget: squadBudget() } : {}),
     });
-    const level = career ? career.level : allStar ? botLevel() : undefined;
+    // The level of each piece: the career's is an average (1.3: mostly level 1, some level 2).
+    const average = career ? career.level : allStar ? botLevel() : undefined;
+    const levelOf = () => {
+        if (!average) return undefined;
+        const below = Math.floor(average);
+        return Math.min(5, Math.max(1, below + (Math.random() < average - below ? 1 : 0)));
+    };
     for (const p of pieces) {
+        const level = p.type === 'k' ? undefined : levelOf();
         state.board[p.r][p.c] = { type: p.type, player: 2, hasMoved: false, ...(level ? { level } : {}) };
     }
     state.kingsPlaced[2] = true;

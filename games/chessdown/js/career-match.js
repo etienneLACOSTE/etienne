@@ -1,14 +1,16 @@
 // @ts-check
-// A career match (docs/games/chessdown-career.md): a league matchday or a side quest, played
+// A career match (docs/games/chessdown-career.md): a tournament match or a side quest, played
 // by the club (All Star, all-star.js) against a rival's bot. This module keeps what the
 // match asks (special rules, the army allowed, the bot, the goal), follows the games, and
-// once the match is over writes the result into the career and the club: the league table,
+// once the match is over writes the result into the career and the club: the tournament,
 // the quest done (or tried), the reward. Low in the import order: draft.js, bot.js,
 // gameplay.js, match.js and events.js ask it; it imports none of them.
 import { Engine, state } from './state.js';
 import { loadCareer, saveCareer } from './career-store.js';
 import { saveClub } from './club-store.js';
 import { t } from '../../../assets/js/i18n.js';
+
+const Series = globalThis.ChessdownSeries;
 
 const Career = globalThis.ChessdownCareer;
 const Quests = globalThis.ChessdownQuests;
@@ -32,13 +34,13 @@ export function beginCareerMatch(spec) {
     const quest = spec.kind === 'quest' ? Quests.questById(spec.questId) : null;
     const next = career && Career.nextMatch(career);
     const opponent = quest ? Career.questOpponent(career, quest) : Career.rivalOpponent(career, next.opponent);
-    const rules = quest ? quest.rules : Career.matchdayRules(career); // The school tutorial limits the pieces
+    const rules = quest ? quest.rules : {}; // A tournament match: no special rule
     state.career = {
         kind: spec.kind,
         questId: quest ? quest.id : null,
         coachId: quest ? null : next.opponent,
         recruitType: spec.recruitType || null,
-        format: quest ? quest.format : 'bo3',
+        format: quest ? quest.format : next.format,
         rules,
         tutorial: quest ? -1 : Career.tutorialStep(career),
         // A puzzle quest: its position (career-quests.js PUZZLES), and the moves played
@@ -241,20 +243,31 @@ export function careerAfterGame(winner) {
     if (!state.series.over) return { finished: false, lines: [] };
     const won = state.series.winner === 1;
     const g = c.goal;
-    if (c.kind === 'league') return finish(won);
+    if (c.kind === 'league') {
+        // A tournament's single game must have a winner: a draw is played again.
+        if (state.series.format === 'single' && state.series.winner === 0) {
+            state.series = Series.newSeries('single');
+            return { finished: false, lines: [t('career.result.replay')], next: t('career.replay') };
+        }
+        return finish(won);
+    }
     if (g.type === 'touchdownWith') return finish(c.touchdownTypes.includes(g.piece));
     if (g.type === 'touchdowns') return finish(c.touchdowns >= g.n);
     if (g.type === 'cleanSheet') return finish(won && !c.lostPiece);
     return finish(won); // A win; holding out or the n-th piece taken ends the game as a win
 }
 
+/** The match just played knocked the club out of the tournament (the black screen follows). */
+export const careerKnockedOut = () => Boolean(state.career && state.career.knockedOut);
+
 /**
- * What Gérard says back on the map after a league match: the result, and in the school
- * tutorial what comes next. '' for a quest or before the match is over.
+ * What Gérard says back on the map after a tournament match: the result, and in the first
+ * season in town what comes next. '' for a quest or before the match is over.
  */
 export function careerWord() {
     const c = state.career;
     if (!c || !c.finished || c.kind !== 'league') return '';
+    if (c.knockedOut) return ''; // The black screen says it (career-view.js)
     const s = state.series;
     const result = t(s.winner === 1 ? 'career.debrief.won' : s.winner === 2 ? 'career.debrief.lost' : 'career.debrief.drawn');
     return c.tutorial >= 0 ? `${result} ${t(`career.debrief.tutorial.${c.tutorial}`)}` : result;
@@ -268,35 +281,22 @@ function finish(success) {
     const lines = [];
     if (!career) return { finished: true, lines };
     if (c.kind === 'league') {
-        const before = Career.nextMatch(career);
         const after = Career.recordSeries(career, { won: state.series.wins[1], lost: state.series.wins[2] });
         if (after) career = after;
-        const total = Career.TIERS[career.tier].clubs;
-        const cup = t(`career.cup.${career.tier}`);
-        if (before && before.phase === 'knockout') lines.push(t(success ? 'career.result.through' : 'career.result.out'));
-        else if (before && before.phase === 'cup') {
-            const final = before.round === Career.TIERS[career.tier].cup.rounds - 1;
-            if (!success) lines.push(t('career.result.cupOut', { cup }));
-            else if (!final) lines.push(t('career.result.through'));
-            else {
-                lines.push(t('career.result.cupWon', { cup }));
-                if (state.allStar && state.allStar.club.recruits < 5) { // The cup brings a recruit, signed on the club's page
-                    state.allStar.club = { ...state.allStar.club, recruits: state.allStar.club.recruits + 1 };
-                    saveClub(state.allStar.club);
-                    lines.push(t('career.result.cupRecruit'));
-                }
+        const next = Career.nextMatch(career);
+        const stage = (id) => t(`career.stage.${id}`);
+        if (next) {
+            // Still in the running: through, or down to the losers' bracket
+            lines.push(t(success ? 'career.result.through' : 'career.result.toLosers', { stage: stage(next.stage) }));
+        } else if (Career.placing(career) === 1) {
+            lines.push(t('career.result.title'));
+            const transport = Quests.TRANSPORT[career.tier];
+            if (transport && !career.tickets.includes(Career.TIER_IDS[Career.TIER_IDS.indexOf(career.tier) + 1])) {
+                lines.push(t('career.result.ticket', { transport: t(`career.transport.${transport}`) }));
             }
         } else {
-            lines.push(t('career.result.matchday', { rank: Career.rank(career), total }));
-            const next = Career.nextMatch(career);
-            if (next && next.phase === 'cup') lines.push(t('career.result.cupOpen', { cup, place: t(`place.${career.tier}.${Career.TIERS[career.tier].cup.place}`) }));
-        }
-        if (Career.seasonOver(career)) {
-            const end = Career.finishSeason(career);
-            lines.push(t('career.result.seasonOver', { rank: end.rank, total }));
-            if (end.ticket) lines.push(t('career.result.ticket', { transport: t(`career.transport.${Quests.TRANSPORT[career.tier]}`) }));
-            if (end.title) lines.push(t('career.result.title'));
-            career = end.career;
+            lines.push(t('career.result.out', { place: Career.placing(career) }));
+            c.knockedOut = true; // Back on the map: the black screen
         }
     } else {
         const quest = Quests.questById(c.questId);

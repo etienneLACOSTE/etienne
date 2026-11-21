@@ -1,5 +1,6 @@
-// Chessdown career (games/chessdown/career-*.js): rival coaches, the quest catalogue, leagues,
-// tickets, travel, side quests and the checks on a stored career.
+// Chessdown career (games/chessdown/career-*.js): rival coaches, the quest catalogue, the
+// tournaments (32 clubs, double elimination), tickets, travel, side quests, the calendar and
+// the checks on a stored career.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const Coaches = require('../../games/chessdown/career-coaches.js');
@@ -9,12 +10,17 @@ const Club = require('../../games/chessdown/club-rules.js');
 
 const HEX = /^#[0-9a-f]{6}$/;
 
-/** Play the season to its end, every series with this score. */
-function playSeason(career, score = { won: 2, lost: 0 }) {
+/** Play the season to its end, every match won (or lost: `win` false). */
+function playSeason(career, win = true) {
     let c = career;
-    while (Career.nextMatch(c)) c = Career.recordSeries(c, score);
+    for (let m = Career.nextMatch(c); m; m = Career.nextMatch(c)) {
+        const bo3 = m.format === 'bo3';
+        c = Career.recordSeries(c, win ? { won: bo3 ? 2 : 1, lost: 0 } : { won: 0, lost: bo3 ? 2 : 1 });
+    }
     return c;
 }
+const ONE = { won: 1, lost: 0 };
+const LOSS = { won: 0, lost: 1 };
 /** Win seasons until the ticket to `tier`, then travel there. */
 function reach(tier, seed = 7) {
     let c = Career.newCareer(seed);
@@ -30,7 +36,8 @@ test('rival coaches: enough per tier, each one complete and recognisable', () =>
     assert.equal(new Set(Coaches.COACHES.map((c) => c.id)).size, Coaches.COACHES.length);
     for (const tier of Career.TIER_IDS) {
         const t = Career.TIERS[tier];
-        assert.ok(Coaches.coachesOf(tier).length >= t.clubs - 1 + t.knockout, tier);
+        assert.ok(Coaches.coachesOf(tier).length >= 4, tier);
+        assert.equal(Career.rivalsOf(Career.newCareer(1), tier).length, Career.FIELD - 1, '31 rivals');
     }
     for (const c of Coaches.COACHES) {
         assert.ok(Coaches.ARCHETYPES.includes(c.archetype), c.id);
@@ -70,7 +77,7 @@ test('bosses: one per tier from the county on, a coach of their tier never met i
     }
     for (let seed = 0; seed < 40; seed++) {
         const c = Career.newCareer(seed);
-        for (const tier of Career.TIER_IDS) assert.ok(c.rivals[tier].every((id) => !Coaches.coachById(id).boss));
+        assert.ok(Career.fieldOf(c).every((id) => id === Career.YOU || !Career.coachOf(c, id).boss));
     }
 });
 
@@ -85,121 +92,186 @@ test('a season\'s quests: one a place, so that each one shows on the map', () =>
     }
 });
 
-test('fixtures: every club meets every other once per leg, one match per round', () => {
-    for (const [n, legs] of [[4, 1], [6, 1], [6, 2], [8, 2]]) {
-        const rounds = Career.fixtures(n, legs);
-        assert.equal(rounds.length, (n - 1) * legs);
-        for (const round of rounds) assert.equal(new Set(round.flat()).size, n);
-        const pairs = rounds.flat().map(([a, b]) => `${a}-${b}`);
-        assert.equal(new Set(pairs).size, pairs.length, 'no home game repeated');
-        for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
-            const met = pairs.filter((p) => p === `${a}-${b}` || p === `${b}-${a}`).length;
-            assert.equal(met, legs, `${a} and ${b}`);
-        }
+test('generated clubs: the same from the same seed, complete, never a boss', () => {
+    const a = Coaches.generatedCoach(5, 'g-county-3'), b = Coaches.generatedCoach(5, 'g-county-3'), c = Coaches.generatedCoach(6, 'g-county-3');
+    assert.deepEqual(a, b);
+    assert.notDeepEqual(a, c);
+    assert.equal(Coaches.generatedCoach(5, 'g-moon-3'), null);
+    assert.equal(Coaches.coachById('g-county-3'), null, 'needs the seed');
+    for (const tier of Career.TIER_IDS) {
+        const c = Career.newCareer(11);
+        const names = Career.rivalsOf(c, tier).map((id) => Career.coachOf(c, id).club);
+        assert.equal(new Set(names).size, names.length, `${tier}: every club its own name`);
+    }
+    for (let n = 0; n < 30; n++) {
+        const g = Coaches.generatedCoach(n, Coaches.generatedId('school', n));
+        assert.ok(Coaches.ARCHETYPES.includes(g.archetype) && g.strength > 0 && g.strength < 1 && g.name && g.club && !g.boss);
+        assert.ok(Club.PATTERNS.includes(g.colors.pattern) && Club.SHAPES.includes(g.colors.shape) && Club.EMBLEMS.includes(g.colors.emblem));
+        for (const [key, values] of Object.entries(Coaches.LOOK)) assert.ok(values.includes(g.look[key]), key);
     }
 });
 
-test('a new career: the same seed gives the same career; rivals drawn for every tier', () => {
-    const a = Career.newCareer(42), b = Career.newCareer(42), c = Career.newCareer(43);
+test('a new career: the same seed gives the same career; 32 clubs a season, drawn again each season', () => {
+    const a = Career.newCareer(42), b = Career.newCareer(42);
     assert.deepEqual(a, b);
-    assert.notDeepEqual(a.rivals, c.rivals);
     assert.equal(a.season, 1);
     assert.equal(a.tier, 'school');
-    for (const tier of Career.TIER_IDS) {
-        const t = Career.TIERS[tier];
-        assert.equal(a.rivals[tier].length, t.clubs - 1 + t.knockout);
-        assert.ok(a.rivals[tier].every((id) => Coaches.coachById(id).tier === tier));
-    }
+    const field = Career.fieldOf(a);
+    assert.equal(field.length, 32);
+    assert.equal(new Set(field).size, 32);
+    assert.ok(field.includes(Career.YOU));
+    assert.notDeepEqual(Career.fieldOf({ ...a, season: 2 }), field);
     assert.equal(a.quests.drawn.length, 4);
     assert.ok(a.quests.drawn.every((id) => Quests.questById(id).tier === 'school' && Quests.questById(id).minSeason === 1));
 });
 
-test('a school season: five matches, the table, the ticket and the title for the winner', () => {
+test('the tournament: undefeated, six matches to the title; the last ones best of 3', () => {
     let c = Career.newCareer(1);
-    const opponents = [];
-    for (let i = 0; i < 5; i++) {
-        const m = Career.nextMatch(c);
-        assert.equal(m.phase, 'league');
-        opponents.push(m.opponent);
-        c = Career.recordSeries(c, { won: 2, lost: 1 });
+    const stages = [];
+    for (let m = Career.nextMatch(c); m; m = Career.nextMatch(c)) {
+        stages.push(`${m.stage}:${m.format}`);
+        c = Career.recordSeries(c, m.format === 'bo3' ? { won: 2, lost: 1 } : ONE);
     }
-    assert.deepEqual([...opponents].sort(), [...c.rivals.school].sort(), 'every rival met once');
-    assert.equal(Career.nextMatch(c).phase, 'cup', 'then the City Cup');
-    assert.equal(Career.seasonOver(c), false);
-    const table = Career.standings(c);
-    assert.equal(table[0].club, Career.YOU);
-    assert.deepEqual(table[0], { club: 'you', order: 0, played: 5, won: 5, drawn: 0, lost: 0, gamesFor: 10, gamesAgainst: 5, points: 15 });
-    assert.ok(table.every((r) => r.played === 5));
-    c = Career.recordSeries(Career.recordSeries(c, { won: 2, lost: 0 }), { won: 2, lost: 1 }); // Semi-final, final
-    assert.equal(Career.nextMatch(c), null);
-    assert.equal(Career.recordSeries(c, { won: 2, lost: 0 }), null, 'nothing left to play');
+    assert.deepEqual(stages, ['W1:single', 'W2:single', 'W3:single', 'W4:bo3', 'W5:bo3', 'GF:bo3']);
+    assert.equal(Career.placing(c), 1);
+    assert.equal(Career.knockedOut(c), false);
+    assert.equal(Career.recordSeries(c, ONE), null, 'nothing left to play');
+    const b = Career.bracket(c);
+    assert.equal(b.champion, Career.YOU);
+    assert.deepEqual(b.stages.map((s) => s.matches.length), Career.STAGES.map((s) => s.matches), 'every match of the bracket played');
     const end = Career.finishSeason(c);
-    assert.equal(end.cupWon, true);
-    assert.equal(end.rank, 1);
-    assert.equal(end.ticket, 'county');
-    assert.equal(end.title, true);
+    assert.deepEqual([end.place, end.title, end.ticket], [1, true, 'county']);
     assert.equal(end.career.season, 2);
-    assert.equal(end.career.tier, 'school');
-    assert.deepEqual(end.career.tickets, ['county']);
-    assert.equal(end.career.league.results.length, 0);
-    assert.deepEqual(end.career.titles, [{ tier: 'school', season: 1 }, { tier: 'school', season: 1, cup: true }]);
-    assert.deepEqual(end.career.cupRun, { stage: 0, out: false }, 'a new cup next season');
+    assert.deepEqual(end.career.tournament.results, []);
+    assert.deepEqual(end.career.titles, [{ tier: 'school', season: 1 }]);
 });
 
-test('the other matches are simulated from the seed, the same every time', () => {
-    const a = playSeason(Career.newCareer(9)), b = playSeason(Career.newCareer(9));
-    assert.deepEqual(a.league, b.league);
-    const points = Career.standings(a).reduce((sum, r) => sum + r.points, 0);
-    const draws = a.league.results.flat().filter((m) => m.wa === m.wb).length;
-    assert.equal(points, 3 * (15 - draws) + 2 * draws, '15 series, 3 points each, 2 for a draw');
+test('double elimination: a first defeat to the losers\' bracket, the second one out', () => {
+    let c = Career.newCareer(3);
+    c = Career.recordSeries(c, LOSS);
+    const m = Career.nextMatch(c);
+    assert.deepEqual([m.stage, m.losses], ['L1', 1]);
+    c = Career.recordSeries(c, ONE); // Through L1
+    assert.equal(Career.nextMatch(c).stage, 'L2');
+    c = Career.recordSeries(c, LOSS);
+    assert.equal(Career.nextMatch(c), null);
+    assert.equal(Career.seasonOver(c), true);
+    assert.equal(Career.knockedOut(c), true);
+    assert.equal(Career.placing(c), 17);
+    const b = Career.bracket(c);
+    assert.ok(b.champion && b.champion !== Career.YOU, 'the rest of the tournament is played without us');
+    const end = Career.finishSeason(c);
+    assert.deepEqual([end.title, end.ticket], [false, null]);
+    // From the losers' bracket to the title: up to ten matches
+    let long = Career.recordSeries(Career.newCareer(8), LOSS);
+    let n = 1;
+    for (let next = Career.nextMatch(long); next; next = Career.nextMatch(long)) {
+        long = Career.recordSeries(long, next.format === 'bo3' ? { won: 2, lost: 0 } : ONE);
+        n++;
+    }
+    assert.equal(n, 10);
+    assert.equal(Career.placing(long), 1);
+});
+
+test('the grand final lost: second, no title, no ticket; the bracket from the seed, the same every time', () => {
+    let c = Career.newCareer(12);
+    for (let m = Career.nextMatch(c); m && m.stage !== 'GF'; m = Career.nextMatch(c)) c = Career.recordSeries(c, m.format === 'bo3' ? { won: 2, lost: 0 } : ONE);
+    c = Career.recordSeries(c, { won: 1, lost: 2 });
+    assert.equal(Career.placing(c), 2);
+    assert.equal(Career.knockedOut(c), true, 'no title: the black screen too');
+    assert.equal(Career.finishSeason(c).ticket, null);
+    assert.deepEqual(Career.bracket(playSeason(Career.newCareer(9))), Career.bracket(playSeason(Career.newCareer(9))));
 });
 
 test('scores that cannot be are refused', () => {
     const c = Career.newCareer(3);
-    for (const score of [{ won: 3, lost: 0 }, { won: -1, lost: 2 }, { won: 2, lost: 1.5 }, { won: 2, lost: 2 }]) {
-        assert.equal(Career.recordSeries(c, score), null, JSON.stringify(score));
+    for (const score of [{ won: 1, lost: 1 }, { won: 2, lost: 0 }, { won: 0, lost: 0 }, { won: -1, lost: 2 }, { won: 1.5, lost: 0 }]) {
+        assert.equal(Career.recordSeries(c, score), null, `one game: ${JSON.stringify(score)}`);
     }
-    assert.ok(Career.recordSeries(c, { won: 1, lost: 1 }), 'a drawn series (draws in between count for nobody)');
+    let late = c;
+    for (let m = Career.nextMatch(late); m.format !== 'bo3'; m = Career.nextMatch(late)) late = Career.recordSeries(late, ONE);
+    for (const score of [{ won: 1, lost: 1 }, { won: 2, lost: 2 }, { won: 3, lost: 0 }, { won: 1, lost: 0 }]) {
+        assert.equal(Career.recordSeries(late, score), null, `best of 3: ${JSON.stringify(score)}`);
+    }
+    assert.ok(Career.recordSeries(late, { won: 2, lost: 1 }));
 });
 
-test('no ticket outside the top 3; one travels between two seasons, with a ticket only', () => {
-    const lost = Career.finishSeason(playSeason(Career.newCareer(5), { won: 0, lost: 2 }));
-    assert.ok(lost.rank > 3);
+test('opponents grow stronger round after round: small level 1-2 armies first, some level 3 at the end', () => {
+    let c = Career.newCareer(2);
+    const first = Career.rivalOpponent(c, Career.nextMatch(c).opponent);
+    assert.ok(first.budget <= 12 && first.level < 2, JSON.stringify(first));
+    assert.equal(first.difficulty, 'novice');
+    for (let m = Career.nextMatch(c); m.stage !== 'GF'; m = Career.nextMatch(c)) c = Career.recordSeries(c, m.format === 'bo3' ? { won: 2, lost: 0 } : ONE);
+    const final = Career.rivalOpponent(c, Career.nextMatch(c).opponent);
+    assert.ok(final.budget >= 28 && final.level > 2, JSON.stringify(final));
+    assert.ok(Career.rivalOpponent(reach('county'), Career.nextMatch(reach('county')).opponent).level >= 2, 'the county starts higher');
+    const q = Quests.questById('counter-bet');
+    assert.deepEqual(Career.questOpponent(Career.newCareer(2), q), { difficulty: 'novice', budget: 20, level: 1.8, archetype: 'normal' });
+    assert.equal(Career.questOpponent(Career.newCareer(2), Quests.questById('veteran')).difficulty, 'expert', 'a quest may set its own');
+});
+
+test('travel between two seasons, with the ticket only (the tournament won)', () => {
+    const lost = Career.finishSeason(playSeason(Career.newCareer(5), false));
     assert.equal(lost.ticket, null);
     assert.equal(Career.canTravel(lost.career, 'county'), false);
-    assert.equal(Career.travel(lost.career, 'county'), null);
-
     const won = Career.finishSeason(playSeason(Career.newCareer(5))).career;
     assert.equal(Career.canTravel(won, 'county'), true);
     const moved = Career.travel(won, 'county');
     assert.equal(moved.tier, 'county');
     assert.equal(moved.season, won.season, 'the same season, played in the county');
-    assert.deepEqual(moved.seasonsIn, { school: 1, county: 1 });
-    assert.ok(moved.quests.drawn.every((id) => Quests.questById(id).tier === 'county'));
-    assert.equal(Career.canTravel(moved, 'region'), false, 'no ticket for the region yet');
-    const started = Career.recordSeries(moved, { won: 2, lost: 0 });
+    assert.equal(moved.minutes, won.minutes + Career.TRAVEL_MINUTES, 'a day on the way');
+    assert.ok(Career.fieldOf(moved).filter((id) => id !== Career.YOU).every((id) => Career.coachOf(moved, id).tier === 'county'));
+    const started = Career.recordSeries(moved, ONE);
     assert.equal(Career.canTravel(started, 'school'), false, 'not in the middle of a season');
-    assert.equal(Career.canTravel(moved, 'school'), true, 'back to town between two seasons');
+    const world = reach('international');
+    const end = Career.finishSeason(playSeason(world));
+    assert.deepEqual([end.title, end.ticket, end.career.tier], [true, null, 'international'], 'the seasons go on');
 });
 
-test('the international tier: a group of four, then three knockout rounds for the title', () => {
-    const c = reach('international');
-    assert.equal(Career.leagueClubs(c).length, 4);
-    let k = playSeason(c);
-    assert.equal(k.league.results.length, 3);
-    assert.deepEqual(k.cup, { stage: 3, out: false });
-    const end = Career.finishSeason(k);
-    assert.equal(end.title, true);
-    assert.equal(end.ticket, null, 'no tier after the world');
-    assert.equal(end.career.tier, 'international', 'the seasons go on');
-    // Knocked out in the quarter-final
-    k = c;
-    for (let i = 0; i < 3; i++) k = Career.recordSeries(k, { won: 2, lost: 0 });
-    assert.equal(Career.nextMatch(k).phase, 'knockout');
-    k = Career.recordSeries(k, { won: 1, lost: 2 });
-    assert.deepEqual(k.cup, { stage: 0, out: true });
-    assert.equal(Career.seasonOver(k), true);
-    assert.equal(Career.finishSeason(k).title, false);
+test('the calendar: 1 September, walks and matches take time, a new season starts again', () => {
+    let c = Career.newCareer(4);
+    assert.equal(Career.dateOf(c).toISOString(), '2026-09-01T08:00:00.000Z');
+    c = Career.advance(c, Career.walkMinutes(c, 90));
+    assert.equal(Career.dateOf(c).toISOString(), '2026-09-01T09:30:00.000Z');
+    c = Career.recordSeries(c, ONE);
+    assert.equal(Career.dateOf(c).toISOString(), '2026-09-01T21:30:00.000Z', 'a match: half a day');
+    c = Career.attemptQuest(c, c.quests.drawn[0], false);
+    assert.equal(Career.dateOf(c).getUTCDate(), 2);
+    const next = Career.finishSeason(playSeason(c)).career;
+    assert.equal(Career.dateOf(next).toISOString(), '2027-09-01T08:00:00.000Z');
+    assert.ok(Career.walkMinutes({ tier: 'international' }, 10) > Career.walkMinutes({ tier: 'school' }, 10), 'the world is bigger');
+});
+
+test('the first season in town: Gérard\'s five lessons, no special rule', () => {
+    let c = Career.newCareer(4);
+    const steps = [];
+    for (let i = 0; i < 6 && Career.nextMatch(c); i++) {
+        steps.push(Career.tutorialStep(c));
+        const m = Career.nextMatch(c);
+        c = Career.recordSeries(c, m.format === 'bo3' ? { won: 2, lost: 0 } : ONE);
+    }
+    assert.deepEqual(steps, [0, 1, 2, 3, 4, -1]);
+    const second = Career.finishSeason(playSeason(c)).career;
+    assert.equal(Career.tutorialStep(second), -1, 'no lessons in the second season');
+});
+
+test('a stored career: read back as it was; anything tampered with is refused, older versions too', () => {
+    let c = Career.newCareer(77);
+    c = Career.recordSeries(c, LOSS);
+    c = Career.recordSeries(c, ONE);
+    c = Career.attemptQuest(c, c.quests.drawn[0], true);
+    const stored = JSON.parse(JSON.stringify(c));
+    assert.deepEqual(Career.sanitizeCareer(stored), c);
+    const tamper = (change) => { const copy = JSON.parse(JSON.stringify(c)); change(copy); return Career.sanitizeCareer(copy); };
+    assert.equal(Career.sanitizeCareer(null), null);
+    assert.equal(tamper((x) => { x.version = 1; }), null, 'a league career (version 1)');
+    assert.equal(tamper((x) => { x.tier = 'national'; }), null, 'no ticket');
+    assert.equal(tamper((x) => { x.tournament.results[0] = { won: 2, lost: 0 }; }), null, 'impossible score');
+    assert.equal(tamper((x) => { x.tournament.results.push(LOSS, LOSS); }), null, 'more matches than the bracket allows');
+    assert.equal(tamper((x) => { x.minutes = -5; }), null);
+    assert.equal(tamper((x) => { x.questsDone.push('no-such-quest'); }), null);
+    assert.equal(tamper((x) => { x.quests.attempted.push('veteran'); }), null);
+    assert.equal(tamper((x) => { x.titles.push({ tier: 'school', season: 99 }); }), null);
 });
 
 test('side quests: tried once a season, gone for good once done, harder seasons open more', () => {
@@ -220,82 +292,3 @@ test('side quests: tried once a season, gone for good once done, harder seasons 
     assert.ok([...seen].some((id) => Quests.questById(id).minSeason === 2), 'second-season quests open later');
 });
 
-test('opponents: rivals by their style and strength; quest bots grow stronger season after season', () => {
-    const c = Career.newCareer(2);
-    const strong = Career.rivalOpponent(c, 'tran'), weak = Career.rivalOpponent(c, 'lagarde');
-    assert.equal(strong.archetype, 'normal');
-    assert.equal(weak.archetype, 'chair');
-    assert.ok(strong.budget > weak.budget);
-    const q = Quests.questById('counter-bet');
-    const first = Career.questOpponent(c, q);
-    assert.deepEqual(first, { difficulty: 'novice', budget: 10, level: 1, archetype: 'normal' });
-    const later = Career.questOpponent({ ...c, seasonsIn: { school: 4 } }, q);
-    assert.deepEqual(later, { difficulty: 'novice', budget: 16, level: 2, archetype: 'normal' });
-    assert.equal(Career.questOpponent(c, Quests.questById('veteran')).difficulty, 'expert', 'a quest may set its own');
-});
-
-test('a stored career: read back as it was; anything tampered with is refused', () => {
-    let c = Career.newCareer(77);
-    c = Career.recordSeries(c, { won: 2, lost: 1 });
-    c = Career.attemptQuest(c, c.quests.drawn[0], true);
-    const stored = JSON.parse(JSON.stringify(c));
-    assert.deepEqual(Career.sanitizeCareer(stored), c);
-    const tamper = (change) => { const copy = JSON.parse(JSON.stringify(c)); change(copy); return Career.sanitizeCareer(copy); };
-    assert.equal(Career.sanitizeCareer(null), null);
-    assert.equal(tamper((x) => { x.version = 2; }), null);
-    assert.equal(tamper((x) => { x.tier = 'national'; }), null, 'no ticket');
-    assert.equal(tamper((x) => { x.league.results[0][0].wa = 3; }), null, 'impossible score');
-    assert.equal(tamper((x) => { x.league.results[0][0].b = 'kim'; }), null, 'not the fixture');
-    assert.equal(tamper((x) => { x.questsDone.push('no-such-quest'); }), null);
-    assert.equal(tamper((x) => { x.rivals.school[0] = 'ferran'; }), null, 'a rival of another tier');
-    assert.equal(tamper((x) => { x.quests.attempted.push('veteran'); }), null);
-    assert.equal(tamper((x) => { x.titles.push({ tier: 'school', season: 99 }); }), null);
-});
-
-test('the school tutorial: pieces added matchday by matchday, the final a real match, first season only', () => {
-    let c = Career.newCareer(4);
-    const steps = [];
-    while (Career.nextMatch(c) && Career.nextMatch(c).phase === 'league') {
-        steps.push([Career.tutorialStep(c), Career.matchdayRules(c)]);
-        c = Career.recordSeries(c, { won: 2, lost: 0 });
-    }
-    assert.deepEqual(steps, [
-        [0, { banned: ['n', 'b', 'r', 'q'], timer: 60 }],
-        [1, { banned: ['b', 'r', 'q'], timer: 60 }],
-        [2, { banned: ['q'], timer: 60 }],
-        [3, { timer: 60 }],
-        [4, {}],
-    ]);
-    assert.equal(Career.tutorialStep(c), -1, 'the cup is not part of the tutorial');
-    assert.deepEqual(Career.matchdayRules(c), {});
-    const second = Career.finishSeason(playSeason(c)).career;
-    assert.equal(Career.tutorialStep(second), -1, 'no tutorial in the second season');
-    assert.deepEqual(Career.matchdayRules(second), {});
-    // Rules handed out are copies
-    const first = Career.newCareer(4);
-    Career.matchdayRules(first).banned.push('k');
-    assert.deepEqual(Career.matchdayRules(first).banned, ['n', 'b', 'r', 'q']);
-});
-
-test('the cups: against the league\'s best rivals, weakest first; one defeat and the cup is over', () => {
-    let c = Career.newCareer(21);
-    while (Career.nextMatch(c).phase === 'league') c = Career.recordSeries(c, { won: 1, lost: 1 });
-    const best = Career.standings(c).filter((r) => r.club !== Career.YOU).map((r) => r.club);
-    const semi = Career.nextMatch(c);
-    assert.deepEqual([semi.phase, semi.round, semi.opponent], ['cup', 0, best[1]]);
-    c = Career.recordSeries(c, { won: 2, lost: 1 });
-    assert.deepEqual([Career.nextMatch(c).round, Career.nextMatch(c).opponent], [1, best[0]], 'the best rival in the final');
-    c = Career.recordSeries(c, { won: 0, lost: 2 });
-    assert.deepEqual(c.cupRun, { stage: 1, out: true });
-    assert.equal(Career.seasonOver(c), true);
-    assert.equal(Career.finishSeason(c).cupWon, false);
-    // The national cup has three rounds; the county has none
-    const national = reach('national');
-    assert.deepEqual(national.cupRun, { stage: 0, out: false });
-    assert.equal(Career.TIERS.national.cup.rounds, 3);
-    assert.equal(reach('county').cupRun, null);
-    // Stored and read back
-    assert.deepEqual(Career.sanitizeCareer(JSON.parse(JSON.stringify(c))), c);
-    const bad = JSON.parse(JSON.stringify(c)); bad.cupRun = { stage: 9, out: false };
-    assert.equal(Career.sanitizeCareer(bad), null);
-});

@@ -1200,3 +1200,21 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .ladder-table td, .ladder-table th { font-variant-numeric: tabular-nums; }
 .ladder-table .ladder-me th, .ladder-table .ladder-me td { color: var(--amber); }
 .ladder-rules { font-size: 13px; }
+
+/* --- Career: the date in a corner of the map, the black screen of a knock-out --- */
+.career-date {
+    position: absolute; top: 6px; right: 6px; z-index: 2; font: 800 12px/1 var(--text); font-variant-numeric: tabular-nums;
+    background: var(--black); color: var(--white); border: 2px solid var(--white); border-radius: 3px; padding: 3px 6px; pointer-events: none;
+}
+@media (max-width: 600px) { .career-date { font-size: 10px; padding: 2px 4px; top: 4px; right: 4px; } }
+.career-out { position: fixed; inset: 0; z-index: 50; background: var(--black); display: grid; place-items: center; padding: 16px; animation: career-fade 0.8s ease-out; }
+.career-out[hidden] { display: none; }
+.career-out-box { max-width: 460px; display: grid; gap: 12px; justify-items: center; text-align: center; }
+.career-out-box canvas { width: 112px; height: 112px; image-rendering: pixelated; }
+.career-out-box h2 { font: 900 clamp(32px, 8vw, 52px)/0.95 var(--display); text-transform: uppercase; color: var(--white); }
+.career-bracket summary { cursor: pointer; font-weight: 700; }
+.career-bracket ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+.career-bracket li.you { color: var(--amber); }
+.career-table tr.you td, .career-table tr.you th { color: var(--amber); }
+@keyframes career-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .career-out { animation: none; } }

@@ -2,15 +2,17 @@
 // The career's screen (docs/games/chessdown-career.md), on one screen without scrolling:
 // Gérard's word, the scale of the map (town to world), the map (career-map.js) with a
 // button per place, the card of the place where the coach stands (shown only once they get
-// there: a surprise), and the journal behind a tab (league table, side quests, trophies).
-// The transport takes the coach to the next tier with the ticket won in the league's top 3.
-// The stadium's card plays the next matchday, a quest's card its match (events.js).
+// there: a surprise), the date in a corner (it moves on with every walk and match), and the
+// journal behind a tab (the tournament, side quests, trophies). The transport takes the coach
+// to the next tier with the ticket won with the tournament. The stadium's card plays the next
+// tournament match, a quest's card its match (events.js). Knocked out, the screen goes black
+// and Gérard says it is over until next season.
 import { createCareerMap, moverOf } from './career-map.js';
 import { drawCoach } from './coach-portrait.js';
 import { createCommissioner } from './commissioner.js';
 import { esc } from './club-art.js';
 import { loadCareer, newCareer, saveCareer } from './career-store.js';
-import { t } from '../../../assets/js/i18n.js';
+import { language, t } from '../../../assets/js/i18n.js';
 
 const Career = globalThis.ChessdownCareer;
 const Quests = globalThis.ChessdownQuests;
@@ -32,6 +34,8 @@ const ui = {
     mapTitle: $('career-map-title'),
     card: $('career-card'),
     back: $('career-back'),
+    date: $('career-date'),
+    out: $('career-out'),
 };
 
 /** @type {any} */
@@ -89,28 +93,15 @@ function pixelIcon(name, height = 18) {
 function markers() {
     /** @type {{ place: string, kind: string, face: string, icon?: string }[]} */
     const list = [{ place: 'home', kind: 'home', face: '♜' }];
-    const next = Career.nextMatch(career);
-    const away = cupAway(); // The City Cup is played at the town hall, not at the stadium
-    const atStadium = next && !(next.phase === 'cup' && away);
-    list.push({ place: 'stadium', kind: atStadium ? 'main' : 'done', face: atStadium ? '' : '✓', ...(atStadium ? { icon: 'crown' } : {}) });
-    if (away && next && next.phase === 'cup') list.push({ place: away, kind: 'main', face: '', icon: 'crown' });
+    list.push({ place: 'stadium', kind: 'main', face: '', icon: 'crown' }); // The tournament (and, once over, the next season)
     const transport = Quests.TRANSPORT[career.tier];
     if (transport) list.push({ place: 'transport', kind: 'transport', face: t(`career.stub.${transport}`) });
     for (const q of Career.availableQuests(career)) {
         if (list.some((m) => m.place === q.place)) continue;
         list.push(q.kind === 'boss' ? { place: q.place, kind: 'boss', face: '', icon: 'skull' } : { place: q.place, kind: 'side', face: '!' });
     }
-    if (away && !list.some((m) => m.place === away)) list.push({ place: away, kind: 'locked', face: '✕' });
     return list;
 }
-/** Where the tier's cup is played when it is not at the stadium (the City Cup: the town hall), or null. */
-function cupAway() {
-    const cup = Career.TIERS[career.tier].cup;
-    return cup && cup.place !== 'stadium' ? cup.place : null;
-}
-const cupName = () => t(`career.cup.${career.tier}`);
-/** The name of a cup round: the last one is the final. */
-const cupRound = (round) => t(`career.knockout.${3 - Career.TIERS[career.tier].cup.rounds + round}`);
 /** The open quest given at `place`, if any. */
 const questAt = (place) => Career.availableQuests(career).find((q) => q.place === place) || null;
 
@@ -137,7 +128,12 @@ function renderMarkers() {
 function goTo(place) {
     ui.map.querySelectorAll('.career-marker').forEach((m) => m.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (m).dataset.place === place)));
     showTravel(place);
-    map.go(place); // showCard on arrival
+    const pixels = map.go(place); // showCard on arrival
+    if (pixels) { // The walk takes time
+        career = Career.advance(career, Career.walkMinutes(career, pixels));
+        save();
+        renderDate();
+    }
 }
 
 // ---------- The card ----------
@@ -157,22 +153,29 @@ function showTravel(place) {
 }
 
 function rivalBlock(coachId) {
-    const c = Coaches.coachById(coachId);
+    const c = Career.coachOf(career, coachId);
     rivalLook = c.look;
+    // A generated club's coach has no nickname or catchphrase
     return `<div class="career-rival">
         <canvas width="32" height="32" role="img" aria-label="${esc(c.name)}"></canvas>
-        <div><div class="career-rival-name">${esc(c.name)} <span class="career-rival-nick">${quoted(t(`coach.${c.id}.nick`))}</span></div>
+        <div><div class="career-rival-name">${esc(c.name)}${c.generated ? '' : ` <span class="career-rival-nick">${quoted(t(`coach.${c.id}.nick`))}</span>`}</div>
           <small>${esc(c.club)} · ${esc(t(`archetype.${c.archetype}`))}</small>
-          <small><i>${quoted(t(`coach.${c.id}.line`))}</i></small></div>
+          ${c.generated ? '' : `<small><i>${quoted(t(`coach.${c.id}.line`))}</i></small>`}</div>
       </div>`;
 }
+
+/** A club's name: the player's, or a rival's. */
+const clubName = (id) => (id === Career.YOU ? club.name : Career.coachOf(career, id).club);
 
 function opponentLine(o) {
     if (o.army) { // A boss: its fixed army
         const army = o.army.map(([type, level]) => `${GLYPHS[type]} ${t(`piece.${type}`)} ${level}★`).join(', ');
         return esc(t('career.bossArmy', { level: t(`level.${o.difficulty}`), army }));
     }
-    return esc(t('career.opponent', { level: t(`level.${o.difficulty}`), budget: o.budget, stars: o.level }));
+    // Levels around an average: 1.3 is levels 1 and 2
+    const low = Math.floor(o.level), high = Math.ceil(o.level);
+    return esc(low === high ? t('career.opponent', { level: t(`level.${o.difficulty}`), budget: o.budget, stars: low })
+        : t('career.opponentMix', { level: t(`level.${o.difficulty}`), budget: o.budget, low, high }));
 }
 
 function showCard(place) {
@@ -184,11 +187,8 @@ function showCard(place) {
         ui.card.querySelector('[data-action="club"]')?.addEventListener('click', toClub);
         return;
     }
-    const next = Career.nextMatch(career);
-    if (place === 'stadium') return next && next.phase === 'cup' && cupAway() ? showCupElsewhere() : showMatchCard();
+    if (place === 'stadium') return showMatchCard();
     if (place === 'transport') return showTransportCard();
-    if (place === cupAway() && next && next.phase === 'cup') return showMatchCard();
-    if (place === cupAway() && !questAt(place)) return showCupClosed();
     const q = questAt(place);
     if (!q) {
         setCard('home', `<h3>${esc(placeName(place))}</h3>`);
@@ -257,49 +257,42 @@ function rewardText(r) {
 function showMatchCard() {
     const m = Career.nextMatch(career);
     const head = `<span class="career-kind"><span class="career-dot icon main" aria-hidden="true">${pixelIcon('crown', 16)}</span>${esc(t('career.kind.main'))}</span>`;
-    if (!m) {
-        setCard('main', `${head}<h3>${esc(placeName('stadium'))}</h3><p class="career-quote">${esc(t('career.seasonDone'))}</p>`);
-        return;
-    }
-    const rival = Coaches.coachById(m.opponent);
-    const rules = Career.matchdayRules(career);
+    const tournament = t(`career.tournament.${career.tier}`);
+    if (!m) return showSeasonOver(head, tournament);
+    const rival = Career.coachOf(career, m.opponent);
     const step = Career.tutorialStep(career);
     const lesson = step >= 0 ? t(`career.lesson.${step}`) : '';
-    if (lesson) gerard.say(lesson); // The school tutorial: Gérard explains the matchday
-    const cup = m.phase === 'cup';
-    const title = cup ? `${cupName()} · ${cupRound(m.round)}`
-        : m.phase === 'knockout' ? t(`career.knockout.${m.round}`)
-        : Career.TIERS[career.tier].knockout ? t('career.group', { n: m.round + 1 }) : t('career.matchday', { n: m.round + 1 });
-    const where = cup && cupAway() ? cupAway() : 'stadium';
+    if (lesson) gerard.say(lesson); // The first season in town: Gérard explains the game
     setCard('main', `${head}
-        <h3>${esc(title)}</h3>
-        <p class="career-place">${esc(placeName(where))} · ${esc(t('career.versus', { club: rival.club }))}</p>
-        <h4>${esc(t('career.rewards'))}</h4>${chips(cup ? [esc(t('career.cup.reward')), esc(t('career.matchXp'))] : [esc(t('career.leaguePoints')), esc(t('career.matchXp'))], 'reward')}
-        <p class="career-quote">${esc(cup ? t('career.cup.quote') : t('career.matchQuote', { club: rival.club }))}</p>
+        <h3>${esc(tournament)} · ${esc(t(`career.stage.${m.stage}`))}</h3>
+        <p class="career-place">${esc(placeName('stadium'))} · ${esc(t('career.versus', { club: rival.club }))}</p>
+        <h4>${esc(t('career.rewards'))}</h4>${chips([esc(t(m.stage === 'GF' ? 'career.reward.title' : 'career.reward.through')), esc(t('career.matchXp'))], 'reward')}
+        <p class="career-quote">${esc(t(m.losses ? 'career.matchQuoteLosers' : 'career.matchQuote', { club: rival.club }))}</p>
         ${lesson ? `<div class="career-lesson"><h4>${esc(t('career.lessonTitle'))}</h4><p>${esc(lesson)}</p></div>` : ''}
-        ${rivalBlock(rival.id)}
-        <h4>${esc(t('career.goals'))}</h4><ul><li>${esc(t('goal.winSeries'))}</li></ul>
-        <h4>${esc(t('career.conditions'))}</h4>${chips([esc(t('rule.bo3')), ...ruleTexts({ timer: 30, ...rules }), opponentLine(Career.rivalOpponent(career, rival.id))], 'limit')}
+        ${rivalBlock(m.opponent)}
+        <h4>${esc(t('career.goals'))}</h4><ul><li>${esc(t(m.format === 'bo3' ? 'goal.winSeries' : 'goal.winSingle'))}</li></ul>
+        <h4>${esc(t('career.conditions'))}</h4>${chips([esc(t(`rule.${m.format}`)), ...ruleTexts({ timer: 30 }), esc(t(m.losses ? 'career.lastChance' : 'career.secondChance')), opponentLine(Career.rivalOpponent(career, m.opponent))], 'limit')}
         <div class="career-row"><button type="button" class="btn-primary" data-action="play">${esc(t('career.play'))}</button></div>`);
     if (rivalCanvas) drawCoach(rivalCanvas, rivalLook, performance.now());
     ui.card.querySelector('[data-action="play"]')?.addEventListener('click', () => play({ kind: 'league' }));
 }
 
-/** The stadium once the league is over and the cup is played elsewhere: where to go. */
-function showCupElsewhere() {
-    setCard('main', `<span class="career-kind"><span class="career-dot icon main" aria-hidden="true">${pixelIcon('crown', 16)}</span>${esc(t('career.kind.main'))}</span>
-        <h3>${esc(placeName('stadium'))}</h3>
-        <p class="career-quote">${esc(t('career.cup.goTo', { cup: cupName(), place: placeName(cupAway()) }))}</p>`);
-}
-
-/** The cup's place before the league is over, or once the cup is decided. */
-function showCupClosed() {
-    const run = career.cupRun;
-    const over = run && (run.out || run.stage >= Career.TIERS[career.tier].cup.rounds);
-    setCard('locked', `<span class="career-kind">${esc(t('career.kind.main'))}</span>
-        <h3>${esc(cupName())}</h3>
-        <p class="career-place">${esc(placeName(cupAway()))}</p>
-        <p class="career-quote">${esc(t(over ? 'career.cup.over' : 'career.cup.locked'))}</p>`);
+/** The tournament is over for the club: where it finished, and the next season to start. */
+function showSeasonOver(head, tournament) {
+    const place = Career.placing(career);
+    setCard('main', `${head}
+        <h3>${esc(tournament)}</h3>
+        <p class="career-place">${esc(placeName('stadium'))}</p>
+        <p class="career-quote">${esc(place === 1 ? t('career.seasonWon') : t('career.seasonDone', { place }))}</p>
+        <div class="career-row"><button type="button" class="btn-primary" data-action="next-season">${esc(t('career.nextSeason'))}</button></div>`);
+    ui.card.querySelector('[data-action="next-season"]')?.addEventListener('click', () => {
+        const end = Career.finishSeason(career);
+        if (!end) return;
+        career = end.career;
+        save();
+        showTier('stadium');
+        gerard.say(end.ticket ? t('career.newSeasonTicket', { transport: t(`career.transport.${Quests.TRANSPORT[end.career.tier]}`) }) : t('career.newSeason', { n: career.season }));
+    });
 }
 
 function showTransportCard() {
@@ -327,21 +320,42 @@ function showTransportCard() {
 
 // ---------- Header, scales, journal ----------
 function renderHeader() {
-    const total = Career.TIERS[career.tier].clubs;
+    const m = Career.nextMatch(career);
+    const where = m ? t(`career.stage.${m.stage}`) : t('career.placeChip', { place: Career.placing(career) });
     ui.board.innerHTML = [esc(club.name), esc(t('career.season', { n: career.season })),
-        esc(t('career.tierChip', { tier: t(`career.tier.${career.tier}`) })),
-        esc(t('career.rankChip', { rank: Career.rank(career), total }))].map((x) => `<span>${x}</span>`).join('');
+        esc(t('career.tierChip', { tier: t(`career.tier.${career.tier}`) })), esc(where)].map((x) => `<span>${x}</span>`).join('');
     ui.scales.innerHTML = Career.TIER_IDS.map((tier) => {
         const state = tier === career.tier ? 'current' : (tier === 'school' || career.tickets.includes(tier)) ? 'open' : 'locked';
         return `<li class="${state}"${state === 'current' ? ' aria-current="step"' : ''}>${esc(t(`career.tier.${tier}`))}${state === 'locked' ? ` <span class="career-lock">${esc(t('career.ticketTag'))}</span>` : ''}</li>`;
     }).join('');
+    renderDate();
+}
+
+/** The date, in a corner of the map (in the page's language). */
+function renderDate() {
+    const date = Career.dateOf(career);
+    ui.date.textContent = new Intl.DateTimeFormat(language(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).format(date);
+    ui.date.setAttribute('datetime', date.toISOString());
 }
 
 function renderJournal() {
-    const name = (id) => (id === Career.YOU ? club.name : Coaches.coachById(id).club);
-    const rows = Career.standings(career).map((r, i) => `<tr class="${r.club === Career.YOU ? 'you' : ''}">
-        <td class="num">${i + 1}</td><th scope="row">${esc(name(r.club))}</th>
-        <td class="num">${r.played}</td><td class="num">${r.won}</td><td class="num">${r.drawn}</td><td class="num">${r.lost}</td><td class="num"><b>${r.points}</b></td></tr>`).join('');
+    const b = Career.bracket(career);
+    // The club's road: each match played, and the next one
+    const mine = [];
+    for (const stage of b.stages) {
+        for (const m of stage.matches) {
+            if (m.a !== Career.YOU && m.b !== Career.YOU) continue;
+            const [me, them, other] = m.a === Career.YOU ? [m.wa, m.wb, m.b] : [m.wb, m.wa, m.a];
+            mine.push(`<tr class="${me > them ? 'won' : 'lost'}"><th scope="row">${esc(t(`career.stage.${stage.id}`))}</th>
+              <td>${esc(clubName(other))}</td><td class="num">${me}–${them}</td></tr>`);
+        }
+    }
+    if (b.next) mine.push(`<tr class="you"><th scope="row">${esc(t(`career.stage.${b.next.stage}`))}</th><td>${esc(clubName(b.next.opponent))}</td><td class="num">${esc(t('career.journal.toPlay'))}</td></tr>`);
+    const status = b.next ? t(b.losses ? 'career.journal.inLosers' : 'career.journal.inWinners')
+        : b.place === 1 ? t('career.journal.champion') : t('career.journal.finished', { place: b.place });
+    // Every stage played so far, folded away
+    const stages = b.stages.filter((st) => st.matches.length).map((st) => `<li><b>${esc(t(`career.stage.${st.id}`))}</b>
+        <ul>${st.matches.map((m) => `<li class="${m.a === Career.YOU || m.b === Career.YOU ? 'you' : ''}">${esc(clubName(m.a))} ${m.wa}–${m.wb} ${esc(clubName(m.b))}</li>`).join('')}</ul></li>`).join('');
     const drawn = career.quests.drawn.map((id) => Quests.questById(id));
     const quests = drawn.map((q) => {
         const tried = career.quests.attempted.includes(q.id);
@@ -351,19 +365,17 @@ function renderJournal() {
             <span class="career-dot side" aria-hidden="true"></span></button></li>`;
     }).join('');
     const titles = career.titles.length
-        ? `<ul class="career-titles">${career.titles.map((x) => `<li>★ ${esc(x.cup
-            ? t('career.journal.cupTitle', { cup: t(`career.cup.${x.tier}`), season: x.season })
-            : t('career.journal.title', { tier: t(`career.tier.${x.tier}`), season: x.season }))}</li>`).join('')}</ul>`
+        ? `<ul class="career-titles">${career.titles.map((x) => `<li>★ ${esc(t('career.journal.title', { tier: t(`career.tier.${x.tier}`), season: x.season }))}</li>`).join('')}</ul>`
         : `<p class="muted">${esc(t('career.journal.noTitles'))}</p>`;
     ui.journal.innerHTML = `
         <section aria-labelledby="career-league-title">
-          <h3 id="career-league-title"><span class="career-dot main" aria-hidden="true"></span>${esc(t('career.journal.league'))}</h3>
+          <h3 id="career-league-title"><span class="career-dot icon main" aria-hidden="true">${pixelIcon('crown', 16)}</span>${esc(t(`career.tournament.${career.tier}`))}</h3>
+          <p>${esc(status)}</p>
           <div class="career-table-wrap" tabindex="0" role="region" aria-labelledby="career-league-title"><table class="career-table">
-            <caption class="visually-hidden">${esc(t('career.journal.table', { tier: t(`career.tier.${career.tier}`) }))}</caption>
-            <thead><tr><td></td><th scope="col">${esc(t('career.col.club'))}</th><th scope="col" class="num">${esc(t('career.col.played'))}</th>
-              <th scope="col" class="num">${esc(t('career.col.won'))}</th><th scope="col" class="num">${esc(t('career.col.drawn'))}</th>
-              <th scope="col" class="num">${esc(t('career.col.lost'))}</th><th scope="col" class="num">${esc(t('career.col.points'))}</th></tr></thead>
-            <tbody>${rows}</tbody></table></div>
+            <caption class="visually-hidden">${esc(t('career.journal.road'))}</caption>
+            <thead><tr><th scope="col">${esc(t('career.col.round'))}</th><th scope="col">${esc(t('career.col.club'))}</th><th scope="col" class="num">${esc(t('career.col.score'))}</th></tr></thead>
+            <tbody>${mine.join('')}</tbody></table></div>
+          <details class="career-bracket"><summary>${esc(t('career.journal.bracket'))}</summary><ul>${stages}</ul></details>
         </section>
         <section aria-labelledby="career-quests-title">
           <h3 id="career-quests-title"><span class="career-dot side" aria-hidden="true"></span>${esc(t('career.journal.quests'))}</h3>
@@ -371,9 +383,9 @@ function renderJournal() {
           <ul class="career-quests">${quests}</ul>
           <h3>${esc(t('career.journal.titles'))}</h3>${titles}
         </section>`;
-    ui.journal.querySelectorAll('[data-place]').forEach((b) => b.addEventListener('click', () => {
+    ui.journal.querySelectorAll('[data-place]').forEach((el) => el.addEventListener('click', () => {
         showView('map');
-        goTo(/** @type {HTMLElement} */ (b).dataset.place);
+        goTo(/** @type {HTMLElement} */ (el).dataset.place);
     }));
 }
 
@@ -423,11 +435,12 @@ function blinkLoop(now) {
 /**
  * Open the career with `theClub` (its saved career, or a new one).
  * @param {any} theClub
- * @param {{ onClub: () => void, onPlay: (spec: { kind: 'league' | 'quest', questId?: string, recruitType?: string }) => void, word?: string }} handlers
- *   onClub: back to the club's page; onPlay: play a matchday or a quest; word: what Gérard
- *   says first (his comment on the match just played; his welcome to the map otherwise)
+ * @param {{ onClub: () => void, onPlay: (spec: { kind: 'league' | 'quest', questId?: string, recruitType?: string }) => void, word?: string, knockedOut?: boolean }} handlers
+ *   onClub: back to the club's page; onPlay: play a tournament match or a quest; word: what
+ *   Gérard says first (his comment on the match just played; his welcome to the map
+ *   otherwise); knockedOut: the match just played knocked the club out (the black screen)
  */
-export function openCareer(theClub, { onClub, onPlay, word = '' }) {
+export function openCareer(theClub, { onClub, onPlay, word = '', knockedOut = false }) {
     club = theClub;
     toClub = () => { closeCareer(); onClub(); };
     play = onPlay;
@@ -440,6 +453,30 @@ export function openCareer(theClub, { onClub, onPlay, word = '' }) {
     gerard.say(word || t(`career.intro.${career.tier}`));
     blinking = true;
     requestAnimationFrame(blinkLoop);
+    if (knockedOut && Career.knockedOut(career)) showKnockedOut();
+}
+
+/** Knocked out: the screen goes black, Gérard says it is over until next season. */
+function showKnockedOut() {
+    const place = Career.placing(career);
+    ui.out.innerHTML = `<div class="career-out-box">
+        <canvas width="56" height="56" id="career-out-gerard" role="img" aria-label="${esc(t('commissioner.portrait'))}"></canvas>
+        <h2 id="career-out-title">${esc(t('career.out.title'))}</h2>
+        <p>${esc(t(place === 2 ? 'career.out.final' : 'career.out.text', { place, tournament: t(`career.tournament.${career.tier}`) }))}</p>
+        <p class="muted">${esc(t('career.out.after'))}</p>
+        <button type="button" class="btn-primary" data-action="out-close">${esc(t('career.out.close'))}</button>
+      </div>`;
+    ui.out.hidden = false;
+    const portrait = /** @type {HTMLCanvasElement} */ (ui.out.querySelector('canvas'));
+    const g = portrait.getContext('2d'); // Gérard's portrait, as drawn beside his bubble
+    if (g) { g.imageSmoothingEnabled = false; g.drawImage(/** @type {HTMLCanvasElement} */ ($('career-gerard')), 0, 0); }
+    const close = /** @type {HTMLButtonElement} */ (ui.out.querySelector('[data-action="out-close"]'));
+    close.addEventListener('click', () => {
+        ui.out.hidden = true;
+        ui.out.innerHTML = '';
+        /** @type {HTMLElement | null} */ (ui.map.querySelector('.career-marker'))?.focus();
+    });
+    close.focus();
 }
 
 /** The career's screen is left: stop the animations. */

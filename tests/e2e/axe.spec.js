@@ -40,7 +40,7 @@ const CHESSDOWN = {
       (await import('/chessdown/js/events.js')).openCareerPage(club);
     });
     await page.locator('.career-marker.main').click();
-    await expect(page.locator('#career-card h3')).toHaveText('Matchday 1');
+    await expect(page.locator('#career-card h3')).toHaveText("Schools Tournament · Winners' bracket · round 1");
   },
   'career journal': async (page) => {
     await page.evaluate(async () => {

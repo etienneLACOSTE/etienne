@@ -112,6 +112,14 @@ passe aujourd'hui, pourquoi, et une piste. Retirer une ligne quand elle est corr
   changent le club en même temps s'écrasent l'un l'autre ; à la connexion, le club du
   compte remplace celui du navigateur (sauf changement fait avant la réponse du serveur).
 
+## Carrière : tournoi (2026-11-21)
+
+- **La date est décorative** : elle avance (déplacements, matchs) sans rien imposer.
+- **Le bot ne connaît pas les règles de quête « touchdowns désactivés »** : sa recherche
+  compte encore un touchdown comme une victoire. Piste : passer les règles du match à
+  `bot-search.js`.
+- **Une carrière de la version 1 (ligues) est refusée** et recommence à zéro (le club reste).
+
 ## Best of 3 (2026-11-21)
 
 - **Les stats comptent chaque manche, pas la série :** le résultat d'une série n'est

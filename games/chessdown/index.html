@@ -118,6 +118,8 @@
 
         <!-- Career: the map, its places and quests, the journal (js/career-view.js, js/career-map.js) -->
         <div id="career-screen" class="screen hidden career-page">
+            <!-- Knocked out of the tournament: the screen goes black (js/career-view.js) -->
+            <div class="career-out" id="career-out" role="alertdialog" aria-modal="true" aria-labelledby="career-out-title" hidden></div>
             <div class="career-top">
                 <h2 data-i18n="career.title">Career</h2>
                 <div class="career-views" role="tablist" data-i18n-attr="aria-label: career.views">
@@ -141,6 +143,7 @@
                     <div class="career-map" id="career-map">
                         <canvas id="career-canvas" width="320" height="192" role="img"></canvas>
                         <span class="career-map-title" id="career-map-title" aria-hidden="true"></span>
+                        <time class="career-date" id="career-date"></time>
                     </div>
                 </div>
                 <article class="career-card" id="career-card" aria-live="polite"></article>
