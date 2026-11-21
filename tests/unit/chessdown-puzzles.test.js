@@ -61,6 +61,6 @@ for (const [id, p] of Object.entries(Quests.PUZZLES)) {
 test('every puzzle quest has its puzzle', () => {
     for (const q of Quests.QUESTS.filter((x) => x.goal.type === 'puzzle')) {
         assert.ok(Quests.PUZZLES[q.goal.id], q.id);
-        assert.equal(Quests.PUZZLES[q.goal.id].mine[1][2], q.reward.xp.to, `${q.id}: the experience goes to the puzzle's piece`);
+        assert.deepEqual(q.reward.xp, { to: 'engaged', amount: Quests.QUEST_XP }, `${q.id}: the experience goes to the piece that played`);
     }
 });

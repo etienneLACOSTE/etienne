@@ -58,55 +58,57 @@
     const quest = (id, tier, place, kind, format, rules, goal, reward, minSeason = 1, opponent = undefined) =>
         ({ id, tier, place, kind, format, rules, goal, reward, minSeason, ...(opponent ? { opponent } : {}) });
     const win = { type: 'win' };
-    const xp = (to, amount) => ({ xp: { to, amount } });
+    /** Experience a quest done brings: a little, to each piece that played it (the king gains none). */
+    const QUEST_XP = 5;
+    const XP = { xp: { to: 'engaged', amount: QUEST_XP } };
 
     /** @type {Quest[]} */
     const QUESTS = [
         // School: the town of Saint-Aubin
-        quest('counter-bet', 'school', 'cafe', 'challenge', 'single', { squad: ['k', 'p', 'p', 'p'] }, win, xp('p', 40)),
+        quest('counter-bet', 'school', 'cafe', 'challenge', 'single', { squad: ['k', 'p', 'p', 'p'] }, win, XP),
         quest('shy-knight', 'school', 'school', 'recruit', 'single', {}, { type: 'touchdownWith', piece: 'n' }, { recruit: { type: 'n', level: 2, name: 'Inès' } }),
-        quest('sunday-jog', 'school', 'park', 'puzzle', 'single', {}, { type: 'puzzle', id: 'rook-run', moves: 3 }, xp('r', 25)),
-        quest('street-match', 'school', 'citystade', 'special', 'single', { timer: 15 }, win, xp('engaged', 15)),
-        quest('market-rush', 'school', 'market', 'challenge', 'single', { maxPieces: 5 }, win, xp('all', 20)),
-        quest('gym-warmup', 'school', 'gym', 'puzzle', 'single', {}, { type: 'puzzle', id: 'pawn-push', moves: 4 }, xp('p', 20)),
+        quest('sunday-jog', 'school', 'park', 'puzzle', 'single', {}, { type: 'puzzle', id: 'rook-run', moves: 3 }, XP),
+        quest('street-match', 'school', 'citystade', 'special', 'single', { timer: 15 }, win, XP),
+        quest('market-rush', 'school', 'market', 'challenge', 'single', { maxPieces: 5 }, win, XP),
+        quest('gym-warmup', 'school', 'gym', 'puzzle', 'single', {}, { type: 'puzzle', id: 'pawn-push', moves: 4 }, XP),
         quest('mayor-photo', 'school', 'townhall', 'recruit', 'bo3', {}, { type: 'touchdowns', n: 2 }, { recruit: { type: 'p', level: 2, name: 'Basile' } }, 2),
-        quest('quiet-pitch', 'school', 'park', 'challenge', 'single', { noCaptureMoves: 6 }, win, xp('engaged', 25), 2),
+        quest('quiet-pitch', 'school', 'park', 'challenge', 'single', { noCaptureMoves: 6 }, win, XP, 2),
         // County: Val-de-Loir
         quest('veteran', 'county', 'inn', 'recruit', 'bo3', {}, win, { recruit: { type: 'b', level: 3 } }, 1, { difficulty: 'expert', budget: 15 }),
-        quest('ploughing', 'county', 'farmschool', 'challenge', 'single', { noCaptureMoves: 10 }, win, xp('q', 50)),
-        quest('village-fair', 'county', 'farm', 'streak', 'single', { lockedLineup: true }, { type: 'streak', n: 3 }, xp('all', 30)),
-        quest('pond-hop', 'county', 'pond', 'puzzle', 'single', {}, { type: 'puzzle', id: 'knight-hop', moves: 3 }, xp('n', 40)),
-        quest('windmill', 'county', 'mill', 'special', 'single', { banned: ['q'] }, win, xp('engaged', 35)),
+        quest('ploughing', 'county', 'farmschool', 'challenge', 'single', { noCaptureMoves: 10 }, win, XP),
+        quest('village-fair', 'county', 'farm', 'streak', 'single', { lockedLineup: true }, { type: 'streak', n: 3 }, XP),
+        quest('pond-hop', 'county', 'pond', 'puzzle', 'single', {}, { type: 'puzzle', id: 'knight-hop', moves: 3 }, XP),
+        quest('windmill', 'county', 'mill', 'special', 'single', { banned: ['q'] }, win, XP),
         quest('castle-guard', 'county', 'chateau', 'recruit', 'single', {}, { type: 'touchdownWith', piece: 'r' }, { recruit: { type: 'r', level: 2 } }),
-        quest('choir', 'county', 'church', 'challenge', 'single', { squad: ['k', 'b', 'b', 'p', 'p', 'p'] }, win, xp('b', 40), 2),
-        quest('hunters', 'county', 'lodge', 'special', 'single', { maxPieces: 6, timer: 20 }, win, xp('all', 30), 2),
+        quest('choir', 'county', 'church', 'challenge', 'single', { squad: ['k', 'b', 'b', 'p', 'p', 'p'] }, win, XP, 2),
+        quest('hunters', 'county', 'lodge', 'special', 'single', { maxPieces: 6, timer: 20 }, win, XP, 2),
         // Region: the Highlands
-        quest('snow-match', 'region', 'chalet', 'special', 'single', { noRetreat: true, timer: 20 }, win, xp('all', 60)),
+        quest('snow-match', 'region', 'chalet', 'special', 'single', { noRetreat: true, timer: 20 }, win, XP),
         quest('scouting', 'region', 'academy', 'recruit', 'single', {}, win, { recruitChoice: { level: 2 } }),
-        quest('harvest', 'region', 'winery', 'special', 'bo3', { banned: ['b'] }, win, xp('n', 45)),
-        quest('lake-crossing', 'region', 'lake', 'puzzle', 'single', {}, { type: 'puzzle', id: 'lake-crossing', moves: 4 }, xp('r', 50)),
-        quest('mountain-hut', 'region', 'refuge', 'challenge', 'single', { maxPieces: 5 }, win, xp('all', 50)),
-        quest('stargazer', 'region', 'observatory', 'puzzle', 'single', {}, { type: 'puzzle', id: 'bishop-ray', moves: 3 }, xp('b', 50)),
-        quest('mountain-pass', 'region', 'pass', 'special', 'single', { timer: 15 }, win, xp('engaged', 40), 2),
-        quest('hot-springs', 'region', 'thermal', 'challenge', 'single', { noCaptureMoves: 12 }, win, xp('all', 40), 2),
+        quest('harvest', 'region', 'winery', 'special', 'bo3', { banned: ['b'] }, win, XP),
+        quest('lake-crossing', 'region', 'lake', 'puzzle', 'single', {}, { type: 'puzzle', id: 'lake-crossing', moves: 4 }, XP),
+        quest('mountain-hut', 'region', 'refuge', 'challenge', 'single', { maxPieces: 5 }, win, XP),
+        quest('stargazer', 'region', 'observatory', 'puzzle', 'single', {}, { type: 'puzzle', id: 'bishop-ray', moves: 3 }, XP),
+        quest('mountain-pass', 'region', 'pass', 'special', 'single', { timer: 15 }, win, XP, 2),
+        quest('hot-springs', 'region', 'thermal', 'challenge', 'single', { noCaptureMoves: 12 }, win, XP, 2),
         // National
-        quest('port-tour', 'national', 'port', 'streak', 'single', { lockedLineup: true }, { type: 'streak', n: 3 }, xp('all', 100)),
+        quest('port-tour', 'national', 'port', 'streak', 'single', { lockedLineup: true }, { type: 'streak', n: 3 }, XP),
         quest('prodigy', 'national', 'academy', 'recruit', 'single', { maxPieces: 5 }, win, { recruit: { type: 'q', level: 3 } }),
-        quest('tv-show', 'national', 'studio', 'special', 'single', { invertedRows: true }, win, xp('all', 80)),
-        quest('lighthouse', 'national', 'lighthouse', 'puzzle', 'single', {}, { type: 'puzzle', id: 'queen-tide', moves: 4 }, xp('q', 80)),
-        quest('grand-prix', 'national', 'racetrack', 'special', 'single', { timer: 10 }, win, xp('engaged', 70)),
+        quest('tv-show', 'national', 'studio', 'special', 'single', { invertedRows: true }, win, XP),
+        quest('lighthouse', 'national', 'lighthouse', 'puzzle', 'single', {}, { type: 'puzzle', id: 'queen-tide', moves: 4 }, XP),
+        quest('grand-prix', 'national', 'racetrack', 'special', 'single', { timer: 10 }, win, XP),
         quest('museum-night', 'national', 'museum', 'recruit', 'single', { squad: ['k', 'q', 'r', 'r', 'b', 'n', 'p', 'p'] }, win, { recruit: { type: 'n', level: 3 } }),
-        quest('state-visit', 'national', 'palace', 'special', 'bo3', { noRetreat: true }, win, xp('all', 90), 2),
-        quest('front-page', 'national', 'newspaper', 'challenge', 'bo3', {}, { type: 'touchdowns', n: 2 }, xp('engaged', 70), 2),
+        quest('state-visit', 'national', 'palace', 'special', 'bo3', { noRetreat: true }, win, XP, 2),
+        quest('front-page', 'national', 'newspaper', 'challenge', 'bo3', {}, { type: 'touchdowns', n: 2 }, XP, 2),
         // International
-        quest('midnight-blitz', 'international', 'seoul', 'special', 'bo3', { timer: 10 }, win, xp('all', 150)),
+        quest('midnight-blitz', 'international', 'seoul', 'special', 'bo3', { timer: 10 }, win, XP),
         quest('founders', 'international', 'lagos', 'cosmetic', 'single', { originalSquad: true }, win, { cosmetic: 'jersey-heritage' }),
-        quest('upside-down', 'international', 'sydney', 'special', 'bo3', { invertedRows: true }, win, xp('all', 120)),
-        quest('origami', 'international', 'kyoto', 'special', 'single', { banned: ['q', 'r'] }, win, xp('b', 150)),
-        quest('carnival', 'international', 'rio', 'streak', 'single', { timer: 20 }, { type: 'streak', n: 3 }, xp('all', 150)),
-        quest('fjord', 'international', 'oslo', 'special', 'bo3', { noRetreat: true }, win, xp('all', 140)),
+        quest('upside-down', 'international', 'sydney', 'special', 'bo3', { invertedRows: true }, win, XP),
+        quest('origami', 'international', 'kyoto', 'special', 'single', { banned: ['q', 'r'] }, win, XP),
+        quest('carnival', 'international', 'rio', 'streak', 'single', { timer: 20 }, { type: 'streak', n: 3 }, XP),
+        quest('fjord', 'international', 'oslo', 'special', 'bo3', { noRetreat: true }, win, XP),
         quest('castle-hill', 'international', 'prague', 'recruit', 'single', { maxPieces: 5 }, win, { recruit: { type: 'r', level: 4 } }, 2),
-        quest('cold-snap', 'international', 'montreal', 'challenge', 'bo3', { noCaptureMoves: 15 }, win, xp('all', 130), 2),
+        quest('cold-snap', 'international', 'montreal', 'challenge', 'bo3', { noCaptureMoves: 15 }, win, XP, 2),
     ];
 
     /**
@@ -170,5 +172,5 @@
         return QUESTS.find((q) => q.id === id) || null;
     }
 
-    return { TIER_IDS, PLACES, TRANSPORT, RULES, GOALS, XP_TARGETS, QUESTS, PUZZLES, checkQuest, questById };
+    return { TIER_IDS, PLACES, TRANSPORT, RULES, GOALS, XP_TARGETS, QUEST_XP, QUESTS, PUZZLES, checkQuest, questById };
 });

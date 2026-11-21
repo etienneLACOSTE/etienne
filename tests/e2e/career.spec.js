@@ -204,9 +204,11 @@ test.describe('Career', () => {
     expect(await page.evaluate(() => chessdown.state.series.format)).toBe('single');
     await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king'));
     await expect(page.locator('#victory-club')).toContainText('Quest done: The counter bet.');
-    await expect(page.locator('#victory-club')).toContainText('+40 XP from the quest.');
+    await expect(page.locator('#victory-club')).toContainText('+5 XP from the quest.');
     const club = await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'));
-    expect(club.players.filter((p) => p.type === 'p').every((p) => p.xp >= 40 && p.level === 2)).toBe(true);
+    // +5 for each piece that played (the three pawns); the rook stayed on the bench.
+    expect(club.players.filter((p) => p.type === 'p').every((p) => p.xp >= 5 && p.level === 1)).toBe(true);
+    expect(club.players.find((p) => p.type === 'r').xp).toBe(0);
     expect((await stored(page)).questsDone).toEqual(['counter-bet']);
     await page.locator('#btn-restart').dispatchEvent('pointerdown');
     await expect(page.locator('#career-screen')).toBeVisible();
@@ -279,7 +281,9 @@ test.describe('Career', () => {
     await play(page, [6, 3], [3, 3]); // Takes the stone in the way
     await play(page, [3, 3], [0, 3]);
     await expect(page.locator('#victory-club')).toContainText('Quest done: Sunday jog.', { timeout: 10_000 });
-    await expect(page.locator('#victory-club')).toContainText('+25 XP from the quest.');
+    await expect(page.locator('#victory-club')).toContainText('+5 XP from the quest.');
+    const clubRook = (await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'))).players.find((p) => p.type === 'r');
+    expect(clubRook.xp).toBeGreaterThanOrEqual(5); // The club's rook played the puzzle's rook
     expect((await stored(page)).questsDone).toEqual(['sunday-jog']);
   });
 

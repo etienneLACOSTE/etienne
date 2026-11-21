@@ -2,6 +2,13 @@
 
 Décisions du propriétaire du 2026-11-21. Maquette : https://claude.ai/artifact/UoTHtDdS4uf72rC3DtD9Jg
 
+## Expérience des quêtes (2026-11-21)
+
+Une quête réussie qui donne de l'expérience donne **+5 XP à chaque pièce qui l'a jouée**
+(`QUEST_XP`, `career-quests.js`) ; le roi n'en gagne pas. Les anciens bonus (jusqu'à 150 XP
+pour tout le club) faisaient monter les niveaux trop vite. Les recrues et le maillot ne
+changent pas.
+
 ## Principe
 
 La carrière se joue avec son club All Star (`docs/games/chessdown-levels.md`). On y apprend
@@ -66,11 +73,11 @@ servent à faire progresser ses joueurs et à en recruter.
 
 | Type | Exemple | Récompense |
 |---|---|---|
-| Défi à contrainte | gagner avec le roi et 3 pions | de l'expérience pour les pièces engagées |
+| Défi à contrainte | gagner avec le roi et 3 pions | +5 XP par pièce engagée |
 | Recrutement | marquer avec un cavalier pour qu'Inès signe | une recrue nommée, d'un niveau donné |
-| Entraînement (problème) | touchdown en 3 coups depuis une position donnée | de l'expérience pour une pièce |
-| Match à règle spéciale | chrono de 15 s, aucun recul (neige), placement inversé | de l'expérience pour tous les joueurs |
-| Série | 3 victoires d'affilée sans changer sa composition | une grosse prime d'expérience |
+| Entraînement (problème) | touchdown en 3 coups depuis une position donnée | +5 XP pour la pièce du club qui le joue |
+| Match à règle spéciale | chrono de 15 s, aucun recul (neige), placement inversé | +5 XP par pièce engagée |
+| Série | 3 victoires d'affilée sans changer sa composition | +5 XP par pièce engagée |
 | Cosmétique | gagner avec l'effectif d'origine | un maillot ou un emblème |
 
 ## À faire ou à préciser

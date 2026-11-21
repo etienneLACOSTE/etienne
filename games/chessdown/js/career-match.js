@@ -137,7 +137,15 @@ export function setPuzzleBoard() {
     const p = careerPuzzle();
     if (!p) return;
     state.board = Engine.createBoard();
-    for (const [r, c, type, level] of p.mine) state.board[r][c] = { type, player: 1, hasMoved: true, level };
+    for (const [r, c, type, level] of p.mine) {
+        // A player of the club takes the puzzle's piece (the one of that type with the most
+        // experience): it plays it, and gets the quest's experience.
+        const member = state.allStar && type !== 'k'
+            ? state.allStar.club.players.filter((m) => m.type === type).sort((a, b) => b.xp - a.xp)[0]
+            : null;
+        state.board[r][c] = { type, player: 1, hasMoved: true, level, ...(member ? { clubId: member.id } : {}) };
+        if (member && state.career && !state.career.engaged.includes(member.id)) state.career.engaged.push(member.id);
+    }
     state.board[p.king[0]][p.king[1]] = { type: 'k', player: 2, hasMoved: true };
     for (const [r, c] of p.stones) state.board[r][c] = { type: 'p', player: 2, hasMoved: true }; // Classic pawns: no level badge
     state.kingsPlaced = { 1: true, 2: true };
