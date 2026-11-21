@@ -23,6 +23,7 @@
     "assets/js/**/*.js",
     "games/chessdown/engine.js",
     "games/chessdown/series.js",
+    "games/chessdown/club-rules.js",
     "games/chesspell/rules.js",
     "games/chesspell/game.js",
     "games/chesspell/bot.js",
