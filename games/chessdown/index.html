@@ -30,6 +30,7 @@
             <div class="menu-group">
                 <button id="btn-start-local" class="btn-primary" data-i18n="menu.local">Play Local (2 Players)</button>
                 <button id="btn-start-bot" class="btn-secondary" data-i18n="menu.campaign">Campaign (vs Bot)</button>
+                <button id="btn-all-star" class="btn-secondary" data-i18n="menu.allStar">All Star: my club</button>
             </div>
             <div class="menu-group menu-online">
                 <div class="online-controls" id="online-controls">
@@ -54,6 +55,41 @@
             <p data-i18n="waiting.share">Share this code with your opponent.</p>
             <p class="muted" data-i18n="waiting.forPlayer2">Waiting for Player 2 to join...</p>
             <div class="invite-friends" id="invite-friends" hidden></div>
+        </div>
+
+        <!-- All Star: the commissioner names the coach and registers the club (js/club-onboarding.js) -->
+        <div id="club-onboarding" class="screen hidden club-page">
+            <div class="club-inner">
+                <ol class="club-rail" id="club-rail" data-i18n-attr="aria-label: onboarding.steps">
+                    <li data-i18n="onboarding.rail.name">Your name</li>
+                    <li data-i18n="onboarding.rail.licence">Licence</li>
+                    <li data-i18n="onboarding.rail.club">The club</li>
+                    <li data-i18n="onboarding.rail.colours">Colours</li>
+                    <li data-i18n="onboarding.rail.crest">Crest</li>
+                    <li data-i18n="onboarding.rail.squad">Squad</li>
+                </ol>
+                <section class="club-scene" data-i18n-attr="aria-label: commissioner.office">
+                    <span class="club-sign" data-i18n="commissioner.league">Chessdown League</span>
+                    <div class="club-president">
+                        <canvas id="commissioner" width="56" height="56" role="img" data-i18n-attr="aria-label: commissioner.portrait"></canvas>
+                        <div class="club-desk"><span class="club-nameplate"><b>Gérard Mallet</b><br><span data-i18n="commissioner.title">Commissioner of the League</span></span></div>
+                    </div>
+                    <div class="club-bubble-zone">
+                        <div class="club-bubble" id="commissioner-bubble" tabindex="0" aria-describedby="commissioner-help">
+                            <span class="club-speaker">Gérard</span>
+                            <span id="commissioner-typed" aria-hidden="true"></span>
+                            <span class="visually-hidden" id="commissioner-said" role="status"></span>
+                        </div>
+                        <span class="visually-hidden" id="commissioner-help" data-i18n="commissioner.skipHelp">Press Enter or click to show the whole line.</span>
+                    </div>
+                </section>
+                <section class="club-panel" id="club-panel"></section>
+            </div>
+        </div>
+
+        <!-- All Star: the club and its register (js/club-view.js) -->
+        <div id="club-screen" class="screen hidden club-page">
+            <div class="club-inner" id="club-view"></div>
         </div>
 
         <!-- How to Play Modal -->
@@ -246,6 +282,7 @@
     <!-- Rules shared with the server (classic script), then the game (ES modules). -->
     <script src="engine.js"></script>
     <script src="series.js"></script>
+    <script src="club-rules.js"></script>
     <script src="bot-search.js"></script>
     <script type="module" src="js/main.js"></script>
 </body>

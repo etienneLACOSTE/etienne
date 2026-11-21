@@ -14,6 +14,30 @@ import { clearFieldError, showFieldError } from '../../../assets/js/field-error.
 import { t } from '../../../assets/js/i18n.js';
 import { saveSettings, showSettings } from './settings.js';
 import { askFormat, hideScore, startSeries } from './match.js';
+import { loadClub } from './club-store.js';
+import { showClub } from './club-view.js';
+import { startOnboarding, stopOnboarding } from './club-onboarding.js';
+
+/** All Star: the club's page, or the commissioner's office when there is no club yet. */
+function openAllStar() {
+    const club = loadClub();
+    const toMenu = () => {
+        stopOnboarding();
+        showScreen(ui.mainMenu);
+        document.getElementById('btn-all-star')?.focus();
+    };
+    if (!club) {
+        showScreen(/** @type {HTMLElement} */ (document.getElementById('club-onboarding')));
+        startOnboarding((made) => openClubPage(made, toMenu));
+        return;
+    }
+    openClubPage(club, toMenu);
+}
+
+function openClubPage(club, toMenu) {
+    showScreen(/** @type {HTMLElement} */ (document.getElementById('club-screen')));
+    showClub(/** @type {HTMLElement} */ (document.getElementById('club-view')), club, { onMenu: toMenu, onDeleted: openAllStar });
+}
 
 const languageSelect = /** @type {HTMLSelectElement} */ (document.getElementById('language-select'));
 
@@ -105,6 +129,8 @@ export function setupEventListeners() {
             startDraftPhase(1);
         });
     }
+
+    document.getElementById('btn-all-star')?.addEventListener('pointerdown', openAllStar);
 
     if (ui.btnShowTimer) {
         ui.btnShowTimer.addEventListener('pointerdown', () => {
