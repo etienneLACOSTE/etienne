@@ -12,6 +12,8 @@ const { sanitizeDeck } = require('../chesspell');
 const { statsStore, resultProblem } = require('../stats');
 const { friendStore } = require('../friends');
 const { reportStore } = require('../reports');
+const { clubStore } = require('../chessdown-clubs');
+const { ladderStore } = require('../ladders');
 
 /** What each game may save on the account, checked like the game server checks it. */
 const DECK_CHECKS = {
@@ -28,10 +30,14 @@ const deckCheck = (game) => (Object.hasOwn(DECK_CHECKS, game) ? DECK_CHECKS[game
 function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, onSignOut = () => {} } = {}) {
     const sessions = sessionStore(db);
     const stats = statsStore(db);
+    const clubs = clubStore(db);
+    const ladders = ladderStore(db);
     const router = express.Router();
     const smallBody = express.json({ limit: '4kb' });
     const pictureBody = express.json({ limit: '48kb' });
-    router.use((req, res, next) => (req.path === '/avatar' ? pictureBody : smallBody)(req, res, next));
+    const clubBody = express.json({ limit: '32kb' }); // A full squad and a career's results
+    const bodyFor = (path) => (path === '/avatar' ? pictureBody : path === '/chessdown' ? clubBody : smallBody);
+    router.use((req, res, next) => bodyFor(req.path)(req, res, next));
     router.use(sameOrigin);
     router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
@@ -45,7 +51,8 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, 
 
     const loadAccount = async (userId) => {
         const { rows } = await db.query(
-            'SELECT id, username, email, avatar, created_at, password_hash IS NOT NULL AS has_password FROM users WHERE id = $1',
+            `SELECT id, username, email, avatar, created_at, ladder_hidden, password_hash IS NOT NULL AS has_password
+             FROM users WHERE id = $1`,
             [userId],
         );
         const providers = (await db.query(
@@ -58,8 +65,33 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, 
         const a = await loadAccount(res.locals.user.id);
         res.json({ account: {
             username: a.username, email: a.email, avatar: a.avatar || '', createdAt: a.created_at,
-            hasPassword: a.has_password, providers: a.providers.map((p) => p.provider),
+            hasPassword: a.has_password, providers: a.providers.map((p) => p.provider), ladderHidden: a.ladder_hidden,
         } });
+    });
+
+    /** "Hide me from the public leaderboard" (Chessdown ladders). */
+    router.put('/ladder', async (req, res) => {
+        const { hidden } = req.body || {};
+        if (typeof hidden !== 'boolean') return res.status(400).json({ error: 'Bad request.' });
+        await ladders.setHidden(res.locals.user.id, hidden);
+        res.json({ hidden });
+    });
+
+    /** The Chessdown club and career kept with the account (null when none). */
+    router.get('/chessdown', async (req, res) => {
+        res.json(await clubs.get(res.locals.user.id));
+    });
+
+    /**
+     * Keep the club and its career, checked by the shared rules; club null deletes both.
+     * The page sends them after each change (a game, a renamed player, a quest).
+     */
+    router.put('/chessdown', rateLimit({ max: 600, windowMs: 60 * 60 * 1000 }), async (req, res) => {
+        const { club, career } = req.body || {};
+        if (club === undefined) return res.status(400).json({ error: 'Bad request.' });
+        const saved = await clubs.put(res.locals.user.id, club, club === null ? null : career || null);
+        if (!saved) return res.status(400).json({ error: 'This club is not valid.' });
+        res.json(saved);
     });
 
     /** The account picture: set it (a small image, checked), or remove it with null. */
@@ -133,6 +165,10 @@ function accountRouter(db, { attemptsPerWindow = 10, windowMs = 15 * 60 * 1000, 
                 };
             })(),
             chatReportsMade: await reportStore(db).madeBy(a.id),
+            chessdown: await (async () => {
+                const kept = await clubs.get(a.id);
+                return { club: kept.club, career: kept.career, savedAt: kept.savedAt, ladders: await ladders.all(a.id), hiddenFromLeaderboard: a.ladder_hidden };
+            })(),
             linkedSignIns: a.providers.map((p) => ({ provider: p.provider, linkedAt: p.created_at })),
             sessions: signedIn.map((s) => ({ signedInAt: s.created_at, expiresAt: s.expires_at })),
             note: 'The password itself is never stored, only a one-way hash of it, which is not included.',

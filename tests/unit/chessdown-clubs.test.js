@@ -1,17 +1,26 @@
 // A signed-in player's Chessdown club and career kept on the server (server/chessdown-clubs.js).
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const http = require('node:http');
+const express = require('express');
 const { openDb } = require('../../server/db');
+const { authRouter } = require('../../server/accounts/routes');
+const { accountRouter } = require('../../server/accounts/account-routes');
 const { clubStore, plausibleClub } = require('../../server/chessdown-clubs');
 const Club = require('../../games/chessdown/club-rules.js');
 const Career = require('../../games/chessdown/career-rules.js');
 
-let db; let clubs;
+let db; let clubs; let server; let base;
 before(async () => {
     db = await openDb({ url: '' });
     clubs = clubStore(db);
+    const app = express();
+    app.use('/api/auth', authRouter(db, { attemptsPerWindow: 1000 }));
+    app.use('/api/account', accountRouter(db, { attemptsPerWindow: 1000 }));
+    server = http.createServer(app).listen(0);
+    base = `http://localhost:${server.address().port}`;
 });
-after(async () => { await db.close(); });
+after(async () => { server.close(); await db.close(); });
 
 const identity = { coach: 'Coach Ana', name: 'Racing Pawns', primary: '#1e90ff', secondary: '#ffffff', pattern: 'plain', shape: 'shield', emblem: 'wolf' };
 async function user(name) {
@@ -51,4 +60,34 @@ test('online All Star: a level must match the experience behind it', () => {
     assert.equal(plausibleClub(earned), true);
     const dropped = { ...club, players: club.players.map((p) => (p.type === 'r' ? { ...p, level: 4, xp: 198, stats: { ...p.stats, games: 1 } } : p)) };
     assert.equal(plausibleClub(dropped), true, 'experience lost in a game after the level was reached');
+});
+
+test('routes: keep the club and career, hide from the leaderboard, export, sign-in needed', async () => {
+    const res = await fetch(`${base}/api/auth/signup`, {
+        method: 'POST', headers: { 'content-type': 'application/json', origin: base },
+        body: JSON.stringify({ username: 'Cleo', email: 'cleo@example.com', password: 'correct horse battery' }),
+    });
+    const cookie = res.headers.get('set-cookie').split(';')[0];
+    const call = (path, method = 'GET', body) => fetch(base + path, {
+        method, headers: { cookie, origin: base, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body && JSON.stringify(body),
+    });
+    assert.equal((await fetch(`${base}/api/account/chessdown`)).status, 401);
+    assert.deepEqual(await (await call('/api/account/chessdown')).json(), { club: null, career: null, savedAt: null });
+    const club = Club.newClub(identity, 'Rex');
+    const career = Career.newCareer(7);
+    assert.equal((await call('/api/account/chessdown', 'PUT', { club, career })).status, 200);
+    assert.equal((await call('/api/account/chessdown', 'PUT', { club: { ...club, emblem: 'dragon' } })).status, 400);
+    assert.equal((await call('/api/account/chessdown', 'PUT', {})).status, 400);
+    const back = await (await call('/api/account/chessdown')).json();
+    assert.equal(back.club.coach, 'Coach Ana');
+    assert.equal(back.career.seed, career.seed);
+    assert.equal((await call('/api/account/ladder', 'PUT', { hidden: 'yes' })).status, 400);
+    assert.equal((await call('/api/account/ladder', 'PUT', { hidden: true })).status, 200);
+    assert.equal((await (await call('/api/account')).json()).account.ladderHidden, true);
+    const exported = await (await call('/api/account/export')).json();
+    assert.equal(exported.chessdown.club.name, 'Racing Pawns');
+    assert.equal(exported.chessdown.hiddenFromLeaderboard, true);
+    assert.deepEqual(exported.chessdown.ladders, { ratings: [], series: [] });
+    assert.equal((await call('/api/account/chessdown', 'PUT', { club: null })).status, 200);
+    assert.equal((await (await call('/api/account/chessdown')).json()).club, null);
 });

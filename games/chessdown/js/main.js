@@ -14,6 +14,9 @@ import { currentUser, gateOnline, showAccountLine } from '../../../assets/js/ses
 import { joinFromInvite, setupInvites } from './invites.js';
 import { loadTimer } from './settings.js';
 import { t } from '../../../assets/js/i18n.js';
+import { startCloudSave } from './cloud-save.js';
+import { loadClub, saveClub } from './club-store.js';
+import { deleteCareer, loadCareer, saveCareer } from './career-store.js';
 
 // Initialization
 export function init() {
@@ -40,6 +43,11 @@ export function init() {
         showAccountLine(document.getElementById('account-line'), user, { game: '/chessdown/', perk: t('menu.perkStats') });
         gateOnline(document.getElementById('online-controls'), document.getElementById('online-gate'), user, '/chessdown/');
         if (!user) return;
+        // The club and the career follow the account (the account's win over this browser's).
+        startCloudSave({ club: loadClub(), career: loadCareer() }, (club, career) => {
+            saveClub(club);
+            if (career) saveCareer(career); else deleteCareer();
+        });
         setupInvites();
         // Arriving from an invitation on another page: /chessdown/?join=CODE
         const code = new URLSearchParams(location.search).get('join');

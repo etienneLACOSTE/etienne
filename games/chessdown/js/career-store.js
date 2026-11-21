@@ -2,6 +2,8 @@
 // The career (docs/games/chessdown-career.md), kept in this browser (local storage) like the
 // club; checked by career-rules.js every time it is read.
 
+import { cloudChanged } from './cloud-save.js';
+
 const Career = globalThis.ChessdownCareer;
 const KEY = 'pawnet.chessdown.career';
 
@@ -16,6 +18,7 @@ export function loadCareer() {
 
 /** Keep the career; false when the browser does not keep it (private window, storage full). */
 export function saveCareer(career) {
+    cloudChanged('career', career); // Also kept with the account, when signed in
     try {
         localStorage.setItem(KEY, JSON.stringify(career));
         return true;
@@ -26,6 +29,7 @@ export function saveCareer(career) {
 
 /** Forget the career (a new club starts a new one). */
 export function deleteCareer() {
+    cloudChanged('career', null);
     try { localStorage.removeItem(KEY); } catch { /* Nothing kept anyway */ }
 }
 
