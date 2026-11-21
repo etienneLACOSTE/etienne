@@ -33,6 +33,22 @@ const CHESSDOWN = {
     await pointer(page, '.shop-item[data-type="k"]');
     await pointer(page, '#chessboard .square[data-vr="5"][data-vc="4"]');
   },
+  career: async (page) => { // The career's map, then the stadium's card (js/career-view.js)
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.evaluate(async () => {
+      const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    });
+    await page.locator('.career-marker.main').click();
+    await expect(page.locator('#career-card h3')).toHaveText('Matchday 1');
+  },
+  'career journal': async (page) => {
+    await page.evaluate(async () => {
+      const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    });
+    await page.getByRole('tab', { name: 'Journal' }).click();
+  },
   'form error': async (page) => { // Joining without a code: told under the field (signed in)
     await signUp(page.context());
     await page.reload();

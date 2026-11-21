@@ -92,6 +92,38 @@
             <div class="club-inner" id="club-view"></div>
         </div>
 
+        <!-- Career: the map, its places and quests, the journal (js/career-view.js, js/career-map.js) -->
+        <div id="career-screen" class="screen hidden career-page">
+            <div class="career-top">
+                <h2 data-i18n="career.title">Career</h2>
+                <div class="career-views" role="tablist" data-i18n-attr="aria-label: career.views">
+                    <button type="button" role="tab" id="career-tab-map" aria-selected="true" aria-controls="career-stage" data-i18n="career.tabMap">Map</button>
+                    <button type="button" role="tab" id="career-tab-journal" aria-selected="false" aria-controls="career-journal" tabindex="-1" data-i18n="career.tabJournal">Journal</button>
+                </div>
+                <div class="career-board" id="career-board" role="group" data-i18n-attr="aria-label: career.status"></div>
+                <button type="button" class="btn-ghost" id="career-back" data-i18n="career.openClub">Open the club</button>
+            </div>
+            <div class="career-gerard">
+                <canvas id="career-gerard" width="56" height="56" role="img" data-i18n-attr="aria-label: commissioner.portrait"></canvas>
+                <div class="career-bubble" id="career-gerard-bubble" tabindex="0" aria-describedby="commissioner-help">
+                    <span class="club-speaker">Gérard</span>
+                    <span id="career-gerard-typed" aria-hidden="true"></span>
+                    <span class="visually-hidden" id="career-gerard-said" role="status"></span>
+                </div>
+            </div>
+            <ol class="career-scales" id="career-scales" data-i18n-attr="aria-label: career.scales"></ol>
+            <div class="career-stage" id="career-stage" role="tabpanel" aria-labelledby="career-tab-map">
+                <div class="career-map-fit">
+                    <div class="career-map" id="career-map">
+                        <canvas id="career-canvas" width="320" height="192" role="img"></canvas>
+                        <span class="career-map-title" id="career-map-title" aria-hidden="true"></span>
+                    </div>
+                </div>
+                <article class="career-card" id="career-card" aria-live="polite"></article>
+            </div>
+            <div class="career-journal" id="career-journal" role="tabpanel" aria-labelledby="career-tab-journal" hidden></div>
+        </div>
+
         <!-- How to Play Modal -->
         <div id="rules-modal" class="screen overlay hidden">
             <h2 data-i18n="rules.title">How to Play Chessdown</h2>
@@ -283,6 +315,9 @@
     <script src="engine.js"></script>
     <script src="series.js"></script>
     <script src="club-rules.js"></script>
+    <script src="career-coaches.js"></script>
+    <script src="career-quests.js"></script>
+    <script src="career-rules.js"></script>
     <script src="bot-search.js"></script>
     <script type="module" src="js/main.js"></script>
 </body>

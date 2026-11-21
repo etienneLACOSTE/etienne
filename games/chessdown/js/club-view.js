@@ -4,6 +4,7 @@
 // campaign, and starting over with a new club.
 import { crestSVG, esc, jerseySVG } from './club-art.js';
 import { deleteClub, saveClub } from './club-store.js';
+import { deleteCareer } from './career-store.js';
 import { ask } from '../../../assets/js/dialog.js';
 import { t } from '../../../assets/js/i18n.js';
 
@@ -101,6 +102,7 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay }) {
         box.querySelector('#club-delete')?.addEventListener('click', async () => {
             if (!await ask(t('club.deleteAsk', { club: club.name }), { confirm: t('club.deleteConfirm'), cancel: t('dialog.cancel') })) return;
             deleteClub();
+            deleteCareer(); // A new club starts a new career
             onDeleted();
         });
         box.querySelectorAll('.club-rename').forEach((b) => b.addEventListener('click', () => openRename(Number(/** @type {HTMLElement} */ (b).dataset.player))));

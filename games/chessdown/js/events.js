@@ -15,6 +15,7 @@ import { t } from '../../../assets/js/i18n.js';
 import { saveSettings, showSettings } from './settings.js';
 import { askFormat, hideScore, startSeries } from './match.js';
 import { loadClub } from './club-store.js';
+import { openCareer } from './career-view.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
 import { beginAllStar, endAllStar } from './all-star.js';
@@ -50,6 +51,17 @@ function openAllStar() {
         return;
     }
     openClubPage(club, toMenu);
+}
+
+/**
+ * The career (docs/games/chessdown-career.md) with the club; back to the club's page from it.
+ * Not on the menus yet: its matches open in the next step (the tests open it from here).
+ */
+export function openCareerPage(club) {
+    showScreen(/** @type {HTMLElement} */ (document.getElementById('career-screen')));
+    openCareer(club, {
+        onClub: () => openClubPage(loadClub() || club, () => { showScreen(ui.mainMenu); document.getElementById('btn-all-star')?.focus(); }),
+    });
 }
 
 function openClubPage(club, toMenu) {

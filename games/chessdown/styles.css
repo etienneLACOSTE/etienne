@@ -9,6 +9,7 @@
     --white: #FFFFFF;
     --amber: #FFB81C;
     --muted-on-dark: #BDBDBD;
+    --quest-blue: #3FA9F5; /* Career: side-quest markers (DESIGN.md) */
 
     --display: 'Big Shoulders Display', Impact, sans-serif;
     --text: 'Archivo', Arial, sans-serif;
@@ -1008,3 +1009,148 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .victory-club { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; font-weight: 700; }
 .victory-club[hidden] { display: none; }
 .victory-club li::before { content: "★ "; color: var(--amber); }
+
+/* --- Career (js/career-view.js, js/career-map.js): one screen, no scrolling --- */
+.career-page {
+    display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-columns: minmax(0, 1fr);
+    justify-content: stretch; align-items: stretch; text-align: left; gap: 8px; padding: 8px 16px 12px; min-height: 0;
+}
+.career-page.hidden { display: none; }
+.career-page > * { min-width: 0; }
+.career-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.career-top h2 { font-size: 24px; margin: 0; }
+.career-views { display: flex; gap: 6px; }
+.career-views button {
+    font: 900 15px var(--display); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
+    padding: 5px 14px; border-radius: 4px; border: 2px solid #2a2f2c; background: var(--black); color: var(--muted-on-dark);
+}
+.career-views button[aria-selected="true"] { border-color: var(--amber); background: var(--amber); color: var(--black); }
+.career-board { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.career-board span { font: 800 13px var(--text); border: 2px solid #2a2f2c; border-radius: 4px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.career-top .btn-ghost { padding: 5px 12px; font-size: 13px; }
+
+.career-gerard { display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: center; }
+.career-gerard canvas { width: 48px; height: 48px; image-rendering: pixelated; border: 2px solid var(--white); border-radius: 4px; background: var(--turf); }
+.career-bubble {
+    position: relative; background: var(--white); color: var(--black); border: 3px solid var(--black); border-radius: 4px;
+    padding: 5px 12px; box-shadow: 4px 4px 0 var(--turf); font: 600 0.95rem/1.4 var(--text); cursor: pointer; min-width: 0;
+}
+.career-bubble::before { content: ""; position: absolute; left: -15px; top: 14px; border: 8px solid transparent; border-right: 12px solid var(--white); border-left: 0; }
+
+.career-scales { display: flex; flex-wrap: wrap; gap: 4px 6px; list-style: none; margin: 0; padding: 0; }
+.career-scales li {
+    flex: none; font: 800 13px var(--display); text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 3px 10px; border-radius: 999px; border: 2px solid #2a2f2c; color: var(--muted-on-dark);
+}
+.career-scales li.open { border-color: var(--turf-light); color: var(--white); background: var(--turf); }
+.career-scales li.current { border-color: var(--amber); color: var(--amber); }
+.career-lock { font: 700 10px var(--text); border: 1px solid #6b6b6b; border-radius: 3px; padding: 0 4px; }
+
+.career-stage { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 12px; min-height: 0; }
+.career-stage[hidden], .career-journal[hidden] { display: none; }
+/* The map keeps its 5:3 shape and fits the space left, whichever side is shorter. */
+.career-map-fit { container-type: size; min-height: 0; min-width: 0; display: grid; place-items: start center; }
+.career-map {
+    position: relative; border: 3px solid var(--white); border-radius: 6px; overflow: hidden; background: #2d6e3a;
+    width: min(100cqw, 100cqh * 320 / 192); aspect-ratio: 320 / 192;
+}
+.career-map canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.career-map-title {
+    position: absolute; left: 8px; bottom: 8px; z-index: 2; pointer-events: none; font: 900 14px var(--display); text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--amber); background: var(--black); border: 2px solid var(--amber); border-radius: 3px; padding: 1px 8px;
+}
+/* Placed with `translate` (not transform): buttons lift on hover with a transform (above), which must not move the marker. */
+.career-marker { position: absolute; z-index: 3; translate: -50% -100%; padding: 0; border: 0; background: none; cursor: pointer; min-width: 0; transition: none; }
+.career-marker:hover:not(:disabled) { transform: none; }
+.career-marker .ex {
+    min-width: 24px; height: 28px; padding: 0 3px; display: grid; place-items: center; font: 900 20px/1 var(--display); color: var(--black);
+    border: 3px solid var(--black); border-radius: 4px; box-shadow: 2px 2px 0 var(--black); animation: career-bob 1.4s steps(2) infinite;
+}
+.career-marker.main .ex { background: var(--amber); }
+.career-marker.side .ex { background: var(--quest-blue); }
+.career-marker.done .ex { background: #6b6b6b; animation: none; font-size: 15px; }
+.career-marker.home .ex { background: var(--white); animation: none; font: 400 16px var(--pieces); }
+.career-marker.transport .ex { background: var(--white); animation: none; font-size: 11px; letter-spacing: 0.02em; }
+.career-marker .tag {
+    position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); font: 800 11px/1.2 var(--text);
+    background: var(--black); color: var(--white); border: 2px solid var(--white); border-radius: 3px; padding: 1px 5px; white-space: nowrap;
+    opacity: 0; transition: opacity 0.12s; pointer-events: none;
+}
+.career-marker:hover .tag, .career-marker:focus-visible .tag, .career-marker[aria-pressed="true"] .tag { opacity: 1; }
+.career-marker[aria-pressed="true"] .ex { outline: 3px solid var(--white); outline-offset: 1px; }
+@keyframes career-bob { 50% { transform: translateY(-3px); } }
+
+.career-card {
+    background: #0d0f0e; border: 2px solid #2a2f2c; border-radius: 6px; padding: 12px 14px; display: grid; gap: 7px;
+    align-content: start; min-width: 0; min-height: 0; overflow-y: auto;
+}
+.career-card.main { border-color: var(--amber); }
+.career-card.side { border-color: var(--quest-blue); }
+.career-card.transport { border-color: var(--white); }
+.career-card h3 { margin: 0; font: 900 clamp(20px, 2.6vw, 26px)/1.05 var(--display); text-transform: uppercase; color: var(--white); }
+.career-card h4 { margin: 2px 0 0; font: 800 12px var(--text); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-on-dark); }
+.career-card ul { margin: 0; padding-left: 18px; }
+.career-kind { display: inline-flex; gap: 6px; align-items: center; font: 900 13px var(--display); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted-on-dark); }
+.career-card.main .career-kind { color: var(--amber); }
+.career-card.side .career-kind { color: var(--quest-blue); }
+.career-place { margin: -3px 0 0; font-weight: 600; font-size: 14px; color: var(--muted-on-dark); }
+.career-quote { margin: 0; padding-left: 10px; border-left: 3px solid #2a2f2c; font-style: italic; }
+.career-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.career-chip { font: 700 13px var(--text); border: 2px solid #8a8a8a; border-radius: 999px; padding: 2px 10px; }
+.career-chip.reward { border-color: var(--turf-light); background: var(--turf); }
+.career-glyphs { font-family: var(--pieces); }
+.career-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.career-toast { min-height: 1.3em; margin: 0; font-weight: 700; color: var(--amber); }
+.career-dot { width: 13px; height: 13px; border: 2px solid var(--black); border-radius: 2px; display: inline-block; flex: none; background: #6b6b6b; }
+.career-dot.main { background: var(--amber); }
+.career-dot.side { background: var(--quest-blue); }
+.career-rival { display: grid; grid-template-columns: 60px 1fr; gap: 10px; align-items: center; border: 2px solid #2a2f2c; border-radius: 6px; padding: 6px; }
+.career-rival canvas { width: 60px; height: 60px; image-rendering: pixelated; border: 2px solid var(--white); border-radius: 4px; }
+.career-rival-name { font: 900 17px/1.05 var(--display); text-transform: uppercase; }
+.career-rival-nick { color: var(--amber); }
+.career-rival small { display: block; color: var(--muted-on-dark); font-weight: 600; font-size: 13px; }
+.career-ticket { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; border: 2px dashed #8a8a8a; border-radius: 6px; padding: 8px; }
+.career-ticket.ok { border-color: var(--amber); }
+.career-stub { font: 900 20px/1 var(--display); text-transform: uppercase; background: #3a3a3a; color: var(--muted-on-dark); border-radius: 3px; padding: 6px 8px; transform: rotate(-4deg); }
+.career-ticket.ok .career-stub { background: var(--white); color: var(--black); }
+
+.career-journal { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-height: 0; overflow-y: auto; align-content: start; }
+.career-journal section { background: #0d0f0e; border: 2px solid #2a2f2c; border-radius: 6px; padding: 12px 14px; min-width: 0; display: grid; gap: 8px; align-content: start; }
+.career-journal h3 { margin: 0; display: flex; gap: 8px; align-items: center; font: 900 19px var(--display); text-transform: uppercase; color: var(--white); }
+.career-journal p { margin: 0; }
+.career-table-wrap { overflow-x: auto; }
+.career-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.career-table th, .career-table td { text-align: left; padding: 5px 6px; border-bottom: 1px solid #2a2f2c; }
+.career-table thead th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted-on-dark); }
+.career-table tbody th { font-weight: 600; }
+.career-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.career-table tr.you th, .career-table tr.you td { color: var(--amber); font-weight: 800; }
+.career-quests, .career-titles { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.career-quests button {
+    width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; cursor: pointer;
+    font: 600 15px var(--text); color: var(--white); background: transparent; border: 2px solid #2a2f2c; border-radius: 6px; padding: 6px 10px;
+}
+.career-quests button:hover { border-color: var(--quest-blue); }
+.career-quests button:disabled { opacity: 0.6; cursor: default; }
+.career-quests small { color: var(--muted-on-dark); font-weight: 600; }
+
+@media (max-width: 880px) {
+    .career-stage { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+    .career-map-fit { container-type: inline-size; }
+    .career-map { width: 100%; }
+    .career-journal { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+    .career-page { padding: 6px 12px 10px; gap: 6px; }
+    .career-top h2 { font-size: 20px; }
+    .career-board { margin-left: 0; }
+    .career-board span:first-child { display: none; }
+    .career-gerard { grid-template-columns: 36px 1fr; gap: 10px; }
+    .career-gerard canvas { width: 36px; height: 36px; }
+    .career-bubble { font-size: 0.85rem; padding: 4px 10px; }
+    .career-marker .ex { min-width: 18px; height: 21px; font-size: 14px; border-width: 2px; }
+    .career-scales li { font-size: 11px; padding: 2px 7px; }
+    .career-lock { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .career-marker.transport .ex { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) { .career-marker .ex { animation: none; } .career-marker .tag { transition: none; } }

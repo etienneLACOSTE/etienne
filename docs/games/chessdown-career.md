@@ -121,3 +121,17 @@ servent à faire progresser ses joueurs et à en recruter.
   - Le bot fait sa draft sans les pièces interdites (`draftArmy`, option `banned`).
   - Le chrono et la composition verrouillée relèvent du déroulé du match : ils seront
     branchés à l'étape 4. Sans `state.rules`, le moteur ne change pas, en ligne compris.
+- **Étape 3 (faite)** : la carte et l'écran de carrière dans le jeu (`#career-screen`) :
+  - `js/career-map.js` : les 5 cartes dessinées par le code, le réseau de routes, les
+    déplacements (à pied, en bus, en avion) et l'animation (eau, voitures, trains, drapeaux).
+    Avec la réduction des animations, rien ne bouge.
+  - `js/career-view.js` : Gérard, l'échelle des niveaux et la carte avec un bouton par lieu.
+    La fiche d'un lieu n'apparaît qu'à l'arrivée. Le transport demande le ticket. Le journal
+    (classement, quêtes, trophées) est derrière un onglet.
+  - `js/coach-portrait.js` : les portraits des rivaux. `js/career-store.js` : la carrière est
+    gardée dans le navigateur (`pawnet.chessdown.career`) et effacée avec le club.
+  - Les textes sont dans `strings/career/<langue>.js`, en 5 langues. Un test vérifie que
+    chaque lieu, rival, quête, règle et récompense a son texte.
+  - L'écran n'est pas encore dans les menus : les boutons « Jouer le match » et « Accepter »
+    disent que les matchs arrivent avec l'étape 4. Les tests l'ouvrent depuis `events.js`
+    (`openCareerPage`).
