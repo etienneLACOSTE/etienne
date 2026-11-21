@@ -95,13 +95,17 @@ test('a school season: five matches, the table, the ticket and the title for the
         c = Career.recordSeries(c, { won: 2, lost: 1 });
     }
     assert.deepEqual([...opponents].sort(), [...c.rivals.school].sort(), 'every rival met once');
-    assert.equal(Career.nextMatch(c), null);
-    assert.equal(Career.recordSeries(c, { won: 2, lost: 0 }), null, 'no sixth match');
+    assert.equal(Career.nextMatch(c).phase, 'cup', 'then the City Cup');
+    assert.equal(Career.seasonOver(c), false);
     const table = Career.standings(c);
     assert.equal(table[0].club, Career.YOU);
     assert.deepEqual(table[0], { club: 'you', order: 0, played: 5, won: 5, drawn: 0, lost: 0, gamesFor: 10, gamesAgainst: 5, points: 15 });
     assert.ok(table.every((r) => r.played === 5));
+    c = Career.recordSeries(Career.recordSeries(c, { won: 2, lost: 0 }), { won: 2, lost: 1 }); // Semi-final, final
+    assert.equal(Career.nextMatch(c), null);
+    assert.equal(Career.recordSeries(c, { won: 2, lost: 0 }), null, 'nothing left to play');
     const end = Career.finishSeason(c);
+    assert.equal(end.cupWon, true);
     assert.equal(end.rank, 1);
     assert.equal(end.ticket, 'county');
     assert.equal(end.title, true);
@@ -109,7 +113,8 @@ test('a school season: five matches, the table, the ticket and the title for the
     assert.equal(end.career.tier, 'school');
     assert.deepEqual(end.career.tickets, ['county']);
     assert.equal(end.career.league.results.length, 0);
-    assert.deepEqual(end.career.titles, [{ tier: 'school', season: 1 }]);
+    assert.deepEqual(end.career.titles, [{ tier: 'school', season: 1 }, { tier: 'school', season: 1, cup: true }]);
+    assert.deepEqual(end.career.cupRun, { stage: 0, out: false }, 'a new cup next season');
 });
 
 test('the other matches are simulated from the seed, the same every time', () => {
@@ -221,7 +226,7 @@ test('a stored career: read back as it was; anything tampered with is refused', 
 test('the school tutorial: pieces added matchday by matchday, the final a real match, first season only', () => {
     let c = Career.newCareer(4);
     const steps = [];
-    while (Career.nextMatch(c)) {
+    while (Career.nextMatch(c) && Career.nextMatch(c).phase === 'league') {
         steps.push([Career.tutorialStep(c), Career.matchdayRules(c)]);
         c = Career.recordSeries(c, { won: 2, lost: 0 });
     }
@@ -232,12 +237,36 @@ test('the school tutorial: pieces added matchday by matchday, the final a real m
         [3, { timer: 60 }],
         [4, {}],
     ]);
-    assert.equal(Career.tutorialStep(c), -1, 'the season is over');
-    const second = Career.finishSeason(c).career;
+    assert.equal(Career.tutorialStep(c), -1, 'the cup is not part of the tutorial');
+    assert.deepEqual(Career.matchdayRules(c), {});
+    const second = Career.finishSeason(playSeason(c)).career;
     assert.equal(Career.tutorialStep(second), -1, 'no tutorial in the second season');
     assert.deepEqual(Career.matchdayRules(second), {});
     // Rules handed out are copies
     const first = Career.newCareer(4);
     Career.matchdayRules(first).banned.push('k');
     assert.deepEqual(Career.matchdayRules(first).banned, ['n', 'b', 'r', 'q']);
+});
+
+test('the cups: against the league\'s best rivals, weakest first; one defeat and the cup is over', () => {
+    let c = Career.newCareer(21);
+    while (Career.nextMatch(c).phase === 'league') c = Career.recordSeries(c, { won: 1, lost: 1 });
+    const best = Career.standings(c).filter((r) => r.club !== Career.YOU).map((r) => r.club);
+    const semi = Career.nextMatch(c);
+    assert.deepEqual([semi.phase, semi.round, semi.opponent], ['cup', 0, best[1]]);
+    c = Career.recordSeries(c, { won: 2, lost: 1 });
+    assert.deepEqual([Career.nextMatch(c).round, Career.nextMatch(c).opponent], [1, best[0]], 'the best rival in the final');
+    c = Career.recordSeries(c, { won: 0, lost: 2 });
+    assert.deepEqual(c.cupRun, { stage: 1, out: true });
+    assert.equal(Career.seasonOver(c), true);
+    assert.equal(Career.finishSeason(c).cupWon, false);
+    // The national cup has three rounds; the county has none
+    const national = reach('national');
+    assert.deepEqual(national.cupRun, { stage: 0, out: false });
+    assert.equal(Career.TIERS.national.cup.rounds, 3);
+    assert.equal(reach('county').cupRun, null);
+    // Stored and read back
+    assert.deepEqual(Career.sanitizeCareer(JSON.parse(JSON.stringify(c))), c);
+    const bad = JSON.parse(JSON.stringify(c)); bad.cupRun = { stage: 9, out: false };
+    assert.equal(Career.sanitizeCareer(bad), null);
 });

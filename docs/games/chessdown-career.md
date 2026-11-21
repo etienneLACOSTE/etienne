@@ -172,7 +172,14 @@ servent à faire progresser ses joueurs et à en recruter.
 - En carrière, gagner une série ne donne plus de recrue en attente : les recrues viennent des
   quêtes (les matchs amicaux en donnent toujours).
 
+- **Les coupes (faites)** : la Coupe de la ville (Scolaire, à la mairie : demi-finale puis
+  finale) et la Coupe nationale (National, au Grand Stade : quart, demie, finale). Elles se
+  jouent une fois le championnat fini, contre les meilleurs rivaux de la ligue, du plus faible
+  au plus fort (le meilleur en finale), à élimination directe. La saison ne se termine
+  qu'après la coupe ; le ticket dépend toujours du classement de la ligue. Gagner la coupe
+  rapporte un trophée (dans le journal) et une recrue à signer sur la page du club. Les
+  journées du tutoriel ne touchent pas la coupe.
+
 ## Pas encore fait
 
-- La Coupe de la ville et la coupe nationale.
 - Le maillot « Héritage » est gardé avec le club, mais pas encore proposé sur la page du club.

@@ -290,4 +290,52 @@ test.describe('Career', () => {
     expect(career.questsDone).toEqual([]);
     expect(career.quests.attempted).toEqual(['sunday-jog']);
   });
+
+  test('the City Cup: closed during the league, then at the town hall; the final won brings the trophy and a recruit', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/chessdown/');
+    const open = (careerScript) => page.evaluate(async ([club, script]) => {
+      localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club));
+      const Career = /** @type {any} */ (window).ChessdownCareer;
+      let c = Career.newCareer(8);
+      c.quests = { drawn: ['counter-bet', 'street-match', 'market-rush', 'shy-knight'], attempted: [] };
+      if (script === 'final') {
+        while (Career.nextMatch(c).phase === 'league') c = Career.recordSeries(c, { won: 2, lost: 0 });
+        c = Career.recordSeries(c, { won: 2, lost: 1 }); // The semi-final won
+      }
+      localStorage.setItem('pawnet.chessdown.career', JSON.stringify(c));
+      (await import('/chessdown/js/events.js')).openCareerPage(club);
+    }, [CLUB, careerScript]);
+
+    await open('start');
+    await page.getByRole('button', { name: 'Closed for now: Town hall' }).click();
+    await expect(card(page)).toContainText('The cup is played once the league is over.');
+
+    await open('final');
+    await expect(page.getByRole('button', { name: 'Main quest: Town hall' })).toBeVisible();
+    await page.getByRole('button', { name: /Léo-Lagrange municipal stadium/ }).click();
+    await expect(card(page)).toContainText('The league is over. City Cup: head for Town hall.');
+    await page.getByRole('button', { name: 'Main quest: Town hall' }).click();
+    await expect(card(page).locator('h3')).toHaveText('City Cup · Final');
+    await expect(card(page)).toContainText('The trophy and a recruit for the club');
+    await card(page).getByRole('button', { name: 'Play the match' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await expect(bench.getByRole('button', { name: /^Place Alex,/ })).toBeEnabled(); // No tutorial limits in the cup
+    await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
+    await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    for (let i = 0; i < 2; i++) await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king'));
+    await expect(page.locator('#victory-club')).toContainText('City Cup won: the trophy is the club\'s!');
+    await expect(page.locator('#victory-club')).toContainText('A recruit is waiting for you on the club page.');
+    await expect(page.locator('#victory-club')).toContainText('Ticket won: Bus to the county!');
+    const club = await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'));
+    expect(club.recruits).toBe(1);
+    const career = await stored(page);
+    expect(career.season).toBe(2);
+    expect(career.titles).toEqual([{ tier: 'school', season: 1 }, { tier: 'school', season: 1, cup: true }]);
+    await page.locator('#btn-restart').dispatchEvent('pointerdown');
+    await page.getByRole('tab', { name: 'Journal' }).click();
+    await expect(page.locator('.career-titles')).toContainText('City Cup, season 1');
+  });
 });

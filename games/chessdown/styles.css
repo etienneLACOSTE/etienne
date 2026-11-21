@@ -1160,3 +1160,5 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-lesson h4 { color: var(--amber); }
 .career-lesson p { margin: 0; }
 .career-marker.tag-below .tag { bottom: auto; top: calc(100% + 3px); }
+.career-marker.locked .ex { background: #6b6b6b; color: #111; animation: none; font-size: 14px; }
+.career-card.locked { border-color: #6b6b6b; }

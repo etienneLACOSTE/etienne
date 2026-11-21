@@ -221,8 +221,25 @@ function finish(success) {
         const after = Career.recordSeries(career, { won: state.series.wins[1], lost: state.series.wins[2] });
         if (after) career = after;
         const total = Career.TIERS[career.tier].clubs;
+        const cup = t(`career.cup.${career.tier}`);
         if (before && before.phase === 'knockout') lines.push(t(success ? 'career.result.through' : 'career.result.out'));
-        else lines.push(t('career.result.matchday', { rank: Career.rank(career), total }));
+        else if (before && before.phase === 'cup') {
+            const final = before.round === Career.TIERS[career.tier].cup.rounds - 1;
+            if (!success) lines.push(t('career.result.cupOut', { cup }));
+            else if (!final) lines.push(t('career.result.through'));
+            else {
+                lines.push(t('career.result.cupWon', { cup }));
+                if (state.allStar && state.allStar.club.recruits < 5) { // The cup brings a recruit, signed on the club's page
+                    state.allStar.club = { ...state.allStar.club, recruits: state.allStar.club.recruits + 1 };
+                    saveClub(state.allStar.club);
+                    lines.push(t('career.result.cupRecruit'));
+                }
+            }
+        } else {
+            lines.push(t('career.result.matchday', { rank: Career.rank(career), total }));
+            const next = Career.nextMatch(career);
+            if (next && next.phase === 'cup') lines.push(t('career.result.cupOpen', { cup, place: t(`place.${career.tier}.${Career.TIERS[career.tier].cup.place}`) }));
+        }
         if (Career.seasonOver(career)) {
             const end = Career.finishSeason(career);
             lines.push(t('career.result.seasonOver', { rank: end.rank, total }));
