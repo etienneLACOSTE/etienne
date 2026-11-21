@@ -12,7 +12,7 @@ import { setupResign } from './resign.js';
 import { fireConfetti } from '../confetti.js';
 import { forgetSeat } from '../../../assets/js/seat.js';
 import { clearFieldError, showFieldError } from '../../../assets/js/field-error.js';
-import { t } from '../../../assets/js/i18n.js';
+import { language, t } from '../../../assets/js/i18n.js';
 import { saveSettings, showSettings } from './settings.js';
 import { askFormat, hideScore, startSeries } from './match.js';
 import { loadClub } from './club-store.js';
@@ -115,6 +115,7 @@ function openClubPage(club, toMenu) {
         onMenu: toMenu,
         onDeleted: openAllStar,
         onCareer: (playing, view) => openCareerPage(playing, '', false, view),
+        onSettings: () => openSettings('club'),
         // A campaign match with the club: the campaign setup first (difficulty, opponent).
         onPlay: (playing) => {
             pendingClub = playing;
@@ -128,6 +129,24 @@ function openClubPage(club, toMenu) {
 }
 
 const languageSelect = /** @type {HTMLSelectElement} */ (document.getElementById('language-select'));
+
+/** Where the Settings screen was opened from ('menu' or 'club'): it goes back there. */
+let settingsFrom = 'menu';
+const REOPEN = 'pawnet.chessdown.reopen';
+
+/** The Settings screen (language, timer), from the menu or the club's gear. */
+function openSettings(from) {
+    settingsFrom = from;
+    showSettings(languageSelect);
+    showScreen(ui.timerModal);
+}
+
+/** After the reload a new language brings: back on the club's page if Settings came from there. */
+export function reopenAfterReload() {
+    let page = null;
+    try { page = sessionStorage.getItem(REOPEN); sessionStorage.removeItem(REOPEN); } catch { /* Nothing kept */ }
+    if (page === 'club' && loadClub()) openAllStar();
+}
 
 /** A tap on a board square (or Enter on it, see a11y.js) goes to the draft or the match. */
 function onBoardPointerdown(e) {
@@ -238,11 +257,7 @@ export function setupEventListeners() {
     document.getElementById('btn-all-star')?.addEventListener('pointerdown', openAllStar);
 
     if (ui.btnShowTimer) {
-        ui.btnShowTimer.addEventListener('pointerdown', () => {
-            showSettings(languageSelect);
-            ui.mainMenu.classList.add('hidden');
-            ui.timerModal.classList.remove('hidden');
-        });
+        ui.btnShowTimer.addEventListener('pointerdown', () => openSettings('menu'));
     }
 
     const timerToggleBtns = document.querySelectorAll('.timer-toggle-btn');
@@ -273,7 +288,16 @@ export function setupEventListeners() {
             };
             
             ui.timerModal.classList.add('hidden');
-            ui.mainMenu.classList.remove('hidden');
+            // Back where Settings was opened from: the menu, or the club's page (also after the
+            // reload a new language brings: kept for this tab only)
+            if (settingsFrom === 'club') {
+                if (languageSelect.value !== language()) {
+                    try { sessionStorage.setItem(REOPEN, 'club'); } catch { /* The menu after the reload */ }
+                }
+                openAllStar();
+            } else {
+                showScreen(ui.mainMenu);
+            }
             saveSettings(languageSelect); // Kept; a new language reloads the page
         });
     }

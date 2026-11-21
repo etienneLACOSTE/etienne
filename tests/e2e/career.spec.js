@@ -197,6 +197,38 @@ test.describe('Career', () => {
     expect(errors).toEqual([]);
   });
 
+  test('on phones: markers of 24 px at least, nothing wider than the screen, the map and the card in view', async ({ page }) => {
+    for (const [w, h] of [[320, 568], [375, 812], [667, 375]]) {
+      await page.setViewportSize({ width: w, height: h });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await openCareer(page);
+      const sizes = await page.evaluate(() => [...document.querySelectorAll('.career-marker')].map((m) => m.getBoundingClientRect()).map((r) => [r.width, r.height]));
+      expect(sizes.every(([mw, mh]) => mw >= 24 && mh >= 24), `${w}x${h}: ${JSON.stringify(sizes)}`).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${w}x${h}: no sideways scroll`).toBe(true);
+      const map = await page.locator('#career-map').boundingBox();
+      const cardBox = await page.locator('#career-card').boundingBox();
+      expect(map.width, `${w}x${h}: a map you can use`).toBeGreaterThan(w > h ? 300 : w - 40);
+      expect(cardBox.y + 40, `${w}x${h}: the card starts on screen`).toBeLessThan(h);
+      await expect(page.getByRole('button', { name: 'Tour with Gérard' })).toBeVisible(); // An icon, named
+    }
+  });
+
+  test('the club\'s gear: the Settings, and back to the club, in the new language too', async ({ page }) => {
+    await page.addInitScript((club) => { if (!localStorage.getItem('pawnet.chessdown.club')) localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)); }, CLUB);
+    await page.goto('/chessdown/');
+    await page.getByRole('button', { name: 'All Star: my club' }).click();
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await expect(page.locator('#timer-modal')).toBeVisible();
+    await page.locator('#btn-save-timer').dispatchEvent('pointerdown'); // Nothing changed: back to the club
+    await expect(page.locator('#club-screen')).toBeVisible();
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.getByLabel('Language').selectOption('fr');
+    await page.locator('#btn-save-timer').dispatchEvent('pointerdown'); // The page reloads in French
+    await expect(page.locator('#club-screen')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Carte', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Réglages' })).toBeVisible();
+  });
+
   test('in French', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('pawnet.language', 'fr'));
     await openCareer(page);

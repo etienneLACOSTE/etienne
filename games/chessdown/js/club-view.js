@@ -54,7 +54,8 @@ export function rosterTable(club, { rename = true } = {}) {
  * Show the club's page in `box`.
  * @param {HTMLElement} box
  * @param {any} club
- * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void, onCareer: (club: any, view: string) => void }} handlers
+ * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void, onCareer: (club: any, view: string) => void, onSettings?: () => void }} handlers
+ *   onSettings: the gear: the Settings screen (language, timer), back to the club after
  *   onPlay: a friendly match with the club against the bot; onCareer: the career, on its map,
  *   journal or pieces' guide ('map', 'journal', 'guide'), or with Gérard's tour ('tour')
  */
@@ -65,7 +66,10 @@ export function clubMeta(club) {
     return t('club.meta', { coach: club.coach, tournament: t(`career.tournament.${tier}`), season: career ? career.season : 1 });
 }
 
-export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
+/** A gear (the Settings button of the club's page). */
+const GEAR = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.7a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.4L6.6 11a7.6 7.6 0 0 0 0 2l-2.2 1.6 2 3.4 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.7h4l.4-2.7a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>`;
+
+export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer, onSettings = () => {} }) {
     const render = (focusId = '') => {
         box.innerHTML = `
           <div class="club-card">
@@ -75,6 +79,7 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
               <div class="club-meta">${esc(clubMeta(club))}</div>
             </div>
             <figure class="club-preview club-card-jersey">${jerseySVG(club)}</figure>
+            <button type="button" class="club-settings" id="club-settings" aria-label="${esc(t('menu.settings'))}" title="${esc(t('menu.settings'))}">${GEAR}</button>
           </div>
           <div class="club-row club-career-row"><button type="button" class="btn-primary btn-big" data-career="map">${esc(t('career.tabMap'))}</button>
             <button type="button" class="btn-secondary" data-career="journal">${esc(t('career.tabJournal'))}</button>
@@ -124,6 +129,7 @@ export function showClub(box, club, { onMenu, onDeleted, onPlay, onCareer }) {
     function wire() {
         box.querySelector('#club-menu')?.addEventListener('click', onMenu);
         box.querySelector('#club-play')?.addEventListener('click', () => onPlay(club));
+        box.querySelector('#club-settings')?.addEventListener('click', () => onSettings());
         box.querySelectorAll('[data-career]').forEach((b) => b.addEventListener('click', () => onCareer(club, /** @type {HTMLElement} */ (b).dataset.career)));
         box.querySelector('#club-delete')?.addEventListener('click', async () => {
             if (!await ask(t('club.deleteAsk', { club: club.name }), { confirm: t('club.deleteConfirm'), cancel: t('dialog.cancel') })) return;

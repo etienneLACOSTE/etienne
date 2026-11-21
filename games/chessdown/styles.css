@@ -1158,6 +1158,47 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
     .career-lock { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .career-marker.transport .ex { font-size: 9px; }
 }
+/* Phones (docs/games/chessdown-career.md): a compact top, the map the whole width, markers
+   of 24 px at least; held sideways, the map and the card side by side. */
+.career-btn-icon { display: none; }
+@media (max-width: 520px) {
+    .career-top { gap: 6px 8px; }
+    .career-top h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .career-views button { padding: 5px 9px; font-size: 13px; }
+    .career-views { flex: 1 1 auto; }
+    .career-board { flex-wrap: nowrap; overflow: hidden; order: 5; flex: 1 1 100%; }
+    .career-board span:nth-child(2), .career-board span:nth-child(3) { display: none; } /* Season and tier: in the scale below */
+    .career-board span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .career-icon-btn { width: 36px; height: 36px; padding: 0 !important; display: grid; place-items: center; }
+    .career-btn-icon { display: block; font: 900 18px var(--display); }
+    .career-icon-btn #career-back .career-btn-icon, #career-back .career-btn-icon { font: 400 18px var(--pieces); }
+    .career-btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .career-bubble { max-height: calc(2 * 1.4em + 12px); }
+    .career-scales { flex-wrap: nowrap; overflow: hidden; gap: 3px; }
+    .career-scales li { font-size: 10px; padding: 1px 5px; letter-spacing: 0.02em; }
+    .career-stage { grid-template-rows: auto minmax(0, 1fr); }
+    .career-map-fit { container-type: normal; }
+    .career-map { width: 100%; }
+    .career-marker .ex { min-width: 24px; height: 24px; font-size: 15px; }
+    .career-marker.transport .ex { font-size: 9px; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+    .career-page { padding: 4px 12px 6px; gap: 4px; grid-template-rows: auto auto minmax(0, 1fr); }
+    .career-top h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .career-top { flex-wrap: nowrap; }
+    .career-icon-btn { width: 36px; height: 36px; padding: 0 !important; display: grid; place-items: center; flex: none; }
+    .career-btn-icon { display: block; font: 900 18px var(--display); }
+    #career-back .career-btn-icon { font: 400 18px var(--pieces); }
+    .career-btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .career-bubble .club-speaker { display: none; }
+    .career-board span:nth-child(2), .career-board span:nth-child(3) { display: none; }
+    .career-gerard { grid-template-columns: 32px 1fr; gap: 8px; }
+    .career-gerard canvas { width: 32px; height: 32px; }
+    .career-bubble { max-height: calc(1.4em + 10px); overflow-y: auto; padding: 2px 10px; font-size: 0.85rem; }
+    .career-scales { display: none; }
+    .career-stage { grid-template-columns: minmax(0, 1fr) minmax(220px, 40%); grid-template-rows: minmax(0, 1fr); }
+    .career-marker .ex { min-width: 24px; height: 24px; font-size: 15px; }
+}
 @media (prefers-reduced-motion: reduce) { .career-marker .ex { animation: none; } .career-marker .tag { transition: none; } }
 .career-pick { font: 700 13px var(--text); border: 2px solid #8a8a8a; border-radius: 999px; padding: 3px 10px; background: transparent; color: var(--white); cursor: pointer; }
 .career-pick[aria-checked="true"] { background: var(--amber); border-color: var(--amber); color: var(--black); }
@@ -1271,3 +1312,12 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
     .tour-text, .tour-do { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { .tour-hole { animation: none; } }
+
+/* --- The club page's gear: Settings (language, timer) --- */
+.club-card { position: relative; padding-right: 62px; }
+.club-settings {
+    position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; padding: 0; display: grid; place-items: center;
+    background: var(--black); color: var(--white); border: 2px solid var(--white); border-radius: 50%; cursor: pointer;
+}
+.club-settings:hover:not(:disabled) { transform: none; background: var(--white); color: var(--black); }
+.club-settings:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }

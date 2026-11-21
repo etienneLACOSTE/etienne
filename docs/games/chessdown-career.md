@@ -41,6 +41,18 @@ international compris, un tournoi de 32 clubs à double élimination ; les coupe
 - Les carrières enregistrées avant (version 1, ligues) sont refusées : la page en recommence
   une (le club est gardé).
 
+## Téléphones (2026-11-21)
+
+- Jusqu'à 520 px de large : titre « Carrière » masqué (lu par les lecteurs d'écran), onglets
+  et deux boutons à icône (« ? » la visite, « ♜ » le club) sur une ligne, l'étape du tournoi
+  dessous (saison et échelon : dans l'échelle), bulle de Gérard sur 2 lignes, échelle sur une
+  ligne, carte sur toute la largeur, fiche dessous dans la hauteur restante.
+- Téléphone à l'horizontale (hauteur ≤ 500 px) : en-tête sur une ligne, Gérard sur une ligne,
+  échelle masquée, carte à gauche et fiche à droite.
+- Marqueurs de 24 × 24 px au moins (WCAG 2.5.8). Test : `career.spec.js`, « on phones ».
+- Page du club : un engrenage ouvre les Réglages (langue, minuteur) ; on revient au club, y
+  compris après le rechargement d'un changement de langue (`sessionStorage`, cet onglet).
+
 ## Visite de Gérard et blason du QG (2026-11-21)
 
 - `js/career-tour.js` : Gérard en grand à l'écran, le reste assombri sauf ce dont il parle

@@ -4,7 +4,7 @@ import './lang.js'; // First: the language is set before any text is written
 import { state, ui } from './state.js';
 import { showScreen } from './board-view.js';
 import { loadBotProfileForDifficulty } from './bot.js';
-import { setupEventListeners } from './events.js';
+import { reopenAfterReload, setupEventListeners } from './events.js';
 import { startDemo } from './demo.js';
 import { setupAccessibility } from './a11y.js';
 import { startCrowd } from './crowd.js';
@@ -37,6 +37,7 @@ export function init() {
     
     loadTimer();
     showScreen(ui.mainMenu);
+    reopenAfterReload(); // A new language chosen from the club's gear: back on the club's page
     ui.statusBar.textContent = t('status.welcome');
     currentUser().then((user) => {
         state.account = user;
