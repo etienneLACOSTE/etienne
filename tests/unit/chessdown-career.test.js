@@ -217,3 +217,27 @@ test('a stored career: read back as it was; anything tampered with is refused', 
     assert.equal(tamper((x) => { x.quests.attempted.push('veteran'); }), null);
     assert.equal(tamper((x) => { x.titles.push({ tier: 'school', season: 99 }); }), null);
 });
+
+test('the school tutorial: pieces added matchday by matchday, the final a real match, first season only', () => {
+    let c = Career.newCareer(4);
+    const steps = [];
+    while (Career.nextMatch(c)) {
+        steps.push([Career.tutorialStep(c), Career.matchdayRules(c)]);
+        c = Career.recordSeries(c, { won: 2, lost: 0 });
+    }
+    assert.deepEqual(steps, [
+        [0, { banned: ['n', 'b', 'r', 'q'], timer: 60 }],
+        [1, { banned: ['b', 'r', 'q'], timer: 60 }],
+        [2, { banned: ['q'], timer: 60 }],
+        [3, { timer: 60 }],
+        [4, {}],
+    ]);
+    assert.equal(Career.tutorialStep(c), -1, 'the season is over');
+    const second = Career.finishSeason(c).career;
+    assert.equal(Career.tutorialStep(second), -1, 'no tutorial in the second season');
+    assert.deepEqual(Career.matchdayRules(second), {});
+    // Rules handed out are copies
+    const first = Career.newCareer(4);
+    Career.matchdayRules(first).banned.push('k');
+    assert.deepEqual(Career.matchdayRules(first).banned, ['n', 'b', 'r', 'q']);
+});

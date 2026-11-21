@@ -90,7 +90,7 @@ function renderMarkers() {
         if (!at) continue;
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = `career-marker ${m.kind}`;
+        b.className = `career-marker ${m.kind}${at.y < 60 ? ' tag-below' : ''}`; // Near the top: its name under it
         b.dataset.place = m.place;
         b.style.left = `${(at.x / W) * 100}%`;
         b.style.top = `${((at.y - 14) / H) * 100}%`;
@@ -219,15 +219,20 @@ function showMatchCard() {
         return;
     }
     const rival = Coaches.coachById(m.opponent);
+    const rules = Career.matchdayRules(career);
+    const step = Career.tutorialStep(career);
+    const lesson = step >= 0 ? t(`career.lesson.${step}`) : '';
+    if (lesson) gerard.say(lesson); // The school tutorial: Gérard explains the matchday
     const title = m.phase === 'knockout' ? t(`career.knockout.${m.round}`)
         : Career.TIERS[career.tier].knockout ? t('career.group', { n: m.round + 1 }) : t('career.matchday', { n: m.round + 1 });
     setCard('main', `${head}
         <h3>${esc(title)}</h3>
         <p class="career-place">${esc(placeName('stadium'))} · ${esc(t('career.versus', { club: rival.club }))}</p>
         <p class="career-quote">${esc(t('career.matchQuote', { club: rival.club }))}</p>
+        ${lesson ? `<div class="career-lesson"><h4>${esc(t('career.lessonTitle'))}</h4><p>${esc(lesson)}</p></div>` : ''}
         ${rivalBlock(rival.id)}
         <h4>${esc(t('career.goals'))}</h4><ul><li>${esc(t('goal.winSeries'))}</li></ul>
-        <h4>${esc(t('career.conditions'))}</h4>${chips([esc(t('rule.bo3')), esc(t('rule.timer', { n: 30 })), opponentLine(Career.rivalOpponent(career, rival.id))], 'limit')}
+        <h4>${esc(t('career.conditions'))}</h4>${chips([esc(t('rule.bo3')), ...ruleTexts({ timer: 30, ...rules }), opponentLine(Career.rivalOpponent(career, rival.id))], 'limit')}
         <h4>${esc(t('career.rewards'))}</h4>${chips([esc(t('career.leaguePoints')), esc(t('career.matchXp'))], 'reward')}
         <div class="career-row"><button type="button" class="btn-primary" data-action="play">${esc(t('career.play'))}</button></div>`);
     if (rivalCanvas) drawCoach(rivalCanvas, rivalLook, performance.now());
@@ -353,10 +358,11 @@ function blinkLoop(now) {
 /**
  * Open the career with `theClub` (its saved career, or a new one).
  * @param {any} theClub
- * @param {{ onClub: () => void, onPlay: (spec: { kind: 'league' | 'quest', questId?: string, recruitType?: string }) => void }} handlers
- *   onClub: back to the club's page; onPlay: play a matchday or a quest
+ * @param {{ onClub: () => void, onPlay: (spec: { kind: 'league' | 'quest', questId?: string, recruitType?: string }) => void, word?: string }} handlers
+ *   onClub: back to the club's page; onPlay: play a matchday or a quest; word: what Gérard
+ *   says first (his comment on the match just played; his welcome to the map otherwise)
  */
-export function openCareer(theClub, { onClub, onPlay }) {
+export function openCareer(theClub, { onClub, onPlay, word = '' }) {
     club = theClub;
     toClub = () => { closeCareer(); onClub(); };
     play = onPlay;
@@ -366,7 +372,7 @@ export function openCareer(theClub, { onClub, onPlay }) {
     showTier('home');
     map.start();
     gerard.start();
-    gerard.say(t(`career.intro.${career.tier}`));
+    gerard.say(word || t(`career.intro.${career.tier}`));
     blinking = true;
     requestAnimationFrame(blinkLoop);
 }

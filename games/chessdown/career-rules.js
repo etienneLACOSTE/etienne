@@ -238,6 +238,33 @@
         return startSeason({ ...career, season: career.season - 1, seasonsIn }, tier);
     }
 
+    // ---------- The school tutorial ----------
+    /**
+     * The first season in town teaches the game, matchday by matchday: kings and pawns, then
+     * the knights, then rooks and bishops, then a full draft; 60 s a turn to think. The final
+     * (matchday 5) is a real match. Banned pieces count for both sides.
+     */
+    const TUTORIAL = [
+        { banned: ['n', 'b', 'r', 'q'], timer: 60 },
+        { banned: ['b', 'r', 'q'], timer: 60 },
+        { banned: ['q'], timer: 60 },
+        { timer: 60 },
+        {},
+    ];
+
+    /** The tutorial's step of the next matchday (0 to 4), or -1 outside the first season in town. */
+    function tutorialStep(career) {
+        if (career.tier !== 'school' || career.seasonsIn.school !== 1) return -1;
+        const m = nextMatch(career);
+        return m && m.phase === 'league' ? m.round : -1;
+    }
+
+    /** The special rules of the next matchday (the tutorial's; none otherwise). */
+    function matchdayRules(career) {
+        const step = tutorialStep(career);
+        return step >= 0 ? { ...TUTORIAL[step], ...(TUTORIAL[step].banned ? { banned: TUTORIAL[step].banned.slice() } : {}) } : {};
+    }
+
     // ---------- Opponents ----------
     /** The bot a rival coach fields: the tier's, its army bigger or smaller with the coach's strength. */
     function rivalOpponent(career, coachId) {
@@ -349,7 +376,7 @@
 
     return {
         VERSION, YOU, TIER_IDS, TIERS, TICKET_RANK, KNOCKOUT_RANK, PLAYABLE_GOALS,
-        fixtures, leagueClubs, newCareer, nextMatch, recordSeries, standings, rank, seasonOver, finishSeason,
+        fixtures, leagueClubs, newCareer, nextMatch, tutorialStep, matchdayRules, recordSeries, standings, rank, seasonOver, finishSeason,
         canTravel, travel, rivalOpponent, questOpponent, availableQuests, attemptQuest, sanitizeCareer,
     };
 });

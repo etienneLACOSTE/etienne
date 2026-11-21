@@ -1156,3 +1156,7 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-pick { font: 700 13px var(--text); border: 2px solid #8a8a8a; border-radius: 999px; padding: 3px 10px; background: transparent; color: var(--white); cursor: pointer; }
 .career-pick[aria-checked="true"] { background: var(--amber); border-color: var(--amber); color: var(--black); }
 .career-choice { display: grid; gap: 6px; }
+.career-lesson { border: 2px solid var(--amber); border-radius: 6px; padding: 6px 10px; display: grid; gap: 2px; }
+.career-lesson h4 { color: var(--amber); }
+.career-lesson p { margin: 0; }
+.career-marker.tag-below .tag { bottom: auto; top: calc(100% + 3px); }

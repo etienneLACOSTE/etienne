@@ -32,15 +32,17 @@ export function beginCareerMatch(spec) {
     const quest = spec.kind === 'quest' ? Quests.questById(spec.questId) : null;
     const next = career && Career.nextMatch(career);
     const opponent = quest ? Career.questOpponent(career, quest) : Career.rivalOpponent(career, next.opponent);
+    const rules = quest ? quest.rules : Career.matchdayRules(career); // The school tutorial limits the pieces
     state.career = {
         kind: spec.kind,
         questId: quest ? quest.id : null,
         coachId: quest ? null : next.opponent,
         recruitType: spec.recruitType || null,
         format: quest ? quest.format : 'bo3',
-        rules: quest ? quest.rules : {},
+        rules,
+        tutorial: quest ? -1 : Career.tutorialStep(career),
         goal: quest ? quest.goal : { type: 'win' },
-        opponent: { ...opponent, banned: (quest && quest.rules.banned) || [] },
+        opponent: { ...opponent, banned: rules.banned || [] },
         streak: 0,
         touchdowns: 0,
         /** @type {string[]} */
@@ -154,6 +156,18 @@ export function careerAfterGame(winner) {
     if (g.type === 'touchdownWith') return finish(c.touchdownTypes.includes(g.piece));
     if (g.type === 'touchdowns') return finish(c.touchdowns >= g.n);
     return finish(won);
+}
+
+/**
+ * What Gérard says back on the map after a league match: the result, and in the school
+ * tutorial what comes next. '' for a quest or before the match is over.
+ */
+export function careerWord() {
+    const c = state.career;
+    if (!c || !c.finished || c.kind !== 'league') return '';
+    const s = state.series;
+    const result = t(s.winner === 1 ? 'career.debrief.won' : s.winner === 2 ? 'career.debrief.lost' : 'career.debrief.drawn');
+    return c.tutorial >= 0 ? `${result} ${t(`career.debrief.tutorial.${c.tutorial}`)}` : result;
 }
 
 /** Write the result into the career and the club; the lines say what it brought. */

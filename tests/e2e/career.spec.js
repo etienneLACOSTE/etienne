@@ -130,7 +130,7 @@ test.describe('Career', () => {
     await expect(page.locator('#career-gerard-said')).toContainText('Bienvenue en ville, coach !');
   });
 
-  test('from the club\'s page: a matchday played, recorded in the table, back to the map', async ({ page }) => {
+  test('from the club\'s page: the tutorial\'s first matchday, kings and pawns, recorded in the table, Gérard\'s word', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.addInitScript((club) => { if (!localStorage.getItem('pawnet.chessdown.club')) localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)); }, CLUB);
@@ -138,14 +138,25 @@ test.describe('Career', () => {
     await page.getByRole('button', { name: 'All Star: my club' }).click();
     await page.getByRole('button', { name: 'Career' }).click();
     await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();
+    await expect(card(page).locator('.career-lesson')).toContainText('Matchday 1: kings and pawns only.');
+    await expect(page.locator('#career-gerard-said')).toContainText('Matchday 1: kings and pawns only.');
+    await expect(card(page)).toContainText('60 seconds a turn');
     await card(page).getByRole('button', { name: 'Play the match' }).click();
     const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await expect(bench.getByRole('button', { name: /^Place Alex,/ })).toBeDisabled(); // No rook on matchday 1
     await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
     await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
     await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
     await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
-    const setup = await page.evaluate(() => ({ timer: chessdown.state.timerBaseSeconds, format: chessdown.state.series.format, career: chessdown.state.career.kind }));
-    expect(setup).toEqual({ timer: 30, format: 'bo3', career: 'league' });
+    const setup = await page.evaluate(() => ({
+      timer: chessdown.state.timerBaseSeconds, format: chessdown.state.series.format, career: chessdown.state.career.kind,
+      botTypes: [...new Set(chessdown.state.board.flat().filter((p) => p && p.player === 2).map((p) => p.type))].sort(),
+    }));
+    expect(setup.timer).toBe(60);
+    expect(setup.format).toBe('bo3');
+    expect(setup.career).toBe('league');
+    expect(['k', 'p']).toEqual(expect.arrayContaining(setup.botTypes)); // The bot too: kings and pawns
+    expect(setup.botTypes.every((type) => type === 'k' || type === 'p')).toBe(true);
     // Two games won: the series, then the table
     await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king'));
     await expect(page.locator('#btn-restart')).toHaveText('Next game');
@@ -154,6 +165,7 @@ test.describe('Career', () => {
     await expect(page.locator('#btn-restart')).toHaveText('Back to the map');
     await page.locator('#btn-restart').dispatchEvent('pointerdown');
     await expect(page.locator('#career-screen')).toBeVisible();
+    await expect(page.locator('#career-gerard-said')).toHaveText('A fine win, coach! That is the pawn game. Next matchday: the knight comes in.');
     const career = await stored(page);
     expect(career.league.results).toHaveLength(1);
     await page.getByRole('tab', { name: 'Journal' }).click();

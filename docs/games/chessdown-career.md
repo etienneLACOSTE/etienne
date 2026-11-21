@@ -153,10 +153,17 @@ servent à faire progresser ses joueurs et à en recruter.
   - les quêtes « problème » ne sont pas encore tirées au sort : il leur faut leurs positions ;
   - le Régional tire donc 4 quêtes par saison au lieu de 5.
 
+- **Étape 5 (faite)** : le tutoriel scolaire, pendant la première saison en ville
+  (`career-rules.js` : `tutorialStep`, `matchdayRules`) :
+  - journée 1 : rois et pions ; journée 2 : + cavaliers ; journée 3 : + tours et fous ;
+    journée 4 : toutes les pièces, première vraie draft ; les pièces interdites le sont pour
+    les deux camps, et ces 4 journées se jouent avec 60 s par tour ;
+  - journée 5 : la finale, un vrai match (30 s par tour) ;
+  - Gérard explique la leçon en arrivant au stade (aussi écrite sur la fiche), puis commente le
+    résultat au retour sur la carte et annonce la suite.
+
 ## Pas encore fait
 
 - Les problèmes (positions et objectifs en N coups) pour les 5 quêtes « problème ».
 - La Coupe de la ville et la coupe nationale.
 - Le maillot « Héritage » est gardé avec le club, mais pas encore proposé sur la page du club.
-- Le tutoriel scolaire scénarisé (étape 5) : les journées 1 à 4 ne limitent pas encore les
-  pièces, et Gérard ne commente pas encore les matchs.
