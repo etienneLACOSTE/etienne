@@ -1019,12 +1019,6 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-page > * { min-width: 0; }
 .career-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .career-top h2 { font-size: 24px; margin: 0; }
-.career-views { display: flex; gap: 6px; }
-.career-views button {
-    font: 900 15px var(--display); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
-    padding: 5px 14px; border-radius: 4px; border: 2px solid #2a2f2c; background: var(--black); color: var(--muted-on-dark);
-}
-.career-views button[aria-selected="true"] { border-color: var(--amber); background: var(--amber); color: var(--black); }
 .career-board { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .career-board span { font: 800 13px var(--text); border: 2px solid #2a2f2c; border-radius: 4px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
 .career-top .btn-ghost { padding: 5px 12px; font-size: 13px; }
@@ -1163,9 +1157,7 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-btn-icon { display: none; }
 @media (max-width: 520px) {
     .career-top { gap: 6px 8px; }
-    .career-top h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    .career-views button { padding: 5px 9px; font-size: 13px; }
-    .career-views { flex: 1 1 auto; }
+    .career-top h2 { flex: 1 1 auto; }
     .career-board { flex-wrap: nowrap; overflow: hidden; order: 5; flex: 1 1 100%; }
     .career-board span:nth-child(2), .career-board span:nth-child(3) { display: none; } /* Season and tier: in the scale below */
     .career-board span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1184,7 +1176,6 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 }
 @media (orientation: landscape) and (max-height: 500px) {
     .career-page { padding: 4px 12px 6px; gap: 4px; grid-template-rows: auto auto minmax(0, 1fr); }
-    .career-top h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .career-top { flex-wrap: nowrap; }
     .career-icon-btn { width: 36px; height: 36px; padding: 0 !important; display: grid; place-items: center; flex: none; }
     .career-btn-icon { display: block; font: 900 18px var(--display); }

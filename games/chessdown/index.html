@@ -121,12 +121,8 @@
             <!-- Knocked out of the tournament: the screen goes black (js/career-view.js) -->
             <div class="career-out" id="career-out" role="alertdialog" aria-modal="true" aria-labelledby="career-out-title" hidden></div>
             <div class="career-top">
-                <h2 data-i18n="career.title">Career</h2>
-                <div class="career-views" role="tablist" data-i18n-attr="aria-label: career.views">
-                    <button type="button" role="tab" id="career-tab-map" aria-selected="true" aria-controls="career-stage" data-i18n="career.tabMap">Map</button>
-                    <button type="button" role="tab" id="career-tab-journal" aria-selected="false" aria-controls="career-journal" tabindex="-1" data-i18n="career.tabJournal">Journal</button>
-                    <button type="button" role="tab" id="career-tab-guide" aria-selected="false" aria-controls="career-guide" tabindex="-1" data-i18n="guide.tab">Pieces</button>
-                </div>
+                <!-- The view shown (map, journal, pieces): each opens from the club's page -->
+                <h2 id="career-title">Map</h2>
                 <div class="career-board" id="career-board" role="group" data-i18n-attr="aria-label: career.status"></div>
                 <button type="button" class="btn-ghost career-icon-btn" id="career-tour-btn"><span class="career-btn-icon" aria-hidden="true">?</span><span class="career-btn-label" data-i18n="tour.button">Tour with Gérard</span></button>
                 <button type="button" class="btn-ghost career-icon-btn" id="career-back"><span class="career-btn-icon" aria-hidden="true">♜</span><span class="career-btn-label" data-i18n="career.openClub">Open the club</span></button>
@@ -140,7 +136,7 @@
                 </div>
             </div>
             <ol class="career-scales" id="career-scales" data-i18n-attr="aria-label: career.scales"></ol>
-            <div class="career-stage" id="career-stage" role="tabpanel" aria-labelledby="career-tab-map">
+            <div class="career-stage" id="career-stage" role="region" aria-labelledby="career-title">
                 <div class="career-map-fit">
                     <div class="career-map" id="career-map">
                         <canvas id="career-canvas" width="320" height="192" role="img"></canvas>
@@ -150,8 +146,8 @@
                 </div>
                 <article class="career-card" id="career-card" aria-live="polite"></article>
             </div>
-            <div class="career-journal" id="career-journal" role="tabpanel" aria-labelledby="career-tab-journal" hidden></div>
-            <div class="career-guide" id="career-guide" role="tabpanel" aria-labelledby="career-tab-guide" tabindex="0" hidden></div>
+            <div class="career-journal" id="career-journal" role="region" aria-labelledby="career-title" hidden></div>
+            <div class="career-guide" id="career-guide" role="region" aria-labelledby="career-title" tabindex="0" hidden></div>
         </div>
 
         <!-- How to Play Modal -->

@@ -4,7 +4,6 @@
 export default {
     // The screen (js/career-view.js)
     'career.title': 'Career',
-    'career.views': 'View',
     'career.tabMap': 'Map',
     'career.tabJournal': 'Journal',
     'career.status': 'Club situation',
@@ -547,13 +546,6 @@ export default {
     'tour.questCard.text': "A quest’s card says what it asks and what it gives. Each can be tried once a season; one you win is gone for good. During a match, tap an opponent’s piece to see what it can do.",
     'tour.date.text': "The date. Every walk takes time, and so does every match. A season starts on 1 September.",
     'tour.transport.text': "The station leads to the next tier: bus, RER, TGV, plane. You need the ticket, and only the tournament’s champion wins it.",
-    'tour.journal.text': "Now the tabs.",
-    'tour.journal.do': "Click “Journal”.",
-    'tour.journalPanel.text': "Your road in the tournament, the season’s quests and your trophies.",
-    'tour.pieces.text': "And what each piece can do.",
-    'tour.pieces.do': "Click “Pieces”.",
-    'tour.piecesPanel.text': "Every piece, level by level. A level shows once one of your players reaches it, or once you meet it in a match.",
-    'tour.map.text': "Back to the map.",
-    'tour.map.do': "Click “Map”.",
     'tour.end.text': "That’s all! Call me back any time with this button. Good luck, coach!",
+    'tour.clubMenu.text': "Your journal (the tournament, the season’s quests, your trophies) and the pieces’ guide open from your club’s page, with the Map: this button takes you there.",
 };

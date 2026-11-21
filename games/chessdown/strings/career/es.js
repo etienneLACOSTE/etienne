@@ -2,7 +2,6 @@
 // Carrera de Chessdown en español (referencia: en.js).
 export default {
     'career.title': 'Carrera',
-    'career.views': 'Vista',
     'career.tabMap': 'Mapa',
     'career.tabJournal': 'Diario',
     'career.status': 'Situación del club',
@@ -536,13 +535,6 @@ export default {
     'tour.questCard.text': "La ficha de una misión dice lo que pide y lo que da. Cada una se intenta una vez por temporada; la que ganas desaparece para siempre. En un partido, toca una pieza rival para ver qué sabe hacer.",
     'tour.date.text': "La fecha. Cada trayecto lleva tiempo, cada partido también. Una temporada empieza el 1 de septiembre.",
     'tour.transport.text': "La estación lleva al siguiente nivel: autobús, cercanías, AVE, avión. Necesitas el billete, y solo el campeón del torneo lo gana.",
-    'tour.journal.text': "Ahora, las pestañas.",
-    'tour.journal.do': "Haz clic en «Diario».",
-    'tour.journalPanel.text': "Tu camino en el torneo, las misiones de la temporada y tus trofeos.",
-    'tour.pieces.text': "Y lo que sabe hacer cada pieza.",
-    'tour.pieces.do': "Haz clic en «Piezas».",
-    'tour.piecesPanel.text': "Cada pieza, nivel a nivel. Un nivel aparece cuando uno de tus jugadores lo alcanza o cuando te lo encuentras en un partido.",
-    'tour.map.text': "Volvamos al mapa.",
-    'tour.map.do': "Haz clic en «Mapa».",
     'tour.end.text': "¡Eso es todo! Llámame cuando quieras con este botón. ¡Suerte, entrenador!",
+    'tour.clubMenu.text': "Tu diario (el torneo, las misiones de la temporada, tus trofeos) y la guía de piezas se abren desde la página de tu club, junto al Mapa: este botón te lleva allí.",
 };

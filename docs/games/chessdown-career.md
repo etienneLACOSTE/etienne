@@ -41,6 +41,12 @@ international compris, un tournoi de 32 clubs à double élimination ; les coupe
 - Les carrières enregistrées avant (version 1, ligues) sont refusées : la page en recommence
   une (le club est gardé).
 
+## Plus d'onglets sur l'écran de carrière (2026-11-21)
+
+La carte, le Journal et les Pièces s'ouvrent depuis la page du club (trois boutons) ; l'écran
+de carrière n'a plus d'onglets : son titre dit la vue ouverte, et « ♜ Ouvrir le club » ramène
+au club. La visite de Gérard montre ce bouton au lieu de faire cliquer des onglets (13 étapes).
+
 ## Téléphones (2026-11-21)
 
 - Jusqu'à 520 px de large : titre « Carrière » masqué (lu par les lecteurs d'écran), onglets

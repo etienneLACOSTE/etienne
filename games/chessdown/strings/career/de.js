@@ -2,7 +2,6 @@
 // Chessdown-Karriere auf Deutsch (Referenz: en.js).
 export default {
     'career.title': 'Karriere',
-    'career.views': 'Ansicht',
     'career.tabMap': 'Karte',
     'career.tabJournal': 'Tagebuch',
     'career.status': 'Lage des Vereins',
@@ -536,13 +535,6 @@ export default {
     'tour.questCard.text': "Die Karte einer Aufgabe sagt, was sie verlangt und was sie bringt. Jede kann einmal pro Saison versucht werden; eine gewonnene verschwindet für immer. Tippe im Spiel auf eine gegnerische Figur, um zu sehen, was sie kann.",
     'tour.date.text': "Das Datum. Jeder Weg kostet Zeit, jedes Spiel auch. Eine Saison beginnt am 1. September.",
     'tour.transport.text': "Der Bahnhof führt zur nächsten Stufe: Bus, S-Bahn, Schnellzug, Flugzeug. Du brauchst das Ticket, und nur der Turniermeister gewinnt es.",
-    'tour.journal.text': "Jetzt die Reiter.",
-    'tour.journal.do': "Klicke auf „Tagebuch“.",
-    'tour.journalPanel.text': "Dein Weg im Turnier, die Aufgaben der Saison und deine Pokale.",
-    'tour.pieces.text': "Und was jede Figur kann.",
-    'tour.pieces.do': "Klicke auf „Figuren“.",
-    'tour.piecesPanel.text': "Jede Figur, Stufe für Stufe. Eine Stufe erscheint, sobald einer deiner Spieler sie erreicht oder du ihr im Spiel begegnest.",
-    'tour.map.text': "Zurück zur Karte.",
-    'tour.map.do': "Klicke auf „Karte“.",
     'tour.end.text': "Das war’s! Ruf mich jederzeit mit diesem Knopf zurück. Viel Glück, Trainer!",
+    'tour.clubMenu.text': "Dein Tagebuch (das Turnier, die Aufgaben der Saison, deine Pokale) und der Figurenführer öffnen sich auf der Seite deines Vereins, neben der Karte: Dieser Knopf bringt dich hin.",
 };

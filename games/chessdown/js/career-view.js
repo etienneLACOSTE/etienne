@@ -25,9 +25,7 @@ const GLYPHS = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
 
 const $ = (id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const ui = {
-    tabMap: $('career-tab-map'),
-    tabJournal: $('career-tab-journal'),
-    tabGuide: $('career-tab-guide'),
+    title: $('career-title'),
     guide: $('career-guide'),
     stage: $('career-stage'),
     journal: $('career-journal'),
@@ -408,21 +406,20 @@ function renderJournal() {
     }));
 }
 
-/** The map, the journal or the pieces' guide (piece-guide.js), one at a time. */
+/** The map, the journal or the pieces' guide (piece-guide.js), one at a time (chosen on the club's page). */
 function showView(view) {
     if (view === 'guide') renderGuide(ui.guide, club);
-    for (const [tab, name] of TABS) {
-        const on = name === view;
-        tab.setAttribute('aria-selected', String(on));
-        tab.tabIndex = on ? 0 : -1;
-    }
+    ui.title.textContent = t({ map: 'career.tabMap', journal: 'career.tabJournal', guide: 'guide.tab' }[view]);
     ui.stage.hidden = view !== 'map';
     ui.journal.hidden = view !== 'journal';
     ui.guide.hidden = view !== 'guide';
 }
 
+/** The tier whose quests `discovered` holds (it starts again on another tier). */
+let discoveredTier = '';
+
 function showTier(place) {
-    discovered.clear();
+    if (discoveredTier !== career.tier) { discovered.clear(); discoveredTier = career.tier; }
     map.show(career.tier, place, club);
     ui.canvas.setAttribute('aria-label', t('career.mapLabel', { map: t(`career.map.${career.tier}`) }));
     ui.mapTitle.textContent = t(`career.map.${career.tier}`);
@@ -432,18 +429,6 @@ function showTier(place) {
     showCard(place);
 }
 
-// Tabs: click, or the arrow keys between them
-/** @type {[HTMLElement, string][]} */
-const TABS = [[ui.tabMap, 'map'], [ui.tabJournal, 'journal'], [ui.tabGuide, 'guide']];
-TABS.forEach(([tab, view], i) => {
-    tab.addEventListener('click', () => showView(view));
-    tab.addEventListener('keydown', (e) => {
-        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-        const [other, name] = TABS[(i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length];
-        showView(name);
-        other.focus();
-    });
-});
 ui.back.addEventListener('click', () => toClub());
 ui.tourButton.addEventListener('click', runTour);
 

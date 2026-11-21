@@ -37,6 +37,9 @@ async function openCareer(page, { ticket = false } = {}) {
   await expect(page.locator('#career-screen')).toBeVisible();
 }
 const card = (page) => page.locator('#career-card');
+/** The career on one of its views ('map', 'journal', 'guide'), as the club page's buttons open it. */
+const careerView = (page, view) => page.evaluate(async (v) => (await import('/chessdown/js/events.js'))
+  .openCareerPage(JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'), '', false, v), view);
 const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.career') || 'null'));
 
 test.describe('Career', () => {
@@ -83,15 +86,16 @@ test.describe('Career', () => {
     await openCareer(page);
     const marker = page.locator('.career-marker.side').first();
     const place = /** @type {string} */ (await marker.getAttribute('data-place'));
-    await page.getByRole('tab', { name: 'Journal' }).click();
+    await careerView(page, 'journal');
     await expect(page.locator('#career-journal')).toBeVisible();
+    await expect(page.locator('#career-title')).toHaveText('Journal');
     await expect(page.locator(`#career-journal [data-place="${place}"]`)).toContainText('Quest to discover');
     await page.locator(`#career-journal [data-place="${place}"]`).click();
     await expect(page.locator('#career-stage')).toBeVisible();
     await expect(card(page).locator('.career-kind')).toHaveText('Side quest');
     await expect(card(page)).toContainText('Gone once done');
     const title = await card(page).locator('h3').textContent();
-    await page.getByRole('tab', { name: 'Journal' }).click();
+    await careerView(page, 'journal');
     await expect(page.locator(`#career-journal [data-place="${place}"]`)).toContainText(/** @type {string} */ (title));
   });
 
@@ -114,16 +118,12 @@ test.describe('Career', () => {
     expect((await stored(page)).tier).toBe('county');
   });
 
-  test('the tabs work with the arrow keys; the club button goes back to the club', async ({ page }) => {
+  test('no tabs on the career: the journal, then the club button goes back to the club', async ({ page }) => {
     await openCareer(page);
-    await page.getByRole('tab', { name: 'Map' }).focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('tab', { name: 'Journal' })).toBeFocused();
-    await expect(page.getByRole('tab', { name: 'Journal' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab')).toHaveCount(0);
+    await careerView(page, 'journal');
     await expect(page.locator('#career-journal')).toContainText('Undefeated: in the winners’ bracket.');
     await expect(page.getByRole('table')).toContainText('to play');
-    await page.keyboard.press('ArrowLeft');
-    await expect(page.locator('#career-stage')).toBeVisible();
     await page.locator('#career-back').click();
     await expect(page.locator('#club-screen')).toBeVisible();
   });
@@ -131,10 +131,10 @@ test.describe('Career', () => {
   test('from the club\'s page: Map, Journal and Pieces open the career on that tab', async ({ page }) => {
     await page.addInitScript((club) => { if (!localStorage.getItem('pawnet.chessdown.club')) localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club)); }, CLUB);
     await page.goto('/chessdown/');
-    for (const [button, tab, panel] of [['Journal', 'Journal', '#career-journal'], ['Pieces', 'Pieces', '#career-guide'], ['Map', 'Map', '#career-stage']]) {
+    for (const [button, title, panel] of [['Journal', 'Journal', '#career-journal'], ['Pieces', 'Pieces', '#career-guide'], ['Map', 'Map', '#career-stage']]) {
       await page.getByRole('button', { name: 'All Star: my club' }).click();
       await page.getByRole('button', { name: button, exact: true }).click();
-      await expect(page.getByRole('tab', { name: tab })).toHaveAttribute('aria-selected', 'true');
+      await expect(page.locator('#career-title')).toHaveText(title);
       await expect(page.locator(panel)).toBeVisible();
       await page.locator('#career-back').click(); // Back to the club, then the menu
       await page.locator('#club-menu').click();
@@ -150,7 +150,7 @@ test.describe('Career', () => {
       localStorage.setItem('pawnet.chessdown.club', JSON.stringify(club));
       (await import('/chessdown/js/events.js')).openCareerPage(club);
     }, CLUB);
-    const tour = page.getByRole('dialog', { name: /^Gérard · 1\/17$/ });
+    const tour = page.getByRole('dialog', { name: /^Gérard · 1\/13$/ });
     await expect(tour).toBeVisible();
     await expect(page.locator('.tour-gerard')).toBeVisible();
     const box = await page.locator('.tour-gerard').boundingBox();
@@ -177,14 +177,9 @@ test.describe('Career', () => {
     await page.locator('.career-marker.side').first().click();
     await expect(page.locator('#tour-text')).toContainText('A quest’s card');
     for (let i = 0; i < 3; i++) await next.click();
-    await expect(doThis).toHaveText('Click “Journal”.');
-    await page.getByRole('tab', { name: 'Journal' }).click();
-    await expect(page.locator('#career-journal')).toBeVisible();
+    await expect(page.locator('#tour-text')).toContainText('open from your club’s page');
+    await expect(page.locator('.tour-hole')).toBeVisible(); // Around the club button
     await next.click();
-    await page.getByRole('tab', { name: 'Pieces' }).click();
-    await expect(page.locator('#career-guide')).toBeVisible();
-    await next.click();
-    await page.getByRole('tab', { name: 'Map' }).click();
     await expect(page.locator('.tour [data-tour="next"]')).toHaveText('Let’s play!');
     await next.click();
     await expect(page.locator('.tour')).toHaveCount(0);
@@ -232,8 +227,7 @@ test.describe('Career', () => {
   test('in French', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('pawnet.language', 'fr'));
     await openCareer(page);
-    await expect(page.getByRole('tab', { name: 'Carte' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Journal' })).toBeVisible();
+    await expect(page.locator('#career-title')).toHaveText('Carte');
     await expect(page.getByRole('button', { name: 'Quête principale : Stade municipal Léo-Lagrange' })).toBeVisible();
     await expect(page.locator('#career-gerard-said')).toContainText('Bienvenue en ville, coach !');
   });
@@ -273,7 +267,7 @@ test.describe('Career', () => {
     await expect(page.locator('#career-gerard-said')).toHaveText('A fine win, coach! That is the game. Next, a word about the knight.');
     const career = await stored(page);
     expect(career.tournament.results).toEqual([{ won: 1, lost: 0 }]);
-    await page.getByRole('tab', { name: 'Journal' }).click();
+    await careerView(page, 'journal');
     await expect(page.locator('.career-table tr.won')).toHaveCount(1);
     await expect(page.locator('.career-table tr.won td').last()).toHaveText('1–0');
     expect(errors).toEqual([]);
@@ -465,7 +459,7 @@ test.describe('Career', () => {
   test('the pieces\' guide: only the levels unlocked; a click on a boss\'s piece tells what it does', async ({ page }) => {
     const errors = trackPageErrors(page);
     await inCounty(page, ['old-bull', 'mud-match', 'ploughing', 'veteran']);
-    await page.getByRole('tab', { name: 'Pieces' }).click();
+    await careerView(page, 'guide');
     const rook = page.getByRole('region', { name: 'Rook' });
     await expect(rook.locator('li').nth(0)).toContainText('Straight lines, 3 squares at most.'); // The club's rook: level 1
     await expect(rook.locator('li').nth(1)).toContainText('Not discovered yet');
@@ -473,7 +467,7 @@ test.describe('Career', () => {
     await expect(rook.locator('li').nth(3)).toContainText('Not discovered yet');
     expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze()).violations.map((v) => v.id)).toEqual([]);
     // The boss: its level 4 rooks
-    await page.getByRole('tab', { name: 'Map' }).click();
+    await careerView(page, 'map');
     await page.getByRole('button', { name: 'Boss: Moulin farm' }).click();
     await card(page).getByRole('button', { name: 'Accept' }).click();
     const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });

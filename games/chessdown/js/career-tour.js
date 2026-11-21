@@ -1,7 +1,7 @@
 // @ts-check
 // Gérard's tour of the career (docs/games/chessdown-career.md): Gérard, big on the screen,
 // walks the coach through the game and its menus. The screen is dimmed but for what he
-// speaks of; when he asks for a click (a place on the map, a tab), only that is open, and the
+// speaks of; when he asks for a click (a place on the map), only that is open, and the
 // click really opens it: the coach learns the menus by using them. It opens by itself the
 // first time the career is opened (remembered in this browser), and again from the "Tour
 // with Gérard" button. career-view.js gives it the screen it works on.
@@ -13,7 +13,7 @@ const PAD = 6; // Room around what is shown
 /**
  * The steps. `target`: what is shown (a selector; none: the whole screen dimmed). `click`:
  * Gérard asks for a click on it, and the tour goes on once `ready` is true (the card of the
- * place reached, the tab shown). A step whose target is missing is left out.
+ * place reached). A step whose target is missing is left out.
  * @typedef {{ id: string, target?: string, click?: boolean, ready?: () => boolean }} Step
  */
 /** @type {Step[]} */
@@ -29,16 +29,11 @@ const STEPS = [
     { id: 'questCard', target: '#career-card' },
     { id: 'date', target: '#career-date' },
     { id: 'transport', target: '.career-marker.transport' },
-    { id: 'journal', target: '#career-tab-journal', click: true, ready: () => shown('#career-journal') },
-    { id: 'journalPanel', target: '#career-journal' },
-    { id: 'pieces', target: '#career-tab-guide', click: true, ready: () => shown('#career-guide') },
-    { id: 'piecesPanel', target: '#career-guide' },
-    { id: 'map', target: '#career-tab-map', click: true, ready: () => shown('#career-stage') },
+    { id: 'clubMenu', target: '#career-back' },
     { id: 'end', target: '#career-tour-btn' },
 ];
 
 const cardIs = (kind) => Boolean(document.querySelector(`#career-card.${kind}`));
-const shown = (selector) => { const el = /** @type {HTMLElement | null} */ (document.querySelector(selector)); return Boolean(el && !el.hidden); };
 
 /** The tour was seen in this browser (it then opens only from its button). */
 export function tourSeen() {

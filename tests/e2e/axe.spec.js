@@ -55,9 +55,9 @@ const CHESSDOWN = {
     await page.evaluate(async () => {
       localStorage.setItem('pawnet.chessdown.tourSeen', '1'); // Gérard's tour has its own screen below
       const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');
-      (await import('/chessdown/js/events.js')).openCareerPage(club);
+      (await import('/chessdown/js/events.js')).openCareerPage(club, '', false, 'journal');
     });
-    await page.getByRole('tab', { name: 'Journal' }).click();
+    await expect(page.locator('#career-journal')).toBeVisible();
   },
   'form error': async (page) => { // Joining without a code: told under the field (signed in)
     await signUp(page.context());

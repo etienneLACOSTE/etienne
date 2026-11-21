@@ -2,7 +2,6 @@
 // Carrière de Chessdown en français (référence : en.js).
 export default {
     'career.title': 'Carrière',
-    'career.views': 'Affichage',
     'career.tabMap': 'Carte',
     'career.tabJournal': 'Journal',
     'career.status': 'Situation du club',
@@ -536,13 +535,6 @@ export default {
     'tour.questCard.text': "La fiche d’une quête dit ce qu’elle demande et ce qu’elle rapporte. Chacune se tente une fois par saison ; une quête réussie disparaît pour de bon. En match, touche une pièce adverse pour voir ce qu’elle sait faire.",
     'tour.date.text': "La date. Chaque trajet prend du temps, chaque match aussi. Une saison commence le 1er septembre.",
     'tour.transport.text': "La gare mène à l’échelon suivant : bus, RER, TGV, avion. Il faut le ticket, et seul le champion du tournoi le gagne.",
-    'tour.journal.text': "Maintenant, les onglets.",
-    'tour.journal.do': "Clique sur « Journal ».",
-    'tour.journalPanel.text': "Ton parcours dans le tournoi, les quêtes de la saison et tes trophées.",
-    'tour.pieces.text': "Et ce que sait faire chaque pièce.",
-    'tour.pieces.do': "Clique sur « Pièces ».",
-    'tour.piecesPanel.text': "Chaque pièce, niveau par niveau. Un niveau s’affiche quand un de tes joueurs l’atteint, ou quand tu le croises en match.",
-    'tour.map.text': "Retour à la carte.",
-    'tour.map.do': "Clique sur « Carte ».",
     'tour.end.text': "C’est tout ! Rappelle-moi quand tu veux avec ce bouton. Bonne chance, coach !",
+    'tour.clubMenu.text': "Ton journal (le tournoi, les quêtes de la saison, tes trophées) et le guide des pièces s’ouvrent depuis la page de ton club, avec la Carte : ce bouton t’y emmène.",
 };
