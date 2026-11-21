@@ -125,7 +125,7 @@ test.describe('All Star club', () => {
     await page.getByLabel('Name of the recruit').fill('Rosa');
     await page.getByRole('button', { name: 'Sign the contract' }).click();
     await expect(page.getByRole('button', { name: 'Rename Rosa' })).toBeVisible();
-    await expect(page.getByText('Win a best of 3 in the All Star campaign to earn a recruit.')).toBeVisible();
+    await expect(page.getByText('Win a best of 3 with your club to earn a recruit.')).toBeVisible();
     const club = await page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club')));
     expect(club.players.at(-1)).toMatchObject({ type: 'q', name: 'Rosa', level: 1, xp: 0 });
     expect(club.recruits).toBe(0);

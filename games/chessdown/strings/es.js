@@ -13,7 +13,7 @@ export default {
 
     'menu.title': '¿Listo para el gran partido?',
     'menu.local': 'Jugar en local (2 jugadores)',
-    'menu.campaign': 'Campaña (contra el bot)',
+    'menu.quickGame': 'Partida rápida (contra el bot)',
     'menu.createRoom': 'Crear sala en línea',
     'menu.codePlaceholder': 'CÓDIGO',
     'menu.codeLabel': 'Código de la sala (6 letras)',
@@ -54,10 +54,10 @@ export default {
     'rules.speedText': '¡30 segundos por turno al mejor de 3!',
     'rules.close': '¡Entendido!',
 
-    'campaign.title': 'Preparar la campaña',
-    'campaign.difficulty': '1. Elige la dificultad',
-    'campaign.archetype': '2. Elige el estilo del rival',
-    'campaign.start': 'Empezar el partido',
+    'quickGame.title': 'Preparar la partida rápida',
+    'quickGame.difficulty': '1. Elige la dificultad',
+    'quickGame.archetype': '2. Elige el estilo del rival',
+    'quickGame.start': 'Empezar el partido',
     'level.novice': 'Novato',
     'level.apprentice': 'Aprendiz',
     'level.expert': 'Experto',
@@ -328,7 +328,7 @@ export default {
     'club.col.touchdowns': 'Touchdowns',
     'club.col.captured': 'Capturado',
     'club.recruitTitle': 'Fichajes',
-    'club.recruitNone': 'Gana un al mejor de 3 en la campaña All Star para conseguir un fichaje.',
+    'club.recruitNone': 'Gana un al mejor de 3 con tu club para conseguir un fichaje.',
     'club.recruitText': 'Fichajes por firmar: {n}. Elige la posición y ponle nombre a tu nuevo jugador.',
     'club.recruitType': 'Posición del fichaje',
     'club.recruitName': 'Nombre del fichaje',
@@ -336,8 +336,8 @@ export default {
     'club.delete': 'Fundar un club nuevo',
     'club.deleteAsk': '¿Borrar {club} y todos sus jugadores? No se puede deshacer.',
     'club.deleteConfirm': 'Borrar el club',
-    // All Star in the campaign (js/all-star.js, the draft's bench)
-    'allStar.play': 'Jugar un partido de campaña',
+    // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
+    'allStar.play': 'Jugar un partido amistoso',
     'allStar.bench': 'Tu plantilla: elige un jugador y luego una casilla',
     'allStar.place': 'Colocar a {name}, {piece}, nivel {n}, {cost} puntos',
     'allStar.allPlaced': 'Todos tus jugadores están en el campo.',

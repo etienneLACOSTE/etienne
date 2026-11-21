@@ -13,7 +13,7 @@ export default {
 
     'menu.title': 'Pronto per la grande partita?',
     'menu.local': 'Gioca in locale (2 giocatori)',
-    'menu.campaign': 'Campagna (contro il bot)',
+    'menu.quickGame': 'Partita rapida (contro il bot)',
     'menu.createRoom': 'Crea una stanza online',
     'menu.codePlaceholder': 'CODICE',
     'menu.codeLabel': 'Codice della stanza (6 lettere)',
@@ -54,10 +54,10 @@ export default {
     'rules.speedText': '30 secondi per turno al meglio di 3!',
     'rules.close': 'Capito!',
 
-    'campaign.title': 'Prepara la campagna',
-    'campaign.difficulty': '1. Scegli la difficoltà',
-    'campaign.archetype': "2. Scegli lo stile dell'avversario",
-    'campaign.start': 'Inizia la partita',
+    'quickGame.title': 'Prepara la partita rapida',
+    'quickGame.difficulty': '1. Scegli la difficoltà',
+    'quickGame.archetype': "2. Scegli lo stile dell'avversario",
+    'quickGame.start': 'Inizia la partita',
     'level.novice': 'Novizio',
     'level.apprentice': 'Apprendista',
     'level.expert': 'Esperto',
@@ -328,7 +328,7 @@ export default {
     'club.col.touchdowns': 'Touchdown',
     'club.col.captured': 'Catturato',
     'club.recruitTitle': 'Nuovi acquisti',
-    'club.recruitNone': 'Vinci un al meglio di 3 nella campagna All Star per ottenere un nuovo acquisto.',
+    'club.recruitNone': 'Vinci un al meglio di 3 con il tuo club per ottenere un nuovo acquisto.',
     'club.recruitText': 'Acquisti da firmare: {n}. Scegli il ruolo e dai un nome al tuo nuovo giocatore.',
     'club.recruitType': 'Ruolo del nuovo acquisto',
     'club.recruitName': 'Nome del nuovo acquisto',
@@ -336,8 +336,8 @@ export default {
     'club.delete': 'Fonda un nuovo club',
     'club.deleteAsk': 'Eliminare {club} e tutti i suoi giocatori? Non si può annullare.',
     'club.deleteConfirm': 'Elimina il club',
-    // All Star in the campaign (js/all-star.js, the draft's bench)
-    'allStar.play': 'Gioca una partita di campagna',
+    // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
+    'allStar.play': "Gioca un'amichevole",
     'allStar.bench': 'La tua rosa: scegli un giocatore, poi una casella',
     'allStar.place': 'Schiera {name}, {piece}, livello {n}, {cost} punti',
     'allStar.allPlaced': 'Tutti i tuoi giocatori sono in campo.',

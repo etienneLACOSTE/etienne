@@ -1,6 +1,6 @@
 # Chessdown 🏈♟️
 
-**Chessdown** is a fast-paced fusion of traditional Chess and American Football: two players on one device (tablet or phone), online, or against the bot (campaign).
+**Chessdown** is a fast-paced fusion of traditional Chess and American Football: two players on one device (tablet or phone), online, or against the bot (quick game, and soon the career).
 
 ## 🎯 Goal of the game
 Win the game by achieving one of two conditions:
@@ -45,7 +45,7 @@ From the project root:
 npm install
 npm start
 ```
-Then open `http://localhost:3000/chessdown/` (local, campaign and online modes).
+Then open `http://localhost:3000/chessdown/` (local, quick game and online modes).
 
 ### Files
 - `games/chessdown/`: game client; `training_data.json` holds the bot profiles.

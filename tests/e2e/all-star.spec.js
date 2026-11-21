@@ -24,7 +24,7 @@ async function withClub(page) {
 const square = (page, vr, vc) => page.locator(`#chessboard .square[data-vr="${vr}"][data-vc="${vc}"]`);
 const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'));
 
-test.describe('All Star campaign', () => {
+test.describe('All Star friendly matches', () => {
   test.beforeEach(async ({ context, page }) => {
     await blockExternalRequests(context);
     await withClub(page);
@@ -34,7 +34,7 @@ test.describe('All Star campaign', () => {
     const errors = trackPageErrors(page);
     await page.goto('/chessdown/');
     await page.getByRole('button', { name: 'All Star: my club' }).click();
-    await page.getByRole('button', { name: 'Play a campaign match' }).click();
+    await page.getByRole('button', { name: 'Play a friendly match' }).click();
     await expect(page.locator('#difficulty-modal')).toBeVisible();
     await page.locator('[data-level="novice"]').dispatchEvent('pointerdown');
     await page.locator('#btn-confirm-campaign').dispatchEvent('pointerdown');
@@ -86,7 +86,7 @@ test.describe('All Star campaign', () => {
   test('a game brings experience; a level reached is told; a series won brings a recruit', async ({ page }) => {
     await page.goto('/chessdown/');
     await page.getByRole('button', { name: 'All Star: my club' }).click();
-    await page.getByRole('button', { name: 'Play a campaign match' }).click();
+    await page.getByRole('button', { name: 'Play a friendly match' }).click();
     await page.locator('#btn-confirm-campaign').dispatchEvent('pointerdown');
     const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
     for (const [name, vr, vc] of [['The Captain', 5, 4], ['Alex', 5, 0], ['Lina', 4, 2]]) {

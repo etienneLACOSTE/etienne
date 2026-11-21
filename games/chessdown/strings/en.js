@@ -14,7 +14,7 @@ export default {
 
     'menu.title': 'Ready for the big game?',
     'menu.local': 'Play Local (2 Players)',
-    'menu.campaign': 'Campaign (vs Bot)',
+    'menu.quickGame': 'Quick game (vs Bot)',
     'menu.createRoom': 'Create Online Room',
     'menu.codePlaceholder': 'CODE',
     'menu.codeLabel': 'Room code (6 letters)',
@@ -55,10 +55,10 @@ export default {
     'rules.speedText': '30 seconds per turn in a best of 3!',
     'rules.close': 'Got it!',
 
-    'campaign.title': 'Campaign Setup',
-    'campaign.difficulty': '1. Select Difficulty',
-    'campaign.archetype': '2. Select Archetype',
-    'campaign.start': 'Start Match',
+    'quickGame.title': 'Quick Game Setup',
+    'quickGame.difficulty': '1. Select Difficulty',
+    'quickGame.archetype': '2. Select Archetype',
+    'quickGame.start': 'Start Match',
     'level.novice': 'Novice',
     'level.apprentice': 'Apprentice',
     'level.expert': 'Expert',
@@ -329,7 +329,7 @@ export default {
     'club.col.touchdowns': 'Touchdowns',
     'club.col.captured': 'Taken',
     'club.recruitTitle': 'Recruits',
-    'club.recruitNone': 'Win a best of 3 in the All Star campaign to earn a recruit.',
+    'club.recruitNone': 'Win a best of 3 with your club to earn a recruit.',
     'club.recruitText': 'Recruits to sign: {n}. Choose the position and name your new player.',
     'club.recruitType': 'Position of the recruit',
     'club.recruitName': 'Name of the recruit',
@@ -337,8 +337,8 @@ export default {
     'club.delete': 'Start a new club',
     'club.deleteAsk': 'Delete {club} and all its players? This cannot be undone.',
     'club.deleteConfirm': 'Delete the club',
-    // All Star in the campaign (js/all-star.js, the draft's bench)
-    'allStar.play': 'Play a campaign match',
+    // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
+    'allStar.play': 'Play a friendly match',
     'allStar.bench': 'Your squad: choose a player, then a square',
     'allStar.place': 'Place {name}, {piece}, level {n}, {cost} points',
     'allStar.allPlaced': 'All your players are on the field.',

@@ -13,7 +13,7 @@ export default {
 
     'menu.title': 'Prêt pour le grand match ?',
     'menu.local': 'Jouer en local (2 joueurs)',
-    'menu.campaign': 'Campagne (contre le bot)',
+    'menu.quickGame': 'Partie rapide (contre le bot)',
     'menu.createRoom': 'Créer une salle en ligne',
     'menu.codePlaceholder': 'CODE',
     'menu.codeLabel': 'Code de la salle (6 lettres)',
@@ -54,10 +54,10 @@ export default {
     'rules.speedText': '30 secondes par tour en best of 3 !',
     'rules.close': 'Compris !',
 
-    'campaign.title': 'Préparer la campagne',
-    'campaign.difficulty': '1. Choisis la difficulté',
-    'campaign.archetype': "2. Choisis le style de l'adversaire",
-    'campaign.start': 'Lancer le match',
+    'quickGame.title': 'Préparer la partie rapide',
+    'quickGame.difficulty': '1. Choisis la difficulté',
+    'quickGame.archetype': "2. Choisis le style de l'adversaire",
+    'quickGame.start': 'Lancer le match',
     'level.novice': 'Novice',
     'level.apprentice': 'Apprenti',
     'level.expert': 'Expert',
@@ -328,7 +328,7 @@ export default {
     'club.col.touchdowns': 'Touchdowns',
     'club.col.captured': 'Pris',
     'club.recruitTitle': 'Recrues',
-    'club.recruitNone': 'Gagne un best of 3 en campagne All Star pour obtenir une recrue.',
+    'club.recruitNone': 'Gagne un best of 3 avec ton club pour obtenir une recrue.',
     'club.recruitText': 'Recrues à signer : {n}. Choisis le poste et nomme ton nouveau joueur.',
     'club.recruitType': 'Poste de la recrue',
     'club.recruitName': 'Nom de la recrue',
@@ -336,8 +336,8 @@ export default {
     'club.delete': 'Fonder un nouveau club',
     'club.deleteAsk': 'Supprimer {club} et tous ses joueurs ? Impossible de revenir en arrière.',
     'club.deleteConfirm': 'Supprimer le club',
-    // All Star in the campaign (js/all-star.js, the draft's bench)
-    'allStar.play': 'Jouer un match de campagne',
+    // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
+    'allStar.play': 'Jouer un match amical',
     'allStar.bench': 'Ton effectif : choisis un joueur, puis une case',
     'allStar.place': 'Placer {name}, {piece}, niveau {n}, {cost} points',
     'allStar.allPlaced': 'Tous tes joueurs sont sur le terrain.',

@@ -54,7 +54,7 @@ export function rosterTable(club, { rename = true } = {}) {
  * @param {HTMLElement} box
  * @param {any} club
  * @param {{ onMenu: () => void, onDeleted: () => void, onPlay: (club: any) => void }} handlers
- *   onPlay: a campaign match with the club
+ *   onPlay: a friendly match with the club against the bot
  */
 export function showClub(box, club, { onMenu, onDeleted, onPlay }) {
     const render = (focusId = '') => {

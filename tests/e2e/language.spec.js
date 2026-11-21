@@ -31,7 +31,7 @@ test.describe('Languages', () => {
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
     await expect(page.getByRole('heading', { name: 'Prêt pour le grand match ?' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Campagne (contre le bot)' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Partie rapide (contre le bot)' })).toBeVisible();
     await expect(page.locator('#status-bar')).toHaveText('Bienvenue sur Chessdown');
     await expect(page.locator('#online-gate')).toHaveText("Connecte-toi pour jouer en ligne. Sans compte, la campagne t'est ouverte.");
     await expect(page).toHaveTitle('Chessdown - Échecs x football américain');

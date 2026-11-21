@@ -13,7 +13,7 @@ export default {
 
     'menu.title': 'Bereit für das große Spiel?',
     'menu.local': 'Lokal spielen (2 Spieler)',
-    'menu.campaign': 'Kampagne (gegen den Bot)',
+    'menu.quickGame': 'Schnelles Spiel (gegen den Bot)',
     'menu.createRoom': 'Online-Raum erstellen',
     'menu.codePlaceholder': 'CODE',
     'menu.codeLabel': 'Raumcode (6 Buchstaben)',
@@ -54,10 +54,10 @@ export default {
     'rules.speedText': '30 Sekunden pro Zug im Best of 3!',
     'rules.close': 'Verstanden!',
 
-    'campaign.title': 'Kampagne vorbereiten',
-    'campaign.difficulty': '1. Schwierigkeit wählen',
-    'campaign.archetype': '2. Spielstil des Gegners wählen',
-    'campaign.start': 'Spiel starten',
+    'quickGame.title': 'Schnelles Spiel vorbereiten',
+    'quickGame.difficulty': '1. Schwierigkeit wählen',
+    'quickGame.archetype': '2. Spielstil des Gegners wählen',
+    'quickGame.start': 'Spiel starten',
     'level.novice': 'Neuling',
     'level.apprentice': 'Lehrling',
     'level.expert': 'Experte',
@@ -328,7 +328,7 @@ export default {
     'club.col.touchdowns': 'Touchdowns',
     'club.col.captured': 'Verloren',
     'club.recruitTitle': 'Neuzugänge',
-    'club.recruitNone': 'Gewinne ein Best of 3 in der All-Star-Kampagne, um einen Neuzugang zu bekommen.',
+    'club.recruitNone': 'Gewinne ein Best of 3 mit deinem Verein, um einen Neuzugang zu bekommen.',
     'club.recruitText': 'Neuzugänge zu verpflichten: {n}. Wähle die Position und gib deinem neuen Spieler einen Namen.',
     'club.recruitType': 'Position des Neuzugangs',
     'club.recruitName': 'Name des Neuzugangs',
@@ -336,8 +336,8 @@ export default {
     'club.delete': 'Einen neuen Verein gründen',
     'club.deleteAsk': '{club} und alle seine Spieler löschen? Das lässt sich nicht rückgängig machen.',
     'club.deleteConfirm': 'Verein löschen',
-    // All Star in the campaign (js/all-star.js, the draft's bench)
-    'allStar.play': 'Ein Kampagnenspiel spielen',
+    // All Star friendly matches against the bot (js/all-star.js, the draft's bench)
+    'allStar.play': 'Ein Freundschaftsspiel spielen',
     'allStar.bench': 'Dein Kader: Wähle einen Spieler, dann ein Feld',
     'allStar.place': '{name} aufstellen, {piece}, Stufe {n}, {cost} Punkte',
     'allStar.allPlaced': 'Alle deine Spieler sind auf dem Feld.',
