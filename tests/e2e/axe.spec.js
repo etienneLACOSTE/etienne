@@ -36,6 +36,7 @@ const CHESSDOWN = {
   career: async (page) => { // The career's map, then the stadium's card (js/career-view.js)
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.evaluate(async () => {
+      localStorage.setItem('pawnet.chessdown.tourSeen', '1'); // Gérard's tour has its own screen below
       const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');
       (await import('/chessdown/js/events.js')).openCareerPage(club);
     });
@@ -48,10 +49,11 @@ const CHESSDOWN = {
       const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');
       (await import('/chessdown/js/events.js')).openCareerPage(club);
     });
-    await expect(page.locator('#career-card .career-kind')).toHaveText('Gérard’s tour · 1/11');
+    await expect(page.locator('.tour-panel')).toBeVisible();
   },
   'career journal': async (page) => {
     await page.evaluate(async () => {
+      localStorage.setItem('pawnet.chessdown.tourSeen', '1'); // Gérard's tour has its own screen below
       const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');
       (await import('/chessdown/js/events.js')).openCareerPage(club);
     });

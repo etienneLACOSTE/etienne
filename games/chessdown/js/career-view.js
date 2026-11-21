@@ -138,16 +138,13 @@ function runTour() {
     tour?.stop();
     showView('map');
     tour = startTour({
-        card: ui.card,
-        say: (text) => gerard.say(text),
-        setCard,
-        done: () => { tour = null; showCard(map.at()); ui.tourButton.focus(); },
+        screen: $('career-screen'),
+        portrait: /** @type {HTMLCanvasElement} */ ($('career-gerard')),
+        done: () => { tour = null; ui.tourButton.focus(); },
     });
 }
 
 function goTo(place) {
-    tour?.stop(); // A place chosen: the tour gives way
-    tour = null;
     ui.map.querySelectorAll('.career-marker').forEach((m) => m.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (m).dataset.place === place)));
     showTravel(place);
     const pixels = map.go(place); // showCard on arrival

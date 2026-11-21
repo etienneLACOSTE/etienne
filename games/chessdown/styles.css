@@ -1240,9 +1240,34 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .piece-info ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
 .piece-info button { justify-self: end; padding: 4px 12px; font-size: 13px; }
 
-/* --- Gérard's tour (js/career-tour.js): what he speaks of, outlined --- */
-.tour-focus { outline: 3px solid var(--amber) !important; outline-offset: 3px; border-radius: 4px; animation: tour-pulse 1.2s ease-in-out infinite; }
-@keyframes tour-pulse { 50% { outline-color: var(--white); } }
-@media (prefers-reduced-motion: reduce) { .tour-focus { animation: none; } }
-.career-tour-text { margin: 0; line-height: 1.45; }
-.career-tour-row { flex-wrap: wrap; }
+/* --- Gérard's tour (js/career-tour.js): Gérard big, the screen dimmed but for what he shows --- */
+.tour { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
+.tour-block { position: fixed; pointer-events: auto; background: rgba(0, 0, 0, 0.72); }
+.tour.no-target .tour-block { background: rgba(0, 0, 0, 0.8); }
+.tour-hole { position: fixed; pointer-events: none; border: 3px solid var(--amber); border-radius: 6px; animation: tour-pulse 1.2s ease-in-out infinite; }
+@keyframes tour-pulse { 50% { border-color: var(--white); } }
+.tour-panel {
+    position: fixed; left: 50%; translate: -50% 0; width: min(680px, calc(100vw - 16px)); pointer-events: auto;
+    display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: end;
+}
+.tour-panel[data-at="bottom"] { bottom: 12px; }
+.tour-panel[data-at="top"] { top: 12px; }
+.tour-panel[data-at="middle"] { top: 50%; translate: -50% -50%; }
+.tour-gerard { width: 168px; height: 168px; image-rendering: pixelated; }
+.tour-bubble {
+    background: var(--white); color: var(--black); border: 3px solid var(--black); border-radius: 8px; box-shadow: 4px 4px 0 var(--turf);
+    padding: 14px 16px; display: grid; gap: 8px; text-align: left;
+}
+.tour .tour-speaker { margin: 0; font: 900 16px/1.2 var(--display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--turf); text-wrap: initial; }
+.tour-text { margin: 0; font: 600 17px/1.45 var(--text); }
+.tour-do { margin: 0; font: 800 17px/1.35 var(--text); color: var(--black); background: var(--amber); border-radius: 4px; padding: 4px 8px; justify-self: start; }
+.tour-do:empty { display: none; }
+.tour-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tour-actions .btn-ghost { color: var(--black); border-color: var(--black); }
+.tour-actions [hidden] { display: none; }
+@media (max-width: 600px) {
+    .tour-panel { grid-template-columns: 1fr; justify-items: center; gap: 6px; }
+    .tour-gerard { width: 96px; height: 96px; }
+    .tour-text, .tour-do { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .tour-hole { animation: none; } }

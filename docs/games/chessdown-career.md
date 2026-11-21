@@ -43,12 +43,14 @@ international compris, un tournoi de 32 clubs à double élimination ; les coupe
 
 ## Visite de Gérard et blason du QG (2026-11-21)
 
-- `js/career-tour.js` : 11 étapes dans la fiche de droite (principe, gagner une partie, draft,
-  niveaux, expérience, carte et date, tournoi, quêtes annexes, boss, transports, Journal et
-  Pièces), l'élément concerné entouré (`tour-focus`). Elle s'ouvre seule à la première
-  ouverture de la carrière (`pawnet.chessdown.tourSeen` dans le navigateur), et à la demande :
-  bouton « Visite avec Gérard » de la carrière et de la page du club. Choisir un lieu sur la
-  carte l'interrompt.
+- `js/career-tour.js` : Gérard en grand à l'écran, le reste assombri sauf ce dont il parle
+  (un trou découpé dans quatre caches qui bloquent les autres clics). 17 étapes : le principe,
+  la partie, la draft et les niveaux, puis il fait cliquer le QG, le stade, une quête annexe,
+  les onglets Journal, Pièces et Carte (chaque clic ouvre vraiment le menu ; la visite reprend
+  quand la fiche ou l'onglet est là), et montre la date, la gare et le bouton de visite.
+  Elle s'ouvre seule à la première ouverture de la carrière (`pawnet.chessdown.tourSeen`), et à
+  la demande (bouton « Visite avec Gérard » de la carrière et du club) ; Échap ou « Passer la
+  visite » l'arrête.
 - Le QG porte le blason du club (`crestSVG`, réduit en pixels) : sur la façade en ville, sur un
   panneau à côté du village aux autres échelons (`CREST_SPOT`, `js/career-map.js`).
 
