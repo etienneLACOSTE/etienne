@@ -25,7 +25,7 @@ const STEPS = [
     { id: 'homeCard', target: '#career-card' },
     { id: 'stadium', target: '.career-marker.main', click: true, ready: () => cardIs('main') },
     { id: 'matchCard', target: '#career-card' },
-    { id: 'quest', target: '.career-marker.side, .career-marker.boss', click: true, ready: () => cardIs('side') },
+    { id: 'quest', target: '.career-marker.side', click: true, ready: () => cardIs('side') },
     { id: 'questCard', target: '#career-card' },
     { id: 'date', target: '#career-date' },
     { id: 'transport', target: '.career-marker.transport' },

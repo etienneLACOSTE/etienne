@@ -128,6 +128,7 @@
         quest('kings-walk', 'school', 'school', 'challenge', 'single', {}, { type: 'touchdownWith', piece: 'k' }, XP),
         quest('hide-and-seek', 'school', 'park', 'challenge', 'single', {}, { type: 'survive', n: 10 }, XP, 1, { budget: 16 }),
         quest('pillow-fight', 'school', 'gym', 'challenge', 'single', {}, { type: 'captures', n: 3 }, XP),
+        quest('city-king', 'school', 'citystade', 'boss', 'single', {}, win, { recruitChoice: { level: 2 } }, 1, { difficulty: 'apprentice', boss: 'caid', army: [['r', 3], ['n', 2], ['p', 2], ['p', 2]] }),
         quest('old-bull', 'county', 'farm', 'boss', 'single', {}, win, { recruit: { type: 'r', level: 3 } }, 1, { difficulty: 'expert', boss: 'taureau', army: [['r', 4], ['r', 4]] }),
         quest('mud-match', 'county', 'pond', 'special', 'single', { noTouchdowns: true }, win, XP),
         quest('clean-harvest', 'county', 'mill', 'challenge', 'single', {}, { type: 'cleanSheet' }, XP, 2),

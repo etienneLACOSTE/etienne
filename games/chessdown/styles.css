@@ -1259,10 +1259,15 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 
 /* --- Career: the date in a corner of the map, the black screen of a knock-out --- */
 .career-date {
-    position: absolute; top: 6px; right: 6px; z-index: 2; font: 800 12px/1 var(--text); font-variant-numeric: tabular-nums;
+    position: absolute; top: 6px; right: 6px; z-index: 2; margin: 0; font: 800 12px/1 var(--text); font-variant-numeric: tabular-nums;
     background: var(--black); color: var(--white); border: 2px solid var(--white); border-radius: 3px; padding: 3px 6px; pointer-events: none;
 }
-@media (max-width: 600px) { .career-date { font-size: 10px; padding: 2px 4px; top: 4px; right: 4px; } }
+.career-date .helm-short { display: none; }
+@media (max-width: 600px) {
+    .career-date { font-size: 10px; padding: 2px 4px; top: 4px; right: 4px; }
+    .career-date .helm-long { display: none; }
+    .career-date .helm-short { display: inline; }
+}
 .career-out { position: fixed; inset: 0; z-index: 50; background: var(--black); display: grid; place-items: center; padding: 16px; animation: career-fade 0.8s ease-out; }
 .career-out[hidden] { display: none; }
 .career-out-box { max-width: 460px; display: grid; gap: 12px; justify-items: center; text-align: center; }
@@ -1277,7 +1282,7 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-bracket-tree > .bracket-progress { margin-top: 6px; }
 .career-news { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; max-height: 420px; overflow-y: auto; }
 .career-news li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: baseline; padding-bottom: 6px; border-bottom: 1px solid #2a2f2c; }
-.career-news time { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-on-dark); }
+.career-news .news-when { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-on-dark); }
 .news-mark { text-align: center; font-family: var(--pieces); color: var(--muted-on-dark); }
 .career-news .won .news-mark, .news-champion .news-mark, .news-upset .news-mark { color: var(--amber); }
 .news-quest .news-mark { color: var(--quest-blue); }

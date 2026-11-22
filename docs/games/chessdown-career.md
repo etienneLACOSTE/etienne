@@ -84,6 +84,18 @@ quêtes ; nouvelle à 3, 5, 10 puis toutes les 5 ; une défaite ou une quête ra
 la montée d'échelon du champion (le club seulement quand il gagne un nouveau ticket) et
 l'arrivée du club dans un nouvel échelon après le voyage.
 
+## Boss des écoles et saisons au club (2026-11-22)
+
+- Un boss dès la ville : Kenzo Belkacem, « le Caïd du City », au city-stade (quête `city-king`) :
+  bot apprenti, armée fixe tour 3★, cavalier 2★, deux pions 2★ ; il donne une recrue de niveau 2
+  au choix, de quoi aider à gagner le premier tournoi.
+- Le boss d'un échelon est toujours tiré parmi les quêtes de la saison tant qu'il n'est pas
+  battu (`drawQuests`).
+- Le coin de la carte ne montre plus la date mais les saisons à la tête du club (« 3e saison à
+  la tête du club », « Saison 3 » sur téléphone) : seul le titre fait monter d'échelon, ce compte
+  dit combien de tournois il a fallu. Les actualités du journal disent leur saison. Le
+  calendrier reste tenu (`minutes`), sans être affiché.
+
 ## Les maillots sur les pièces (2026-11-22)
 
 En All Star et en carrière, le corps de chaque pièce du club (là où une pièce porterait son

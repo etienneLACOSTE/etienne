@@ -340,7 +340,7 @@
 
     /**
      * This season's draw: quests of the tier not done yet, open from this season on in the tier;
-     * one a place (a place shows one quest).
+     * one a place (a place shows one quest); the tier's boss always, until it is beaten.
      */
     function drawQuests(career) {
         const seasons = career.seasonsIn[career.tier] || 1;
@@ -348,7 +348,9 @@
             && PLAYABLE_GOALS.includes(q.goal.type));
         const places = new Set();
         const drawn = [];
-        for (const q of shuffle(pool, rng(hash(career.seed, 'quests', career.season, career.tier)))) {
+        // The tier's boss first: on the map every season until it is beaten
+        const order = shuffle(pool, rng(hash(career.seed, 'quests', career.season, career.tier)));
+        for (const q of [...order.filter((x) => x.kind === 'boss'), ...order.filter((x) => x.kind !== 'boss')]) {
             if (places.has(q.place)) continue;
             places.add(q.place);
             drawn.push(q.id);

@@ -80,6 +80,7 @@
 
     // Bosses: one per tier from the county on, met in a side quest with a fixed army
     COACHES.push(
+        boss('caid', 'school', 'Kenzo Belkacem', 'Les Caïds du City', 'ecuries', 1, colors('#e67e22', '#111111', 'sleeves', 'round', 'bolt'), look('#8a5a3c', '#1a1a1a', 'short', 'stubble', '', 'cap', '#111111', '#e67e22', 'whistle')),
         boss('taureau', 'county', 'Marcel Taureau', 'Les Cornes du Loir', 'chair', 1, colors('#5a2d0c', '#e8c070', 'halves', 'badge', 'bull'), look('#c88a5c', '#2a1a10', 'short', 'full', '', 'cap', '#5a2d0c', '#5a2d0c', 'whistle')),
         boss('cimes', 'region', 'Hélène des Cimes', 'Pic Blanc', 'sorcieres', 1, colors('#e8eef4', '#2f4a6a', 'chevron', 'diamond', 'mountain'), look('#f4dcc8', '#f0f0f0', 'long', '', 'round', '', '', '#2f4a6a', 'scarf')),
         boss('valmont', 'national', 'Victor Valmont', 'Valmont Royal', 'citadelle', 1, colors('#2a1a4a', '#d4af37', 'sash', 'shield', 'crown'), look('#e8c0a0', '#1a1a1a', 'short', 'goatee', 'square', '', '', '#2a1a4a', 'tie')),

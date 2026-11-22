@@ -59,7 +59,8 @@ test.describe('Career', () => {
     await expect(page.locator('#career-canvas')).toHaveAttribute('aria-label', 'Map: Town · Saint-Aubin. The places are the buttons that follow.');
     await expect(page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Transport: Bus station' })).toBeVisible();
-    await expect(page.locator('.career-marker.side')).toHaveCount(4);
+    await expect(page.locator('.career-marker.side')).toHaveCount(3);
+    await expect(page.getByRole('button', { name: 'Boss: North district street pitch' })).toBeVisible(); // The town's boss, every season until beaten
     const career = await stored(page);
     expect(career.tier).toBe('school');
     expect(career.season).toBe(1);
@@ -672,7 +673,7 @@ test.describe('Career', () => {
     await expect(out).toBeHidden();
     await page.getByRole('button', { name: 'Map', exact: true }).click();
     // The side quests are still there; the stadium starts the next season
-    await expect(page.locator('.career-marker.side')).toHaveCount(4);
+    await expect(page.locator('.career-marker.side, .career-marker.boss')).toHaveCount(4);
     await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();
     await expect(card(page)).toContainText('The tournament is over for the club: place 17.');
     await card(page).getByRole('button', { name: 'Start the next season' }).click();
@@ -682,19 +683,25 @@ test.describe('Career', () => {
     expect(errors).toEqual([]);
   });
 
-  test('the date moves on with every walk, shown in a corner of the map', async ({ page }) => {
+  test('the seasons in charge of the club, shown in a corner of the map; the time still kept', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await openCareer(page);
-    const date = page.locator('#career-date');
-    await expect(date).toHaveText(/Tue, 1 Sept?, 08:00|Tue, Sep 1, 08:00/);
-    await expect(date).toHaveAttribute('datetime', '2026-09-01T08:00:00.000Z');
+    const helm = page.locator('#career-date');
+    await expect(helm).toContainText(test.info().project.name === 'mobile' ? 'Season 1' : 'Season 1 in charge of the club');
     await page.getByRole('button', { name: 'Main quest: Léo-Lagrange municipal stadium' }).click();
-    await expect(date).not.toHaveAttribute('datetime', '2026-09-01T08:00:00.000Z');
     const minutes = (await stored(page)).minutes;
-    expect(minutes).toBeGreaterThan(0);
+    expect(minutes).toBeGreaterThan(0); // The walk took time
     await page.reload(); // Kept with the career
     await page.evaluate(async () => (await import('/chessdown/js/events.js')).openCareerPage(JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null')));
     expect((await stored(page)).minutes).toBe(minutes);
+    // A second season: the count goes on
+    await page.evaluate(async () => {
+      const Career = /** @type {any} */ (window).ChessdownCareer;
+      const c = Career.finishSeason(Career.recordSeries(JSON.parse(localStorage.getItem('pawnet.chessdown.career') || 'null'), { won: 0, lost: 1 })).career;
+      localStorage.setItem('pawnet.chessdown.career', JSON.stringify(c));
+      (await import('/chessdown/js/events.js')).openCareerPage(JSON.parse(localStorage.getItem('pawnet.chessdown.club') || 'null'));
+    });
+    await expect(helm.locator(test.info().project.name === 'mobile' ? '.helm-short' : '.helm-long')).toHaveText(test.info().project.name === 'mobile' ? 'Season 2' : 'Season 2 in charge of the club');
   });
 
   test('the Heritage jersey won in the career: worn from the club\'s wardrobe', async ({ page }) => {

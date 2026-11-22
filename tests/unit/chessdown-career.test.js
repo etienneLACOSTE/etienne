@@ -50,12 +50,12 @@ test('rival coaches: enough per tier, each one complete and recognisable', () =>
     }
 });
 
-test('the quest catalogue: every quest is well formed, 11 per tier, enough for a first season', () => {
+test('the quest catalogue: every quest is well formed, 11 per tier (12 in town), enough for a first season', () => {
     assert.equal(new Set(Quests.QUESTS.map((q) => q.id)).size, Quests.QUESTS.length);
     for (const q of Quests.QUESTS) assert.deepEqual(Quests.checkQuest(q), [], q.id);
     for (const tier of Career.TIER_IDS) {
         const quests = Quests.QUESTS.filter((q) => q.tier === tier);
-        assert.equal(quests.length, 11, tier);
+        assert.equal(quests.length, tier === 'school' ? 12 : 11, tier);
         assert.ok(quests.filter((q) => q.minSeason === 1 && Career.PLAYABLE_GOALS.includes(q.goal.type)).length >= Career.TIERS[tier].quests, tier);
     }
     // The checks catch mistakes
@@ -66,19 +66,26 @@ test('the quest catalogue: every quest is well formed, 11 per tier, enough for a
     assert.deepEqual(Quests.checkQuest({ ...Quests.QUESTS[0], kind: 'boss' }), ['boss']);
 });
 
-test('bosses: one per tier from the county on, a coach of their tier never met in the league', () => {
+test('bosses: one per tier, a coach of their tier never met in the league, always on the map until beaten', () => {
     const bosses = Quests.QUESTS.filter((q) => q.kind === 'boss');
-    assert.deepEqual(bosses.map((q) => q.tier), ['county', 'region', 'national', 'international']);
+    assert.deepEqual(bosses.map((q) => q.tier).sort(), ['county', 'international', 'national', 'region', 'school']);
     for (const q of bosses) {
         const coach = Coaches.coachById(q.opponent.boss);
         assert.ok(coach && coach.boss && coach.tier === q.tier, q.id);
         assert.ok(!Coaches.coachesOf(q.tier).includes(coach), 'not a league rival');
-        assert.ok(q.opponent.army.every(([, level]) => level >= 4), 'high levels');
+        // Levels 2 and 3 in town (beatable with the first squad, for a level-2 recruit), 4 and 5 after
+        assert.ok(q.opponent.army.every(([, level]) => level >= (q.tier === 'school' ? 2 : 4)), 'high levels');
     }
     for (let seed = 0; seed < 40; seed++) {
         const c = Career.newCareer(seed);
         assert.ok(Career.fieldOf(c).every((id) => id === Career.YOU || !Career.coachOf(c, id).boss));
+        assert.ok(c.quests.drawn.includes('city-king'), 'the town\'s boss on the first map');
     }
+    let c = Career.attemptQuest(Career.newCareer(3), 'city-king', true);
+    c = Career.finishSeason(playSeason(c, false)).career;
+    assert.ok(!c.quests.drawn.includes('city-king'), 'beaten: gone');
+    const school = Quests.questById('city-king');
+    assert.deepEqual([school.reward.recruitChoice.level, school.place], [2, 'citystade']);
 });
 
 test('a season\'s quests: one a place, so that each one shows on the map', () => {

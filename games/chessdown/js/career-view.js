@@ -349,11 +349,10 @@ function renderHeader() {
     renderDate();
 }
 
-/** The date, in a corner of the map (in the page's language). */
+/** The seasons in charge of the club, in a corner of the map (how many tournaments it took); short on a phone. */
 function renderDate() {
-    const date = Career.dateOf(career);
-    ui.date.textContent = new Intl.DateTimeFormat(language(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }).format(date);
-    ui.date.setAttribute('datetime', date.toISOString());
+    const long = career.season === 1 ? t('career.helm1') : t('career.helm', { n: career.season });
+    ui.date.innerHTML = `<span class="helm-long">${esc(long)}</span><span class="helm-short">${esc(t('career.news.when', { n: career.season }))}</span>`;
 }
 
 function renderJournal() {
@@ -402,16 +401,14 @@ function renderJournal() {
     }));
 }
 
-/** The club's news (career-rules.js addNews), the latest first, each dated by the calendar. */
+/** The club's news (career-rules.js addNews), the latest first, each with its season. */
 function newsList() {
     if (!career.news.length) return `<p class="muted">${esc(t('career.journal.noNews'))}</p>`;
-    const day = new Intl.DateTimeFormat(language(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
     const items = career.news.slice().reverse().map((n) => {
-        const date = Career.dateOf({ season: n.season, minutes: n.at });
         const [mark, text] = newsText(n);
         return `<li class="news-${n.kind}${n.kind === 'match' ? (n.won > n.lost ? ' won' : ' lost') : ''}${n.kind === 'quest' ? (n.ok ? ' won' : ' lost') : ''}">
             <span class="news-mark" aria-hidden="true">${mark}</span>
-            <span><time datetime="${date.toISOString()}">${esc(day.format(date))}</time> ${esc(text)}</span></li>`;
+            <span><span class="news-when">${esc(t('career.news.when', { n: n.season }))}</span> ${esc(text)}</span></li>`;
     }).join('');
     return `<ol class="career-news" tabindex="0" aria-labelledby="career-news-title">${items}</ol>`;
 }
