@@ -14,6 +14,9 @@
 //     that season, and a quest that is done is gone for good.
 //   - A calendar (decorative for now): a season starts on 1 September; moving on the map,
 //     playing a match and travelling to another tier take time.
+//   - The club's news (the journal): the latest events, dated by the calendar (a season
+//     started, a match played, the other matches' surprises, a quest won or lost, a recruit,
+//     a player going up a level, the tournament's champion).
 // Loaded by the browser (as `window.ChessdownCareer`, after career-coaches.js and
 // career-quests.js) and by Node (`require`).
 (function (root, factory) {
@@ -48,6 +51,10 @@
     const MATCH_MINUTES = 12 * 60;
     const TRAVEL_MINUTES = 24 * 60;
     const MAX_GAMES = 5; // A best of 3 lasts at most 5 games (draws count for nobody)
+    const NEWS_MAX = 40; // The journal keeps the latest news only
+    /** A surprise: the winner was this much weaker than the club it knocked out (coach strengths, 0 to 1). */
+    const UPSET_GAP = 0.2;
+    const UPSETS_PER_ROUND = 2;
 
     /**
      * The rounds of the tournament: 16 matches, then 8, the quarter-finals, the semi-finals and
@@ -111,7 +118,7 @@
         const s = Number.isInteger(seed) ? seed >>> 0 : hash(String(seed));
         const career = {
             version: VERSION, seed: s, season: 0, tier: 'school', tickets: [], seasonsIn: {},
-            tournament: { results: [] }, quests: { drawn: [], attempted: [] }, questsDone: [], titles: [], minutes: 0,
+            tournament: { results: [] }, quests: { drawn: [], attempted: [] }, questsDone: [], titles: [], minutes: 0, news: [],
         };
         return startSeason(career, 'school');
     }
@@ -120,7 +127,7 @@
     function startSeason(career, tier) {
         const seasonsIn = { ...career.seasonsIn, [tier]: (career.seasonsIn[tier] || 0) + 1 };
         const next = { ...career, tier, season: career.season + 1, seasonsIn, tournament: { results: [] }, minutes: 0 };
-        return { ...next, quests: { drawn: drawQuests(next), attempted: [] } };
+        return addNews({ ...next, quests: { drawn: drawQuests(next), attempted: [] } }, { kind: 'season', tier });
     }
 
     // ---------- The tournament ----------
@@ -202,7 +209,23 @@
     function recordSeries(career, { won, lost }) {
         const match = nextMatch(career);
         if (!match || !validScore(won, lost, match.format === 'bo3')) return null;
-        return { ...career, tournament: { results: [...career.tournament.results, { won, lost }] }, minutes: career.minutes + MATCH_MINUTES };
+        let after = { ...career, tournament: { results: [...career.tournament.results, { won, lost }] }, minutes: career.minutes + MATCH_MINUTES };
+        after = addNews(after, { kind: 'match', stage: match.stage, opp: match.opponent, won, lost });
+        const b = bracket(after);
+        // The round's surprises (the other matches, played at the same time)
+        const round = b.stages.find((st) => st.id === match.stage);
+        const strength = (id) => coachOf(career, id).strength;
+        const gap = (u) => strength(u.l) - strength(u.w);
+        const upsets = (round ? round.matches : [])
+            .filter((m) => m.a !== YOU && m.b !== YOU)
+            .map((m) => (m.wa > m.wb ? { w: m.a, l: m.b } : { w: m.b, l: m.a }))
+            .filter((u) => gap(u) >= UPSET_GAP)
+            .sort((x, y) => gap(y) - gap(x))
+            .slice(0, UPSETS_PER_ROUND);
+        for (const u of upsets) after = addNews(after, { kind: 'upset', stage: match.stage, w: u.w, l: u.l });
+        // The tournament is over (the club out, the rest played without it): its champion
+        if (!b.next) after = addNews(after, { kind: 'champion', tier: career.tier, club: b.champion });
+        return after;
     }
 
     /** The season is over: the player is out of the tournament, or it is finished. */
@@ -332,12 +355,47 @@
     /** A quest was tried (once a season, half a day); when it succeeded it is gone for good. Null if it was not open. */
     function attemptQuest(career, id, success) {
         if (!career.quests.drawn.includes(id) || career.quests.attempted.includes(id)) return null;
-        return {
+        return addNews({
             ...career,
             quests: { drawn: career.quests.drawn, attempted: [...career.quests.attempted, id] },
             questsDone: success ? [...career.questsDone, id] : career.questsDone,
             minutes: Math.min(MAX_MINUTES, career.minutes + MATCH_MINUTES),
-        };
+        }, { kind: 'quest', id, ok: Boolean(success) });
+    }
+
+    // ---------- The club's news ----------
+    /**
+     * One more piece of news, dated now (the season and its minutes); the oldest go past NEWS_MAX.
+     * Kinds: season {tier}; match {stage, opp, won, lost}; upset {stage, w, l}; champion {tier,
+     * club}; quest {id, ok}; recruit and level {name, type, level} (a player of the club).
+     */
+    function addNews(career, entry) {
+        const news = [...(career.news || []), { season: career.season, at: career.minutes, ...entry }];
+        return { ...career, news: news.slice(-NEWS_MAX) };
+    }
+
+    const PLAYER_TYPES = ['k', 'q', 'r', 'b', 'n', 'p'];
+    const NAME_MAX = 24; // A player's name (club-rules.js)
+    /** A piece of news read back from storage, rebuilt; null when it cannot be (it is then left out). */
+    function cleanNews(n, career) {
+        if (!n || typeof n !== 'object' || !isInt(n.season, 1, career.season) || !isInt(n.at, 0, MAX_MINUTES)) return null;
+        const head = { season: n.season, at: n.at, kind: n.kind };
+        const club = (id) => typeof id === 'string' && coachOf(career, id) !== null;
+        const stage = (id) => STAGES.some((st) => st.id === id);
+        switch (n.kind) {
+            case 'season': return TIER_IDS.includes(n.tier) ? { ...head, tier: n.tier } : null;
+            case 'match': return stage(n.stage) && club(n.opp) && isInt(n.won, 0, MAX_GAMES) && isInt(n.lost, 0, MAX_GAMES)
+                ? { ...head, stage: n.stage, opp: n.opp, won: n.won, lost: n.lost } : null;
+            case 'upset': return stage(n.stage) && club(n.w) && club(n.l) ? { ...head, stage: n.stage, w: n.w, l: n.l } : null;
+            case 'champion': return TIER_IDS.includes(n.tier) && (n.club === YOU || club(n.club)) ? { ...head, tier: n.tier, club: n.club } : null;
+            case 'quest': return Quests.questById(n.id) && typeof n.ok === 'boolean' ? { ...head, id: n.id, ok: n.ok } : null;
+            case 'recruit': case 'level': {
+                const name = typeof n.name === 'string' ? n.name.replace(/[\u0000-\u001f\u007f]/g, '').trim() : '';
+                return name && name.length <= NAME_MAX && PLAYER_TYPES.includes(n.type) && isInt(n.level, 1, 5)
+                    ? { ...head, name, type: n.type, level: n.level } : null;
+            }
+            default: return null;
+        }
     }
 
     // ---------- Checks on a stored career ----------
@@ -386,12 +444,14 @@
             quests: { drawn: q.drawn.slice(), attempted: q.attempted.slice() },
             questsDone: data.questsDone.slice(),
             titles: data.titles.map((t) => ({ tier: t.tier, season: t.season })),
+            // The news (older careers have none yet); one that cannot be read is left out
+            news: Array.isArray(data.news) ? data.news.slice(-NEWS_MAX).map((n) => cleanNews(n, base)).filter(Boolean) : [],
         };
     }
 
     return {
         VERSION, YOU, TIER_IDS, TIERS, FIELD, STAGES, MATCH_MINUTES, TRAVEL_MINUTES, PLAYABLE_GOALS,
         rivalsOf, coachOf, fieldOf, newCareer, bracket, nextMatch, recordSeries, seasonOver, knockedOut, placing, finishSeason,
-        canTravel, travel, advance, walkMinutes, dateOf, tutorialStep, rivalOpponent, questOpponent, availableQuests, attemptQuest, sanitizeCareer,
+        canTravel, travel, advance, walkMinutes, dateOf, addNews, NEWS_MAX, tutorialStep, rivalOpponent, questOpponent, availableQuests, attemptQuest, sanitizeCareer,
     };
 });

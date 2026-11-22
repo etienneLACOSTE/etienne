@@ -15,6 +15,7 @@ import { loadCareer, newCareer, saveCareer } from './career-store.js';
 import { language, t } from '../../../assets/js/i18n.js';
 import { renderGuide } from './piece-guide.js';
 import { startTour, tourSeen } from './career-tour.js';
+import { bracketProgress, scrollBracketToClub } from './bracket-view.js';
 
 const Career = globalThis.ChessdownCareer;
 const Quests = globalThis.ChessdownQuests;
@@ -357,53 +358,77 @@ function renderDate() {
 
 function renderJournal() {
     const b = Career.bracket(career);
-    // The club's road: each match played, and the next one
-    const mine = [];
-    for (const stage of b.stages) {
-        for (const m of stage.matches) {
-            if (m.a !== Career.YOU && m.b !== Career.YOU) continue;
-            const [me, them, other] = m.a === Career.YOU ? [m.wa, m.wb, m.b] : [m.wb, m.wa, m.a];
-            mine.push(`<tr class="${me > them ? 'won' : 'lost'}"><th scope="row">${esc(t(`career.stage.${stage.id}`))}</th>
-              <td>${esc(clubName(other))}</td><td class="num">${me}–${them}</td></tr>`);
-        }
-    }
-    if (b.next) mine.push(`<tr class="you"><th scope="row">${esc(t(`career.stage.${b.next.stage}`))}</th><td>${esc(clubName(b.next.opponent))}</td><td class="num">${esc(t('career.journal.toPlay'))}</td></tr>`);
+    // The tournament: where the club stands, its next match, the bracket folded below
     const status = b.next ? t('career.journal.inRunning')
         : b.place === 1 ? t('career.journal.champion') : t('career.journal.finished', { place: b.place });
-    // Every stage played so far, folded away
-    const stages = b.stages.filter((st) => st.matches.length).map((st) => `<li><b>${esc(t(`career.stage.${st.id}`))}</b>
-        <ul>${st.matches.map((m) => `<li class="${m.a === Career.YOU || m.b === Career.YOU ? 'you' : ''}">${esc(clubName(m.a))} ${m.wa}–${m.wb} ${esc(clubName(m.b))}</li>`).join('')}</ul></li>`).join('');
+    const next = b.next ? `<p class="career-next">${esc(t('career.journal.next', { stage: t(`career.stage.${b.next.stage}`), club: clubName(b.next.opponent) }))}</p>` : '';
+    // The quests of the season: done, failed, or still to try
     const drawn = career.quests.drawn.map((id) => Quests.questById(id));
     const quests = drawn.map((q) => {
         const tried = career.quests.attempted.includes(q.id);
+        const done = career.questsDone.includes(q.id);
         const title = discovered.has(q.id) || tried ? t(`quest.${q.id}.title`) : t('career.journal.unknown');
-        return `<li><button type="button" data-place="${q.place}" ${tried ? 'disabled' : ''}>
-            <span>${esc(title)}<br><small>${esc(placeName(q.place))}${tried ? ` · ${esc(t('career.journal.tried'))}` : ''}</small></span>
+        const outcome = tried ? ` · ${esc(t(done ? 'career.journal.questOk' : 'career.journal.questFailed'))}` : '';
+        return `<li><button type="button" data-place="${q.place}" ${tried ? 'disabled' : ''} class="${tried ? (done ? 'ok' : 'failed') : ''}">
+            <span>${esc(title)}<br><small>${esc(placeName(q.place))}${outcome}</small></span>
             <span class="career-dot side" aria-hidden="true"></span></button></li>`;
     }).join('');
     const titles = career.titles.length
         ? `<ul class="career-titles">${career.titles.map((x) => `<li>★ ${esc(t('career.journal.title', { tier: t(`career.tier.${x.tier}`), season: x.season }))}</li>`).join('')}</ul>`
         : `<p class="muted">${esc(t('career.journal.noTitles'))}</p>`;
     ui.journal.innerHTML = `
-        <section aria-labelledby="career-league-title">
+        <section class="career-tournament" aria-labelledby="career-league-title">
           <h3 id="career-league-title"><span class="career-dot icon main" aria-hidden="true">${pixelIcon('crown', 16)}</span>${esc(t(`career.tournament.${career.tier}`))}</h3>
-          <p>${esc(status)}</p>
-          <div class="career-table-wrap" tabindex="0" role="region" aria-labelledby="career-league-title"><table class="career-table">
-            <caption class="visually-hidden">${esc(t('career.journal.road'))}</caption>
-            <thead><tr><th scope="col">${esc(t('career.col.round'))}</th><th scope="col">${esc(t('career.col.club'))}</th><th scope="col" class="num">${esc(t('career.col.score'))}</th></tr></thead>
-            <tbody>${mine.join('')}</tbody></table></div>
-          <details class="career-bracket"><summary>${esc(t('career.journal.bracket'))}</summary><ul>${stages}</ul></details>
+          <p>${esc(status)}</p>${next}
+          <details class="career-bracket-tree"><summary>${esc(t('career.journal.showBracket'))}</summary>${bracketProgress(career, club, { heading: false })}</details>
+        </section>
+        <section class="career-news-box" aria-labelledby="career-news-title">
+          <h3 id="career-news-title">${esc(t('career.journal.news'))}</h3>
+          ${newsList()}
         </section>
         <section aria-labelledby="career-quests-title">
           <h3 id="career-quests-title"><span class="career-dot side" aria-hidden="true"></span>${esc(t('career.journal.quests'))}</h3>
           <p class="muted">${esc(t('career.journal.questsNote', { n: drawn.length, tier: t(`career.tier.${career.tier}`) }))}</p>
           <ul class="career-quests">${quests}</ul>
-          <h3>${esc(t('career.journal.titles'))}</h3>${titles}
+        </section>
+        <section aria-labelledby="career-titles-title">
+          <h3 id="career-titles-title">${esc(t('career.journal.titles'))}</h3>${titles}
         </section>`;
+    const tree = /** @type {HTMLDetailsElement} */ (ui.journal.querySelector('.career-bracket-tree'));
+    tree.addEventListener('toggle', () => { if (tree.open) scrollBracketToClub(tree); });
     ui.journal.querySelectorAll('[data-place]').forEach((el) => el.addEventListener('click', () => {
         showView('map');
         goTo(/** @type {HTMLElement} */ (el).dataset.place);
     }));
+}
+
+/** The club's news (career-rules.js addNews), the latest first, each dated by the calendar. */
+function newsList() {
+    if (!career.news.length) return `<p class="muted">${esc(t('career.journal.noNews'))}</p>`;
+    const day = new Intl.DateTimeFormat(language(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+    const items = career.news.slice().reverse().map((n) => {
+        const date = Career.dateOf({ season: n.season, minutes: n.at });
+        const [mark, text] = newsText(n);
+        return `<li class="news-${n.kind}${n.kind === 'match' ? (n.won > n.lost ? ' won' : ' lost') : ''}${n.kind === 'quest' ? (n.ok ? ' won' : ' lost') : ''}">
+            <span class="news-mark" aria-hidden="true">${mark}</span>
+            <span><time datetime="${date.toISOString()}">${esc(day.format(date))}</time> ${esc(text)}</span></li>`;
+    }).join('');
+    return `<ol class="career-news" tabindex="0" aria-labelledby="career-news-title">${items}</ol>`;
+}
+
+/** A piece of news: its mark (a glyph, not read) and its sentence. @returns {[string, string]} */
+function newsText(n) {
+    const stage = (id) => t(`career.stage.${id}`);
+    const tournament = (tier) => t(`career.tournament.${tier}`);
+    switch (n.kind) {
+        case 'season': return ['▶', t('career.news.season', { n: n.season, tournament: tournament(n.tier) })];
+        case 'match': return [n.won > n.lost ? '✓' : '✗', t(n.won > n.lost ? 'career.news.won' : 'career.news.lost', { stage: stage(n.stage), club: clubName(n.opp), won: n.won, lost: n.lost })];
+        case 'upset': return ['⚡', t('career.news.upset', { stage: stage(n.stage), winner: clubName(n.w), loser: clubName(n.l) })];
+        case 'champion': return ['★', n.club === Career.YOU ? t('career.news.youChampion', { tournament: tournament(n.tier) }) : t('career.news.champion', { club: clubName(n.club), tournament: tournament(n.tier) })];
+        case 'quest': return [n.ok ? '✓' : '✗', t(n.ok ? 'career.news.questOk' : 'career.news.questFailed', { title: t(`quest.${n.id}.title`) })];
+        case 'recruit': return [GLYPHS[n.type], t('career.news.recruit', { name: n.name, piece: t(`piece.${n.type}`), level: n.level })];
+        default: return [GLYPHS[n.type], t('career.news.level', { name: n.name, piece: t(`piece.${n.type}`), level: n.level })];
+    }
 }
 
 /** The map, the journal or the pieces' guide (piece-guide.js), one at a time (chosen on the club's page). */

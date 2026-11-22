@@ -1247,6 +1247,19 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .career-bracket summary { cursor: pointer; font-weight: 700; }
 .career-bracket ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
 .career-bracket li.you { color: var(--amber); }
+.career-journal .career-tournament { grid-column: 1 / -1; }
+.career-next { font-weight: 700; color: var(--amber); }
+.career-bracket-tree > summary { cursor: pointer; font-weight: 800; color: var(--amber); padding: 6px 0; min-height: 24px; }
+.career-bracket-tree > .bracket-progress { margin-top: 6px; }
+.career-news { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; max-height: 420px; overflow-y: auto; }
+.career-news li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: baseline; padding-bottom: 6px; border-bottom: 1px solid #2a2f2c; }
+.career-news time { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted-on-dark); }
+.news-mark { text-align: center; font-family: var(--pieces); color: var(--muted-on-dark); }
+.career-news .won .news-mark, .news-champion .news-mark, .news-upset .news-mark { color: var(--amber); }
+.news-quest .news-mark { color: var(--quest-blue); }
+.news-quest.lost .news-mark, .news-match.lost .news-mark { color: var(--muted-on-dark); }
+.news-recruit .news-mark, .news-level .news-mark { color: var(--white); }
+.news-champion { font-weight: 800; }
 .career-table tr.you td, .career-table tr.you th { color: var(--amber); }
 @keyframes career-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .career-out { animation: none; } }

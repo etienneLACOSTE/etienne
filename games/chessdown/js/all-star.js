@@ -135,6 +135,8 @@ export function settleGame(winner) {
         const tally = { ...tallyOf(p.id), survivedWin: winner === 1 && onBoard.has(p.id) };
         const after = Club.applyGame(p, tally);
         if (after.level > p.level) levelUps.push({ name: after.name, level: after.level });
+        // In the career, it is news (career-match.js writes it into the journal when the match ends)
+        if (after.level > p.level && state.career) state.career.levelUps.push({ name: after.name, type: after.type, level: after.level });
         return after;
     });
     // A friendly series won brings a recruit; in the career, recruits come from the quests.

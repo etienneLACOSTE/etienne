@@ -123,7 +123,8 @@ test.describe('Career', () => {
     await expect(page.getByRole('tab')).toHaveCount(0);
     await careerView(page, 'journal');
     await expect(page.locator('#career-journal')).toContainText('Still in the running.');
-    await expect(page.getByRole('table')).toContainText('to play');
+    await expect(page.locator('.career-next')).toContainText('Next match: Round 1 against');
+    await expect(page.locator('.career-news')).toContainText('Season 1 begins: Schools Tournament.');
     await page.locator('#career-back').click();
     await expect(page.locator('#club-screen')).toBeVisible();
   });
@@ -318,8 +319,14 @@ test.describe('Career', () => {
     const career = await stored(page);
     expect(career.tournament.results).toEqual([{ won: 1, lost: 0 }]);
     await careerView(page, 'journal');
-    await expect(page.locator('.career-table tr.won')).toHaveCount(1);
-    await expect(page.locator('.career-table tr.won td').last()).toHaveText('1–0');
+    // The journal: the next match, the news (the match won, the season's start), the bracket folded
+    await expect(page.locator('.career-next')).toContainText('Next match: Round 2 against');
+    await expect(page.locator('.career-news .news-match.won')).toContainText('Round 1: won 1–0 against');
+    await expect(page.locator('.career-news .news-season')).toContainText('Season 1 begins: Schools Tournament.');
+    await expect(page.locator('.career-news li').first()).not.toHaveClass(/news-season/); // The latest first
+    await expect(page.locator('.career-bracket-tree .bracket-tree')).toBeHidden();
+    await page.getByText('Show the bracket').click();
+    await expect(page.locator('.career-bracket-tree .bt-box.next')).toHaveCount(1);
     expect(errors).toEqual([]);
   });
 

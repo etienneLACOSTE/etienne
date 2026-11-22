@@ -54,10 +54,18 @@ const CHESSDOWN = {
   'career journal': async (page) => {
     await page.evaluate(async () => {
       localStorage.setItem('pawnet.chessdown.tourSeen', '1'); // Gérard's tour has its own screen below
+      // A career with news: matches, surprises, a quest done and one failed, a recruit
+      const Career = /** @type {any} */ (window).ChessdownCareer;
+      let career = Career.recordSeries(Career.recordSeries(Career.newCareer(42), { won: 1, lost: 0 }), { won: 1, lost: 0 });
+      career = Career.attemptQuest(Career.attemptQuest(career, career.quests.drawn[0], true), career.quests.drawn[1], false);
+      career = Career.addNews(career, { kind: 'recruit', name: 'Inès', type: 'n', level: 2 });
+      localStorage.setItem('pawnet.chessdown.career', JSON.stringify(career));
       const club = /** @type {any} */ (window).ChessdownClub.newClub({ coach: 'Etienne', name: 'Racing Rook', primary: '#7b1e3a', secondary: '#c9a227', pattern: 'stripes', shape: 'shield', emblem: 'wolf' }, 'The Captain');
       (await import('/chessdown/js/events.js')).openCareerPage(club, '', false, 'journal');
     });
     await expect(page.locator('#career-journal')).toBeVisible();
+    await expect(page.locator('.career-news li')).toHaveCount(7);
+    await page.getByText('Show the bracket').click(); // The bracket checked too
   },
   'form error': async (page) => { // Joining without a code: told under the field (signed in)
     await signUp(page.context());

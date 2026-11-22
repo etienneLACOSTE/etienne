@@ -46,8 +46,12 @@ function treeOf(career) {
     return { rounds, b };
 }
 
-/** The bracket and where the club stands, as HTML. @param {any} career @param {any} club */
-export function bracketProgress(career, club) {
+/**
+ * The bracket and where the club stands, as HTML (`heading`: false leaves out the tournament's
+ * name and the status line, when the page around it says them).
+ * @param {any} career @param {any} club @param {{ heading?: boolean }} [options]
+ */
+export function bracketProgress(career, club, { heading = true } = {}) {
     const { rounds, b } = treeOf(career);
     const you = Career.YOU;
     const name = (id) => (id === null ? t('bracket.tbd') : id === you ? club.name : Career.coachOf(career, id).club);
@@ -109,8 +113,8 @@ export function bracketProgress(career, club) {
     const alive = Career.FIELD - out.size;
     const status = b.next ? t('career.journal.inRunning') : b.place === 1 ? t('career.journal.champion') : t('career.journal.finished', { place: b.place });
     return `<div class="bracket-progress">
-        <h3>${esc(t(`career.tournament.${career.tier}`))}</h3>
-        <p class="bracket-status">${esc(status)}${b.next ? ` ${esc(t('bracket.alive', { n: alive }))}` : ''}</p>
+        ${heading ? `<h3>${esc(t(`career.tournament.${career.tier}`))}</h3>
+        <p class="bracket-status">${esc(status)}${b.next ? ` ${esc(t('bracket.alive', { n: alive }))}` : ''}</p>` : ''}
         <div class="bracket-tree" tabindex="0" role="region" aria-label="${esc(t('bracket.title'))}">
           <svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" aria-hidden="true" focusable="false">${parts.join('')}</svg>
         </div>

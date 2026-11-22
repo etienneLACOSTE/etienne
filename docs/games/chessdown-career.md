@@ -66,6 +66,19 @@ La carte, le Journal et les Pièces s'ouvrent depuis la page du club (trois bout
 de carrière n'a plus d'onglets : son titre dit la vue ouverte, et « ♜ Ouvrir le club » ramène
 au club. La visite de Gérard montre ce bouton au lieu de faire cliquer des onglets (13 étapes).
 
+## Le journal et les actualités du club (2026-11-22)
+
+Le journal montre, dans l'ordre : le tournoi en cours (situation, prochain adversaire, « Voir le
+tableau » qui déplie l'arbre centré sur le club), les actualités du club, les quêtes de la saison
+(réussie, ratée ou à tenter) et les trophées.
+
+Les actualités (`career.news`, `career-rules.js addNews`) sont datées par le calendrier, la plus
+récente en haut, les 40 dernières gardées : début de saison, match du club (score), surprises des
+autres matchs du même tour (au plus 2 par tour : un vainqueur plus faible d'au moins 0,2 de force),
+champion du tournoi, quête réussie ou ratée, recrue arrivée, joueur qui passe un niveau (en match
+ou par l'XP d'une quête). Une carrière plus ancienne commence avec un fil vide ; une nouvelle
+illisible à la relecture est écartée (`sanitizeCareer`), le reste de la carrière est gardé.
+
 ## Téléphones (2026-11-21)
 
 - Jusqu'à 520 px de large : titre « Carrière » masqué (lu par les lecteurs d'écran), onglets

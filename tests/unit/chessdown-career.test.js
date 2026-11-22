@@ -287,3 +287,31 @@ test('side quests: tried once a season, gone for good once done, harder seasons 
     assert.ok([...seen].some((id) => Quests.questById(id).minSeason === 2), 'second-season quests open later');
 });
 
+
+test('the club\'s news: dated, the latest kept, read back checked', () => {
+    let c = Career.newCareer(42);
+    assert.deepEqual(c.news, [{ season: 1, at: 0, kind: 'season', tier: 'school' }], 'the season starts');
+    c = Career.recordSeries(c, ONE);
+    const match = c.news.find((n) => n.kind === 'match');
+    assert.deepEqual([match.stage, match.won, match.lost, match.at], ['R1', 1, 0, Career.MATCH_MINUTES]);
+    c = playSeason(c);
+    const kinds = c.news.map((n) => n.kind);
+    assert.ok(kinds.includes('upset'), 'the other matches\' surprises');
+    for (const u of c.news.filter((n) => n.kind === 'upset')) {
+        assert.ok(Career.coachOf(c, u.l).strength - Career.coachOf(c, u.w).strength >= 0.2, 'a weaker club won');
+    }
+    assert.deepEqual(c.news[c.news.length - 1], { season: 1, at: c.minutes, kind: 'champion', tier: 'school', club: 'you' });
+    c = Career.attemptQuest(c, c.quests.drawn[0], false);
+    assert.deepEqual(c.news[c.news.length - 1].ok, false, 'a quest failed');
+    c = Career.addNews(c, { kind: 'recruit', name: 'Inès', type: 'n', level: 2 });
+    // Read back: the same; a piece of news that cannot be is left out; older careers have none
+    const copy = JSON.parse(JSON.stringify(c));
+    assert.deepEqual(Career.sanitizeCareer(copy).news, c.news);
+    copy.news.push({ season: 1, at: 0, kind: 'recruit', name: 'x'.repeat(40), type: 'n', level: 2 },
+        { season: 1, at: 0, kind: 'match', stage: 'R1', opp: 'nobody', won: 1, lost: 0 }, { kind: 'hack' }, 'text');
+    assert.deepEqual(Career.sanitizeCareer(copy).news, c.news);
+    delete copy.news;
+    assert.deepEqual(Career.sanitizeCareer(copy).news, []);
+    for (let i = 0; i < 60; i++) c = Career.addNews(c, { kind: 'level', name: 'Basile', type: 'p', level: 3 });
+    assert.equal(c.news.length, Career.NEWS_MAX, 'the oldest go');
+});

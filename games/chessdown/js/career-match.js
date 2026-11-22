@@ -59,6 +59,10 @@ export function beginCareerMatch(spec) {
         engaged: [],
         /** @type {{ id: number, r: number, c: number }[] | null} */
         lineup: null,
+        /** The club's players who went up a level, and its recruits, this match: news for the journal. @type {{ name: string, type: string, level: number }[]} */
+        levelUps: [],
+        /** @type {{ name: string, type: string, level: number }[]} */
+        recruits: [],
         finished: false,
     };
     return state.career.format;
@@ -310,6 +314,9 @@ function finish(success) {
             lines.push(t('career.result.questFailed', { title }));
         }
     }
+    // The players who went up a level and the recruits: news
+    for (const u of c.levelUps) career = Career.addNews(career, { kind: 'level', ...u });
+    for (const r of c.recruits) career = Career.addNews(career, { kind: 'recruit', ...r });
     saveCareer(career);
     return { finished: true, lines };
 }
@@ -322,7 +329,12 @@ function giveReward(reward, c) {
     if (reward.xp) {
         const { to, amount } = reward.xp;
         const gets = (p) => to === 'all' || (to === 'engaged' ? c.engaged.includes(p.id) : p.type === to);
-        club = { ...club, players: club.players.map((p) => (gets(p) ? Club.gainXp(p, amount) : p)) };
+        club = { ...club, players: club.players.map((p) => {
+            if (!gets(p)) return p;
+            const after = Club.gainXp(p, amount);
+            if (after.level > p.level) c.levelUps.push({ name: after.name, type: after.type, level: after.level });
+            return after;
+        }) };
         line = t('career.result.xp', { n: amount });
     } else if (reward.recruit || reward.recruitChoice) {
         const type = reward.recruit ? reward.recruit.type : (c.recruitType || 'p');
@@ -330,6 +342,7 @@ function giveReward(reward, c) {
         const before = club.players.length;
         club = Club.recruit(club, type, reward.recruit && reward.recruit.name ? reward.recruit.name : '', { level, fromQuest: true });
         const added = club.players.length > before ? club.players[club.players.length - 1] : null;
+        if (added) c.recruits.push({ name: added.name, type, level });
         line = added ? t('career.result.recruit', { name: added.name, piece: t(`piece.${type}`), level }) : t('career.result.squadFull');
     } else if (reward.cosmetic) {
         club = { ...club, cosmetics: [...new Set([...(club.cosmetics || []), reward.cosmetic])] };
