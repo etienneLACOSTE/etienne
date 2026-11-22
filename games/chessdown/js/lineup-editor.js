@@ -48,7 +48,7 @@ export function showLineups(box, club, { onBack }) {
             const name = `${FILES[c]}${12 - r}`;
             const label = m ? t('lineup.squareWith', { square: name, name: m.name, piece: t(`piece.${m.type}`), n: m.level }) : t('lineup.squareEmpty', { square: name });
             return `<button type="button" class="lineup-square ${(r + c) % 2 ? 'dark' : 'light'}" data-r="${r}" data-c="${c}" data-focus="sq${r}-${c}" aria-label="${esc(label)}">
-                ${m ? `${jerseyGlyph(PIECES[m.type].icon, club, 'icon')}<span class="lineup-stars" aria-hidden="true">${m.level}★</span>` : ''}</button>`;
+                ${m ? `${jerseyGlyph(PIECES[m.type].icon, club, m.type, 'icon')}<span class="lineup-stars" aria-hidden="true">${m.level}★</span>` : ''}</button>`;
         };
         box.innerHTML = `
           <div class="lineup-head">
@@ -71,7 +71,7 @@ export function showLineups(box, club, { onBack }) {
                 const price = p.type === 'k' ? 0 : Engine.pieceCost(p.type, p.level);
                 // Its name read first, as shown; then what it is (hidden on screen: the stars say it)
                 return `<button type="button" class="club-bench-player" style="--club-colour:${club.primary}" data-id="${p.id}" data-focus="p${p.id}" aria-pressed="${chosen === p.id}">
-                    ${jerseyGlyph(PIECES[p.type].icon, club, 'icon')}
+                    ${jerseyGlyph(PIECES[p.type].icon, club, p.type, 'icon')}
                     <span class="club-bench-name">${esc(p.name)}</span><span class="visually-hidden">, ${esc(t('lineup.playerInfo', { piece: t(`piece.${p.type}`), n: p.level, cost: price }))}</span>
                     <span class="club-bench-meta" aria-hidden="true">${'★'.repeat(p.level)} · ${price}</span></button>`;
             }).join('') : `<span class="muted">${esc(t('allStar.allPlaced'))}</span>`}

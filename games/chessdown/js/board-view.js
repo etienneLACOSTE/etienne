@@ -5,7 +5,7 @@ import { COLS, Engine, PIECES, ROWS, state, ui } from './state.js';
 import { getBoardCoords, getDraftZoneView, getViewCoords } from './coords.js';
 import { enhanceBoardSquares, focusScreen, refreshSquareLabels } from './a11y.js';
 import { getValidMoves } from './rules-bridge.js';
-import { miniJerseySVG } from './club-art.js';
+import { dressGlyph } from './club-art.js';
 
 export function showScreen(screen) {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -193,12 +193,12 @@ export function renderBoard() {
                 square.appendChild(span);
                 square.classList.add('has-piece');
                 square.classList.add(`jersey-${state.playerColors[piece.player]}`);
-                // All Star: the piece wears the club's small jersey (a tournament rival, its own:
+                // All Star: the piece's torso in the club's jersey (a tournament rival, its own:
                 // career-match.js), and its level in stars (shown during the draft and until the
                 // first move, then on hover or focus: styles.css).
                 const mine = state.allStar && (state.allStar.online ? piece.player === state.myPlayerNumber : piece.player === 1);
                 const jersey = !state.allStar ? null : mine ? state.allStar.club : state.allStar.rivalJersey;
-                if (jersey) square.insertAdjacentHTML('beforeend', miniJerseySVG(jersey));
+                if (jersey) dressGlyph(span, jersey, piece.type);
                 if (piece.level !== undefined || (piece.type === 'k' && state.allStar)) {
                     const badge = document.createElement('span');
                     badge.className = 'piece-level';

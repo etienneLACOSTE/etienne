@@ -86,11 +86,13 @@ l'arrivée du club dans un nouvel échelon après le voyage.
 
 ## Les maillots sur les pièces (2026-11-22)
 
-En All Star et en carrière, chaque pièce du club porte un petit maillot sur la poitrine, celui du
-club (`club-art.js miniJerseySVG` : son motif et ses deux couleurs, épais contour noir) ; la
-pièce garde une couleur vive du jeu, la plus proche de celle du club mais jamais la sombre, pour
-rester lisible sur le terrain. Le banc de la draft, l'éditeur de compositions et le registre du
-club montrent aussi les pièces avec ce petit maillot.
+En All Star et en carrière, le corps de chaque pièce du club (là où une pièce porterait son
+maillot) prend le tissu du club : son motif et ses deux couleurs, découpés à la forme de la
+pièce (`club-art.js jerseyBand`, une bande du glyphe réglée pièce par pièce dans styles.css
+`.piece-jersey`). La tête et le socle gardent la couleur vive du jeu, la plus proche de celle du
+club mais jamais la sombre, et le contour noir reste : la pièce se lit sur le terrain même pour
+un club sombre. Le banc de la draft, l'éditeur de compositions et le registre montrent des
+pièces blanches au corps habillé.
 
 Seuls les matchs de tournoi habillent l'adversaire : le maillot de son club, ou son maillot
 extérieur (couleurs inversées) quand il ressemble trop à celui du club, sinon blanc ou noir uni

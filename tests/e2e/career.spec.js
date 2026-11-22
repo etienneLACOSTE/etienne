@@ -304,7 +304,7 @@ test.describe('Career', () => {
     expect(setup.levels.every((level) => level === 1 || level === 2)).toBe(true); // The first round: levels 1 and 2
     // Both sides in their small jerseys: the club's, and the rival's (career-match.js)
     const jerseys = await page.evaluate(() => {
-      const dressed = [...document.querySelectorAll('#chessboard .square .piece-shirt')];
+      const dressed = [...document.querySelectorAll('#chessboard .square .piece-jersey')];
       return { count: dressed.length, pieces: chessdown.state.board.flat().filter(Boolean).length, rival: chessdown.state.allStar.rivalJersey };
     });
     expect(jerseys.count).toBe(jerseys.pieces);
@@ -512,7 +512,7 @@ test.describe('Career', () => {
     await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
     expect(await page.evaluate(() => chessdown.state.allStar.rivalJersey)).toBeNull(); // Jerseys on both sides: the tournament only
     const mine = await page.evaluate(() => chessdown.state.board.flat().filter((p) => p && p.player === 1).length);
-    await expect(page.locator('#chessboard .square .piece-shirt')).toHaveCount(mine);
+    await expect(page.locator('#chessboard .square .piece-jersey')).toHaveCount(mine);
     // The game won, but a piece was lost: no clean sheet
     await page.evaluate(async () => {
       chessdown.state.career.lostPiece = true;

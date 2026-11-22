@@ -162,20 +162,37 @@ function shirtFill(c) {
 }
 
 /**
- * The small jersey a piece wears on its chest (the board, the benches, the line-ups): the club's
- * shirt, thickly outlined so that a dark one still shows on the piece. Decorative.
+ * The club's cloth for a piece's torso (where a chess piece would wear its jersey): its
+ * pattern in its two colours, as a CSS background (styles.css .piece-jersey clips it to the
+ * glyph, in a band set for each piece; the head and the base keep the piece's colour).
  */
-export function miniJerseySVG(c) {
-    const clip = `jersey-clip-${++jerseyCount}`;
-    return `<svg class="piece-shirt" viewBox="6 0 108 118" aria-hidden="true" focusable="false">
-        <defs><clipPath id="${clip}"><path d="${SHIRT}"/></clipPath></defs>
-        <g clip-path="url(#${clip})">${shirtFill(c)}</g>
-        <path d="${SHIRT}" fill="none" stroke="#000" stroke-width="9" stroke-linejoin="round"/></svg>`;
+export function jerseyBand(c) {
+    const a = c.primary;
+    const b = c.secondary;
+    if (c.wear === 'jersey-heritage') return `linear-gradient(180deg, ${HERITAGE_CREAM} 30%, ${b} 30% 36%, ${a} 36% 64%, ${b} 64% 70%, ${HERITAGE_CREAM} 70%)`;
+    switch (c.pattern) {
+        case 'stripes': return `repeating-linear-gradient(90deg, ${a} 0 0.1em, ${b} 0.1em 0.2em)`;
+        case 'pinstripes': return `repeating-linear-gradient(90deg, ${a} 0 0.09em, ${b} 0.09em 0.13em)`;
+        case 'halves': return `linear-gradient(90deg, ${a} 50%, ${b} 50%)`;
+        case 'quarters': return `conic-gradient(${b} 0 25%, ${a} 0 50%, ${b} 0 75%, ${a} 0)`;
+        case 'hoops': return `repeating-linear-gradient(180deg, ${a} 0 0.07em, ${b} 0.07em 0.14em)`;
+        case 'sash': return `linear-gradient(120deg, ${a} 36%, ${b} 36% 62%, ${a} 62%)`;
+        case 'chevron': return `linear-gradient(210deg, ${a} 40%, transparent 40%), linear-gradient(150deg, ${a} 40%, ${b} 40% 62%, ${a} 62%)`;
+        case 'sleeves': return `linear-gradient(90deg, ${b} 24%, ${a} 24% 76%, ${b} 76%)`;
+        default: return `linear-gradient(${a}, ${a})`;
+    }
 }
 
-/** A piece's glyph wearing a club's small jersey, as HTML (the benches, the squad, the line-ups). */
-export function jerseyGlyph(glyph, c, className = '') {
-    return `<span class="${className} piece-dressed" aria-hidden="true"><span class="piece-glyph">${glyph}</span>${miniJerseySVG(c)}</span>`;
+/** Dress a piece's glyph (a span on the board) in a club's jersey. @param {HTMLElement} span */
+export function dressGlyph(span, c, type) {
+    span.classList.add('piece-jersey');
+    span.dataset.piece = type;
+    span.style.setProperty('--band', jerseyBand(c));
+}
+
+/** A piece's glyph in a club's jersey, as HTML (the benches, the squad, the line-ups). */
+export function jerseyGlyph(glyph, c, type, className = '') {
+    return `<span class="${className} piece-jersey" data-piece="${type}" style="--band:${esc(jerseyBand(c))}" aria-hidden="true">${glyph}</span>`;
 }
 
 const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));

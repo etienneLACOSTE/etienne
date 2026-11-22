@@ -348,7 +348,7 @@ function renderBench() {
         return `<button type="button" class="club-bench-player" style="--club-colour:${state.allStar.club.primary}" data-club-id="${p.id}" data-focus-key="p${p.id}"
             aria-pressed="${selected === p.id}" ${blocked ? 'disabled' : ''}
             aria-label="${esc(t('allStar.place', { name: p.name, piece: t(`piece.${p.type}`), n: p.level, cost }))}">
-            ${jerseyGlyph(PIECES[p.type].icon, state.allStar.club, 'icon')}
+            ${jerseyGlyph(PIECES[p.type].icon, state.allStar.club, p.type, 'icon')}
             <span class="club-bench-name">${esc(p.name)}</span>
             <span class="club-bench-meta" aria-hidden="true">${'★'.repeat(p.level)} · ${cost}</span>
           </button>`;

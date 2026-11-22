@@ -29,7 +29,7 @@ export function rosterTable(club, { rename = true } = {}) {
             ? `<button type="button" class="club-rename" data-player="${p.id}" aria-label="${esc(t('club.renameLabel', { name: p.name }))}">${esc(p.name)} <span aria-hidden="true">✎</span></button>`
             : `<b>${esc(p.name)}</b>`;
         return `<tr>
-            <td class="club-glyph" aria-hidden="true">${jerseyGlyph(GLYPHS[p.type], club)}</td>
+            <td class="club-glyph" aria-hidden="true">${jerseyGlyph(GLYPHS[p.type], club, p.type)}</td>
             <th scope="row">${name}<br><small>${esc(t(`piece.${p.type}`))}${p.type === 'k' ? ` · ${esc(t('club.kingNote'))}` : ''}</small></th>
             <td>${stars(p.level)}</td>
             <td class="num">${xp}</td>

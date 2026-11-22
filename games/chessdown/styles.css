@@ -556,12 +556,25 @@ button:disabled {
 }
 .shop-item .name, .shop-item .cost { -webkit-text-stroke: 0; }
 /* A club's jersey (club-art.js jerseyBackground): its pattern drawn inside the glyph. */
-/* A club's small jersey on the piece's chest (club-art.js miniJerseySVG): the piece keeps its bright colour. */
-.square > .piece-shirt { position: absolute; left: 50%; top: 60%; width: 36%; transform: translate(-50%, -50%); pointer-events: none; }
-.square .piece-rotated ~ .piece-shirt { top: 42%; } /* The other side's pieces stand upside down */
-.piece-dressed { position: relative; display: inline-block; line-height: 1; }
-.piece-dressed .piece-glyph { color: var(--white); }
-.piece-dressed .piece-shirt { position: absolute; left: 50%; top: 60%; width: 46%; transform: translate(-50%, -50%); }
+/* A club's jersey on the piece (club-art.js jerseyBand): its torso, in a band of the glyph, takes
+   the club's cloth; the head and the base keep the piece's colour (currentColor), the outline stays. */
+.piece-jersey {
+    --band-h: 34%; --band-y: 62%;
+    background-image: var(--band), linear-gradient(currentColor, currentColor);
+    background-size: 100% var(--band-h), 100% 100%;
+    background-position: 0 var(--band-y), 0 0;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.piece-jersey[data-piece="p"] { --band-h: 30%; --band-y: 66%; }
+.piece-jersey[data-piece="n"] { --band-h: 34%; --band-y: 66%; }
+.piece-jersey[data-piece="b"] { --band-h: 30%; --band-y: 64%; }
+.piece-jersey[data-piece="r"] { --band-h: 40%; --band-y: 46%; }
+.piece-jersey[data-piece="q"] { --band-h: 30%; --band-y: 62%; }
+.piece-jersey[data-piece="k"] { --band-h: 30%; --band-y: 64%; }
+/* Off the board (benches, line-ups, the register): white pieces, the club's torso */
+.club-bench-player .piece-jersey, .lineup-square .piece-jersey, .club-glyph .piece-jersey { color: var(--white); }
 .jersey-red { color: #e74c3c; }
 .jersey-blue { color: #3498db; }
 .jersey-green { color: #2ecc71; }
