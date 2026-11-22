@@ -63,7 +63,7 @@ double élimination est abandonnée (trop compliquée) : élimination directe.
 ## Plus d'onglets sur l'écran de carrière (2026-11-21)
 
 La carte, le Journal et les Pièces s'ouvrent depuis la page du club (trois boutons) ; l'écran
-de carrière n'a plus d'onglets : son titre dit la vue ouverte, et « ♜ Ouvrir le club » ramène
+de carrière n'a plus d'onglets : son titre dit la vue ouverte, et « ♜ Club » (toujours avec son nom, téléphone compris, 2026-11-22) ramène
 au club. La visite de Gérard montre ce bouton au lieu de faire cliquer des onglets (13 étapes).
 
 ## Le journal et les actualités du club (2026-11-22)

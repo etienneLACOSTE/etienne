@@ -26,6 +26,7 @@ export default {
     'career.how.plane': 'Mit dem Flugzeug',
     'career.travelText': '{how}. Vor Ort siehst du, was dich erwartet.',
     'career.homeText': 'Die Kabine: dein Register, deine Aufstellungen und die Neuzugänge, die unterschreiben wollen.',
+    'career.clubButton': "Verein",
     'career.openClub': 'Verein öffnen',
     'career.goals': 'Ziele',
     'career.conditions': 'Bedingungen',

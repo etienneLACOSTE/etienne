@@ -1179,6 +1179,8 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 /* Phones (docs/games/chessdown-career.md): a compact top, the map the whole width, markers
    of 24 px at least; held sideways, the map and the card side by side. */
 .career-btn-icon { display: none; }
+.career-club-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 14px; flex: none; }
+.career-club-glyph { font: 400 18px/1 var(--pieces); }
 @media (max-width: 520px) {
     .career-top { gap: 6px 8px; }
     .career-top h2 { flex: 1 1 auto; }
@@ -1187,7 +1189,6 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
     .career-board span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .career-icon-btn { width: 36px; height: 36px; padding: 0 !important; display: grid; place-items: center; }
     .career-btn-icon { display: block; font: 900 18px var(--display); }
-    .career-icon-btn #career-back .career-btn-icon, #career-back .career-btn-icon { font: 400 18px var(--pieces); }
     .career-btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .career-bubble { max-height: calc(2 * 1.4em + 12px); }
     .career-scales { flex-wrap: nowrap; overflow: hidden; gap: 3px; }
@@ -1203,7 +1204,6 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
     .career-top { flex-wrap: nowrap; }
     .career-icon-btn { width: 36px; height: 36px; padding: 0 !important; display: grid; place-items: center; flex: none; }
     .career-btn-icon { display: block; font: 900 18px var(--display); }
-    #career-back .career-btn-icon { font: 400 18px var(--pieces); }
     .career-btn-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
     .career-bubble .club-speaker { display: none; }
     .career-board span:nth-child(2), .career-board span:nth-child(3) { display: none; }

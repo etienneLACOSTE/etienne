@@ -138,7 +138,11 @@ test.describe('Career', () => {
       await page.getByRole('button', { name: button, exact: true }).click();
       await expect(page.locator('#career-title')).toHaveText(title);
       await expect(page.locator(panel)).toBeVisible();
-      await page.locator('#career-back').click(); // Back to the club, then the menu
+      // The way back to the club: a button that says it, on a phone too
+      const club = page.getByRole('button', { name: 'Club', exact: true });
+      await expect(club).toBeVisible();
+      await expect(club).toContainText('Club');
+      await club.click(); // Back to the club, then the menu
       await page.locator('#club-menu').click();
     }
   });
