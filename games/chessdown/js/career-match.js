@@ -66,22 +66,10 @@ export function beginCareerMatch(spec) {
         recruits: [],
         finished: false,
     };
-    // The rival's jersey (its away one when it looks like the club's): a tournament rival's club;
-    // in a quest, a club of the tier (the same for the same quest); a boss wears none
-    if (state.allStar) {
-        const rival = quest ? questClub(career, quest) : next.opponent;
-        state.allStar.rivalJersey = rival ? awayJersey(Career.coachOf(career, rival).colors, state.allStar.club) : null;
-    }
+    // A tournament rival wears its club's jersey (its away one when it looks like the club's);
+    // in a quest, no jersey
+    if (state.allStar) state.allStar.rivalJersey = quest ? null : awayJersey(Career.coachOf(career, next.opponent).colors, state.allStar.club);
     return state.career.format;
-}
-
-/** The club a quest's rival plays for (null for a boss): one of the tier's, from the quest's name. */
-function questClub(career, quest) {
-    if (quest.opponent && quest.opponent.boss) return null;
-    const rivals = Career.rivalsOf(career, quest.tier);
-    let h = 0;
-    for (const ch of quest.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    return rivals[h % rivals.length];
 }
 
 /** Back to classic play. */

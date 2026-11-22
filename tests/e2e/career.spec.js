@@ -302,9 +302,9 @@ test.describe('Career', () => {
     expect(setup.format).toBe('single');
     expect(setup.career).toBe('league');
     expect(setup.levels.every((level) => level === 1 || level === 2)).toBe(true); // The first round: levels 1 and 2
-    // Both sides in their jerseys: the club's, and the rival's (career-match.js)
+    // Both sides in their small jerseys: the club's, and the rival's (career-match.js)
     const jerseys = await page.evaluate(() => {
-      const dressed = [...document.querySelectorAll('#chessboard .piece-jersey')];
+      const dressed = [...document.querySelectorAll('#chessboard .square .piece-shirt')];
       return { count: dressed.length, pieces: chessdown.state.board.flat().filter(Boolean).length, rival: chessdown.state.allStar.rivalJersey };
     });
     expect(jerseys.count).toBe(jerseys.pieces);
@@ -501,7 +501,7 @@ test.describe('Career', () => {
     }, { club: CLUB, drawn });
   }
 
-  test('a quest missed with the game won: the end screen says Defeat; a boss wears no jersey, a quest rival does', async ({ page }) => {
+  test('a quest missed with the game won: the end screen says Defeat; only the club wears a jersey in a quest', async ({ page }) => {
     await inCounty(page, ['clean-harvest', 'old-bull', 'ploughing', 'veteran']);
     await page.locator('.career-marker.side').first().click();
     await card(page).getByRole('button', { name: 'Accept' }).click();
@@ -510,8 +510,9 @@ test.describe('Career', () => {
     await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
     await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
     await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
-    expect(await page.evaluate(() => chessdown.state.allStar.rivalJersey)).not.toBeNull(); // A club of the county's
-    await expect(page.locator('#chessboard .square.has-piece .piece-jersey')).toHaveCount(await page.locator('#chessboard .square.has-piece').count());
+    expect(await page.evaluate(() => chessdown.state.allStar.rivalJersey)).toBeNull(); // Jerseys on both sides: the tournament only
+    const mine = await page.evaluate(() => chessdown.state.board.flat().filter((p) => p && p.player === 1).length);
+    await expect(page.locator('#chessboard .square .piece-shirt')).toHaveCount(mine);
     // The game won, but a piece was lost: no clean sheet
     await page.evaluate(async () => {
       chessdown.state.career.lostPiece = true;

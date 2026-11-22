@@ -22,7 +22,7 @@ import { bracketProgress, scrollBracketToClub } from './bracket-view.js';
 import { beginCareerMatch, careerKnockedOut, careerPuzzle, careerWord, endCareerMatch, setPuzzleBoard } from './career-match.js';
 import { showClub } from './club-view.js';
 import { startOnboarding, stopOnboarding } from './club-onboarding.js';
-import { beginAllStar, endAllStar, nearestJersey } from './all-star.js';
+import { beginAllStar, endAllStar, setClubColors } from './all-star.js';
 import { joinQueue, setupLadder } from './ladder-view.js';
 
 /** Back to the menu from a game (online: the room is left, a forfeit while it is played). */
@@ -86,7 +86,7 @@ function startCareerMatch(club, spec) {
     state.currentRoomCode = null;
     state.isBotMatch = true;
     beginAllStar(club);
-    state.playerColors[1] = nearestJersey(club.primary);
+    setClubColors(club);
     const format = beginCareerMatch(spec);
     loadBotProfileForDifficulty(state.career.opponent.difficulty);
     state.botArchetype = state.career.opponent.archetype;
@@ -290,7 +290,7 @@ export function setupEventListeners() {
             endCareerMatch(); // A friendly match or a quick game: no career rules
             if (pendingClub) {
                 beginAllStar(pendingClub);
-                state.playerColors[1] = nearestJersey(pendingClub.primary);
+                setClubColors(pendingClub);
                 pendingClub = null;
             } else {
                 endAllStar();

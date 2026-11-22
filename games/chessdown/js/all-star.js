@@ -7,9 +7,7 @@
 // account; it plays from either seat, and online games bring no experience.
 import { COLOR_HEX, state } from './state.js';
 import { saveClub } from './club-store.js';
-import { awayJersey } from './club-art.js';
 
-const Coaches = globalThis.ChessdownCoaches;
 
 const Club = globalThis.ChessdownClub;
 const Engine = globalThis.ChessdownEngine;
@@ -17,30 +15,30 @@ const MAX_RECRUITS = 5;
 
 /** The club plays this match (campaign, best of 3; or online: `online`). */
 export function beginAllStar(club, { online = false } = {}) {
-    state.allStar = { club, lineupIds: [], tally: {}, online, rivalJersey: online ? null : friendlyJersey(club) };
-}
-
-/**
- * The jersey of the bot's side in a friendly: a club of the career's, drawn at random (its away
- * jersey when it looks like the club's). The career sets its own (career-match.js). Online, the
- * other club's jersey is not known here: the other side wears its colour.
- * @returns {{ primary: string, secondary: string, pattern: string } | null}
- */
-function friendlyJersey(club) {
-    const coaches = Coaches.COACHES.filter((c) => !c.boss);
-    return awayJersey(coaches[Math.floor(Math.random() * coaches.length)].colors, club);
+    // The other side's jersey: a tournament rival's only (career-match.js)
+    state.allStar = { club, lineupIds: [], tally: {}, online, rivalJersey: null };
 }
 
 /** The seat of the club: 1 against the bot, the page's seat online. */
 export const clubSeat = () => (state.allStar && state.allStar.online ? state.myPlayerNumber : 1);
 
-/** The jersey colour of the game nearest to the club's own (end zones, timer bar). */
+/**
+ * The jersey colour of the game nearest to the club's own (end zones, timer bar, the pieces'
+ * colour): never the dark one, so that a dark club's pieces still show on the turf.
+ */
+/** Against the bot: the club's colour for player 1, another one for the bot until it picks its own (bot.js). */
+export function setClubColors(club) {
+    state.playerColors[1] = nearestJersey(club.primary);
+    state.playerColors[2] = state.playerColors[1] === 'blue' ? 'orange' : 'blue'; // Not the club's: the draft would switch it
+}
+
 export function nearestJersey(hex) {
     const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
     const [r, g, b] = rgb(hex);
     let best = 'blue';
     let dist = Infinity;
     for (const [name, h] of Object.entries(COLOR_HEX)) {
+        if (name === 'black') continue;
         const [x, y, z] = rgb(h);
         const d = (r - x) ** 2 + (g - y) ** 2 + (b - z) ** 2;
         if (d < dist) { dist = d; best = name; }

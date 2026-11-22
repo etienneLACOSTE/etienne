@@ -556,8 +556,12 @@ button:disabled {
 }
 .shop-item .name, .shop-item .cost { -webkit-text-stroke: 0; }
 /* A club's jersey (club-art.js jerseyBackground): its pattern drawn inside the glyph. */
-.piece-jersey.patterned { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
-.piece-jersey { -webkit-text-stroke-color: var(--black); }
+/* A club's small jersey on the piece's chest (club-art.js miniJerseySVG): the piece keeps its bright colour. */
+.square > .piece-shirt { position: absolute; left: 50%; top: 60%; width: 36%; transform: translate(-50%, -50%); pointer-events: none; }
+.square .piece-rotated ~ .piece-shirt { top: 42%; } /* The other side's pieces stand upside down */
+.piece-dressed { position: relative; display: inline-block; line-height: 1; }
+.piece-dressed .piece-glyph { color: var(--white); }
+.piece-dressed .piece-shirt { position: absolute; left: 50%; top: 60%; width: 46%; transform: translate(-50%, -50%); }
 .jersey-red { color: #e74c3c; }
 .jersey-blue { color: #3498db; }
 .jersey-green { color: #2ecc71; }

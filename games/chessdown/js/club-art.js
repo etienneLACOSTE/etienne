@@ -127,18 +127,8 @@ export function jerseySVG(c) {
     if (c.wear === 'jersey-heritage') return heritageSVG(c);
     const a = c.primary;
     const b = c.secondary;
-    let fill = `<rect width="120" height="120" fill="${a}"/>`;
-    switch (c.pattern) {
-        case 'stripes': for (let x = 10; x < 120; x += 24) fill += `<rect x="${x}" width="12" height="120" fill="${b}"/>`; break;
-        case 'pinstripes': for (let x = 6; x < 120; x += 9) fill += `<rect x="${x}" width="2.5" height="120" fill="${b}"/>`; break;
-        case 'halves': fill += `<rect x="60" width="60" height="120" fill="${b}"/>`; break;
-        case 'quarters': fill += `<rect x="60" width="60" height="60" fill="${b}"/><rect y="60" width="60" height="60" fill="${b}"/>`; break;
-        case 'hoops': for (let y = 30; y < 120; y += 22) fill += `<rect y="${y}" width="120" height="11" fill="${b}"/>`; break;
-        case 'sash': fill += `<path d="M28 0 H52 L112 120 H88 Z" fill="${b}"/>`; break;
-        case 'chevron': fill += `<path d="M20 24 L60 64 L100 24 V46 L60 86 L20 46 Z" fill="${b}"/>`; break;
-        case 'sleeves': fill += `<path d="M0 0 H34 V120 H0 Z M86 0 H120 V120 H86 Z" fill="${b}"/>`; break;
-    }
-    const shirt = 'M38 10 L50 6 Q60 16 70 6 L82 10 L110 30 L98 50 L88 44 L88 112 L32 112 L32 44 L22 50 L10 30 Z';
+    const fill = shirtFill(c);
+    const shirt = SHIRT;
     const clip = `jersey-clip-${++jerseyCount}`; // One id per drawing: several jerseys can be on the page
     const label = t('club.jerseyLabel', { pattern: t(`pattern.${c.pattern}`), a: colorName(a), b: colorName(b) });
     return `<svg viewBox="0 0 120 120" role="img" aria-label="${esc(label)}">
@@ -150,42 +140,42 @@ export function jerseySVG(c) {
     </svg>`;
 }
 
-/** The "Heritage" jersey: cream, a broad band of the club's colour across the chest, a laced collar. */
-/**
- * The jersey on a piece (board-view.js, lineup-editor.js): its pattern drawn in the glyph as a
- * CSS background clipped to the text; '' for a plain jersey (the glyph in the main colour).
- */
-export function jerseyBackground(c) {
+const SHIRT = 'M38 10 L50 6 Q60 16 70 6 L82 10 L110 30 L98 50 L88 44 L88 112 L32 112 L32 44 L22 50 L10 30 Z';
+
+/** A shirt's cloth in a 120 x 120 box: the club's pattern in its two colours (the Heritage jersey: cream, a band of its colour). */
+function shirtFill(c) {
     const a = c.primary;
     const b = c.secondary;
-    if (c.wear === 'jersey-heritage') return `linear-gradient(180deg, ${HERITAGE_CREAM} 42%, ${b} 42% 45%, ${a} 45% 61%, ${b} 61% 64%, ${HERITAGE_CREAM} 64%)`;
+    if (c.wear === 'jersey-heritage') return `<rect width="120" height="120" fill="${HERITAGE_CREAM}"/><rect y="49" width="120" height="28" fill="${b}"/><rect y="52" width="120" height="22" fill="${a}"/>`;
+    let fill = `<rect width="120" height="120" fill="${a}"/>`;
     switch (c.pattern) {
-        case 'stripes': return `repeating-linear-gradient(90deg, ${a} 0 0.12em, ${b} 0.12em 0.24em)`;
-        case 'pinstripes': return `repeating-linear-gradient(90deg, ${a} 0 0.1em, ${b} 0.1em 0.14em)`;
-        case 'halves': return `linear-gradient(90deg, ${a} 50%, ${b} 50%)`;
-        case 'quarters': return `conic-gradient(${b} 0 25%, ${a} 0 50%, ${b} 0 75%, ${a} 0)`;
-        case 'hoops': return `repeating-linear-gradient(180deg, ${a} 0 0.13em, ${b} 0.13em 0.24em)`;
-        case 'sash': return `linear-gradient(120deg, ${a} 38%, ${b} 38% 60%, ${a} 60%)`;
-        case 'chevron': return `linear-gradient(225deg, ${a} 30%, ${b} 30% 42%, transparent 42%), linear-gradient(135deg, ${a} 30%, ${b} 30% 42%, ${a} 42%)`;
-        case 'sleeves': return `linear-gradient(90deg, ${b} 26%, ${a} 26% 74%, ${b} 74%)`;
-        default: return '';
+        case 'stripes': for (let x = 10; x < 120; x += 24) fill += `<rect x="${x}" width="12" height="120" fill="${b}"/>`; break;
+        case 'pinstripes': for (let x = 6; x < 120; x += 9) fill += `<rect x="${x}" width="2.5" height="120" fill="${b}"/>`; break;
+        case 'halves': fill += `<rect x="60" width="60" height="120" fill="${b}"/>`; break;
+        case 'quarters': fill += `<rect x="60" width="60" height="60" fill="${b}"/><rect y="60" width="60" height="60" fill="${b}"/>`; break;
+        case 'hoops': for (let y = 30; y < 120; y += 22) fill += `<rect y="${y}" width="120" height="11" fill="${b}"/>`; break;
+        case 'sash': fill += `<path d="M28 0 H52 L112 120 H88 Z" fill="${b}"/>`; break;
+        case 'chevron': fill += `<path d="M20 24 L60 64 L100 24 V46 L60 86 L20 46 Z" fill="${b}"/>`; break;
+        case 'sleeves': fill += `<path d="M0 0 H34 V120 H0 Z M86 0 H120 V120 H86 Z" fill="${b}"/>`; break;
     }
+    return fill;
 }
 
-/** A piece's glyph in a club's jersey, as HTML (the benches, the squad, the line-ups). */
+/**
+ * The small jersey a piece wears on its chest (the board, the benches, the line-ups): the club's
+ * shirt, thickly outlined so that a dark one still shows on the piece. Decorative.
+ */
+export function miniJerseySVG(c) {
+    const clip = `jersey-clip-${++jerseyCount}`;
+    return `<svg class="piece-shirt" viewBox="6 0 108 118" aria-hidden="true" focusable="false">
+        <defs><clipPath id="${clip}"><path d="${SHIRT}"/></clipPath></defs>
+        <g clip-path="url(#${clip})">${shirtFill(c)}</g>
+        <path d="${SHIRT}" fill="none" stroke="#000" stroke-width="9" stroke-linejoin="round"/></svg>`;
+}
+
+/** A piece's glyph wearing a club's small jersey, as HTML (the benches, the squad, the line-ups). */
 export function jerseyGlyph(glyph, c, className = '') {
-    const background = jerseyBackground(c);
-    const style = background ? `background-image:${background}` : `color:${c.primary}`;
-    return `<span class="${className} piece-jersey ${background ? 'patterned' : ''}" style="${esc(style)}" aria-hidden="true">${glyph}</span>`;
-}
-
-/** Dress a piece's glyph (a span) in a club's jersey. */
-export function paintJersey(span, c) {
-    const background = jerseyBackground(c);
-    span.classList.add('piece-jersey');
-    span.classList.toggle('patterned', Boolean(background));
-    span.style.backgroundImage = background;
-    span.style.color = background ? '' : c.primary;
+    return `<span class="${className} piece-dressed" aria-hidden="true"><span class="piece-glyph">${glyph}</span>${miniJerseySVG(c)}</span>`;
 }
 
 const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
@@ -208,10 +198,11 @@ export function awayJersey(theirs, ours) {
     return { primary: plain, secondary: plain, pattern: 'plain' };
 }
 
+/** The "Heritage" jersey: cream, a broad band of the club's colour across the chest, a laced collar. */
 function heritageSVG(c) {
     const a = c.primary;
     const b = c.secondary;
-    const shirt = 'M38 10 L50 6 Q60 16 70 6 L82 10 L110 30 L98 50 L88 44 L88 112 L32 112 L32 44 L22 50 L10 30 Z';
+    const shirt = SHIRT;
     const clip = `jersey-clip-${++jerseyCount}`;
     const label = t('club.jerseyHeritageLabel', { a: colorName(a), b: colorName(b) });
     return `<svg viewBox="0 0 120 120" role="img" aria-label="${esc(label)}">
