@@ -5,6 +5,7 @@ import { COLS, Engine, PIECES, ROWS, state, ui } from './state.js';
 import { getBoardCoords, getDraftZoneView, getViewCoords } from './coords.js';
 import { enhanceBoardSquares, focusScreen, refreshSquareLabels } from './a11y.js';
 import { getValidMoves } from './rules-bridge.js';
+import { paintJersey } from './club-art.js';
 
 export function showScreen(screen) {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -174,9 +175,11 @@ export function renderBoard() {
                 square.appendChild(span);
                 square.classList.add('has-piece');
                 square.classList.add(`jersey-${state.playerColors[piece.player]}`);
-                // All Star: the club's own colour, and the level in stars (shown during the
-                // draft and until the first move, then on hover or focus: styles.css).
-                if (piece.clubId && state.allStar) span.style.color = state.allStar.club.primary;
+                // All Star: the club's jersey (and a tournament rival's, career-match.js), and the
+                // level in stars (shown during the draft and until the first move, then on hover
+                // or focus: styles.css).
+                if (piece.clubId && state.allStar) paintJersey(span, state.allStar.club);
+                else if (piece.player === 2 && state.career && state.career.jersey) paintJersey(span, state.career.jersey);
                 if (piece.level !== undefined || (piece.type === 'k' && state.allStar)) {
                     const badge = document.createElement('span');
                     badge.className = 'piece-level';

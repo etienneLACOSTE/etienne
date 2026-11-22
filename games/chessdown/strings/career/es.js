@@ -535,4 +535,8 @@ export default {
     'career.news.questFailed': "Misión fallida: {title}.",
     'career.news.recruit': "{name} se une al club ({piece}, nivel {level}).",
     'career.news.level': "¡{name} ({piece}) sube al nivel {level}!",
+    'career.news.streak': "¡{club} encadena {n} victorias!",
+    'career.news.promoted': "{club} sube de categoría: el {tournament} la próxima temporada.",
+    'career.news.youPromoted': "¡El club sube de categoría: el {tournament} lo espera, billete en mano!",
+    'career.news.arrived': "El club llega a una nueva categoría: {tournament}.",
 };

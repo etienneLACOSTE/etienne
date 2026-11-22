@@ -546,4 +546,8 @@ export default {
     'career.news.questFailed': "Quest failed: {title}.",
     'career.news.recruit': "{name} joins the club ({piece}, level {level}).",
     'career.news.level': "{name} ({piece}) goes up to level {level}!",
+    'career.news.streak': "{club}: {n} wins in a row!",
+    'career.news.promoted': "{club} go up a tier: the {tournament} next season.",
+    'career.news.youPromoted': "The club goes up a tier: the {tournament} awaits, ticket in hand!",
+    'career.news.arrived': "The club arrives in a new tier: {tournament}.",
 };

@@ -302,6 +302,13 @@ test.describe('Career', () => {
     expect(setup.format).toBe('single');
     expect(setup.career).toBe('league');
     expect(setup.levels.every((level) => level === 1 || level === 2)).toBe(true); // The first round: levels 1 and 2
+    // Both sides in their jerseys: the club's, and the rival's (career-match.js)
+    const jerseys = await page.evaluate(() => {
+      const dressed = [...document.querySelectorAll('#chessboard .piece-jersey')];
+      return { count: dressed.length, pieces: chessdown.state.board.flat().filter(Boolean).length, rival: chessdown.state.career.jersey };
+    });
+    expect(jerseys.count).toBe(jerseys.pieces);
+    expect(jerseys.rival.primary).toMatch(/^#[0-9a-f]{6}$/i);
     // One game won: through to the second round
     await page.evaluate(async () => (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king'));
     await expect(page.locator('#victory-club')).toContainText('Won! Next: Round 2.');

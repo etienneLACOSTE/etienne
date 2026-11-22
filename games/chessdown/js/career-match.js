@@ -8,6 +8,7 @@
 import { Engine, state } from './state.js';
 import { loadCareer, saveCareer } from './career-store.js';
 import { saveClub } from './club-store.js';
+import { awayJersey } from './club-art.js';
 import { t } from '../../../assets/js/i18n.js';
 
 const Series = globalThis.ChessdownSeries;
@@ -48,6 +49,8 @@ export function beginCareerMatch(spec) {
         puzzleMoves: 0,
         goal: quest ? quest.goal : { type: 'win' },
         opponent: { ...opponent, banned: rules.banned || [] },
+        // A tournament rival plays in its club's jersey (its away one when it looks like the club's)
+        jersey: quest || !state.allStar ? null : awayJersey(Career.coachOf(career, next.opponent).colors, state.allStar.club),
         streak: 0,
         touchdowns: 0,
         captures: 0, // Pieces player 1 took this match

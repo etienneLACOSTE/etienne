@@ -424,6 +424,9 @@ function newsText(n) {
         case 'season': return ['▶', t('career.news.season', { n: n.season, tournament: tournament(n.tier) })];
         case 'match': return [n.won > n.lost ? '✓' : '✗', t(n.won > n.lost ? 'career.news.won' : 'career.news.lost', { stage: stage(n.stage), club: clubName(n.opp), won: n.won, lost: n.lost })];
         case 'upset': return ['⚡', t('career.news.upset', { stage: stage(n.stage), winner: clubName(n.w), loser: clubName(n.l) })];
+        case 'promoted': return ['▲', n.club === Career.YOU ? t('career.news.youPromoted', { tournament: tournament(n.tier) }) : t('career.news.promoted', { club: clubName(n.club), tournament: tournament(n.tier) })];
+        case 'arrived': return ['▲', t('career.news.arrived', { tournament: tournament(n.tier) })];
+        case 'streak': return ['✓', t('career.news.streak', { club: club.name, n: n.n })];
         case 'champion': return ['★', n.club === Career.YOU ? t('career.news.youChampion', { tournament: tournament(n.tier) }) : t('career.news.champion', { club: clubName(n.club), tournament: tournament(n.tier) })];
         case 'quest': return [n.ok ? '✓' : '✗', t(n.ok ? 'career.news.questOk' : 'career.news.questFailed', { title: t(`quest.${n.id}.title`) })];
         case 'recruit': return [GLYPHS[n.type], t('career.news.recruit', { name: n.name, piece: t(`piece.${n.type}`), level: n.level })];

@@ -535,4 +535,8 @@ export default {
     'career.news.questFailed': "Quête ratée : {title}.",
     'career.news.recruit': "{name} rejoint le club ({piece}, niveau {level}).",
     'career.news.level': "{name} ({piece}) passe niveau {level} !",
+    'career.news.streak': "{club} enchaîne {n} victoires !",
+    'career.news.promoted': "{club} monte d'un échelon : {tournament} la saison prochaine.",
+    'career.news.youPromoted': "Le club monte d'un échelon : le {tournament} l'attend, ticket en poche !",
+    'career.news.arrived': "Le club arrive dans un nouvel échelon : {tournament}.",
 };

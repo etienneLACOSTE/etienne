@@ -3,7 +3,7 @@
 // players on the three back rows, within the 39 points, the king in. Opened from the club
 // page's "Line-ups" button; a line-up is then loaded in one click during a draft (draft.js).
 import { Engine, PIECES } from './state.js';
-import { esc } from './club-art.js';
+import { esc, jerseyBackground } from './club-art.js';
 import { saveClub } from './club-store.js';
 import { t } from '../../../assets/js/i18n.js';
 
@@ -47,8 +47,9 @@ export function showLineups(box, club, { onBack }) {
             const m = here && member(here.id);
             const name = `${FILES[c]}${12 - r}`;
             const label = m ? t('lineup.squareWith', { square: name, name: m.name, piece: t(`piece.${m.type}`), n: m.level }) : t('lineup.squareEmpty', { square: name });
+            const jersey = jerseyBackground(club);
             return `<button type="button" class="lineup-square ${(r + c) % 2 ? 'dark' : 'light'}" data-r="${r}" data-c="${c}" data-focus="sq${r}-${c}" aria-label="${esc(label)}">
-                ${m ? `<span class="icon" style="color:${club.primary}" aria-hidden="true">${PIECES[m.type].icon}</span><span class="lineup-stars" aria-hidden="true">${m.level}★</span>` : ''}</button>`;
+                ${m ? `<span class="icon piece-jersey ${jersey ? 'patterned' : ''}" style="${jersey ? `background-image:${esc(jersey)}` : `color:${club.primary}`}" aria-hidden="true">${PIECES[m.type].icon}</span><span class="lineup-stars" aria-hidden="true">${m.level}★</span>` : ''}</button>`;
         };
         box.innerHTML = `
           <div class="lineup-head">

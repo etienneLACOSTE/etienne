@@ -535,4 +535,8 @@ export default {
     'career.news.questFailed': "Aufgabe gescheitert: {title}.",
     'career.news.recruit': "{name} kommt zum Verein ({piece}, Stufe {level}).",
     'career.news.level': "{name} ({piece}) steigt auf Stufe {level}!",
+    'career.news.streak': "{club}: {n} Siege in Folge!",
+    'career.news.promoted': "{club} steigt auf: nächste Saison {tournament}.",
+    'career.news.youPromoted': "Der Verein steigt auf: {tournament} wartet, das Ticket ist da!",
+    'career.news.arrived': "Der Verein erreicht eine neue Stufe: {tournament}.",
 };

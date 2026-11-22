@@ -555,6 +555,9 @@ button:disabled {
     paint-order: stroke fill;
 }
 .shop-item .name, .shop-item .cost { -webkit-text-stroke: 0; }
+/* A club's jersey (club-art.js jerseyBackground): its pattern drawn inside the glyph. */
+.piece-jersey.patterned { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+.piece-jersey { -webkit-text-stroke-color: var(--black); }
 .jersey-red { color: #e74c3c; }
 .jersey-blue { color: #3498db; }
 .jersey-green { color: #2ecc71; }
@@ -1259,7 +1262,8 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .news-quest .news-mark { color: var(--quest-blue); }
 .news-quest.lost .news-mark, .news-match.lost .news-mark { color: var(--muted-on-dark); }
 .news-recruit .news-mark, .news-level .news-mark { color: var(--white); }
-.news-champion { font-weight: 800; }
+.news-champion, .news-streak, .news-promoted { font-weight: 800; }
+.news-streak .news-mark, .news-promoted .news-mark, .news-arrived .news-mark { color: var(--amber); }
 .career-table tr.you td, .career-table tr.you th { color: var(--amber); }
 @keyframes career-fade { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .career-out { animation: none; } }

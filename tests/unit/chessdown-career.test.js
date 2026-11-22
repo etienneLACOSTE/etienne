@@ -300,7 +300,7 @@ test('the club\'s news: dated, the latest kept, read back checked', () => {
     for (const u of c.news.filter((n) => n.kind === 'upset')) {
         assert.ok(Career.coachOf(c, u.l).strength - Career.coachOf(c, u.w).strength >= 0.2, 'a weaker club won');
     }
-    assert.deepEqual(c.news[c.news.length - 1], { season: 1, at: c.minutes, kind: 'champion', tier: 'school', club: 'you' });
+    assert.deepEqual(c.news[c.news.length - 2], { season: 1, at: c.minutes, kind: 'champion', tier: 'school', club: 'you' });
     c = Career.attemptQuest(c, c.quests.drawn[0], false);
     assert.deepEqual(c.news[c.news.length - 1].ok, false, 'a quest failed');
     c = Career.addNews(c, { kind: 'recruit', name: 'Inès', type: 'n', level: 2 });
@@ -314,4 +314,21 @@ test('the club\'s news: dated, the latest kept, read back checked', () => {
     assert.deepEqual(Career.sanitizeCareer(copy).news, []);
     for (let i = 0; i < 60; i++) c = Career.addNews(c, { kind: 'level', name: 'Basile', type: 'p', level: 3 });
     assert.equal(c.news.length, Career.NEWS_MAX, 'the oldest go');
+});
+
+test('news: runs of wins, the champion going up a tier, the club arriving in a new one', () => {
+    let c = playSeason(Career.newCareer(5));
+    assert.deepEqual(c.news.filter((n) => n.kind === 'streak').map((n) => n.n), [3, 5], 'five wins: news at 3 and 5');
+    assert.equal(c.streak, 5);
+    assert.deepEqual(c.news[c.news.length - 1], { season: 1, at: c.minutes, kind: 'promoted', tier: 'county', club: 'you' });
+    c = Career.attemptQuest(c, c.quests.drawn[0], false);
+    assert.equal(c.streak, 0, 'a quest failed ends the run');
+    c = Career.travel(Career.finishSeason(c).career, 'county');
+    assert.deepEqual(c.news[c.news.length - 1].kind, 'arrived');
+    assert.deepEqual(Career.sanitizeCareer(JSON.parse(JSON.stringify(c))).news, c.news);
+    // Knocked out: the champion is a rival, and it goes up
+    const out = Career.recordSeries(Career.newCareer(5), LOSS);
+    const promoted = out.news.find((n) => n.kind === 'promoted');
+    assert.equal(promoted.club, Career.bracket(out).champion);
+    assert.notEqual(promoted.club, 'you');
 });

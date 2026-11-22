@@ -64,7 +64,7 @@ const CHESSDOWN = {
       (await import('/chessdown/js/events.js')).openCareerPage(club, '', false, 'journal');
     });
     await expect(page.locator('#career-journal')).toBeVisible();
-    await expect(page.locator('.career-news li')).toHaveCount(7);
+    await expect(page.locator('.career-news li')).toHaveCount(8); // With a run of 3 wins
     await page.getByText('Show the bracket').click(); // The bracket checked too
   },
   'form error': async (page) => { // Joining without a code: told under the field (signed in)

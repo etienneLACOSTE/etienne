@@ -151,6 +151,56 @@ export function jerseySVG(c) {
 }
 
 /** The "Heritage" jersey: cream, a broad band of the club's colour across the chest, a laced collar. */
+/**
+ * The jersey on a piece (board-view.js, lineup-editor.js): its pattern drawn in the glyph as a
+ * CSS background clipped to the text; '' for a plain jersey (the glyph in the main colour).
+ */
+export function jerseyBackground(c) {
+    const a = c.primary;
+    const b = c.secondary;
+    if (c.wear === 'jersey-heritage') return `linear-gradient(180deg, ${HERITAGE_CREAM} 42%, ${b} 42% 45%, ${a} 45% 61%, ${b} 61% 64%, ${HERITAGE_CREAM} 64%)`;
+    switch (c.pattern) {
+        case 'stripes': return `repeating-linear-gradient(90deg, ${a} 0 0.12em, ${b} 0.12em 0.24em)`;
+        case 'pinstripes': return `repeating-linear-gradient(90deg, ${a} 0 0.1em, ${b} 0.1em 0.14em)`;
+        case 'halves': return `linear-gradient(90deg, ${a} 50%, ${b} 50%)`;
+        case 'quarters': return `conic-gradient(${b} 0 25%, ${a} 0 50%, ${b} 0 75%, ${a} 0)`;
+        case 'hoops': return `repeating-linear-gradient(180deg, ${a} 0 0.13em, ${b} 0.13em 0.24em)`;
+        case 'sash': return `linear-gradient(120deg, ${a} 38%, ${b} 38% 60%, ${a} 60%)`;
+        case 'chevron': return `linear-gradient(225deg, ${a} 30%, ${b} 30% 42%, transparent 42%), linear-gradient(135deg, ${a} 30%, ${b} 30% 42%, ${a} 42%)`;
+        case 'sleeves': return `linear-gradient(90deg, ${b} 26%, ${a} 26% 74%, ${b} 74%)`;
+        default: return '';
+    }
+}
+
+/** Dress a piece's glyph (a span) in a club's jersey. */
+export function paintJersey(span, c) {
+    const background = jerseyBackground(c);
+    span.classList.add('piece-jersey');
+    span.classList.toggle('patterned', Boolean(background));
+    span.style.backgroundImage = background;
+    span.style.color = background ? '' : c.primary;
+}
+
+const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+/** Two colours too close to tell apart on the turf. */
+function clash(x, y) {
+    const [r, g, b] = rgbOf(x), [u, v, w] = rgbOf(y);
+    return (r - u) ** 2 + (g - v) ** 2 + (b - w) ** 2 < 110 ** 2;
+}
+
+/**
+ * The jersey a rival wears against the club: its own; its away jersey (its colours swapped)
+ * when its main colour is too close to the club's; plain white or black when that is too.
+ * @param {{ primary: string, secondary: string, pattern: string }} theirs @param {{ primary: string }} ours
+ */
+export function awayJersey(theirs, ours) {
+    if (!clash(theirs.primary, ours.primary)) return { primary: theirs.primary, secondary: theirs.secondary, pattern: theirs.pattern };
+    if (!clash(theirs.secondary, ours.primary)) return { primary: theirs.secondary, secondary: theirs.primary, pattern: theirs.pattern };
+    const light = rgbOf(ours.primary).reduce((sum, v) => sum + v, 0) > 382;
+    const plain = light ? '#111111' : '#ffffff';
+    return { primary: plain, secondary: plain, pattern: 'plain' };
+}
+
 function heritageSVG(c) {
     const a = c.primary;
     const b = c.secondary;

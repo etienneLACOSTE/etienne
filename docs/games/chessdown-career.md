@@ -79,6 +79,20 @@ champion du tournoi, quête réussie ou ratée, recrue arrivée, joueur qui pass
 ou par l'XP d'une quête). Une carrière plus ancienne commence avec un fil vide ; une nouvelle
 illisible à la relecture est écartée (`sanitizeCareer`), le reste de la carrière est gardé.
 
+Ajouts du 2026-11-22 : les séries de victoires du club (`career.streak` : matchs de tournoi et
+quêtes ; nouvelle à 3, 5, 10 puis toutes les 5 ; une défaite ou une quête ratée la remet à zéro),
+la montée d'échelon du champion (le club seulement quand il gagne un nouveau ticket) et
+l'arrivée du club dans un nouvel échelon après le voyage.
+
+## Les maillots sur les pièces (2026-11-22)
+
+En All Star et en carrière, les pièces du club portent son maillot : ses deux couleurs et son
+motif dessinés dans la pièce (`club-art.js jerseyBackground`, fond CSS découpé au texte, contour
+noir gardé). En match de tournoi, l'adversaire porte le maillot de son club, ou son maillot
+extérieur (couleurs inversées) quand il ressemble trop à celui du club, sinon blanc ou noir uni
+(`awayJersey`) ; son en-but prend la couleur la plus proche. Pas de maillot pour les boss ni
+pour les autres quêtes.
+
 ## Téléphones (2026-11-21)
 
 - Jusqu'à 520 px de large : titre « Carrière » masqué (lu par les lecteurs d'écran), onglets

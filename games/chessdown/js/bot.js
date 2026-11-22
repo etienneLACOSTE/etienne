@@ -2,7 +2,7 @@
 // Campaign bot: difficulty profiles; the draft and the search live in bot-search.js
 // (shared with the trainer, tools/chessdown/train.js).
 import { Bot, COLOR_HEX, MAX_POINTS, state } from './state.js';
-import { botLevel, isAllStar, squadBudget } from './all-star.js';
+import { botLevel, isAllStar, nearestJersey, squadBudget } from './all-star.js';
 import { careerOpponent, careerPuzzle, puzzleMovesLeft } from './career-match.js';
 
 /**
@@ -39,6 +39,9 @@ export function autoDraftBot() {
     // Pick a color different from P1
     const availableColors = Object.keys(COLOR_HEX).filter(c => c !== state.playerColors[1]);
     state.playerColors[2] = availableColors[Math.floor(Math.random() * availableColors.length)];
+    // A tournament rival: the colour of its jersey (its end zone), unless it is the club's
+    const jersey = state.career && state.career.jersey ? nearestJersey(state.career.jersey.primary) : null;
+    if (jersey && jersey !== state.playerColors[1]) state.playerColors[2] = jersey;
 
     // The army is drafted by the shared bot (bot-search.js), as in training.
     // All Star: an army worth the player's squad, at its average level (all-star.js).

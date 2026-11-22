@@ -535,4 +535,8 @@ export default {
     'career.news.questFailed': "Missione fallita: {title}.",
     'career.news.recruit': "{name} entra nel club ({piece}, livello {level}).",
     'career.news.level': "{name} ({piece}) sale al livello {level}!",
+    'career.news.streak': "{club} infila {n} vittorie di fila!",
+    'career.news.promoted': "{club} sale di categoria: il {tournament} la prossima stagione.",
+    'career.news.youPromoted': "Il club sale di categoria: il {tournament} lo aspetta, biglietto in tasca!",
+    'career.news.arrived': "Il club arriva in una nuova categoria: {tournament}.",
 };
