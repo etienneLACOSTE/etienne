@@ -49,8 +49,6 @@ export function beginCareerMatch(spec) {
         puzzleMoves: 0,
         goal: quest ? quest.goal : { type: 'win' },
         opponent: { ...opponent, banned: rules.banned || [] },
-        // A tournament rival plays in its club's jersey (its away one when it looks like the club's)
-        jersey: quest || !state.allStar ? null : awayJersey(Career.coachOf(career, next.opponent).colors, state.allStar.club),
         streak: 0,
         touchdowns: 0,
         captures: 0, // Pieces player 1 took this match
@@ -68,7 +66,22 @@ export function beginCareerMatch(spec) {
         recruits: [],
         finished: false,
     };
+    // The rival's jersey (its away one when it looks like the club's): a tournament rival's club;
+    // in a quest, a club of the tier (the same for the same quest); a boss wears none
+    if (state.allStar) {
+        const rival = quest ? questClub(career, quest) : next.opponent;
+        state.allStar.rivalJersey = rival ? awayJersey(Career.coachOf(career, rival).colors, state.allStar.club) : null;
+    }
     return state.career.format;
+}
+
+/** The club a quest's rival plays for (null for a boss): one of the tier's, from the quest's name. */
+function questClub(career, quest) {
+    if (quest.opponent && quest.opponent.boss) return null;
+    const rivals = Career.rivalsOf(career, quest.tier);
+    let h = 0;
+    for (const ch of quest.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return rivals[h % rivals.length];
 }
 
 /** Back to classic play. */
@@ -236,7 +249,7 @@ export function noteCareerTouchdown(player, types) {
 /**
  * A game is over (winner 1, 2, or 0 for a draw; the series already counts it). Returns
  * whether the career match is over now, and the lines for the end screen.
- * @returns {{ finished: boolean, lines: string[], next?: string } | null}
+ * @returns {{ finished: boolean, lines: string[], next?: string, success?: boolean } | null}
  */
 export function careerAfterGame(winner) {
     const c = state.career;
@@ -321,7 +334,7 @@ function finish(success) {
     for (const u of c.levelUps) career = Career.addNews(career, { kind: 'level', ...u });
     for (const r of c.recruits) career = Career.addNews(career, { kind: 'recruit', ...r });
     saveCareer(career);
-    return { finished: true, lines };
+    return { finished: true, lines, ...(c.kind === 'quest' ? { success } : {}) };
 }
 
 /** The quest's reward, given to the club (kept); returns the line that says it. */

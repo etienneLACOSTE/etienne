@@ -2,7 +2,7 @@
 // Entry point.
 import './lang.js'; // First: the language is set before any text is written
 import { state, ui } from './state.js';
-import { showScreen } from './board-view.js';
+import { setupFullscreenButton, showScreen } from './board-view.js';
 import { loadBotProfileForDifficulty } from './bot.js';
 import { reopenAfterReload, setupEventListeners } from './events.js';
 import { startDemo } from './demo.js';
@@ -27,6 +27,7 @@ export function init() {
         return board.width ? board : null;
     });
     setupEventListeners();
+    setupFullscreenButton();
     setupAccessibility(); // a11y.js
     
     const urlParams = new URLSearchParams(window.location.search);

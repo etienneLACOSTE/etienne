@@ -210,6 +210,7 @@ export default {
     'allStar.savedNamed': "„{name}“ gespeichert.",
     'allStar.loadedNamed': "„{name}“ geladen.",
     'allStar.loadedPartly': "„{name}“ geladen; {n} Spieler bleiben auf der Bank (in diesem Spiel nicht erlaubt).",
+    'fullscreen.button': "Vollbild",
     'resign.button': "Aufgeben",
     'resign.question': "Dieses Spiel aufgeben oder die ganze Begegnung?",
     'resign.game': "Dieses Spiel",

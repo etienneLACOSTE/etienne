@@ -13,6 +13,24 @@ export function showScreen(screen) {
     focusScreen(screen); // a11y.js
 }
 
+/** The header's full-screen button: on and off, pressed while the page is full screen. */
+export function setupFullscreenButton() {
+    const button = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-fullscreen'));
+    const doc = /** @type {any} */ (document); // webkit prefix on old Safari
+    if (!button || !(document.documentElement.requestFullscreen || /** @type {any} */ (document.documentElement).webkitRequestFullscreen)) return;
+    button.hidden = false;
+    const isOn = () => Boolean(document.fullscreenElement || doc.webkitFullscreenElement);
+    const sync = () => button.setAttribute('aria-pressed', String(isOn()));
+    button.addEventListener('click', () => {
+        if (!isOn()) return enterFullscreen();
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => { /* Already out */ });
+        else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+    });
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    sync();
+}
+
 export function enterFullscreen() {
     const elem = /** @type {any} */ (document.documentElement); // webkit prefix on old Safari
     if (elem.requestFullscreen) {
@@ -178,8 +196,9 @@ export function renderBoard() {
                 // All Star: the club's jersey (and a tournament rival's, career-match.js), and the
                 // level in stars (shown during the draft and until the first move, then on hover
                 // or focus: styles.css).
-                if (piece.clubId && state.allStar) paintJersey(span, state.allStar.club);
-                else if (piece.player === 2 && state.career && state.career.jersey) paintJersey(span, state.career.jersey);
+                const mine = state.allStar && (state.allStar.online ? piece.player === state.myPlayerNumber : piece.player === 1);
+                if (state.allStar && mine) paintJersey(span, state.allStar.club);
+                else if (state.allStar && state.allStar.rivalJersey) paintJersey(span, state.allStar.rivalJersey);
                 if (piece.level !== undefined || (piece.type === 'k' && state.allStar)) {
                     const badge = document.createElement('span');
                     badge.className = 'piece-level';

@@ -117,7 +117,7 @@ export function startTurn() {
             fireConfetti([winnerColorHex, '#f1c40f']);
             endGame(t('end.victory'), t('end.touchdownYou'), winner, 'touchdown');
         } else {
-            if (!state.currentRoomCode) {
+            if (!state.currentRoomCode && !state.isBotMatch) { // Two players on this screen: a win for one of them
                 fireConfetti([winnerColorHex, '#f1c40f']);
                 endGame(t('end.victory'), t('end.touchdownPlayer', { n: winner }), winner, 'touchdown');
             } else {
@@ -334,8 +334,9 @@ export function movePiece(fromR, fromC, toR, toC) {
         if (targetPiece && targetPiece.type === 'k') {
             const winner = state.currentPlayer;
             const winnerColorHex = COLOR_HEX[state.playerColors[winner]];
-            fireConfetti([winnerColorHex, '#f1c40f']);
-            endGame(t('end.victory'), t('end.playerCapturedKing', { n: winner }), winner, 'king');
+            const lost = state.isBotMatch && winner !== 1; // The bot took the king
+            if (!lost) fireConfetti([winnerColorHex, '#f1c40f']);
+            endGame(t(lost ? 'end.defeat' : 'end.victory'), lost ? t('end.theyCapturedKing', { name: playerName(winner) }) : t('end.playerCapturedKing', { n: winner }), winner, 'king');
             return;
         }
         if (goal) {
@@ -434,6 +435,8 @@ function showClubResults(results, career = null) {
         restart.hidden = !(saved && Career.nextMatch(saved));
     } else if (career && restart && career.finished) restart.textContent = t('career.backToMap');
     else if (career && restart && career.next) restart.textContent = career.next;
+    // A quest over: its outcome is the title (a game won can still miss the quest's goal)
+    if (career && career.finished && typeof career.success === 'boolean') ui.victoryTitle.textContent = t(career.success ? 'end.victory' : 'end.defeat');
     box.innerHTML = lines.map((line) => `<li>${esc(line)}</li>`).join('');
     box.hidden = !lines.length;
 }

@@ -157,6 +157,16 @@ test.describe('Chessdown', () => {
     expect(errors).toEqual([]);
   });
 
+  test('the full-screen button switches full screen on and off', async ({ page }) => {
+    await page.goto('/chessdown/');
+    const full = page.getByRole('button', { name: 'Full screen' });
+    await expect(full).toHaveAttribute('aria-pressed', 'false');
+    await full.click();
+    await expect(full).toHaveAttribute('aria-pressed', 'true');
+    await full.click();
+    await expect(full).toHaveAttribute('aria-pressed', 'false');
+  });
+
   test('campaign: the bot answers a move', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.goto('/chessdown/');

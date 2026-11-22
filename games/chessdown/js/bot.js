@@ -39,8 +39,8 @@ export function autoDraftBot() {
     // Pick a color different from P1
     const availableColors = Object.keys(COLOR_HEX).filter(c => c !== state.playerColors[1]);
     state.playerColors[2] = availableColors[Math.floor(Math.random() * availableColors.length)];
-    // A tournament rival: the colour of its jersey (its end zone), unless it is the club's
-    const jersey = state.career && state.career.jersey ? nearestJersey(state.career.jersey.primary) : null;
+    // All Star: the colour of the rival's jersey (its end zone), unless it is the club's
+    const jersey = state.allStar && state.allStar.rivalJersey ? nearestJersey(state.allStar.rivalJersey.primary) : null;
     if (jersey && jersey !== state.playerColors[1]) state.playerColors[2] = jersey;
 
     // The army is drafted by the shared bot (bot-search.js), as in training.

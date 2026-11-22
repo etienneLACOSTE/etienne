@@ -211,6 +211,7 @@ export default {
     'allStar.savedNamed': "“{name}” saved.",
     'allStar.loadedNamed': "“{name}” loaded.",
     'allStar.loadedPartly': "“{name}” loaded; {n} players stay on the bench (not allowed in this match).",
+    'fullscreen.button': "Full screen",
     'resign.button': "Resign",
     'resign.question': "Resign this game, or the whole match?",
     'resign.game': "This game",

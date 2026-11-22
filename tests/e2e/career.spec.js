@@ -305,7 +305,7 @@ test.describe('Career', () => {
     // Both sides in their jerseys: the club's, and the rival's (career-match.js)
     const jerseys = await page.evaluate(() => {
       const dressed = [...document.querySelectorAll('#chessboard .piece-jersey')];
-      return { count: dressed.length, pieces: chessdown.state.board.flat().filter(Boolean).length, rival: chessdown.state.career.jersey };
+      return { count: dressed.length, pieces: chessdown.state.board.flat().filter(Boolean).length, rival: chessdown.state.allStar.rivalJersey };
     });
     expect(jerseys.count).toBe(jerseys.pieces);
     expect(jerseys.rival.primary).toMatch(/^#[0-9a-f]{6}$/i);
@@ -501,6 +501,26 @@ test.describe('Career', () => {
     }, { club: CLUB, drawn });
   }
 
+  test('a quest missed with the game won: the end screen says Defeat; a boss wears no jersey, a quest rival does', async ({ page }) => {
+    await inCounty(page, ['clean-harvest', 'old-bull', 'ploughing', 'veteran']);
+    await page.locator('.career-marker.side').first().click();
+    await card(page).getByRole('button', { name: 'Accept' }).click();
+    const bench = page.getByRole('group', { name: 'Your squad: choose a player, then a square' });
+    await bench.getByRole('button', { name: /^Place The Captain,/ }).click();
+    await page.locator('#chessboard .square[data-vr="5"][data-vc="4"]').click();
+    await page.locator('#btn-validate-draft').dispatchEvent('pointerdown');
+    await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
+    expect(await page.evaluate(() => chessdown.state.allStar.rivalJersey)).not.toBeNull(); // A club of the county's
+    await expect(page.locator('#chessboard .square.has-piece .piece-jersey')).toHaveCount(await page.locator('#chessboard .square.has-piece').count());
+    // The game won, but a piece was lost: no clean sheet
+    await page.evaluate(async () => {
+      chessdown.state.career.lostPiece = true;
+      (await import('/chessdown/js/gameplay.js')).endGame('Victory!', '', 1, 'king');
+    });
+    await expect(page.locator('#victory-title')).toHaveText('Defeat...');
+    await expect(page.locator('#victory-club')).toContainText('Quest failed');
+  });
+
   test('a boss: its portrait and fixed army on the card, the same army on the board', async ({ page }) => {
     await inCounty(page, ['old-bull', 'mud-match', 'ploughing', 'veteran']);
     // On the map: a horned skull for the boss, a crown for the championship
@@ -519,6 +539,7 @@ test.describe('Career', () => {
     await expect(page.locator('#side-status')).toBeVisible({ timeout: 15_000 });
     const theirs = await page.evaluate(() => chessdown.state.board.flat().filter((p) => p && p.player === 2).map((p) => `${p.type}${p.level || ''}`).sort());
     expect(theirs).toEqual(['k', 'r4', 'r4']);
+    expect(await page.evaluate(() => chessdown.state.allStar.rivalJersey)).toBeNull(); // A boss wears no jersey
   });
 
   test('the pieces\' guide: only the levels unlocked; a click on a boss\'s piece tells what it does', async ({ page }) => {

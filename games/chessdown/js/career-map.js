@@ -167,6 +167,7 @@ function drawMap(g, tier, colors) {
     const rnd = seeded(map.seed);
     const water = new Uint8Array(W * H);
     const busy = new Uint8Array(W * H);
+    const onRoad = new Uint8Array(W * H); // The roads' surfaces and pavements: a footpath stops there
     /** @type {Uint8Array | null} */
     let landMask = null;
     /** @type {{ x: number, y: number, c1: string, c2: string }[]} */
@@ -215,6 +216,12 @@ function drawMap(g, tier, colors) {
         for (const { rd, s, spec } of all) if (rd.k === 'street') stamp(s, spec[0] + 2, P.walk);
         for (const { rd, s, spec } of all) stamp(s, spec[0], rd.k === 'lane' ? P.bank : P.roadEdge);
         for (const { rd, s, spec } of all) stamp(s, spec[1], rd.k === 'lane' ? P.lane : P.road);
+        for (const { rd, s, spec } of all) {
+            const r = (rd.k === 'street' ? spec[0] + 2 : spec[0]) / 2;
+            for (const p of s) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+                if (dx * dx + dy * dy <= r * r && inMap(p.x + dx, p.y + dy)) onRoad[idx(p.x + dx, p.y + dy)] = 1;
+            }
+        }
         const nearOther = (p, self) => all.some((o) => o !== self && o.s.some((q) => Math.abs(q.x - p.x) < 9 && Math.abs(q.y - p.y) < 9));
         for (const a of all) {
             const { rd, s, spec } = a;
@@ -701,7 +708,14 @@ function drawMap(g, tier, colors) {
             for (const s of roads) for (const p of s) { const dd = Math.hypot(p.x - d.x, p.y - d.y); if (dd < bd) { bd = dd; best = p; } }
             if (!best) continue;
             const n = Math.ceil(bd);
-            for (let k = 0; k <= n; k++) { const x = d.x + (best.x - d.x) * k / n, y = d.y + (best.y - d.y) * k / n; if (inMap(x, y) && !water[idx(x, y)]) R(x - 1, y - 1, 3, 3, P.walk); }
+            // To the road's edge, not over it (the footpath is 3 pixels wide: its edge stops too)
+            for (let k = 0; k <= n; k++) {
+                const x = d.x + (best.x - d.x) * k / n, y = d.y + (best.y - d.y) * k / n;
+                if (!inMap(x, y)) continue;
+                const ahead = (best.x - d.x) / n * 2, aheadY = (best.y - d.y) / n * 2;
+                if (onRoad[idx(x, y)] || (inMap(x + ahead, y + aheadY) && onRoad[idx(x + ahead, y + aheadY)])) break;
+                if (!water[idx(x, y)]) R(x - 1, y - 1, 3, 3, P.walk);
+            }
         }
     }
     for (const [, [x, y, icon]] of places) ICONS[icon](x, y);

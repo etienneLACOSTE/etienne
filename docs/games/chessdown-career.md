@@ -90,8 +90,15 @@ En All Star et en carrière, les pièces du club portent son maillot : ses deux 
 motif dessinés dans la pièce (`club-art.js jerseyBackground`, fond CSS découpé au texte, contour
 noir gardé). En match de tournoi, l'adversaire porte le maillot de son club, ou son maillot
 extérieur (couleurs inversées) quand il ressemble trop à celui du club, sinon blanc ou noir uni
-(`awayJersey`) ; son en-but prend la couleur la plus proche. Pas de maillot pour les boss ni
-pour les autres quêtes.
+(`awayJersey`) ; son en-but prend la couleur la plus proche. Depuis le 2026-11-22 aussi : le
+rival d'une quête porte le maillot d'un club de l'échelon (toujours le même pour une quête),
+celui d'un match amical All Star un club tiré au hasard, et les bancs (draft, compositions) et
+le registre du club montrent les pièces en maillot. Pas de maillot pour les boss ; en ligne,
+le maillot du club adverse n'est pas connu de la page (il joue dans sa couleur).
+
+Les sentiers entre un lieu et la route s'arrêtent au bord de la route. Un bouton « Plein écran »
+est dans l'en-tête (masqué si le navigateur ne le permet pas). L'écran de fin dit « Défaite »
+quand le bot gagne et quand une quête est ratée, même si la partie a été gagnée.
 
 ## Téléphones (2026-11-21)
 

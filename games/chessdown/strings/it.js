@@ -210,6 +210,7 @@ export default {
     'allStar.savedNamed': "«{name}» salvata.",
     'allStar.loadedNamed': "«{name}» caricata.",
     'allStar.loadedPartly': "«{name}» caricata; {n} giocatori restano in panchina (non ammessi in questa partita).",
+    'fullscreen.button': "Schermo intero",
     'resign.button': "Abbandona",
     'resign.question': "Abbandonare questa partita o tutto l’incontro?",
     'resign.game': "Questa partita",

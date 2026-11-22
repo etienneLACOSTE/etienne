@@ -2,7 +2,7 @@
 // All Star: the club's page. Its card (crest, jersey, name), the register of its players
 // (level in stars, experience, stats), renaming a player, signing the recruits won in the
 // campaign, and starting over with a new club.
-import { crestSVG, esc, jerseySVG } from './club-art.js';
+import { crestSVG, esc, jerseyGlyph, jerseySVG } from './club-art.js';
 import { deleteClub, saveClub } from './club-store.js';
 import { deleteCareer, loadCareer } from './career-store.js';
 import { showLineups } from './lineup-editor.js';
@@ -29,7 +29,7 @@ export function rosterTable(club, { rename = true } = {}) {
             ? `<button type="button" class="club-rename" data-player="${p.id}" aria-label="${esc(t('club.renameLabel', { name: p.name }))}">${esc(p.name)} <span aria-hidden="true">✎</span></button>`
             : `<b>${esc(p.name)}</b>`;
         return `<tr>
-            <td class="club-glyph" aria-hidden="true" style="color:${club.primary}">${GLYPHS[p.type]}</td>
+            <td class="club-glyph" aria-hidden="true">${jerseyGlyph(GLYPHS[p.type], club)}</td>
             <th scope="row">${name}<br><small>${esc(t(`piece.${p.type}`))}${p.type === 'k' ? ` · ${esc(t('club.kingNote'))}` : ''}</small></th>
             <td>${stars(p.level)}</td>
             <td class="num">${xp}</td>

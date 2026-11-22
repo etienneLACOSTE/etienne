@@ -210,6 +210,7 @@ export default {
     'allStar.savedNamed': "« {name} » enregistrée.",
     'allStar.loadedNamed': "« {name} » chargée.",
     'allStar.loadedPartly': "« {name} » chargée ; {n} joueurs restent sur le banc (pas permis dans ce match).",
+    'fullscreen.button': "Plein écran",
     'resign.button': "Abandonner",
     'resign.question': "Abandonner cette manche, ou tout le match ?",
     'resign.game': "Cette manche",

@@ -82,7 +82,7 @@ export const state = {
     /**
      * All Star (all-star.js): the club playing this campaign match, who of it is on the
      * board, and what each did in the current game. null in classic play.
-     * @type {{ club: any, lineupIds: number[], tally: Record<number, any>, online?: boolean } | null}
+     * @type {{ club: any, lineupIds: number[], tally: Record<number, any>, online?: boolean, rivalJersey?: { primary: string, secondary: string, pattern: string } | null } | null}
      */
     allStar: null,
 

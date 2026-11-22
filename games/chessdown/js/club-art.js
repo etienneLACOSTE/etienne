@@ -172,6 +172,13 @@ export function jerseyBackground(c) {
     }
 }
 
+/** A piece's glyph in a club's jersey, as HTML (the benches, the squad, the line-ups). */
+export function jerseyGlyph(glyph, c, className = '') {
+    const background = jerseyBackground(c);
+    const style = background ? `background-image:${background}` : `color:${c.primary}`;
+    return `<span class="${className} piece-jersey ${background ? 'patterned' : ''}" style="${esc(style)}" aria-hidden="true">${glyph}</span>`;
+}
+
 /** Dress a piece's glyph (a span) in a club's jersey. */
 export function paintJersey(span, c) {
     const background = jerseyBackground(c);

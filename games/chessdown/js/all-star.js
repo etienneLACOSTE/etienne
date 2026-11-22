@@ -7,6 +7,9 @@
 // account; it plays from either seat, and online games bring no experience.
 import { COLOR_HEX, state } from './state.js';
 import { saveClub } from './club-store.js';
+import { awayJersey } from './club-art.js';
+
+const Coaches = globalThis.ChessdownCoaches;
 
 const Club = globalThis.ChessdownClub;
 const Engine = globalThis.ChessdownEngine;
@@ -14,7 +17,18 @@ const MAX_RECRUITS = 5;
 
 /** The club plays this match (campaign, best of 3; or online: `online`). */
 export function beginAllStar(club, { online = false } = {}) {
-    state.allStar = { club, lineupIds: [], tally: {}, online };
+    state.allStar = { club, lineupIds: [], tally: {}, online, rivalJersey: online ? null : friendlyJersey(club) };
+}
+
+/**
+ * The jersey of the bot's side in a friendly: a club of the career's, drawn at random (its away
+ * jersey when it looks like the club's). The career sets its own (career-match.js). Online, the
+ * other club's jersey is not known here: the other side wears its colour.
+ * @returns {{ primary: string, secondary: string, pattern: string } | null}
+ */
+function friendlyJersey(club) {
+    const coaches = Coaches.COACHES.filter((c) => !c.boss);
+    return awayJersey(coaches[Math.floor(Math.random() * coaches.length)].colors, club);
 }
 
 /** The seat of the club: 1 against the bot, the page's seat online. */

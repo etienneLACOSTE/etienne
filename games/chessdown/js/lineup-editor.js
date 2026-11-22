@@ -3,7 +3,7 @@
 // players on the three back rows, within the 39 points, the king in. Opened from the club
 // page's "Line-ups" button; a line-up is then loaded in one click during a draft (draft.js).
 import { Engine, PIECES } from './state.js';
-import { esc, jerseyBackground } from './club-art.js';
+import { esc, jerseyGlyph } from './club-art.js';
 import { saveClub } from './club-store.js';
 import { t } from '../../../assets/js/i18n.js';
 
@@ -47,9 +47,8 @@ export function showLineups(box, club, { onBack }) {
             const m = here && member(here.id);
             const name = `${FILES[c]}${12 - r}`;
             const label = m ? t('lineup.squareWith', { square: name, name: m.name, piece: t(`piece.${m.type}`), n: m.level }) : t('lineup.squareEmpty', { square: name });
-            const jersey = jerseyBackground(club);
             return `<button type="button" class="lineup-square ${(r + c) % 2 ? 'dark' : 'light'}" data-r="${r}" data-c="${c}" data-focus="sq${r}-${c}" aria-label="${esc(label)}">
-                ${m ? `<span class="icon piece-jersey ${jersey ? 'patterned' : ''}" style="${jersey ? `background-image:${esc(jersey)}` : `color:${club.primary}`}" aria-hidden="true">${PIECES[m.type].icon}</span><span class="lineup-stars" aria-hidden="true">${m.level}★</span>` : ''}</button>`;
+                ${m ? `${jerseyGlyph(PIECES[m.type].icon, club, 'icon')}<span class="lineup-stars" aria-hidden="true">${m.level}★</span>` : ''}</button>`;
         };
         box.innerHTML = `
           <div class="lineup-head">
@@ -72,7 +71,7 @@ export function showLineups(box, club, { onBack }) {
                 const price = p.type === 'k' ? 0 : Engine.pieceCost(p.type, p.level);
                 // Its name read first, as shown; then what it is (hidden on screen: the stars say it)
                 return `<button type="button" class="club-bench-player" style="--club-colour:${club.primary}" data-id="${p.id}" data-focus="p${p.id}" aria-pressed="${chosen === p.id}">
-                    <span class="icon" aria-hidden="true">${PIECES[p.type].icon}</span>
+                    ${jerseyGlyph(PIECES[p.type].icon, club, 'icon')}
                     <span class="club-bench-name">${esc(p.name)}</span><span class="visually-hidden">, ${esc(t('lineup.playerInfo', { piece: t(`piece.${p.type}`), n: p.level, cost: price }))}</span>
                     <span class="club-bench-meta" aria-hidden="true">${'★'.repeat(p.level)} · ${price}</span></button>`;
             }).join('') : `<span class="muted">${esc(t('allStar.allPlaced'))}</span>`}

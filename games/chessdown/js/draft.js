@@ -7,7 +7,7 @@ import { startGameplay } from './gameplay.js';
 import { autoDraftBot } from './bot.js';
 import { nextStarter, showScore } from './match.js';
 import { LINEUP_SLOTS, benchPlayers, clubPlayer, clubSeat, isAllStar, lineup, pieceFor, saveLineup } from './all-star.js';
-import { esc } from './club-art.js';
+import { esc, jerseyGlyph } from './club-art.js';
 import { lineupTitle } from './lineup-editor.js';
 import { benchAllows, careerArmy, careerBudget, isCareerMatch, lockedLineup, noteDraft } from './career-match.js';
 
@@ -348,7 +348,7 @@ function renderBench() {
         return `<button type="button" class="club-bench-player" style="--club-colour:${state.allStar.club.primary}" data-club-id="${p.id}" data-focus-key="p${p.id}"
             aria-pressed="${selected === p.id}" ${blocked ? 'disabled' : ''}
             aria-label="${esc(t('allStar.place', { name: p.name, piece: t(`piece.${p.type}`), n: p.level, cost }))}">
-            <span class="icon" aria-hidden="true">${PIECES[p.type].icon}</span>
+            ${jerseyGlyph(PIECES[p.type].icon, state.allStar.club, 'icon')}
             <span class="club-bench-name">${esc(p.name)}</span>
             <span class="club-bench-meta" aria-hidden="true">${'★'.repeat(p.level)} · ${cost}</span>
           </button>`;
