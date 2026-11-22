@@ -4,6 +4,8 @@
 // club-rules.js has checked (colours are #rrggbb, names are escaped here).
 // Emblems are simple drawn shapes, never emoji: the same on every device.
 import { t } from '../../../assets/js/i18n.js';
+import { COLOR_HEX } from './state.js';
+import { nearestJersey } from './all-star.js';
 
 const Club = globalThis.ChessdownClub;
 
@@ -190,9 +192,15 @@ export function dressGlyph(span, c, type) {
     span.style.setProperty('--band', jerseyBand(c));
 }
 
-/** A piece's glyph in a club's jersey, as HTML (the benches, the squad, the line-ups). */
-export function jerseyGlyph(glyph, c, type, className = '') {
-    return `<span class="${className} piece-jersey" data-piece="${type}" style="--band:${esc(jerseyBand(c))}" aria-hidden="true">${glyph}</span>`;
+/**
+ * A piece's glyph in a club's jersey, as HTML (the benches, the squad, the line-ups): as on the
+ * board, in the club's game colour (all-star.js nearestJersey), its torso in the club's cloth;
+ * off the board (`tile`), on a square of turf, as it stands in a game.
+ */
+export function jerseyGlyph(glyph, c, type, className = '', { tile = true } = {}) {
+    const colour = COLOR_HEX[nearestJersey(c.primary)];
+    const piece = `<span class="piece-jersey" data-piece="${type}" style="color:${colour};--band:${esc(jerseyBand(c))}">${glyph}</span>`;
+    return `<span class="${className} ${tile ? 'piece-tile' : ''}" aria-hidden="true">${piece}</span>`;
 }
 
 const rgbOf = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));

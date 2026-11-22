@@ -48,7 +48,7 @@ export function showLineups(box, club, { onBack }) {
             const name = `${FILES[c]}${12 - r}`;
             const label = m ? t('lineup.squareWith', { square: name, name: m.name, piece: t(`piece.${m.type}`), n: m.level }) : t('lineup.squareEmpty', { square: name });
             return `<button type="button" class="lineup-square ${(r + c) % 2 ? 'dark' : 'light'}" data-r="${r}" data-c="${c}" data-focus="sq${r}-${c}" aria-label="${esc(label)}">
-                ${m ? `${jerseyGlyph(PIECES[m.type].icon, club, m.type, 'icon')}<span class="lineup-stars" aria-hidden="true">${m.level}★</span>` : ''}</button>`;
+                ${m ? `${jerseyGlyph(PIECES[m.type].icon, club, m.type, 'icon', { tile: false })}<span class="lineup-stars" aria-hidden="true">${m.level}★</span>` : ''}</button>`;
         };
         box.innerHTML = `
           <div class="lineup-head">

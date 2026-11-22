@@ -573,8 +573,9 @@ button:disabled {
 .piece-jersey[data-piece="r"] { --band-h: 40%; --band-y: 46%; }
 .piece-jersey[data-piece="q"] { --band-h: 30%; --band-y: 62%; }
 .piece-jersey[data-piece="k"] { --band-h: 30%; --band-y: 64%; }
-/* Off the board (benches, line-ups, the register): white pieces, the club's torso */
-.club-bench-player .piece-jersey, .lineup-square .piece-jersey, .club-glyph .piece-jersey { color: var(--white); }
+/* Off the board (benches, line-ups, the register): outlined as on the board, on a square of turf */
+.club-bench-player .piece-jersey, .lineup-square .piece-jersey, .club-glyph .piece-jersey { -webkit-text-stroke: 0.6px var(--black); paint-order: stroke fill; }
+.piece-tile { display: inline-grid; place-items: center; width: 1.35em; height: 1.35em; background: var(--turf); border-radius: 4px; line-height: 1; }
 .jersey-red { color: #e74c3c; }
 .jersey-blue { color: #3498db; }
 .jersey-green { color: #2ecc71; }
@@ -976,7 +977,7 @@ h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus { outl
 .club-roster tbody th { font-weight: 400; }
 .club-roster small { color: var(--muted-on-dark); }
 .club-roster .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.club-glyph { font: 24px/1 var(--pieces); -webkit-text-stroke: 1px var(--black); paint-order: stroke; }
+.club-glyph { font: 32px/1 var(--pieces); -webkit-text-stroke: 1px var(--black); paint-order: stroke; }
 .club-glyph-sm { font: 18px/1 var(--pieces); }
 .club-stars { color: var(--amber); letter-spacing: 1px; white-space: nowrap; }
 .club-stars .off { color: #3a3a3a; }
