@@ -11,6 +11,30 @@ test.describe('Languages', () => {
     await blockExternalRequests(context);
   });
 
+  test('the main menu\'s language button: the current flag, the list of the five, a choice reloads the page in it', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await page.goto('/chessdown/');
+    const button = page.getByRole('button', { name: 'Language (English)' });
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    await expect(button.locator('svg.pixel-flag')).toBeVisible();
+    await button.click();
+    await expect(button).toHaveAttribute('aria-expanded', 'true');
+    const list = page.locator('#language-list');
+    await expect(list.getByRole('button')).toHaveText([/English/, /Français/, /Español/, /Italiano/, /Deutsch/]);
+    await expect(list.locator('[aria-current="true"]')).toHaveAttribute('lang', 'en');
+    const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+    expect(violations.map((v) => v.id)).toEqual([]);
+    await page.keyboard.press('Escape'); // Closed, the focus back on the button
+    await expect(list).toBeHidden();
+    await expect(button).toBeFocused();
+    await button.click();
+    await Promise.all([page.waitForEvent('load'), list.getByRole('button', { name: 'Français' }).click()]);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+    await expect(page.getByRole('button', { name: 'Langue (Français)' })).toBeVisible();
+    await page.evaluate(() => localStorage.removeItem('pawnet.language'));
+    expect(errors).toEqual([]);
+  });
+
   test('Settings: choose French, the page reloads in French and stays so; the timer is kept', async ({ page }) => {
     const errors = trackPageErrors(page);
     await page.goto('/chessdown/');

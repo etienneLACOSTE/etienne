@@ -56,6 +56,13 @@
                 <button id="btn-how-to-play" class="btn-ghost" data-i18n="menu.howToPlay">How to Play</button>
                 <button id="btn-show-timer" class="btn-ghost" data-i18n="menu.settings">Settings</button>
             </div>
+            <!-- The language, with the current one's pixel flag (js/language-menu.js) -->
+            <div class="language-menu">
+                <button id="btn-language" type="button" class="btn-ghost" aria-expanded="false" aria-controls="language-list">
+                    <span data-i18n="settings.language">Language</span><span class="flag-slot"></span><span class="visually-hidden language-current"></span>
+                </button>
+                <ul id="language-list" class="language-list" hidden></ul>
+            </div>
             <p class="account-line muted" id="account-line" hidden></p>
         </div>
 

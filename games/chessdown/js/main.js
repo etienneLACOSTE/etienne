@@ -3,6 +3,7 @@
 import './lang.js'; // First: the language is set before any text is written
 import { state, ui } from './state.js';
 import { setupFullscreenButton, showScreen } from './board-view.js';
+import { setupLanguageMenu } from './language-menu.js';
 import { loadBotProfileForDifficulty } from './bot.js';
 import { reopenAfterReload, setupEventListeners } from './events.js';
 import { startDemo } from './demo.js';
@@ -28,6 +29,7 @@ export function init() {
     });
     setupEventListeners();
     setupFullscreenButton();
+    setupLanguageMenu();
     setupAccessibility(); // a11y.js
     
     const urlParams = new URLSearchParams(window.location.search);

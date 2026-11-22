@@ -181,6 +181,24 @@ h1 {
     padding-top: 16px;
 }
 .menu-row { flex-direction: row; }
+/* The language button and its list (js/language-menu.js); the flags are pixel art (js/flags.js) */
+.language-menu { position: relative; display: flex; justify-content: center; }
+#btn-language { display: inline-flex; align-items: center; gap: 10px; }
+.pixel-flag { width: 30px; height: 20px; flex: none; image-rendering: pixelated; }
+.language-list {
+    position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 20;
+    list-style: none; margin: 0; padding: 6px; min-width: 200px; display: grid; gap: 4px;
+    background: var(--black); border: 2px solid var(--white); border-radius: 6px;
+}
+.language-list[hidden] { display: none; }
+.language-list.up { top: auto; bottom: calc(100% + 6px); }
+.language-choice {
+    width: 100%; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 10px;
+    background: transparent; color: var(--white); border: 2px solid transparent; border-radius: 4px; font: 700 16px var(--text); cursor: pointer; text-align: left;
+}
+.language-choice:hover, .language-choice:focus-visible { border-color: var(--amber); }
+.language-choice[aria-current="true"] { color: var(--amber); }
+.language-tick { margin-left: auto; }
 .menu-row button { flex: 1; }
 .join-row { display: flex; gap: 8px; }
 .matchup { font: 900 clamp(1.75rem, 6vw, 2.5rem) / 1 var(--display); text-transform: uppercase; color: var(--white); background: var(--black); padding: 8px 16px; border-radius: 6px; text-align: center; overflow-wrap: anywhere; max-width: calc(100% - 32px); margin: 0 0 16px; }
